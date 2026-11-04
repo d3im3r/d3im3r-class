@@ -10,6 +10,7 @@
     "test": "tsx --test src/features/latex-import/lib/parser.test.ts src/features/administration/server/access.test.ts src/features/administration/server/student-roster.test.ts src/features/reader/presentation-pages.test.ts src/features/theme/theme-script.test.ts src/features/tools/server/test-tikz.test.ts",
     "typecheck": "tsc --noEmit",
     "compile:diagrams": "python3 scripts/compile-diagrams.py",
+    "reset-password": "tsx --env-file=.env.local scripts/reset-password.ts",
     "content:build": "npm run import:content && npm run compile:diagrams && npm run import:content"
   },
   "dependencies": {
