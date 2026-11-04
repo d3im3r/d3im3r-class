@@ -60,7 +60,7 @@ function createAuth(){
     ac,
     roles,
     defaultRole:'student',
-    adminRoles:['teacher'],
+    adminRoles:['admin','teacher'],
    }),
    bearer(),
    nextCookies(),

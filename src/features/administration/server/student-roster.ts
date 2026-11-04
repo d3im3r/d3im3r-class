@@ -28,7 +28,7 @@ async function parseRoster(buffer:Buffer):Promise<{rows:PrivateRow[];fingerprint
   if(!issue&&(!/^[a-z0-9._-]{1,64}$/i.test(identification)))issue='La identificación es obligatoria: usa hasta 64 letras, números, puntos o guiones.';
   if(!issue&&emails.has(email))issue='El correo está repetido en el archivo.';
   if(!issue&&identifications.has(identification))issue='La identificación está repetida en el archivo.';
-  const existing=email?db().prepare('SELECT role FROM users WHERE username=?').get(email):undefined;if(!issue&&existing?.role==='teacher')issue='El correo ya pertenece a una cuenta docente.';
+  const existing=email?db().prepare('SELECT role FROM users WHERE username=?').get(email):undefined;if(!issue&&(existing?.role==='teacher'||existing?.role==='admin'))issue='El correo ya pertenece a una cuenta docente o administrativa.';
   if(email)emails.add(email);if(identification)identifications.add(identification);
   rows.push({row:rowNumber,name,email,identification,identificationLength:identification.length,status:issue?'error':existing?'existing':'ready',issue:issue||undefined,warning});
  }

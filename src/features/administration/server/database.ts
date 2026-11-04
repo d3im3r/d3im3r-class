@@ -109,7 +109,7 @@ export function db(){
  if(connection)return connection;
  mkdirSync(directory,{recursive:true,mode:0o700});connection=new DatabaseSync(path.join(directory,'aula.sqlite'));
  connection.exec(`PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON; PRAGMA busy_timeout=5000;
- CREATE TABLE IF NOT EXISTS users(id TEXT PRIMARY KEY,name TEXT NOT NULL,username TEXT UNIQUE NOT NULL,password TEXT NOT NULL,role TEXT NOT NULL CHECK(role IN ('teacher','student')));
+ CREATE TABLE IF NOT EXISTS users(id TEXT PRIMARY KEY,name TEXT NOT NULL,username TEXT UNIQUE NOT NULL,password TEXT NOT NULL,role TEXT NOT NULL CHECK(role IN ('admin','teacher','student')));
  CREATE TABLE IF NOT EXISTS sessions(token TEXT PRIMARY KEY,user_id TEXT REFERENCES users(id) ON DELETE CASCADE,expires INTEGER NOT NULL);
  CREATE TABLE IF NOT EXISTS user(id TEXT PRIMARY KEY,name TEXT NOT NULL,email TEXT UNIQUE NOT NULL,emailVerified INTEGER NOT NULL DEFAULT 1,image TEXT,createdAt TEXT NOT NULL,updatedAt TEXT NOT NULL,username TEXT UNIQUE,displayUsername TEXT,role TEXT NOT NULL DEFAULT 'student',banned INTEGER DEFAULT 0,banReason TEXT,banExpires TEXT);
  CREATE TABLE IF NOT EXISTS session(id TEXT PRIMARY KEY,expiresAt TEXT NOT NULL,token TEXT UNIQUE NOT NULL,createdAt TEXT NOT NULL,updatedAt TEXT NOT NULL,ipAddress TEXT,userAgent TEXT,userId TEXT NOT NULL REFERENCES user(id) ON DELETE CASCADE,impersonatedBy TEXT);
@@ -132,7 +132,7 @@ export function db(){
  if(!connection.prepare("SELECT key FROM metadata WHERE key='seed-v1'").get())seed(connection);
  return connection;
 }
-export function syncBetterAuthUser(id:string,name:string,username:string,password:string,role:'teacher'|'student'){
+export function syncBetterAuthUser(id:string,name:string,username:string,password:string,role:'admin'|'teacher'|'student'){
  const sql=db(),now=new Date().toISOString(),email=username.includes('@')?username:`${username}@aula.local`;
  sql.prepare('INSERT INTO user(id,name,email,emailVerified,createdAt,updatedAt,username,displayUsername,role,banned) VALUES (?,?,?,1,?,?,?,?,?,0) ON CONFLICT(id) DO UPDATE SET name=excluded.name,email=excluded.email,updatedAt=excluded.updatedAt,username=excluded.username,displayUsername=excluded.displayUsername,role=excluded.role').run(id,name,email,now,now,username,username,role);
  const existingAcc=sql.prepare("SELECT id FROM account WHERE userId=? AND providerId='credential'").get(id) as {id:string}|undefined;

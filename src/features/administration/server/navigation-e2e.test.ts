@@ -16,7 +16,7 @@ let teacher:any,student:any;
 
 test('Pestañas: 1. Pestaña Instituciones (lectura, inserción y cambio)',()=>{
  teacher=setup({name:'Profesor Tabs',username:'profe.tabs',password:'ClaveDocente-2026'});
- assert.equal(teacher.role,'teacher');
+ assert.equal(teacher.role,'admin');
 
  const snap=snapshot();
  assert.ok(snap.institutions.length>0,'Carga instituciones iniciales');
@@ -27,7 +27,7 @@ test('Pestañas: 1. Pestaña Instituciones (lectura, inserción y cambio)',()=>{
   shortName:'ITF',
   city:'Bogotá',
   color:'green'
- });
+ },teacher);
 
  const snapUpdated=snapshot();
  const created=snapUpdated.institutions.find(i=>i.shortName==='ITF');

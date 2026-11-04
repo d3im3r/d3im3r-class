@@ -1,13 +1,38 @@
 import {randomUUID} from 'node:crypto';
 import {db,transaction,lessonRecord} from './database';
-import {AppError,text,createUser} from '@/features/auth/server/auth';
+import {AppError,text,createUser,resetPassword} from '@/features/auth/server/auth';
 import type {Subject,Institution,Lesson} from '@/features/catalog/model/types';
+import type {User} from '@/features/auth/types';
 const object=(row:Record<string,unknown>|undefined)=>row?JSON.parse(row.data as string):null;
 export function snapshot(){return {institutions:db().prepare('SELECT data FROM institutions').all().map(r=>object(r)),subjects:db().prepare('SELECT data FROM subjects').all().map(r=>object(r)),lessons:db().prepare('SELECT * FROM lessons').all().map(r=>{const l=object(r) as Lesson;return {id:l.id,title:l.title,subtitle:l.subtitle,subjectId:l.subjectId,topicId:l.topicId,status:r.status,revision:r.revision,reviewed:r.reviewed,frames:l.frames.length,diagnostics:l.diagnostics};}),users:db().prepare('SELECT id,name,username,role FROM users ORDER BY name').all(),enrollments:db().prepare('SELECT user_id AS userId,subject_id AS subjectId FROM enrollments').all(),bans:db().prepare('SELECT user_id AS userId,subject_id AS subjectId,reason,banned_at AS bannedAt FROM subject_bans').all() as {userId:string;subjectId:string;reason?:string;bannedAt:string}[],invites:db().prepare('SELECT subject_id AS subjectId,token FROM subject_invites').all() as {subjectId:string;token:string}[],joinRequests:db().prepare("SELECT r.id,r.subject_id AS subjectId,r.user_id AS userId,r.status,r.created_at AS createdAt,u.name AS userName,u.username,s.institution_id AS institutionId FROM subject_join_requests r JOIN users u ON u.id=r.user_id JOIN subjects s ON s.id=r.subject_id WHERE r.status='pending' ORDER BY r.created_at DESC").all() as {id:string;subjectId:string;userId:string;status:string;createdAt:string;userName:string;username:string;institutionId:string}[]};}
 function subject(id:unknown){const key=text(id,'Materia');const s=object(db().prepare('SELECT data FROM subjects WHERE id=?').get(key)) as Subject|null;if(!s)throw new AppError('Materia no encontrada.',404);return s;}
 function subjectIds(value:unknown){if(!Array.isArray(value)||value.length>200)throw new AppError('Selecciona las materias.');return [...new Set(value.map(v=>subject(v).id))];}
-export function manage(input:Record<string,unknown>){return transaction(()=>{switch(input.action){
- case 'institution':{const id=typeof input.id==='string'&&input.id?input.id:randomUUID();const i:Institution={id,name:text(input.name,'Institución',150),shortName:text(input.shortName,'Nombre corto',35),city:text(input.city,'Ciudad',100),color:input.color==='green'?'green':'blue',logo:object(db().prepare('SELECT data FROM institutions WHERE id=?').get(id))?.logo};db().prepare('INSERT INTO institutions VALUES (?,?) ON CONFLICT(id) DO UPDATE SET data=excluded.data').run(id,JSON.stringify(i));break;}
+export function manage(input:Record<string,unknown>,actor?:User){return transaction(()=>{switch(input.action){
+ case 'institution':{
+  if(actor&&actor.role!=='admin')throw new AppError('Solo los administradores pueden añadir o editar instituciones.',403);
+  const id=typeof input.id==='string'&&input.id?input.id:randomUUID();
+  const i:Institution={id,name:text(input.name,'Institución',150),shortName:text(input.shortName,'Nombre corto',35),city:text(input.city,'Ciudad',100),color:input.color==='green'?'green':'blue',logo:object(db().prepare('SELECT data FROM institutions WHERE id=?').get(id))?.logo};
+  db().prepare('INSERT INTO institutions VALUES (?,?) ON CONFLICT(id) DO UPDATE SET data=excluded.data').run(id,JSON.stringify(i));
+  break;
+ }
+ case 'teacher':{
+  if(actor&&actor.role!=='admin')throw new AppError('Solo los administradores pueden registrar nuevos docentes.',403);
+  createUser(input,'teacher');
+  break;
+ }
+ case 'resetPassword':{
+  const userId=text(input.userId,'Usuario');
+  const target=db().prepare('SELECT id,name,username,role FROM users WHERE id=?').get(userId) as User|undefined;
+  if(!target)throw new AppError('Usuario no encontrado.',404);
+  if(target.role==='admin'&&actor?.id!==target.id&&actor?.role!=='admin'){
+   throw new AppError('No tienes permiso para restablecer la contraseña de un administrador.',403);
+  }
+  if(target.role==='teacher'&&actor&&actor.role!=='admin'){
+   throw new AppError('Solo los administradores pueden restablecer la contraseña de otro docente.',403);
+  }
+  resetPassword(userId,input.password);
+  break;
+ }
  case 'subject':{const institutionId=text(input.institutionId,'Institución');if(!db().prepare('SELECT id FROM institutions WHERE id=?').get(institutionId))throw new AppError('Institución no encontrada.');const existing=input.id?subject(input.id):null;const description=typeof input.description==='string'?input.description.trim().slice(0,600):'';const s:Subject={id:existing?.id??randomUUID(),institutionId,name:text(input.name,'Materia',120),code:text(input.code,'Código',40),description,icon:input.icon==='robot'?'robot':'code',topics:existing?.topics??[]};if(existing&&existing.institutionId!==institutionId)throw new AppError('La institución de una materia existente no se puede cambiar.');db().prepare('INSERT INTO subjects VALUES (?,?,?) ON CONFLICT(id) DO UPDATE SET data=excluded.data').run(s.id,institutionId,JSON.stringify(s));break;}
  case 'topic':{const s=subject(input.subjectId),name=text(input.name,'Tema',120);const id=typeof input.id==='string'?input.id:'';if(id){const topic=s.topics.find(t=>t.id===id);if(!topic)throw new AppError('Tema no encontrado.');topic.name=name;}else s.topics.push({id:randomUUID(),name});db().prepare('UPDATE subjects SET data=? WHERE id=?').run(JSON.stringify(s),s.id);break;}
  case 'moveTopic':{const s=subject(input.subjectId),index=s.topics.findIndex(t=>t.id===input.topicId),target=index+(input.direction==='up'?-1:1);if(index<0||target<0||target>=s.topics.length)throw new AppError('No se puede mover el tema.');[s.topics[index],s.topics[target]]=[s.topics[target],s.topics[index]];db().prepare('UPDATE subjects SET data=? WHERE id=?').run(JSON.stringify(s),s.id);break;}

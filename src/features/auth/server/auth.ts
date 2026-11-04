@@ -10,7 +10,7 @@ export function passwordHash(password:string){const salt=randomBytes(16).toStrin
 export function passwordMatches(password:string,stored:string){try{const [salt,key]=stored.split(':');return timingSafeEqual(Buffer.from(key,'hex'),scryptSync(password,salt,64));}catch{return false;}}
 export function text(value:unknown,label:string,max=200){if(typeof value!=='string'||!value.trim()||value.length>max)throw new AppError(`${label}: introduce un valor válido (máximo ${max} caracteres).`);return value.trim();}
 export function validatePassword(value:unknown){if(typeof value!=='string'||value.length<10||value.length>256)throw new AppError('La contraseña debe tener entre 10 y 256 caracteres.');return value;}
-export function createUser(input:Record<string,unknown>,role:'teacher'|'student'):User{
+export function createUser(input:Record<string,unknown>,role:'admin'|'teacher'|'student'):User{
  const name=text(input.name,'Nombre',100),username=text(input.username,'Usuario',100).toLowerCase();if(!/^[a-z0-9][a-z0-9@._+-]{2,99}$/.test(username))throw new AppError('El usuario debe tener al menos 3 caracteres: letras sin tildes, números, punto, guion o correo.');
  const password=validatePassword(input.password);if(db().prepare('SELECT id FROM users WHERE username=?').get(username))throw new AppError('Ese usuario ya existe.',409);
  const user={id:randomUUID(),name,username,role},hashed=passwordHash(password);
@@ -31,8 +31,24 @@ export function createUser(input:Record<string,unknown>,role:'teacher'|'student'
  }
  return user;
 }
-export function needsSetup(){return !db().prepare("SELECT id FROM users WHERE role='teacher' LIMIT 1").get();}
-export function setup(input:Record<string,unknown>){return transaction(()=>{if(!needsSetup())throw new AppError('La cuenta docente inicial ya fue configurada.',409);return createUser(input,'teacher');});}
+export function needsSetup(){return !db().prepare("SELECT id FROM users WHERE role IN ('admin','teacher') LIMIT 1").get();}
+export function setup(input:Record<string,unknown>){return transaction(()=>{if(!needsSetup())throw new AppError('La cuenta administrativa inicial ya fue configurada.',409);return createUser(input,'admin');});}
+export function resetPassword(userId:string,newPasswordRaw:unknown){
+ const password=validatePassword(newPasswordRaw);
+ const user=db().prepare('SELECT id,name,username,role FROM users WHERE id=?').get(userId) as User|undefined;
+ if(!user)throw new AppError('Usuario no encontrado.',404);
+ const hashed=passwordHash(password),now=new Date().toISOString();
+ db().prepare('UPDATE users SET password=? WHERE id=?').run(hashed,userId);
+ db().prepare('UPDATE account SET password=?,updatedAt=? WHERE userId=?').run(hashed,now,userId);
+ db().prepare('DELETE FROM login_attempts WHERE username=?').run(user.username);
+ const pool=getPgPool();
+ if(pool){
+  pool.query('UPDATE users SET password=$1 WHERE id=$2',[hashed,userId]).catch(e=>console.error('PG reset pass err:',e.message));
+  pool.query('UPDATE account SET password=$1,"updatedAt"=$2 WHERE "userId"=$3',[hashed,now,userId]).catch(e=>console.error('PG reset pass acc err:',e.message));
+  pool.query('DELETE FROM login_attempts WHERE username=$1',[user.username]).catch(()=>{});
+ }
+ return {ok:true,userId:user.id,username:user.username};
+}
 const cookieName=process.env.AULA_SESSION_COOKIE??'aula_session';
 const digest=(token:string)=>createHash('sha256').update(token).digest('hex');
 
@@ -43,7 +59,7 @@ export async function currentUser():Promise<User|null>{
  const token=jar?.get(cookieName)?.value;
  if(token){
   const hashed=digest(token),nowIso=new Date().toISOString();
-  const baRow=db().prepare('SELECT u.id,u.name,u.username,u.role,u.banned FROM session s JOIN user u ON u.id=s.userId WHERE s.token=? AND s.expiresAt>?').get(hashed,nowIso) as {id:string;name:string;username:string;role:'teacher'|'student';banned:number}|undefined;
+  const baRow=db().prepare('SELECT u.id,u.name,u.username,u.role,u.banned FROM session s JOIN user u ON u.id=s.userId WHERE s.token=? AND s.expiresAt>?').get(hashed,nowIso) as {id:string;name:string;username:string;role:'admin'|'teacher'|'student';banned:number}|undefined;
   if(baRow){
    if(baRow.banned)return null;
    return {id:baRow.id,name:baRow.name,username:baRow.username,role:baRow.role};
@@ -61,7 +77,7 @@ export async function currentUser():Promise<User|null>{
   if(baSession?.user){
    const u=baSession.user as {id:string;name:string;username?:string|null;email:string;role?:string|null;banned?:boolean|null};
    if(u.banned)return null;
-   const role=(u.role==='teacher'?'teacher':'student') as 'teacher'|'student';
+   const role=(u.role==='admin'?'admin':u.role==='teacher'?'teacher':'student') as 'admin'|'teacher'|'student';
    const existing=db().prepare('SELECT id,name,username,role FROM users WHERE id=?').get(u.id) as User|undefined;
    if(!existing){
     const uname=u.username??u.email.split('@')[0].toLowerCase().replace(/[^a-z0-9._+-]/g,'');
@@ -86,10 +102,13 @@ export async function currentUser():Promise<User|null>{
  return null;
 }
 
-export async function requireUser(role?:'teacher'|'student'){
+export async function requireUser(role?:'admin'|'teacher'|'student'){
  const user=await currentUser();
  if(!user)throw new AppError('Inicia sesión para continuar.',401);
- if(role&&user.role!==role)throw new AppError('No tienes permiso para realizar esta acción.',403);
+ if(role){
+  if(role==='teacher'&&user.role!=='teacher'&&user.role!=='admin')throw new AppError('No tienes permiso para realizar esta acción.',403);
+  if(role!=='teacher'&&user.role!==role)throw new AppError('No tienes permiso para realizar esta acción.',403);
+ }
  return user;
 }
 

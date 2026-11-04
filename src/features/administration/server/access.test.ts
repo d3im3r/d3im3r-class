@@ -6,8 +6,8 @@ import path from 'node:path';
 const folder=mkdtempSync(path.join(tmpdir(),'aula-access-'));process.env.AULA_DATA_DIR=folder;
 const {db,readLesson}=await import('./database');const {setup,login,passwordMatches,sameOrigin,hasPermission,roles}=await import('../../auth/server/auth');const {getAuth}=await import('../../auth/server/better-auth');const {manage}=await import('./manage');const {importLesson}=await import('./import-lesson');const {canReadLesson,canReadResource,studentLesson,userCatalog}=await import('../../learning/server/access');
 let teacher:ReturnType<typeof setup>,student:ReturnType<typeof setup>;
-test('crea una sola cuenta inicial y guarda contraseñas derivadas',()=>{teacher=setup({name:'Docente de prueba',username:'docente.test',password:'Prueba-privada-2026'});assert.equal(teacher.role,'teacher');assert.throws(()=>setup({name:'Otro',username:'otro.test',password:'Prueba-privada-2026'}));const row=db().prepare('SELECT password FROM users WHERE id=?').get(teacher.id)!;assert.notEqual(row.password,'Prueba-privada-2026');assert.ok(passwordMatches('Prueba-privada-2026',row.password as string));});
-test('valida credenciales y no permite elegir el rol al entrar',()=>{assert.throws(()=>login({username:'docente.test',password:'incorrecta'}));const user=login({username:'docente.test',password:'Prueba-privada-2026',role:'student'});assert.equal(user.role,'teacher');});
+test('crea una sola cuenta inicial y guarda contraseñas derivadas',()=>{teacher=setup({name:'Docente de prueba',username:'docente.test',password:'Prueba-privada-2026'});assert.equal(teacher.role,'admin');assert.throws(()=>setup({name:'Otro',username:'otro.test',password:'Prueba-privada-2026'}));const row=db().prepare('SELECT password FROM users WHERE id=?').get(teacher.id)!;assert.notEqual(row.password,'Prueba-privada-2026');assert.ok(passwordMatches('Prueba-privada-2026',row.password as string));});
+test('valida credenciales y no permite elegir el rol al entrar',()=>{assert.throws(()=>login({username:'docente.test',password:'incorrecta'}));const user=login({username:'docente.test',password:'Prueba-privada-2026',role:'student'});assert.equal(user.role,'admin');});
 test('alumno sin asignaciones recibe catálogo vacío',()=>{manage({action:'student',name:'Alumno de prueba',username:'alumno.test',password:'Prueba-alumno-2026'});student=login({username:'alumno.test',password:'Prueba-alumno-2026'});assert.equal(student.role,'student');assert.deepEqual(userCatalog(student),{institutions:[],subjects:[],lessons:[]});assert.equal(canReadLesson(student,'flexbox'),false);});
 test('asignar una materia no expone las demás',()=>{manage({action:'assign',userId:student.id,subjectIds:['diseno-web-1']});const catalog=userCatalog(student);assert.deepEqual(catalog.subjects.map(s=>s.id),['diseno-web-1']);assert.deepEqual(catalog.lessons.map(l=>l.id),['flexbox']);assert.equal(canReadLesson(student,'fundamentos-ros2'),false);assert.equal(canReadLesson(student,'flexbox'),true);});
 test('el profesor puede banear y desbanear a un alumno en una materia',()=>{
@@ -92,10 +92,10 @@ test('valida permisos granulares y sincronización con Better Auth (ac, roles, u
  const baTeacher=db().prepare('SELECT id,username,role,banned FROM user WHERE id=?').get(teacher.id) as {id:string;username:string;role:string;banned:number}|undefined;
  const baStudent=db().prepare('SELECT id,username,role,banned FROM user WHERE id=?').get(student.id) as {id:string;username:string;role:string;banned:number}|undefined;
  const baAccount=db().prepare("SELECT userId,providerId FROM account WHERE userId=? AND providerId='credential'").get(teacher.id) as {userId:string;providerId:string}|undefined;
- assert.equal(baTeacher?.role,'teacher');
+ assert.equal(baTeacher?.role,'admin');
  assert.equal(baStudent?.role,'student');
  assert.equal(baAccount?.providerId,'credential');
- assert.equal(hasPermission(teacher,{campus:['manage','import','rebuild','publish','students','logo']}),true);
+ assert.equal(hasPermission(teacher,{campus:['manage','import','rebuild','publish','students','teachers','logo']}),true);
  assert.equal(hasPermission(teacher,{tools:['use','inspectSource'],lesson:['readDraft','downloadSource']}),true);
  assert.equal(hasPermission(student,{campus:['manage']}),false);
  assert.equal(hasPermission(student,{tools:['use']}),false);
@@ -103,6 +103,14 @@ test('valida permisos granulares y sincronización con Better Auth (ac, roles, u
  assert.equal(hasPermission(student,{lesson:['downloadSource']}),false);
  assert.equal(hasPermission(student,{catalog:['readAssigned'],lesson:['readPublished'],progress:['read','write']}),true);
  assert.equal(hasPermission(student,{lesson:['downloadMaterial']}),false);
+ assert.ok(roles.admin.authorize({campus:['manage']}).success);
  assert.ok(roles.teacher.authorize({campus:['manage']}).success);
  assert.equal(roles.student.authorize({campus:['manage']}).success,false);
+
+ manage({action:'teacher',name:'Profesor Secundario',username:'profe2.test',password:'ClaveDocente-2026'},teacher);
+ const profe2=login({username:'profe2.test',password:'ClaveDocente-2026'});
+ assert.equal(profe2.role,'teacher');
+ assert.equal(hasPermission(profe2,{campus:['teachers']}),false);
+ assert.equal(hasPermission(profe2,{user:['resetPasswordStudent']}),true);
+ assert.equal(hasPermission(teacher,{user:['createTeacher','resetPasswordTeacher']}),true);
 });
