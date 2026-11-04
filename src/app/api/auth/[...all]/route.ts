@@ -1,5 +1,6 @@
 import {sameOrigin,setup,login,loginDevGoogle,startSession,endSession,currentUser,hasPermission,roles,errorResponse} from '@/features/auth/server/auth';
 import {getAuth} from '@/features/auth/server/better-auth';
+import {syncFromPostgres} from '@/features/administration/server/database';
 export const runtime='nodejs';
 
 export async function GET(request:Request,{params}:{params:Promise<{all?:string[]}>}){
@@ -27,6 +28,7 @@ export async function GET(request:Request,{params}:{params:Promise<{all?:string[
 
 export async function POST(request:Request,{params}:{params:Promise<{all?:string[]}>}){
  try{
+  await syncFromPostgres();
   const {all}=await params;
   const action=all?.[0]??'';
   const fullPath=all?.join('/')??'';

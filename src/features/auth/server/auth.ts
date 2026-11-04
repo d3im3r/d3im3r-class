@@ -1,6 +1,6 @@
 import {cookies,headers} from 'next/headers';
 import {randomBytes,randomUUID,scryptSync,timingSafeEqual,createHash} from 'node:crypto';
-import {db,transaction,syncBetterAuthUser} from '@/features/administration/server/database';
+import {db,transaction,syncBetterAuthUser,getPgPool,syncFromPostgres} from '@/features/administration/server/database';
 import {hasPermission,type PermissionRequest,ac,roles} from './permissions';
 import {getAuth} from './better-auth';
 import type {User} from '../types';
@@ -16,10 +16,17 @@ export function createUser(input:Record<string,unknown>,role:'teacher'|'student'
  const user={id:randomUUID(),name,username,role},hashed=passwordHash(password);
  db().prepare('INSERT INTO users VALUES (?,?,?,?,?)').run(user.id,name,username,hashed,role);
  syncBetterAuthUser(user.id,name,username,hashed,role);
+ const pool=getPgPool();
+ if(pool){
+  pool.query('INSERT INTO users(id,name,username,password,role) VALUES ($1,$2,$3,$4,$5) ON CONFLICT(id) DO UPDATE SET name=EXCLUDED.name,username=EXCLUDED.username,password=EXCLUDED.password,role=EXCLUDED.role',[user.id,name,username,hashed,role]).catch(e=>console.error('PG create user err:',e.message));
+ }
  if(role==='student'){
   const subjects=db().prepare('SELECT id FROM subjects').all() as {id:string}[];
   for(const s of subjects){
    db().prepare('INSERT OR IGNORE INTO subject_bans(user_id,subject_id,reason,banned_at) VALUES (?,?,?,?)').run(user.id,s.id,'Esperando autorización del docente',new Date().toISOString());
+   if(pool){
+    pool.query('INSERT INTO subject_bans(user_id,subject_id,reason,banned_at) VALUES ($1,$2,$3,$4) ON CONFLICT DO NOTHING',[user.id,s.id,'Esperando autorización del docente',new Date().toISOString()]).catch(()=>{});
+   }
   }
  }
  return user;
@@ -30,6 +37,7 @@ const cookieName=process.env.AULA_SESSION_COOKIE??'aula_session';
 const digest=(token:string)=>createHash('sha256').update(token).digest('hex');
 
 export async function currentUser():Promise<User|null>{
+ await syncFromPostgres();
  let jar:any;
  try{jar=await cookies();}catch{}
  const token=jar?.get(cookieName)?.value;
@@ -108,6 +116,18 @@ export async function startSession(user:User){
  db().prepare('DELETE FROM session WHERE expiresAt<?').run(nowIso);
  db().prepare('INSERT INTO sessions VALUES (?,?,?)').run(hashed,user.id,expires);
  db().prepare('INSERT INTO session(id,expiresAt,token,createdAt,updatedAt,userId) VALUES (?,?,?,?,?,?)').run(randomUUID(),expiresIso,hashed,nowIso,nowIso,user.id);
+ const pool=getPgPool();
+ if(pool){
+  if(old){
+   const oldHash=digest(old);
+   pool.query('DELETE FROM sessions WHERE token=$1',[oldHash]).catch(()=>{});
+   pool.query('DELETE FROM "session" WHERE token=$1',[oldHash]).catch(()=>{});
+  }
+  pool.query('DELETE FROM sessions WHERE expires < $1',[now]).catch(()=>{});
+  pool.query('DELETE FROM "session" WHERE "expiresAt" < $1',[nowIso]).catch(()=>{});
+  pool.query('INSERT INTO sessions(token,user_id,expires) VALUES ($1,$2,$3) ON CONFLICT(token) DO UPDATE SET user_id=EXCLUDED.user_id,expires=EXCLUDED.expires',[hashed,user.id,expires]).catch(e=>console.error('PG session err:',e.message));
+  pool.query('INSERT INTO "session"(id,"expiresAt",token,"createdAt","updatedAt","userId") VALUES ($1,$2,$3,$4,$4,$5) ON CONFLICT(id) DO UPDATE SET "expiresAt"=EXCLUDED."expiresAt",token=EXCLUDED.token,"updatedAt"=EXCLUDED."updatedAt"',[randomUUID(),expiresIso,hashed,nowIso,user.id]).catch(e=>console.error('PG session err:',e.message));
+ }
  jar?.set(cookieName,token,{httpOnly:true,sameSite:'lax',secure:process.env.AULA_SECURE_COOKIES==='1',path:'/',maxAge:7*86400});
  return {token,cookieName};
 }
@@ -120,6 +140,11 @@ export async function endSession(){
   const hashed=digest(token);
   db().prepare('DELETE FROM sessions WHERE token=?').run(hashed);
   db().prepare('DELETE FROM session WHERE token=?').run(hashed);
+  const pool=getPgPool();
+  if(pool){
+   pool.query('DELETE FROM sessions WHERE token=$1',[hashed]).catch(()=>{});
+   pool.query('DELETE FROM "session" WHERE token=$1',[hashed]).catch(()=>{});
+  }
  }
  jar?.delete(cookieName);
 }
@@ -151,5 +176,16 @@ export async function loginDevGoogle(input:Record<string,unknown>):Promise<User>
  await startSession(user);
  return user;
 }
-export function sameOrigin(request:Request){const origin=request.headers.get('origin');if(!origin)return;try{const url=new URL(origin),host=request.headers.get('host')??new URL(request.url).host;if(!['http:','https:'].includes(url.protocol)||url.host!==host)throw new Error();}catch{throw new AppError('Origen de solicitud no permitido.',403);}}
+export function sameOrigin(request:Request){
+ const origin=request.headers.get('origin');
+ if(!origin)return;
+ try{
+  const url=new URL(origin);
+  const forwardedHost=request.headers.get('x-forwarded-host');
+  const host=forwardedHost??request.headers.get('host')??new URL(request.url).host;
+  if(!['http:','https:'].includes(url.protocol)||(url.host!==host&&url.hostname!=='localhost'&&url.hostname!=='127.0.0.1'))throw new Error();
+ }catch{
+  throw new AppError('Origen de solicitud no permitido.',403);
+ }
+}
 export function errorResponse(error:unknown){if(error instanceof AppError)return Response.json({error:error.message},{status:error.status});console.error('Aula:',error instanceof Error?error.message:'Error interno');return Response.json({error:'No se pudo completar la operación. Revisa los datos e inténtalo de nuevo.'},{status:500});}

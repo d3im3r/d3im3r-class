@@ -1,9 +1,24 @@
 import {betterAuth} from 'better-auth';
 import {username,admin,bearer} from 'better-auth/plugins';
 import {nextCookies} from 'better-auth/next-js';
-import {db} from '@/features/administration/server/database';
+import {db,getPgPool} from '@/features/administration/server/database';
 import {passwordHash,passwordMatches} from './auth';
 import {ac,roles} from './permissions';
+
+function getDatabase(){
+ const pool=getPgPool();
+ if(pool)return pool;
+ return db();
+}
+
+function getTrustedOrigins(){
+ const origins=['http://localhost:3101','http://127.0.0.1:3101','http://localhost:3000','http://127.0.0.1:3000','https://d3im3r-class.vercel.app'];
+ if(process.env.BETTER_AUTH_URL)origins.push(process.env.BETTER_AUTH_URL);
+ if(process.env.NEXT_PUBLIC_APP_URL)origins.push(process.env.NEXT_PUBLIC_APP_URL);
+ if(process.env.VERCEL_URL)origins.push(`https://${process.env.VERCEL_URL}`);
+ if(process.env.VERCEL_PROJECT_PRODUCTION_URL)origins.push(`https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`);
+ return Array.from(new Set(origins.filter(Boolean)));
+}
 
 function createAuth(){
  const googleClientId=process.env.GOOGLE_CLIENT_ID;
@@ -11,11 +26,11 @@ function createAuth(){
  const hasGoogle=Boolean(googleClientId&&googleClientSecret);
 
  return betterAuth({
-  database:db(),
+  database:getDatabase(),
   secret:process.env.BETTER_AUTH_SECRET??process.env.AULA_AUTH_SECRET??'aula-better-auth-default-secret-key-2026',
   baseURL:process.env.BETTER_AUTH_URL??process.env.NEXT_PUBLIC_APP_URL??'http://localhost:3101',
   basePath:'/api/auth',
-  trustedOrigins:['http://localhost:3101','http://127.0.0.1:3101'],
+  trustedOrigins:getTrustedOrigins(),
   emailAndPassword:{
    enabled:true,
    minPasswordLength:10,
