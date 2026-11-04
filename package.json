@@ -1,0 +1,50 @@
+{
+  "name": "aula-latex",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --hostname 127.0.0.1 --port 3101",
+    "build": "next build --webpack",
+    "start": "next start --hostname 127.0.0.1 --port 3101",
+    "import:content": "tsx scripts/import-content.ts",
+    "test": "tsx --test src/features/latex-import/lib/parser.test.ts src/features/administration/server/access.test.ts src/features/administration/server/student-roster.test.ts src/features/reader/presentation-pages.test.ts src/features/theme/theme-script.test.ts src/features/tools/server/test-tikz.test.ts",
+    "typecheck": "tsc --noEmit",
+    "compile:diagrams": "python3 scripts/compile-diagrams.py",
+    "content:build": "npm run import:content && npm run compile:diagrams && npm run import:content"
+  },
+  "dependencies": {
+    "@codemirror/commands": "^6.0.0",
+    "@codemirror/lang-css": "^6.0.0",
+    "@codemirror/lang-html": "^6.0.0",
+    "@codemirror/lang-javascript": "^6.0.0",
+    "@codemirror/lang-python": "^6.0.0",
+    "@codemirror/lang-sql": "^6.0.0",
+    "@codemirror/language": "^6.0.0",
+    "@codemirror/state": "^6.0.0",
+    "@codemirror/view": "^6.0.0",
+    "@lezer/highlight": "^1.2.5",
+    "@tailwindcss/postcss": "^4.0.0",
+    "better-auth": "^1.6.9",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "exceljs": "^4.4.0",
+    "katex": "^0.16.0",
+    "lucide-react": "^0.468.0",
+    "next": "^16.0.0",
+    "radix-ui": "^1.4.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "shiki": "^3.0.0",
+    "tailwind-merge": "^3.0.0",
+    "tailwindcss": "^4.0.0"
+  },
+  "devDependencies": {
+    "@types/katex": "^0.16.0",
+    "@types/node": "^22.0.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "tsx": "^4.0.0",
+    "typescript": "^5.0.0"
+  },
+  "type": "module"
+}

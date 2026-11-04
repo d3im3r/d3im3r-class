@@ -1,0 +1,48 @@
+# Dependencies
+node_modules/
+/.pnp
+.pnp.js
+
+# Testing and build
+/coverage
+/.next/
+/out/
+/build
+/dist
+*.tsbuildinfo
+next-env.d.ts.bak
+
+# Local Environment Variables and Secrets
+.env
+.env*.local
+.env.development
+.env.production
+.env.test
+!.env.example
+
+# Local SQLite Database & Uploads
+/.data/
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+
+# Python & TeX build artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+*.aux
+*.log
+*.out
+*.toc
+*.nav
+*.snm
+*.vrb
+*.synctex.gz
+
+# System & IDE files
+.DS_Store
+*.pem
+.idea/
+.vscode/
+*.swp
+*.swo

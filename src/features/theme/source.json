@@ -1,0 +1,10 @@
+{
+  "repository": "https://github.com/d3im3r/microROS-Studio",
+  "files": [
+    "src/features/theme/catalog.ts",
+    "src/features/theme/index.tsx",
+    "src/app/globals.css"
+  ],
+  "adaptation": "Original color tokens; data-theme selectors instead of .dark.",
+  "retrieved": "2026-10-29"
+}

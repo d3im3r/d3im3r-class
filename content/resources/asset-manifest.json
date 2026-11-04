@@ -1,0 +1,110 @@
+[
+  {
+    "source": "Template/help.png",
+    "file": "/assets/teaching/help.png",
+    "sha256": "a0ba45675763e00caba75143b9c07981ce1578bdeee68efb78b2dd8f64072986",
+    "storage": "content/materials/assets/teaching/help.png"
+  },
+  {
+    "source": "Template/person.png",
+    "file": "/assets/teaching/person.png",
+    "sha256": "79115af0370773dda9bb80d5ff9795e7ce70b6bb2b6ae285bb25145778a2dbf8",
+    "storage": "content/materials/assets/teaching/person.png"
+  },
+  {
+    "source": "Template/pasion.png",
+    "file": "/assets/teaching/pasion.png",
+    "sha256": "00ccda3a228810f192a488ff24fb6f870f066f67aa679f7e04e0d9237d5f1228",
+    "storage": "content/materials/assets/teaching/pasion.png"
+  },
+  {
+    "source": "Template/Cuidado.png",
+    "file": "/assets/teaching/Cuidado.png",
+    "sha256": "f7c638a0c4bbf1c7d560d8dd1827c01f95bb7ea138de5092e6f7e3226252333a",
+    "storage": "content/materials/assets/teaching/Cuidado.png"
+  },
+  {
+    "source": "Template/g2.png",
+    "file": "/assets/teaching/g2.png",
+    "sha256": "d68e287875bac3ab6ed0ad1143426363abf423c15baef65768419a29d894f0c6",
+    "storage": "content/materials/assets/teaching/g2.png"
+  },
+  {
+    "source": "Template/body_sena.jpeg",
+    "file": "/assets/teaching/body_sena.jpeg",
+    "sha256": "aabbb82e7e786374e71ad2575b61f32f3d403b3e726e5d224fb7fbe2598b566d",
+    "storage": "content/materials/assets/teaching/body_sena.jpeg"
+  },
+  {
+    "source": "Template/caminata.png",
+    "file": "/assets/teaching/caminata.png",
+    "sha256": "edb08893cadb3222bf011797b7f8165c0a6908f241fee9172f7a9b274db778bb",
+    "storage": "content/materials/assets/teaching/caminata.png"
+  },
+  {
+    "source": "Template/Puntual.png",
+    "file": "/assets/teaching/Puntual.png",
+    "sha256": "3b285673308e7c72d1f4cf8859f097bb857d919ad9d209eb3ccbcb7aa4d45d42",
+    "storage": "content/materials/assets/teaching/Puntual.png"
+  },
+  {
+    "source": "Template/tutoria.png",
+    "file": "/assets/teaching/tutoria.png",
+    "sha256": "6b877cc9bee968a7ae7402b4d00d5e2a5d0b8cebb69f4fdd6cd123ff7feb84ba",
+    "storage": "content/materials/assets/teaching/tutoria.png"
+  },
+  {
+    "source": "Template/Actitud.png",
+    "file": "/assets/teaching/Actitud.png",
+    "sha256": "c15d65d6699457f5ba90d5c7c003beccde78d90ef066c92f4428b96d00532121",
+    "storage": "content/materials/assets/teaching/Actitud.png"
+  },
+  {
+    "source": "Template/escritorio.png",
+    "file": "/assets/teaching/escritorio.png",
+    "sha256": "4685ad255d190e37799f061a4e30ff7dfcfd0c6c24a4e1d5a9f78548dc214fea",
+    "storage": "content/materials/assets/teaching/escritorio.png"
+  },
+  {
+    "source": "Template/logoSena.png",
+    "file": "/assets/teaching/logoSena.png",
+    "sha256": "db78dce47f067d664aa946100a2bac87fa8c3d30b0ebdfb91ab8b521c030cd6f",
+    "storage": "content/materials/assets/teaching/logoSena.png"
+  },
+  {
+    "source": "Template/gracias.png",
+    "file": "/assets/teaching/gracias.png",
+    "sha256": "89856fe917f856e73ccdd8f47f84c3648c9b93f25532dcbf0c9bf877c2245894",
+    "storage": "content/materials/assets/teaching/gracias.png"
+  },
+  {
+    "source": "Template/Participacion.png",
+    "file": "/assets/teaching/Participacion.png",
+    "sha256": "af7f79abb71fbca19a41638faf9f5108b7055df685c59a098c9d374317fcdd30",
+    "storage": "content/materials/assets/teaching/Participacion.png"
+  },
+  {
+    "source": "Template/Comunicacion.png",
+    "file": "/assets/teaching/Comunicacion.png",
+    "sha256": "1d918295234a8ad1aa84becb978383fa4be373d34a88bf46423b0f21efaa8171",
+    "storage": "content/materials/assets/teaching/Comunicacion.png"
+  },
+  {
+    "source": "Template/OLxcolorList2.png",
+    "file": "/assets/teaching/OLxcolorList2.png",
+    "sha256": "ab717adf31643d4ffca9e20f3c7a66e7ecd4ba0260443d888cfa6acdba6a65d4",
+    "storage": "content/materials/assets/teaching/OLxcolorList2.png"
+  },
+  {
+    "source": "Template/fontawesome5Icons.pdf",
+    "file": "/assets/teaching/fontawesome5Icons.pdf",
+    "sha256": "a68b3ec68b921d8385b280c370f2f75cdb4d8989d9fb14a4da6124150c2caae8",
+    "storage": "content/materials/assets/teaching/fontawesome5Icons.pdf"
+  },
+  {
+    "source": "Template/LogoPoli.png",
+    "file": "/assets/teaching/LogoPoli.png",
+    "sha256": "94f4d29f94fa8347112056f414bf45ff1c132cd06a384769f6de439da229aa79",
+    "storage": "content/materials/assets/teaching/LogoPoli.png"
+  }
+]

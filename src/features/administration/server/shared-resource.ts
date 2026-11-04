@@ -1,0 +1,27 @@
+import {copyFileSync,existsSync,mkdirSync,readdirSync} from 'node:fs';
+import path from 'node:path';
+import {createHash} from 'node:crypto';
+import {dataDirectory} from './database';
+export type StoredResource={key:string;name:string;path:string;mime:string};
+export function sharedImage(name:string):StoredResource|null{
+ const folder=path.join(process.cwd(),'content/materials/assets/teaching');const base=path.basename(name.replace(/\\/g,'/')).toLowerCase();
+ const match=readdirSync(folder).find(file=>file.toLowerCase()===base&&/\.(png|jpe?g|webp)$/i.test(file));if(!match)return null;
+ const extension=path.extname(match).toLowerCase(),key=createHash('sha256').update(`shared:${match}`).digest('hex').slice(0,24);
+ return {key,name:match,path:path.join(folder,match),mime:extension==='.png'?'image/png':extension==='.webp'?'image/webp':'image/jpeg'};
+}
+export function cachedDiagramPath(hash:string):string|null{
+ const precompiled=path.join(process.cwd(),'content/materials/assets/diagrams',`${hash}.svg`);
+ if(existsSync(precompiled))return precompiled;
+ const cached=path.join(dataDirectory(),'cache/diagrams',`${hash}.svg`);
+ if(existsSync(cached))return cached;
+ return null;
+}
+export function cacheDiagram(hash:string,sourcePath:string):string{
+ try{
+  const dir=path.join(dataDirectory(),'cache/diagrams');
+  mkdirSync(dir,{recursive:true,mode:0o700});
+  const dest=path.join(dir,`${hash}.svg`);
+  if(path.resolve(sourcePath)!==path.resolve(dest))copyFileSync(sourcePath,dest);
+  return dest;
+ }catch{return sourcePath;}
+}

@@ -1,0 +1,147 @@
+/* Adapter for Aula surfaces. Semantic teaching colors and original artwork stay independent. */
+:root[data-palette][data-theme]{--code-bg:var(--card);--code-fg:var(--card-foreground);--code-gutter:color-mix(in srgb,var(--muted) 70%,var(--card));--code-muted:var(--muted-foreground);--code-active:var(--accent);--code-selection:color-mix(in srgb,var(--primary) 25%,var(--card));--brand-yellow:var(--primary);--brand-blue:var(--secondary)}
+:root[data-palette][data-theme] body{font-family:var(--font-sans,Arial,sans-serif);background:var(--background);color:var(--foreground);letter-spacing:var(--tracking-normal,0)}
+:root[data-palette][data-theme] :is(.stats-grid,.subject-card,.institution-card,.progress-lessons article,.topic-section,.search-box,.semester-badge,.reading-document,.lesson-paper,.admin-card,.login-card,.reading-index-dialog,.reader-floating-actions,.presentation-slide){background:var(--card);color:var(--card-foreground);border-color:var(--border);box-shadow:var(--shadow)}
+:root[data-palette][data-theme] .topbar{background:var(--card);color:var(--card-foreground);border-color:var(--border);box-shadow:var(--shadow-xs)}
+:root[data-palette][data-theme] :is(h1,.section-title h2,.card-body h3,.institution-card h3,.progress-lessons h3,.reader-heading h1,.reading-section-heading h2,.reading-frame h3,.lesson-paper h2,.slide-heading h2,.admin-card h2,.admin-lesson-heading h3,.login-card h2,.stats-grid strong,.semester-badge strong,.document-cover strong,.document-end h3,.topbar strong){color:var(--foreground);font-family:var(--font-sans,Inter,Arial,sans-serif)}
+:root[data-palette="clean-slate"][data-theme] :is(h1,.learning-banner h3,.lesson-paper h2){font-family:var(--font-serif,Georgia,serif)}
+:root[data-palette][data-theme] :is(.welcome-row p,.section-title p,.card-body>p,.card-meta,.card-meta svg,.card-progress>div:first-child,.stats-grid div>div>span,.semester-badge,.filter-row>span,.reader-heading p,.reading-mode-bar,.document-cover>div>span,.document-cover p,.document-end p,.import-details,.admin-heading p,.admin-help,.admin-list p,.admin-card small,.admin-steps>span,.admin-lesson-heading p,.login-card>p,.login-note,footer,.topbar>div,.topbar-right){color:var(--muted-foreground)}
+:root[data-palette][data-theme] :is(.eyebrow,.welcome-eyebrow,.reading-mode-bar>span:first-child,.back-link,.import-details a,.card-progress strong){color:var(--ring)}
+:root[data-palette][data-theme] :is(.card-progress,.reading-mode-bar,.document-cover,.reading-section-heading,.document-end,.admin-tabs,.admin-list>div,.publication-actions,.slide-footer,footer){border-color:var(--border)}
+:root[data-palette][data-theme] .sidebar{background:var(--sidebar);color:var(--sidebar-foreground);border-color:var(--sidebar-border)}
+:root[data-palette][data-theme] :is(.aula-wordmark,.sidebar .profile strong,.sidebar .profile small,.sidebar .profile svg,.sidebar .workspace-label,.sidebar .brand-credit,.sidebar .sidebar-dismiss,.sidebar .logout-button){color:var(--sidebar-foreground)}
+:root[data-palette][data-theme] .aula-wordmark>span{color:var(--sidebar-primary)}
+:root[data-palette][data-theme] :is(.sidebar .workspace-switch,.sidebar .sidebar-note){background:color-mix(in srgb,var(--sidebar-accent) 65%,var(--sidebar));border-color:var(--sidebar-border);color:var(--sidebar-foreground)}
+:root[data-palette][data-theme] :is(.sidebar .workspace-switch small,.sidebar .sidebar-note p,.sidebar .institution-link,.sidebar .institution-link svg,.sidebar nav button){color:var(--sidebar-foreground)}
+:root[data-palette][data-theme] :is(.sidebar .workspace-icon,.sidebar .sidebar-note>div,.sidebar nav button:not(.active) .nav-count){background:var(--sidebar-accent);color:var(--sidebar-accent-foreground)}
+:root[data-palette][data-theme] .sidebar .profile>span{background:var(--sidebar-accent);color:var(--sidebar-accent-foreground);border-color:var(--sidebar-border)}
+:root[data-palette][data-theme] .avatar-small{background:var(--muted);color:var(--foreground);border-color:var(--border)}
+:root[data-palette][data-theme] .sidebar nav button.active{background:var(--sidebar-primary);color:var(--sidebar-primary-foreground)}
+:root[data-palette][data-theme] .sidebar nav button.active .nav-count{background:color-mix(in srgb,var(--sidebar-primary-foreground) 14%,var(--sidebar-primary));color:var(--sidebar-primary-foreground)}
+:root[data-palette][data-theme] :is(.sidebar nav button:hover,.institution-link.selected,.institution-link:hover,.sidebar-dismiss:hover,.sidebar .logout-button:hover){background:var(--sidebar-accent);color:var(--sidebar-accent-foreground)}
+:root[data-palette][data-theme] :is(.sidebar-divider,.profile){border-color:var(--sidebar-border)}
+:root[data-palette][data-theme] .sidebar-divider{background:var(--sidebar-border)}
+:root[data-palette][data-theme] :is(.theme-toggle,.theme-selector,.navigation-toggle){background:var(--card);border:1px solid var(--border);color:var(--foreground)}
+:root[data-palette][data-theme] :is(.theme-toggle:hover,.navigation-toggle:hover){background:var(--accent);color:var(--accent-foreground)}
+:root[data-palette][data-theme] .ui-button[data-variant="default"]{background:var(--primary);color:var(--primary-foreground);border-color:var(--primary)}
+:root[data-palette][data-theme] .ui-button[data-variant="default"]:hover{filter:brightness(.94)}
+:root[data-palette][data-theme] .ui-button[data-variant="outline"]{background:var(--card);color:var(--card-foreground);border-color:var(--border)}
+:root[data-palette][data-theme] :is(.ui-button[data-variant="outline"]:hover,.ui-button[data-variant="ghost"]:hover){background:var(--accent);color:var(--accent-foreground)}
+:root[data-palette][data-theme] .ui-button[data-variant="ghost"]{color:var(--muted-foreground)}
+:root[data-palette][data-theme] :is(.filter-row button,.admin-tabs button){color:var(--muted-foreground);border-color:var(--border)}
+:root[data-palette][data-theme] :is(.filter-row button.selected,.admin-tabs button.selected){background:var(--primary);color:var(--primary-foreground);border-color:var(--primary)}
+:root[data-palette][data-theme] :is(.section-title h2 span,.admin-tabs button>span){background:var(--accent);color:var(--accent-foreground)}
+:root[data-palette][data-theme] .progress-track{background:var(--muted)}
+:root[data-palette][data-theme] :is(.progress-track i,.presentation-progress i,.welcome-eyebrow>span,.live-dot){background:var(--primary)}
+:root[data-palette][data-theme] :is(.card-art,.code .card-art,.learning-banner,.topic-title,.code-toolbar,.editor-note,.slide-heading,.reading-index-aside>header){background:color-mix(in srgb,var(--primary) 7%,var(--card));border-color:var(--border)}
+:root[data-palette][data-theme] :is(.learning-banner h3,.learning-banner .eyebrow,.learning-banner p,.topic-title h3,.code-toolbar>span,.code-toolbar button,.slide-heading span,.reading-index-aside h2,.reading-index-aside header p){color:var(--foreground)}
+:root[data-palette][data-theme] .banner-icon{background:var(--primary);color:var(--primary-foreground);border-color:var(--border)}
+:root[data-palette][data-theme] .banner-decoration{color:color-mix(in srgb,var(--primary) 25%,var(--card))}
+:root[data-palette][data-theme] .lesson-text,:root[data-palette][data-theme] .lesson-list{color:var(--card-foreground)}
+:root[data-palette][data-theme] .lesson-text strong{color:var(--card-foreground)}
+:root[data-palette][data-theme] :is(.lesson-text code,.lesson-list code,.lesson-table code){background:var(--muted);color:var(--foreground);border-color:var(--border)}
+:root[data-palette][data-theme] :is(.lesson-text a,.math-block,.read-marker,.diagram-source){color:var(--foreground)}
+:root[data-palette][data-theme] .read-marker.is-read{color:var(--chart-4)}
+:root[data-palette][data-theme] .reading-section-heading>span{background:var(--accent);color:var(--accent-foreground)}
+:root[data-palette][data-theme] .lesson-list li::marker{color:var(--ring)}
+:root[data-palette][data-theme] :is(.lesson-table th,.diagram-source pre){background:var(--muted);color:var(--foreground)}
+:root[data-palette][data-theme] :is(.lesson-table td,.lesson-table th){border-color:var(--border)}
+:root[data-palette][data-theme] .lesson-table tr:nth-child(even){background:var(--muted)}
+:root[data-palette][data-theme] :is(.login-card input,.admin-card input:not([type="checkbox"]),.admin-card select,.admin-card textarea){background:var(--card);color:var(--foreground);border-color:var(--border)}
+:root[data-palette][data-theme] :is(.login-card label,.admin-card label){color:var(--foreground)}
+:root[data-palette][data-theme] input:focus,:root[data-palette][data-theme] select:focus,:root[data-palette][data-theme] textarea:focus{outline-color:var(--ring);border-color:var(--ring)}
+:root[data-palette][data-theme] .search-box input{color:var(--foreground)}
+:root[data-palette][data-theme] .search-box input::placeholder{color:var(--muted-foreground)}
+:root[data-palette][data-theme] .login-intro{background:var(--sidebar);color:var(--sidebar-foreground)}
+:root[data-palette][data-theme] .login-intro h1{color:var(--sidebar-foreground)}
+:root[data-palette][data-theme] .login-intro h1 span{color:var(--sidebar-primary)}
+:root[data-palette][data-theme] :is(.login-intro>p,.login-features>span,.login-intro .eyebrow){color:var(--sidebar-foreground)}
+:root[data-palette][data-theme] .login-features svg{color:var(--sidebar-primary)}
+:root[data-palette][data-theme] :is(.reading-index-aside .outline-scroll button,.reading-index-aside .outline-scroll button>span){color:var(--muted-foreground)}
+:root[data-palette][data-theme] .reading-index-aside .outline-scroll button.current{background:var(--accent);color:var(--accent-foreground);border-color:var(--border)}
+:root[data-palette][data-theme] :is(.reading-index-aside>header,.reading-index-aside .outline-progress){border-color:var(--border)}
+:root[data-palette][data-theme] .reading-index-aside header button{background:var(--muted);color:var(--foreground)}
+:root[data-palette][data-theme] :is(.reading-index-aside .outline-scroll button:hover,.reading-index-aside header button:hover){background:var(--accent);color:var(--accent-foreground)}
+:root[data-palette][data-theme] :is(.presentation-dialog,.presentation-toolbar,.presentation-controls){background:var(--sidebar);color:var(--sidebar-foreground);border-color:var(--sidebar-border)}
+:root[data-palette][data-theme] .presentation-dialog::backdrop{background:var(--sidebar)}
+:root[data-palette][data-theme] .presentation-toolbar img{border-right-color:var(--sidebar-border)}
+:root[data-palette][data-theme] .presentation-progress{background:var(--sidebar-border)}
+:root[data-palette][data-theme] :is(.presentation-toolbar span,.presentation-toolbar .ui-button,.presentation-controls .ui-button,.slide-shortcuts){color:var(--sidebar-foreground)}
+:root[data-palette][data-theme] :is(.presentation-toolbar .theme-toggle,.presentation-toolbar .theme-selector,.slide-select-label select){background:var(--sidebar-accent);color:var(--sidebar-foreground);border-color:var(--sidebar-border)}
+:root[data-palette][data-theme] .slide-heading{border-top-color:var(--primary)}
+:root[data-palette][data-theme] .slide-footer{color:var(--muted-foreground)}
+:root[data-palette][data-theme] .footer-signature{background:transparent;padding:0}
+.theme-controls{display:flex;align-items:center;gap:8px;min-width:0;flex-shrink:0}.theme-selector{height:33px;width:auto;max-width:176px;min-width:0;border-radius:7px;font-size:11px;padding:0 8px;cursor:pointer}.theme-controls .theme-toggle{margin-right:0}.topbar-right>.theme-controls{margin-right:10px}
+@media(max-width:650px){.theme-controls{gap:5px}.theme-selector{width:125px;max-width:125px;font-size:10px;padding:0 5px}.topbar-right>.theme-controls{margin-right:0}.presentation-toolbar .theme-selector{width:108px;max-width:108px}}
+@media(max-width:380px){.theme-selector{width:110px;max-width:110px}.presentation-toolbar{padding-left:8px;padding-right:8px}.presentation-toolbar>div:first-child img{width:64px;padding-right:0;border:0}.presentation-toolbar .theme-selector{width:94px;max-width:94px;font-size:9px}.presentation-toolbar .theme-controls{gap:4px}.presentation-toolbar .theme-toggle{width:30px;padding:0}.presentation-toolbar>div:last-child{gap:3px}}
+
+/* microROS Studio's actual component semantics: muted buttons and input controls,
+   rather than accent hovers (the Invincible accent is red). */
+:root[data-palette][data-theme] :is(.theme-toggle,.ui-button[data-variant="outline"]){background:var(--muted);color:var(--foreground);border-color:var(--border)}
+:root[data-palette][data-theme] :is(.theme-toggle:hover,.ui-button[data-variant="outline"]:hover,.ui-button[data-variant="ghost"]:hover,.navigation-toggle:hover){background:var(--muted);color:var(--foreground)}
+:root[data-palette][data-theme] .ui-button[data-variant="default"]:hover{background:var(--primary);filter:none}
+:root[data-palette][data-theme] :is(.theme-selector,.login-card input,.admin-card input:not([type="checkbox"]),.admin-card select,.admin-card textarea){background:var(--input);color:var(--foreground)}
+:root[data-palette][data-theme] :is(.theme-toggle,.theme-selector,.ui-button,.navigation-toggle):focus-visible{outline:2px solid var(--ring);outline-offset:2px;--tw-ring-color:var(--ring)}
+:root[data-palette][data-theme] .theme-toggle{width:36px;height:36px;min-width:36px;padding:0;margin-right:0;flex-shrink:0}
+:root[data-palette][data-theme] .theme-selector{height:36px}
+:root[data-palette][data-theme] .theme-toggle svg{width:16px;height:16px}
+:root[data-palette][data-theme] :is(.presentation-toolbar .theme-toggle,.presentation-toolbar .theme-selector){background:var(--sidebar-accent);color:var(--sidebar-foreground);border-color:var(--sidebar-border)}
+:root[data-palette][data-theme] :is(.presentation-toolbar .theme-toggle:hover,.presentation-toolbar .ui-button[data-variant="ghost"]:hover,.presentation-controls .ui-button[data-variant="ghost"]:hover){background:color-mix(in srgb,var(--sidebar-foreground) 14%,var(--sidebar-accent));color:var(--sidebar-foreground)}
+:root[data-palette][data-theme] :is(.eyebrow,.back-link,.import-details a,.card-progress strong,.institution-card>span:last-child,.footer-brand){color:var(--ring)}
+:root[data-palette][data-theme="dark"] :is(.eyebrow,.back-link,.import-details a,.card-progress strong,.institution-card>span:last-child,.footer-brand){color:var(--primary)}
+:root[data-palette][data-theme] .stat-icon.sage{background:color-mix(in srgb,var(--chart-1) 16%,var(--card));color:var(--chart-1)}
+:root[data-palette][data-theme] .stat-icon.sand{background:color-mix(in srgb,var(--chart-2) 16%,var(--card));color:var(--chart-2)}
+:root[data-palette][data-theme] .stat-icon.lilac{background:color-mix(in srgb,var(--chart-3) 16%,var(--card));color:var(--chart-3)}
+:root[data-palette][data-theme] .stat-icon.blue{background:color-mix(in srgb,var(--chart-4) 16%,var(--card));color:var(--chart-4)}
+:root[data-palette][data-theme] .card-art{background:color-mix(in srgb,var(--chart-1) 14%,var(--card))}
+:root[data-palette][data-theme] .code .card-art{background:color-mix(in srgb,var(--chart-2) 14%,var(--card))}
+:root[data-palette][data-theme] :is(.institution-tag,.code .institution-tag){background:color-mix(in srgb,var(--card) 90%,transparent);color:var(--foreground);border-color:var(--border)}
+:root[data-palette][data-theme] .robot-illustration{color:var(--chart-1)}
+:root[data-palette][data-theme] .robot-illustration>svg{background:var(--card);border-color:color-mix(in srgb,var(--chart-1) 38%,var(--border));box-shadow:var(--shadow-sm)}
+:root[data-palette][data-theme] .robot-illustration>span{color:var(--muted-foreground)}
+:root[data-palette][data-theme] .orbit{border-color:color-mix(in srgb,var(--chart-1) 42%,var(--border))}
+:root[data-palette][data-theme] .node{background:var(--chart-1);border-color:var(--card)}
+:root[data-palette][data-theme] .node-three{background:var(--chart-2)}
+:root[data-palette][data-theme] .mini-browser{background:var(--card);border-color:var(--border);box-shadow:var(--shadow-sm)}
+:root[data-palette][data-theme] .browser-dots{border-bottom-color:var(--border)}
+:root[data-palette][data-theme] .browser-dots i{background:var(--chart-2)}
+:root[data-palette][data-theme] .mini-layout>div{background:color-mix(in srgb,var(--chart-1) 24%,var(--muted));border-color:color-mix(in srgb,var(--chart-1) 42%,var(--border))}
+:root[data-palette][data-theme] .mini-layout>div:nth-child(2){background:color-mix(in srgb,var(--chart-2) 24%,var(--muted));border-color:color-mix(in srgb,var(--chart-2) 42%,var(--border))}
+:root[data-palette][data-theme] .mini-layout>div:nth-child(3){background:var(--muted);border-color:var(--border)}
+:root[data-palette][data-theme] .mini-lines i{background:var(--muted)}
+:root[data-palette][data-theme] .web-illustration>span{background:var(--card);color:var(--ring);border-color:var(--border)}
+:root[data-palette][data-theme] .admin-role{background:color-mix(in srgb,var(--primary) 18%,var(--card));color:var(--foreground);border-color:color-mix(in srgb,var(--primary) 42%,var(--border))}
+:root[data-palette][data-theme] .admin-lesson-list>article{background:color-mix(in srgb,var(--muted) 35%,var(--card));border-color:var(--border)}
+:root[data-palette][data-theme] .admin-card input[type="file"]{background:var(--muted);color:var(--foreground);border-color:var(--border)}
+:root[data-palette][data-theme] .admin-card input[type="file"]::file-selector-button{background:var(--card);color:var(--foreground);border-color:var(--border)}
+:root[data-palette][data-theme] :is(.reader-actions>.ui-button[data-variant="default"],.reading-tools .ui-button[data-variant="default"]){background:var(--primary);color:var(--primary-foreground);border-color:var(--primary)}
+:root[data-palette][data-theme] .reading-tools .ui-button[data-variant="outline"]{background:var(--muted);color:var(--foreground);border-color:var(--border)}
+:root[data-palette][data-theme] .empty-state{color:var(--muted-foreground);border-color:var(--border)}
+:root[data-palette][data-theme] .empty-state h3{color:var(--foreground)}
+.presentation-dialog.is-fullscreen :is(.presentation-toolbar,.presentation-controls){display:none}
+.presentation-fullscreen-exit{position:fixed;right:18px;bottom:14px;z-index:10;display:inline-flex;align-items:center;gap:6px;padding:6px 11px;border-radius:7px;font-size:11px;background:color-mix(in srgb,var(--sidebar,#14274b) 85%,transparent);color:var(--sidebar-foreground,#e5edfa);border:1px solid var(--sidebar-border,#3a4e70);opacity:.45;transition:opacity .15s;backdrop-filter:blur(4px)}
+.presentation-fullscreen-exit:hover,.presentation-fullscreen-exit:focus-visible{opacity:1;background:var(--sidebar-accent,#2b4267);color:var(--sidebar-foreground,#fff)}
+.admin-steps button{background:transparent;color:var(--muted-foreground,#58739b);font-size:11px;padding:3px 6px;border-radius:5px;transition:color .15s,background .15s}
+.admin-steps button:hover:not(:disabled){color:var(--foreground,#172338);background:var(--muted,#e8edf6)}
+.admin-steps button.active{color:var(--foreground,#172338);font-weight:600;background:var(--muted,#e8edf6)}
+.admin-steps button:disabled,.admin-tabs button:disabled{opacity:.42;cursor:not-allowed}
+.admin-two-columns{grid-template-columns:minmax(0,1.4fr) minmax(320px,.9fr);gap:26px;align-items:start}
+@media(max-width:1100px){.admin-two-columns{grid-template-columns:1fr}}
+.admin-card-header{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;margin-bottom:18px}
+.admin-card-header .eyebrow{margin-bottom:6px;font-size:9px;letter-spacing:1.3px}
+.admin-card-header h2{margin:0}
+.admin-count-badge{display:inline-flex;align-items:center;padding:5px 10px;border-radius:999px;font-size:11px;font-weight:600;background:color-mix(in srgb,var(--primary) 16%,var(--card));color:var(--foreground);border:1px solid color-mix(in srgb,var(--primary) 38%,var(--border));white-space:nowrap}
+.admin-card.admin-established{border-top:3px solid var(--primary);box-shadow:var(--shadow-md);padding:28px}
+.admin-card.admin-create,.admin-create-stack>.admin-card{background:color-mix(in srgb,var(--muted) 28%,var(--card));border-style:dashed;border-color:color-mix(in srgb,var(--border) 88%,var(--foreground));padding:22px}
+.admin-create-stack{display:grid;gap:20px}
+.admin-established .admin-list{display:grid;gap:10px;margin-top:8px}
+.admin-established .admin-list>div{padding:15px 16px;border:1px solid var(--border);border-radius:10px;background:color-mix(in srgb,var(--muted) 22%,var(--card));transition:border-color .15s,background .15s,transform .15s}
+.admin-established .admin-list>div:hover,.admin-established .admin-list>div.is-active{border-color:color-mix(in srgb,var(--primary) 55%,var(--border));background:color-mix(in srgb,var(--primary) 8%,var(--card))}
+.admin-established .admin-list strong{font-size:13.5px}
+.admin-established .topic-edit{padding:10px 12px;border:1px solid var(--border);border-radius:9px;background:color-mix(in srgb,var(--muted) 22%,var(--card))}
+.admin-established .topic-edit.is-active{border-color:color-mix(in srgb,var(--primary) 55%,var(--border))}
+.admin-established .topic-edit>span{font-weight:700;color:var(--primary);width:22px}
+.admin-card.admin-moderation{border-top:3px solid #dc2626;background:color-mix(in srgb,#ef4444 4%,var(--card))}
+.assignment-row{display:flex;align-items:center;justify-content:space-between;padding:4px 0}
+.assignment-row.is-banned{opacity:.75}
+.moderation-ban-form{display:grid;gap:12px;margin-top:10px}

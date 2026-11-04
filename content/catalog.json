@@ -1,0 +1,14 @@
+{
+ "institutions":[
+  {"id":"politecnico","name":"Politécnico Colombiano Jaime Isaza Cadavid","shortName":"Politécnico","city":"Medellín, Colombia","color":"blue"},
+  {"id":"sena","name":"Servicio Nacional de Aprendizaje","shortName":"SENA","city":"Colombia","color":"green"}
+ ],
+ "subjects":[
+  {"id":"robotica-servicio","institutionId":"politecnico","name":"Robótica del Servicio","code":"ING 01335","description":"Del modelo matemático al movimiento. Explora los fundamentos de ROS 2, nodos, tópicos y mensajes.","icon":"robot","topics":[{"id":"ros2","name":"Fundamentos de ROS 2"}]},
+  {"id":"diseno-web-1","institutionId":"sena","name":"Diseño Web 1","code":"ADSO-CTMA","description":"Construye interfaces para la web. Aprende a distribuir, alinear y organizar elementos con CSS Flexbox.","icon":"code","topics":[{"id":"css-layout","name":"Distribución y diseño con CSS"}]}
+ ],
+ "lessons":[
+  {"id":"fundamentos-ros2","title":"Fundamentos de ROS 2","subtitle":"Clase 4 · Humble y Turtlesim","institutionId":"politecnico","subjectId":"robotica-servicio","topicId":"ros2","source":"content/institutions/politecnico/subjects/robotica-servicio/topics/ros2/classes/fundamentos-ros2/sources/Servicio_3.tex","pdf":"/resources/servicio-3.pdf"},
+  {"id":"flexbox","title":"Flexbox, de los ejes al layout","subtitle":"Clase 6 · Contenedores y elementos flex","institutionId":"sena","subjectId":"diseno-web-1","topicId":"css-layout","source":"content/institutions/sena/subjects/diseno-web-1/topics/css-layout/classes/flexbox/sources/Web1_7.tex","pdf":"/resources/web1-7.pdf"}
+ ]
+}

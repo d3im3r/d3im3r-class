@@ -1,0 +1,3186 @@
+\documentclass[aspectratio=169]{beamer}
+
+% =========================================================
+% TEMPLATE INSTITUCIONAL
+% =========================================================
+% Compilar con XeLaTeX/LuaLaTeX y -shell-escape si se usan bloques minted.
+\input{~/Dropbox/Latex/TemplateSlides/template-slide.tex}
+
+% =========================================================
+% CONFIGURACIÓN DEL CURSO
+% =========================================================
+\renewcommand{\CourseName}{Robótica del Servicio}
+\renewcommand{\CourseCode}{ING 01335}
+\renewcommand{\Faculty}{Facultad de Ingeniería}
+\renewcommand{\Institution}{Politécnico Colombiano Jaime Isaza Cadavid}
+\renewcommand{\Instructor}{Deimer Miranda Montoya, MSc.(c).}
+\renewcommand{\Email}{deimer\_miranda91162@elpoli.edu.co}
+\renewcommand{\InstitutionLogo}{Template/LogoPoli.png}
+
+\title{Robótica del Servicio}
+\subtitle{Clase 4: Fundamentos de ROS 2 Humble con Turtlesim}
+\author{\Instructor}
+\institute{\Institution\\\Faculty}
+\date{2026-2}
+
+\begin{document}
+
+\TitleSlide
+%\NormasSlide
+
+% =========================================================
+\section{Clase 4}
+
+\SectionSlide
+{Clase 4: Fundamentos de ROS 2 Humble}
+{Del modelo matemático al mensaje robótico}
+
+% =========================================================
+\begin{frame}{Propósito de la clase}
+
+    Al finalizar esta sesión, el estudiante estará en capacidad de:
+
+    \begin{itemize}
+        \item reconocer la función de ROS 2 dentro de un sistema robótico;
+        \item diferenciar nodos, tópicos y mensajes;
+        \item ejecutar comandos básicos de ROS 2 desde terminal;
+        \item inspeccionar nodos y tópicos activos;
+        \item controlar Turtlesim mediante mensajes de velocidad;
+        \item observar la pose publicada por el simulador;
+        \item relacionar velocidad lineal, velocidad angular y movimiento.
+    \end{itemize}
+
+    \vspace{0.3cm}
+
+    \Idea{
+        ROS 2 no reemplaza el modelo matemático del robot. ROS 2 permite
+        implementar, comunicar y observar los componentes que usan ese modelo.
+    }
+
+\end{frame}
+
+% =========================================================
+\section{Conexión con las clases anteriores}
+
+\SectionSlide
+{Conexión matemática}
+{Posición, orientación y movimiento}
+
+% =========================================================
+\begin{frame}{¿Qué sabemos hasta ahora?}
+
+    En las clases anteriores trabajamos:
+
+    \begin{itemize}
+        \item puntos y vectores en el plano;
+        \item distancia euclidiana;
+        \item dirección mediante $\operatorname{atan2}$;
+        \item coordenadas cartesianas y polares;
+        \item matriz de rotación $R(\theta)$;
+        \item sistemas de referencia local y global.
+    \end{itemize}
+
+    \vspace{0.3cm}
+
+    \Result{
+        Ahora comenzaremos a representar computacionalmente estas ideas usando
+        ROS 2 y Turtlesim.
+    }
+
+\end{frame}
+
+% =========================================================
+\begin{frame}{La idea central de la sesión}
+
+    \[
+    \text{Modelo matemático}
+    \rightarrow
+    \text{Mensaje}
+    \rightarrow
+    \text{Tópico}
+    \rightarrow
+    \text{Movimiento}
+    \]
+
+    \vspace{0.4cm}
+
+    \begin{center}
+        \begin{tikzpicture}[
+            node distance=1.25cm,
+            box/.style={
+                draw=BrandBlue,
+                thick,
+                rounded corners,
+                minimum width=2.8cm,
+                minimum height=0.9cm,
+                align=center
+            },
+            arrow/.style={
+                -{Latex[length=3mm]},
+                thick,
+                BrandBlue
+            }
+            ]
+
+            \node[box] (math) {Modelo\\matemático};
+            \node[box, right=of math] (msg) {Mensaje\\ROS 2};
+            \node[box, right=of msg] (topic) {Tópico};
+            \node[box, right=of topic] (move) {Movimiento};
+
+            \draw[arrow] (math) -- (msg);
+            \draw[arrow] (msg) -- (topic);
+            \draw[arrow] (topic) -- (move);
+
+        \end{tikzpicture}
+    \end{center}
+
+    \vspace{0.3cm}
+
+    \Idea{
+        El movimiento de un robot puede comenzar como una ecuación, pero en ROS 2
+        debe expresarse como un mensaje que viaja por un tópico.
+    }
+
+\end{frame}
+
+% =========================================================
+\section{¿Qué es ROS 2?}
+
+\SectionSlide
+{¿Qué es ROS 2?}
+{Infraestructura para sistemas robóticos distribuidos}
+
+% =========================================================
+\begin{frame}{¿Qué problema ayuda a resolver ROS 2?}
+
+    Un robot real no suele ser un único programa.
+
+    Normalmente está formado por varios componentes:
+
+    \begin{itemize}
+        \item sensores;
+        \item actuadores;
+        \item algoritmos de control;
+        \item estimación de posición;
+        \item navegación;
+        \item visualización;
+        \item registro de datos.
+    \end{itemize}
+
+    \vspace{0.3cm}
+
+    \Idea{
+        ROS 2 permite que estos componentes se comuniquen de forma organizada.
+    }
+
+\end{frame}
+
+% =========================================================
+\begin{frame}{Robot como sistema distribuido}
+
+    \begin{center}
+        \begin{tikzpicture}[
+            node distance=1.0cm,
+            box/.style={
+                draw=BrandBlue,
+                thick,
+                rounded corners,
+                minimum width=2.8cm,
+                minimum height=0.85cm,
+                align=center
+            },
+            smallbox/.style={
+                draw=BrandGreen,
+                thick,
+                rounded corners,
+                minimum width=2.4cm,
+                minimum height=0.75cm,
+                align=center
+            },
+            arrow/.style={
+                -{Latex[length=2.5mm]},
+                thick,
+                BrandBlue
+            }
+            ]
+
+            \node[box] (ros) {ROS 2};
+
+            \node[smallbox, above left=of ros] (sensores) {Sensores};
+            \node[smallbox, above right=of ros] (control) {Control};
+            \node[smallbox, below left=of ros] (nav) {Navegación};
+            \node[smallbox, below right=of ros] (viz) {Visualización};
+
+            \draw[arrow] (sensores) -- (ros);
+            \draw[arrow] (ros) -- (control);
+            \draw[arrow] (nav) -- (ros);
+            \draw[arrow] (ros) -- (viz);
+
+        \end{tikzpicture}
+    \end{center}
+
+    \vspace{0.3cm}
+
+    \DefBlock[ROS 2]{
+        ROS 2 es una infraestructura de software que permite construir sistemas
+        robóticos a partir de procesos que se comunican mediante mensajes.
+    }
+
+\end{frame}
+
+% =========================================================
+\begin{frame}{ROS 2 no es el robot}
+
+    ROS 2 no es:
+
+    \begin{itemize}
+        \item un robot físico;
+        \item un simulador por sí solo;
+        \item un lenguaje de programación;
+        \item un controlador automático mágico.
+    \end{itemize}
+
+    \vspace{0.3cm}
+
+    ROS 2 es una infraestructura para:
+
+    \begin{itemize}
+        \item ejecutar procesos;
+        \item comunicar módulos;
+        \item transportar datos;
+        \item observar el estado del sistema;
+        \item organizar software robótico.
+    \end{itemize}
+
+\end{frame}
+
+% =========================================================
+\begin{frame}{De la matemática al sistema}
+
+    Por ejemplo, en un robot móvil podemos tener:
+
+    \[
+    v
+    \]
+
+    como velocidad lineal y:
+
+    \[
+    \omega
+    \]
+
+    como velocidad angular.
+
+    Pero ROS 2 necesita enviar estas cantidades dentro de un mensaje.
+
+    \vspace{0.3cm}
+
+    \[
+    (v,\omega)
+    \rightarrow
+    \texttt{Twist}
+    \rightarrow
+    \texttt{/cmd\_vel}
+    \rightarrow
+    \text{movimiento}
+    \]
+
+    \vspace{0.3cm}
+
+    \Result{
+        La matemática define qué queremos hacer. ROS 2 define cómo lo comunicamos
+        entre componentes.
+    }
+
+\end{frame}
+
+% =========================================================
+\section{Conceptos fundamentales}
+
+\SectionSlide
+{Conceptos fundamentales}
+{Nodo, tópico y mensaje}
+
+% =========================================================
+\begin{frame}{Nodo}
+
+    Un nodo es un proceso que ejecuta una tarea específica dentro de ROS 2.
+
+    En lugar de construir un único programa grande para todo el robot, ROS 2
+    permite dividir el sistema en varios nodos especializados.
+
+    \vspace{0.3cm}
+
+    \DefBlock[Nodo]{
+        Un nodo es una unidad de ejecución. Cada nodo se encarga de una parte
+        concreta del sistema robótico y puede comunicarse con otros nodos.
+    }
+
+\end{frame}
+
+% =========================================================
+\begin{frame}{Nodo: idea robótica}
+
+    En un robot móvil podríamos tener:
+
+    \begin{itemize}
+        \item un nodo que lee sensores de distancia;
+        \item un nodo que estima la posición del robot;
+        \item un nodo que calcula una acción de control;
+        \item un nodo que envía velocidades a los motores;
+        \item un nodo que registra datos para análisis posterior.
+    \end{itemize}
+
+    \vspace{0.3cm}
+
+    \Idea{
+        Cada nodo tiene una responsabilidad clara. Esto facilita probar,
+        corregir y reemplazar partes del sistema sin modificar todo el robot.
+    }
+
+\end{frame}
+
+% =========================================================
+\begin{frame}{Nodo: separación de responsabilidades}
+
+    \begin{center}
+        \begin{tikzpicture}[
+            node distance=1.0cm,
+            nodebox/.style={
+                ellipse,
+                draw=BrandBlue,
+                thick,
+                minimum width=3.0cm,
+                minimum height=1.0cm,
+                align=center
+            },
+            arrow/.style={
+                -{Latex[length=3mm]},
+                thick,
+                BrandBlue
+            }
+            ]
+
+            \node[nodebox] (sens) {Lectura\\sensores};
+            \node[nodebox, right=of sens] (est) {Estimación\\pose};
+            \node[nodebox, right=of est] (ctrl) {Control\\movimiento};
+
+            \draw[arrow] (sens) -- (est);
+            \draw[arrow] (est) -- (ctrl);
+
+        \end{tikzpicture}
+    \end{center}
+
+    \vspace{0.3cm}
+
+    \Result{
+        Un sistema robótico se vuelve más organizado cuando cada nodo cumple
+        una función específica.
+    }
+
+\end{frame}
+
+% =========================================================
+\begin{frame}{Tópico}
+
+    Un tópico es un canal de comunicación por donde viajan mensajes.
+
+    Los nodos pueden:
+
+    \begin{itemize}
+        \item publicar información en un tópico;
+        \item suscribirse a un tópico para recibir información.
+    \end{itemize}
+
+    \vspace{0.3cm}
+
+    \DefBlock[Tópico]{
+        Un tópico no ejecuta cálculos. Su función es transportar mensajes
+        entre nodos que producen información y nodos que la necesitan.
+    }
+
+\end{frame}
+
+% =========================================================
+\begin{frame}{Tópico: analogía}
+
+    Puede pensarse en un tópico como un canal con un nombre.
+
+    Por ejemplo:
+
+    \[
+    \texttt{/turtle1/cmd\_vel}
+    \]
+
+    es el canal por donde se envían comandos de velocidad.
+
+    \[
+    \texttt{/turtle1/pose}
+    \]
+
+    es el canal por donde Turtlesim publica posición y orientación.
+
+    \vspace{0.3cm}
+
+    \Idea{
+        En ROS 2 no basta con tener datos. Es necesario saber en qué tópico
+        se publican y qué tipo de mensaje transportan.
+    }
+
+\end{frame}
+
+% =========================================================
+\begin{frame}{Comunicación por tópicos}
+
+    \begin{center}
+        \begin{tikzpicture}[
+            node distance=1.8cm,
+            nodebox/.style={
+                ellipse,
+                draw=BrandBlue,
+                thick,
+                minimum width=3.0cm,
+                minimum height=1.05cm,
+                align=center
+            },
+            topicbox/.style={
+                rectangle,
+                draw=BrandYellow,
+                thick,
+                minimum width=3.0cm,
+                minimum height=0.9cm,
+                align=center
+            },
+            arrow/.style={
+                -{Latex[length=3mm]},
+                thick,
+                BrandBlue
+            }
+            ]
+
+            \node[nodebox] (pub) {Nodo\\publicador};
+            \node[topicbox, right=of pub] (topic) {Tópico};
+            \node[nodebox, right=of topic] (sub) {Nodo\\suscriptor};
+
+            \draw[arrow] (pub) -- node[above] {mensaje} (topic);
+            \draw[arrow] (topic) -- node[above] {mensaje} (sub);
+
+        \end{tikzpicture}
+    \end{center}
+
+    \vspace{0.3cm}
+
+    \Idea{
+        El publicador no necesita saber quién recibe el mensaje. El suscriptor
+        solo necesita conocer el tópico al cual escuchar.
+    }
+
+\end{frame}
+
+% =========================================================
+\begin{frame}{Varios nodos pueden usar el mismo tópico}
+
+    Un mismo tópico puede tener:
+
+    \begin{itemize}
+        \item varios publicadores;
+        \item varios suscriptores;
+        \item un publicador y múltiples consumidores de información.
+    \end{itemize}
+
+    \vspace{0.2cm}
+
+    \begin{center}
+        \begin{tikzpicture}[
+            node distance=0.9cm,
+            nodebox/.style={
+                ellipse,
+                draw=BrandBlue,
+                thick,
+                minimum width=2.7cm,
+                minimum height=0.9cm,
+                align=center
+            },
+            topicbox/.style={
+                rectangle,
+                draw=BrandYellow,
+                thick,
+                minimum width=3.2cm,
+                minimum height=0.9cm,
+                align=center
+            },
+            arrow/.style={
+                -{Latex[length=2.6mm]},
+                thick,
+                BrandBlue
+            }
+            ]
+
+            \node[topicbox] (topic) {\texttt{/turtle1/pose}};
+
+            \node[nodebox, above left=of topic] (sim) {Turtlesim};
+            \node[nodebox, below left=of topic] (log) {Registro\\datos};
+            \node[nodebox, above right=of topic] (echo) {Terminal\\echo};
+            \node[nodebox, below right=of topic] (plot) {Gráfica\\Python};
+
+            \draw[arrow] (sim) -- (topic);
+            \draw[arrow] (topic) -- (echo);
+            \draw[arrow] (topic) -- (plot);
+            \draw[arrow] (topic) -- (log);
+
+        \end{tikzpicture}
+    \end{center}
+
+\end{frame}
+
+% =========================================================
+\begin{frame}{Mensaje}
+
+    Un mensaje define la estructura de los datos que viajan por un tópico.
+
+    No todos los tópicos transportan el mismo tipo de información.
+
+    \vspace{0.3cm}
+
+    Por ejemplo:
+
+    \[
+    \texttt{/turtle1/cmd\_vel}
+    \]
+
+    transporta un mensaje de velocidad.
+
+    \[
+    \texttt{/turtle1/pose}
+    \]
+
+    transporta un mensaje de posición y orientación.
+
+    \vspace{0.3cm}
+
+    \DefBlock[Mensaje]{
+        Un mensaje es el formato de datos que ROS 2 utiliza para comunicar
+        nodos. Define qué campos existen y qué tipo de dato tiene cada campo.
+    }
+
+\end{frame}
+
+% =========================================================
+\begin{frame}{Mensaje: estructura}
+
+    Un mensaje no es solo un número. Puede contener varios campos.
+
+    Por ejemplo, un mensaje de velocidad tipo \texttt{Twist} contiene:
+
+    \[
+    \texttt{linear}
+    \qquad
+    \text{y}
+    \qquad
+    \texttt{angular}
+    \]
+
+    \vspace{0.2cm}
+
+    Cada parte puede tener componentes en:
+
+    \[
+    x,\quad y,\quad z
+    \]
+
+    \vspace{0.3cm}
+
+    \Idea{
+        Para mover Turtlesim en el plano usaremos principalmente
+        \texttt{linear.x} y \texttt{angular.z}.
+    }
+
+\end{frame}
+
+% =========================================================
+\begin{frame}{Mensaje: relación con la matemática}
+
+    En robótica móvil plana usamos:
+
+    \[
+    v
+    \]
+
+    para velocidad lineal, y:
+
+    \[
+    \omega
+    \]
+
+    para velocidad angular.
+
+    En ROS 2 estas variables se escriben dentro del mensaje:
+
+    \[
+    v \rightarrow \texttt{linear.x}
+    \]
+
+    \[
+    \omega \rightarrow \texttt{angular.z}
+    \]
+
+    \vspace{-0.3cm}
+
+    \Result{
+        La matemática define la variable. El mensaje define cómo esa variable
+        viaja dentro del sistema ROS 2.
+    }
+
+\end{frame}
+
+% =========================================================
+\begin{frame}{Publicador}
+
+    Un publicador es la parte de un nodo que envía mensajes a un tópico.
+
+    Ejemplo:
+
+    \[
+    \texttt{/teleop\_turtle}
+    \]
+
+    publica comandos de velocidad en:
+
+    \[
+    \texttt{/turtle1/cmd\_vel}
+    \]
+
+    \vspace{0.3cm}
+
+    \DefBlock[Publicador]{
+        Un publicador produce mensajes y los coloca en un tópico específico.
+    }
+
+\end{frame}
+
+% =========================================================
+\begin{frame}{Suscriptor}
+
+    Un suscriptor es la parte de un nodo que recibe mensajes desde un tópico.
+
+    Ejemplo:
+
+    \[
+    \texttt{/turtlesim}
+    \]
+
+    se suscribe al tópico:
+
+    \[
+    \texttt{/turtle1/cmd\_vel}
+    \]
+
+    para recibir velocidades y mover la tortuga.
+
+    \vspace{0.3cm}
+
+    \DefBlock[Suscriptor]{
+        Un suscriptor escucha un tópico y ejecuta una acción cuando recibe
+        un mensaje.
+    }
+
+\end{frame}
+
+% =========================================================
+\begin{frame}{Publicador y suscriptor}
+
+    \begin{columns}[T]
+
+        \begin{column}{0.48\textwidth}
+
+            \textbf{Publicador}
+
+            \begin{itemize}
+                \item genera datos;
+                \item los envía a un tópico;
+                \item no controla directamente quién los recibe.
+            \end{itemize}
+
+            \[
+            \texttt{publish()}
+            \]
+
+        \end{column}
+
+        \begin{column}{0.48\textwidth}
+
+            \textbf{Suscriptor}
+
+            \begin{itemize}
+                \item escucha un tópico;
+                \item recibe mensajes;
+                \item procesa la información recibida.
+            \end{itemize}
+
+            \[
+            \texttt{subscribe()}
+            \]
+
+        \end{column}
+
+    \end{columns}
+
+    \vspace{0.3cm}
+
+    \Result{
+        Este patrón será la base de casi todo el trabajo con ROS 2.
+    }
+
+\end{frame}
+
+% =========================================================
+\begin{frame}{Ejemplo completo en Turtlesim}
+
+    \begin{center}
+        \begin{tikzpicture}[
+            node distance=1.2cm,
+            nodebox/.style={
+                ellipse,
+                draw=BrandBlue,
+                thick,
+                minimum width=3.0cm,
+                minimum height=1.0cm,
+                align=center
+            },
+            topicbox/.style={
+                rectangle,
+                draw=BrandYellow,
+                thick,
+                minimum width=3.4cm,
+                minimum height=0.9cm,
+                align=center
+            },
+            arrow/.style={
+                -{Latex[length=2.8mm]},
+                thick,
+                BrandBlue
+            }
+            ]
+
+            \node[nodebox] (teleop) {\texttt{/teleop\_turtle}};
+            \node[topicbox, right=of teleop] (cmd) {\texttt{/turtle1/cmd\_vel}};
+            \node[nodebox, right=of cmd] (sim) {\texttt{/turtlesim}};
+
+            \node[topicbox, below=of sim] (pose) {\texttt{/turtle1/pose}};
+            \node[nodebox, left=of pose] (echo) {\texttt{ros2 topic echo}};
+
+            \draw[arrow] (teleop) -- node[above] {\texttt{Twist}} (cmd);
+            \draw[arrow] (cmd) -- node[above] {\texttt{Twist}} (sim);
+            \draw[arrow] (sim) -- node[right] {\texttt{Pose}} (pose);
+            \draw[arrow] (pose) -- node[below] {\texttt{Pose}} (echo);
+
+        \end{tikzpicture}
+    \end{center}
+
+\end{frame}
+
+% =========================================================
+\begin{frame}{Lectura del diagrama}
+
+    En el diagrama anterior:
+
+    \begin{itemize}
+        \item \texttt{/teleop\_turtle} es un nodo;
+        \item \texttt{/turtle1/cmd\_vel} es un tópico;
+        \item el mensaje que viaja allí es \texttt{Twist};
+        \item \texttt{/turtlesim} recibe ese mensaje;
+        \item \texttt{/turtlesim} publica la pose en \texttt{/turtle1/pose};
+        \item la terminal puede suscribirse para observar esa pose.
+    \end{itemize}
+
+    \vspace{0.3cm}
+
+    \Idea{
+        En ROS 2 siempre debemos preguntarnos:
+        ¿quién publica?, ¿en qué tópico?, ¿qué tipo de mensaje viaja?,
+        ¿quién se suscribe?
+    }
+
+\end{frame}
+
+% =========================================================
+\section{Exploración de mensajes desde terminal}
+
+\SectionSlide
+{Exploración de mensajes ROS 2}
+{De un dato simple a una estructura de velocidad}
+
+% =========================================================
+\begin{frame}{Antes de usar Turtlesim}
+
+    Ya sabemos que un mensaje define la estructura de los datos que viajan
+    entre nodos.
+
+    Pero antes de utilizar mensajes en un robot, podemos explorarlos
+    directamente desde la terminal.
+
+    \vspace{0.3cm}
+
+    Comenzaremos con estructuras simples:
+
+    \[
+    \texttt{Int32}
+    \rightarrow
+    \texttt{Float64}
+    \]
+
+    y progresivamente llegaremos a:
+
+    \[
+    \texttt{Vector3}
+   \rightarrow
+    \boxed{\texttt{Twist}}
+    \]
+
+    \Idea{
+        La complejidad de un mensaje depende de la información que necesitamos
+        representar.
+    }
+
+\end{frame}
+
+% =========================================================
+\begin{frame}{Nombre completo de un tipo de mensaje}
+
+    En ROS 2 encontraremos nombres como:
+
+    \[
+    \boxed{
+        \texttt{std\_msgs/msg/Int32}
+    }
+    \]
+
+    Este nombre contiene tres partes:
+
+    \[
+    \underbrace{\texttt{std\_msgs}}_{\text{paquete}}
+    /
+    \underbrace{\texttt{msg}}_{\text{tipo de interfaz}}
+    /
+    \underbrace{\texttt{Int32}}_{\text{mensaje}}
+    \]
+
+    \vspace{0.3cm}
+
+    \DefBlock[Notación]{
+        La expresión \texttt{paquete/msg/Mensaje} identifica de manera
+        completa un tipo de mensaje dentro de ROS 2.
+    }
+
+\end{frame}
+
+% =========================================================
+\begin{frame}{¿Qué es \texorpdfstring{\texttt{std\_msgs}}{std msgs}?}
+
+    El paquete:
+
+    \[
+    \texttt{std\_msgs}
+    \]
+
+    contiene mensajes básicos utilizados para transportar valores sencillos.
+
+    Por ejemplo:
+
+    \begin{itemize}
+        \item números enteros;
+        \item números reales;
+        \item valores booleanos;
+        \item cadenas de caracteres.
+    \end{itemize}
+
+    \vspace{0.3cm}
+
+    \Idea{
+        Aunque estos mensajes son simples, permiten comprender cómo ROS 2
+        encapsula un dato antes de enviarlo.
+    }
+
+\end{frame}
+
+% =========================================================
+\begin{frame}[fragile]{Explorar las interfaces disponibles}
+
+    Podemos consultar las interfaces conocidas por ROS 2:
+
+    \begin{bashcodedark}
+        ros2 interface list
+    \end{bashcodedark}
+
+    La lista puede ser extensa.
+
+    Para buscar mensajes relacionados con \texttt{std\_msgs}:
+
+    \begin{bashcodedark}
+        ros2 interface list | grep std_msgs
+    \end{bashcodedark}
+
+    \vspace{0.3cm}
+
+    \DefBlock[ros2 interface list]{
+        Muestra las interfaces disponibles en la instalación actual de ROS 2.
+    }
+
+\end{frame}
+
+% =========================================================
+\begin{frame}[fragile]{Explorar un paquete de interfaces}
+
+    También podemos consultar las interfaces pertenecientes a un paquete:
+
+    \begin{bashcodedark}
+        ros2 interface package std_msgs
+    \end{bashcodedark}
+
+    Entre los resultados podremos encontrar mensajes como:
+
+    \begin{consolecodedark}
+        std_msgs/msg/Bool
+        std_msgs/msg/Float64
+        std_msgs/msg/Int32
+        std_msgs/msg/String
+    \end{consolecodedark}
+
+    \vspace{0.3cm}
+
+    \Idea{
+        Un paquete puede contener varios tipos de mensajes diseñados para
+        representar diferentes clases de información.
+    }
+
+\end{frame}
+
+% =========================================================
+\section{Mensajes simples}
+
+\SectionSlide
+{Mensajes simples}
+{Un dato también necesita una estructura}
+
+% =========================================================
+\begin{frame}[fragile]{Mensaje Int32}
+
+    Consultemos:
+
+    \begin{bashcodedark}
+        ros2 interface show std_msgs/msg/Int32
+    \end{bashcodedark}
+
+    La estructura es:
+
+    \begin{consolecodedark}
+        int32 data
+    \end{consolecodedark}
+
+    Esto significa que el mensaje contiene un campo llamado:
+
+    \[
+    \texttt{data}
+    \]
+
+    de tipo:
+
+    \[
+    \texttt{int32}
+    \]
+
+\end{frame}
+
+% =========================================================
+\begin{frame}{Interpretación de Int32}
+
+    Podemos imaginar el mensaje como un pequeño contenedor:
+
+    \begin{center}
+        \begin{tikzpicture}[
+            box/.style={
+                rectangle,
+                draw=BrandYellow,
+                thick,
+                minimum width=5.0cm,
+                minimum height=1.1cm,
+                align=center
+            }
+            ]
+
+            \node[box] {
+                \texttt{std\_msgs/msg/Int32}\\[1mm]
+                \texttt{data : int32}
+            };
+
+        \end{tikzpicture}
+    \end{center}
+
+    Por ejemplo:
+
+    \[
+    \texttt{data}=25
+    \]
+
+    \vspace{0.3cm}
+
+    \Idea{
+        El valor 25 no viaja ``solo''. Viaja dentro de una estructura
+        definida por el mensaje \texttt{Int32}.
+    }
+
+\end{frame}
+
+% =========================================================
+\begin{frame}{Tipo del campo y tipo del mensaje}
+
+    Es importante diferenciar:
+
+    \[
+    \boxed{\texttt{int32}}
+    \]
+
+    de:
+
+    \[
+    \boxed{\texttt{std\_msgs/msg/Int32}}
+    \]
+
+    El primero es un:
+
+    \[
+    \text{tipo de dato}
+    \]
+
+    El segundo es un:
+
+    \[
+    \text{tipo de mensaje ROS 2}
+    \]
+
+    \vspace{-0.3cm}
+
+    \Warning{
+        \texttt{int32} no es un tópico ni un mensaje completo.
+        Es el tipo de dato utilizado por el campo \texttt{data}.
+    }
+
+\end{frame}
+
+% =========================================================
+\begin{frame}[fragile]{Mensaje Float64}
+
+    Ahora consulte:
+
+    \begin{bashcodedark}
+        ros2 interface show std_msgs/msg/Float64
+    \end{bashcodedark}
+
+    La estructura es:
+
+    \begin{consolecodedark}
+        float64 data
+    \end{consolecodedark}
+
+    \vspace{0.3cm}
+
+    Un posible contenido sería:
+
+    \[
+    \texttt{data}=3.1416
+    \]
+
+    \DefBlock[Float64]{
+        \texttt{std\_msgs/msg/Float64} permite transportar un número real
+        de precisión doble dentro del campo \texttt{data}.
+    }
+
+\end{frame}
+
+% =========================================================
+\begin{frame}{Ejemplo robótico con Float64}
+
+    Supongamos que un sensor mide una distancia:
+
+    \[
+    d=0.73~\text{m}
+    \]
+
+    El valor matemático es:
+
+    \[
+    0.73
+    \]
+
+    Una posible representación mediante un mensaje simple sería:
+
+    \[
+    \boxed{
+        \texttt{data: 0.73}
+    }
+    \]
+
+    \vspace{0.3cm}
+
+    \begin{center}
+        \begin{tikzpicture}[
+            box/.style={
+                rectangle,
+                draw=BrandYellow,
+                thick,
+                minimum width=4.5cm,
+                minimum height=1.2cm,
+                align=center
+            }
+            ]
+
+            \node[box] {
+                \texttt{Float64}\\
+                \texttt{data = 0.73}
+            };
+
+        \end{tikzpicture}
+    \end{center}
+
+\end{frame}
+
+% =========================================================
+\begin{frame}{Pero un robot necesita estructuras más grandes}
+
+    Un único número puede representar:
+
+    \[
+    d
+     \rightarrow
+    v
+    \rightarrow
+    \theta
+    \]
+
+    Pero algunas cantidades necesitan varias componentes.
+
+    Por ejemplo, un vector tridimensional:
+
+    \[
+    \mathbf{v}
+    =
+    \begin{bmatrix}
+        v_x,
+        v_y,
+        v_z
+    \end{bmatrix}^T
+    \]
+
+    requiere almacenar tres valores.
+
+    \vspace{0.3cm}
+
+    \Idea{
+        Cuando la información tiene varias componentes, necesitamos mensajes
+        con estructuras más complejas.
+    }
+
+\end{frame}
+
+% =========================================================
+\section{Mensajes compuestos}
+
+\SectionSlide
+{Mensajes compuestos}
+{Cuando un solo campo ya no es suficiente}
+
+% =========================================================
+\begin{frame}[fragile]{Explorar Vector3}
+
+    Consultemos:
+
+    \begin{bashcodedark}
+        ros2 interface show geometry_msgs/msg/Vector3
+    \end{bashcodedark}
+
+    Su estructura es:
+
+    \begin{consolecodedark}
+        float64 x
+        float64 y
+        float64 z
+    \end{consolecodedark}
+
+    \vspace{0.3cm}
+
+    Ahora el mensaje contiene:
+
+    \[
+    3
+    \]
+
+    campos independientes.
+
+\end{frame}
+
+% =========================================================
+\begin{frame}{Interpretación de Vector3}
+
+    Podemos representarlo como:
+
+    \[
+    \mathbf{v}
+    =
+    \begin{bmatrix}
+        x\\
+        y\\
+        z
+    \end{bmatrix}
+    \]
+
+    En ROS 2:
+
+    \begin{center}
+        \begin{tikzpicture}[
+            box/.style={
+                rectangle,
+                draw=BrandYellow,
+                thick,
+                minimum width=5.0cm,
+                minimum height=0.75cm,
+                align=left
+            }
+            ]
+
+            \node[box] (title) {\texttt{geometry\_msgs/msg/Vector3}};
+            \node[box, below=0cm of title] (x) {\texttt{x : float64}};
+            \node[box, below=0cm of x] (y) {\texttt{y : float64}};
+            \node[box, below=0cm of y] (z) {\texttt{z : float64}};
+
+        \end{tikzpicture}
+    \end{center}
+
+\end{frame}
+
+% =========================================================
+\begin{frame}{Ejemplo de Vector3}
+
+    Supongamos:
+
+    \[
+    \mathbf{v}
+    =
+    \begin{bmatrix}
+        2.0\\
+        -1.5\\
+        0.4
+    \end{bmatrix}
+    \]
+
+    El mensaje contendría:
+
+    \[
+    \texttt{x: 2.0}
+    \]
+
+    \[
+    \texttt{y: -1.5}
+    \]
+
+    \[
+    \texttt{z: 0.4}
+    \]
+
+    \vspace{-0.3cm}
+
+    \Result{
+        El mensaje \texttt{Vector3} permite agrupar tres componentes relacionadas
+        dentro de una sola estructura.
+    }
+
+\end{frame}
+
+% =========================================================
+\begin{frame}{La estructura puede contener otras estructuras}
+
+    Hasta ahora tenemos:
+
+    \[
+    \texttt{Int32}
+    \rightarrow
+    \text{un campo}
+    \]
+
+    \[
+    \texttt{Float64}
+    \rightarrow
+    \text{un campo}
+    \]
+
+    \[
+    \texttt{Vector3}
+    \rightarrow
+    \text{tres campos}
+    \]
+
+    Pero ROS 2 también permite que un mensaje contenga:
+
+    \[
+    \boxed{\text{otros mensajes}}
+    \]
+
+    \vspace{0.3cm}
+
+    \Idea{
+        Esta composición permite construir estructuras de datos progresivamente
+        más completas.
+    }
+
+\end{frame}
+
+% =========================================================
+\section{Llegamos al mensaje Twist}
+
+\SectionSlide
+{Mensaje Twist}
+{Dos vectores dentro de un mensaje}
+
+% =========================================================
+\begin{frame}[fragile]{Explorar Twist desde terminal}
+
+    Ejecute:
+
+    \begin{bashcodedark}
+        ros2 interface show geometry_msgs/msg/Twist
+    \end{bashcodedark}
+
+    Su estructura conceptual es:
+
+    \begin{consolecodedark}
+        Vector3 linear
+        Vector3 angular
+    \end{consolecodedark}
+
+    \vspace{0.3cm}
+
+    Esto significa que \texttt{Twist} contiene:
+
+    \[
+    2
+    \]
+
+    mensajes de tipo:
+
+    \[
+    \texttt{Vector3}
+    \]
+
+\end{frame}
+
+% =========================================================
+\begin{frame}{Construcción jerárquica de Twist}
+
+    \begin{center}
+        \begin{tikzpicture}[
+            node distance=0.8cm,
+            box/.style={
+                rectangle,
+                draw=BrandYellow,
+                thick,
+                minimum width=3.2cm,
+                minimum height=0.85cm,
+                align=center
+            },
+            arrow/.style={
+                -{Latex[length=2.6mm]},
+                thick,
+                BrandBlue
+            }
+            ]
+
+            \node[box] (twist) {\texttt{Twist}};
+
+            \node[box, below left=of twist] (linear) {\texttt{linear}\\\texttt{Vector3}};
+            \node[box, below right=of twist] (angular) {\texttt{angular}\\\texttt{Vector3}};
+
+            \node[box, below=of linear] (lxyz) {
+                \texttt{x}\\
+                \texttt{y}\\
+                \texttt{z}
+            };
+
+            \node[box, below=of angular] (axyz) {
+                \texttt{x}\\
+                \texttt{y}\\
+                \texttt{z}
+            };
+
+            \draw[arrow] (twist) -- (linear);
+            \draw[arrow] (twist) -- (angular);
+
+            \draw[arrow] (linear) -- (lxyz);
+            \draw[arrow] (angular) -- (axyz);
+
+        \end{tikzpicture}
+    \end{center}
+
+\end{frame}
+
+% =========================================================
+\begin{frame}{Estructura completa de Twist}
+
+    Podemos pensar en el mensaje como:
+
+    \[
+    \texttt{Twist}
+    =
+    \left\{
+    \begin{array}{l}
+        \texttt{linear}=
+        \left\{
+        \begin{array}{l}
+            x\\
+            y\\
+            z
+        \end{array}
+        \right.
+        \\[4mm]
+        \texttt{angular}=
+        \left\{
+        \begin{array}{l}
+            x\\
+            y\\
+            z
+        \end{array}
+        \right.
+    \end{array}
+    \right.
+    \]
+
+    \vspace{0.3cm}
+
+    Por tanto, existen seis componentes numéricas:
+
+    \[
+    v_x,\;v_y,\;v_z,\;
+    \omega_x,\;\omega_y,\;\omega_z
+    \]
+
+\end{frame}
+
+% =========================================================
+\begin{frame}{Interpretación física}
+
+    El bloque:
+
+    \[
+    \texttt{linear}
+    \]
+
+    representa velocidad lineal:
+
+    \[
+    \mathbf{v}
+    =
+    \begin{bmatrix}
+        v_x\\
+        v_y\\
+        v_z
+    \end{bmatrix}
+    \]
+
+    Mientras que:
+
+    \[
+    \texttt{angular}
+    \]
+
+    representa velocidad angular:
+
+    \[
+    \boldsymbol{\omega}
+    =
+    \begin{bmatrix}
+        \omega_x\\
+        \omega_y\\
+        \omega_z
+    \end{bmatrix}
+    \]
+
+\end{frame}
+
+% =========================================================
+\begin{frame}{¿Por qué usamos \texorpdfstring{\texttt{linear.x}}{linear.x}?}
+
+    Para un robot móvil que se desplaza sobre un plano, consideraremos:
+
+    \[
+    X
+    \]
+
+    como la dirección hacia adelante.
+
+    Por tanto:
+
+    \[
+    \boxed{
+        v=\texttt{linear.x}
+    }
+    \]
+
+    \vspace{0.3cm}
+
+    \begin{center}
+        \begin{tikzpicture}[scale=1.0]
+
+            \coordinate (R) at (2.5,1.5);
+
+            \begin{scope}[rotate around={-90:(0.0,0.0)}]
+            % Cuerpo circular del robot
+            \draw[
+            fill=BrandBlue!15,
+            draw=BrandBlue,
+            thick
+            ]
+            (R) circle (0.75);
+
+            % Rueda izquierda
+            \draw[
+            fill=black!70,
+            draw=black,
+            thick,
+            rounded corners=1pt
+            ]
+            ($(R)+(-0.9,-0.32)$) rectangle ($(R)+(-0.68,0.32)$);
+
+            % Rueda derecha
+            \draw[
+            fill=black!70,
+            draw=black,
+            thick,
+            rounded corners=1pt
+            ]
+            ($(R)+(0.68,-0.32)$) rectangle ($(R)+(0.9,0.32)$);
+
+            % Indicador del frente del robot
+            \draw[
+            -{Latex[length=2.5mm]},
+            very thick,
+            BrandBlue
+            ]
+            (R) -- ++(0.0,0.55);
+
+            % Vector de velocidad longitudinal
+            \draw[
+            -{Latex[length=3mm]},
+            very thick,
+            BrandGreen
+            ]
+            ($(R)+(0,0.8)$) -- ++(0,1.4)
+            node[above] {$v_x$};
+            \end{scope}
+
+            % Etiqueta
+            \node[below=1cm] at (R) {robot};
+
+        \end{tikzpicture}
+    \end{center}
+
+\end{frame}
+
+% =========================================================
+\begin{frame}{¿Por qué usamos \texorpdfstring{\texttt{angular.z}}{angular.z}?}
+
+    El robot se mueve sobre el plano:
+
+    \[
+    XY
+    \]
+
+    La rotación que cambia su orientación ocurre alrededor del eje:
+
+    \[
+    Z
+    \]
+
+    que es perpendicular al plano.
+
+    Por tanto:
+
+    \[
+    \boxed{
+        \omega=\texttt{angular.z}
+    }
+    \]
+
+\end{frame}
+
+% =========================================================
+\begin{frame}{Velocidad angular alrededor de Z}
+
+\begin{center}
+    \begin{tikzpicture}[scale=0.95]
+
+        % Ejes globales
+        \draw[-{Latex[length=3mm]}, thick]
+        (0,0) -- (5,0)
+        node[right] {$X$};
+
+        \draw[-{Latex[length=3mm]}, thick]
+        (0,0) -- (0,3.8)
+        node[above] {$Y$};
+
+        % Posición del robot
+        \coordinate (R) at (2.3,1.6);
+
+        % Robot visto desde arriba
+        \draw[
+        fill=BrandBlue!15,
+        draw=BrandBlue,
+        thick
+        ]
+        (R) circle (0.55);
+
+        % Rueda izquierda
+        \draw[
+        fill=black!70,
+        draw=black,
+        thick,
+        rounded corners=1pt
+        ]
+        ($(R)+(-0.68,-0.23)$)
+        rectangle
+        ($(R)+(-0.53,0.23)$);
+
+        % Rueda derecha
+        \draw[
+        fill=black!70,
+        draw=black,
+        thick,
+        rounded corners=1pt
+        ]
+        ($(R)+(0.53,-0.23)$)
+        rectangle
+        ($(R)+(0.68,0.23)$);
+
+        % Frente del robot
+        \draw[
+        -{Latex[length=2.5mm]},
+        very thick,
+        BrandBlue
+        ]
+        (R) -- ++(0,0.42);
+
+        % Velocidad lineal
+        \draw[
+        -{Latex[length=3mm]},
+        very thick,
+        BrandGreen
+        ]
+        ($(R)+(0,0.58)$) -- ++(0,1.1)
+        node[above] {$v_x$};
+
+        % Velocidad angular alrededor de Z
+        \draw[
+        -{Latex[length=2.5mm]},
+        BrandYellow,
+        very thick
+        ]
+        ($(R)+(0.8,0)$)
+        arc[
+        start angle=0,
+        end angle=120,
+        radius=0.8
+        ];
+
+        \node[BrandYellow]
+        at ($(R)+(0.95,0.75)$)
+        {$\omega_z$};
+
+        % Eje Z saliendo del plano
+        \draw[BrandBlue, thick]
+        (R) circle (0.11);
+
+        \fill[BrandBlue]
+        (R) circle (1.7pt);
+
+%        \node[
+%        BrandBlue,
+%        below right=2pt
+%        ] at (R) {$Z$};
+
+        % Etiqueta opcional
+        \node[below=0.8cm] at (R) {robot};
+
+    \end{tikzpicture}
+\end{center}
+
+    \Idea{
+        Aunque el movimiento ocurre en el plano $XY$, la rotación se describe
+        alrededor del eje perpendicular $Z$.
+    }
+
+\end{frame}
+
+% =========================================================
+\begin{frame}{Del mensaje al movimiento planar}
+
+    Para nuestro caso:
+
+    \[
+        \begin{matrix}
+        \texttt{linear.x}=v \\
+        \texttt{linear.y}=0\\
+        \texttt{linear.z}=0
+    \end{matrix}
+    \]
+
+
+    y:
+
+    \[
+        \begin{matrix}
+    \texttt{angular.x}=0\\
+    \texttt{angular.y}=0\\
+    \texttt{angular.z}=\omega
+    \end{matrix}
+    \]
+
+    Por tanto:
+
+    \[
+    \boxed{
+        \mathbf{u}
+        =
+        \begin{bmatrix}
+            v\\
+            \omega
+        \end{bmatrix}
+    }
+    \]
+
+\end{frame}
+
+% =========================================================
+\begin{frame}{De la matemática a Twist}
+
+    \begin{center}
+        \begin{tikzpicture}[
+            node distance=1.0cm,
+            box/.style={
+                rectangle,
+                draw=BrandYellow,
+                thick,
+                minimum width=3.0cm,
+                minimum height=0.85cm,
+                align=center
+            },
+            arrow/.style={
+                -{Latex[length=3mm]},
+                thick,
+                BrandBlue
+            }
+            ]
+
+            \node[box] (math) {
+                $\displaystyle
+                \mathbf{u}=
+                \begin{bmatrix}
+                    v\\
+                    \omega
+                \end{bmatrix}$
+            };
+
+            \node[box, right=of math] (twist) {\texttt{Twist}};
+
+            \node[box, right=of twist] (fields) {
+                \texttt{linear.x = v}\\
+                \texttt{angular.z = $\omega$}
+            };
+
+            \draw[arrow] (math) -- (twist);
+            \draw[arrow] (twist) -- (fields);
+
+        \end{tikzpicture}
+    \end{center}
+
+    \vspace{0.3cm}
+
+    \Result{
+        Ahora el mensaje \texttt{Twist} deja de ser una estructura abstracta:
+        es una representación computacional de variables físicas de movimiento.
+    }
+
+\end{frame}
+
+% =========================================================
+\section{Ejercicio de exploración}
+
+\SectionSlide
+{Exploración guiada}
+{Leer una interfaz antes de utilizarla}
+
+% =========================================================
+\begin{frame}[fragile]{Secuencia de exploración}
+
+    Ejecute en orden:
+
+    \begin{bashcodedark}
+        ros2 interface show std_msgs/msg/Int32
+    \end{bashcodedark}
+
+    \begin{bashcodedark}
+        ros2 interface show std_msgs/msg/Float64
+    \end{bashcodedark}
+
+    \begin{bashcodedark}
+        ros2 interface show geometry_msgs/msg/Vector3
+    \end{bashcodedark}
+
+    \begin{bashcodedark}
+        ros2 interface show geometry_msgs/msg/Twist
+    \end{bashcodedark}
+
+\end{frame}
+
+% =========================================================
+\begin{frame}{Compare las estructuras}
+
+    Complete mentalmente la progresión:
+
+    \[
+    \begin{matrix}
+    \boxed{
+        \texttt{Int32}
+    }
+    \\
+    \downarrow
+    \\
+    \boxed{
+        \texttt{Float64}
+    }
+    \\
+    \downarrow
+    \\
+    \boxed{
+        \texttt{Vector3}
+    }
+    \\
+    \downarrow
+    \\
+    \boxed{
+        \texttt{Twist}
+    }
+\end{matrix}
+    \]
+
+    \vspace{0.3cm}
+
+    \Idea{
+        No estamos cambiando simplemente de tipo numérico. Estamos pasando
+        de estructuras simples a estructuras compuestas capaces de representar
+        información física más rica.
+    }
+
+\end{frame}
+
+% =========================================================
+\begin{frame}{Preguntas antes de continuar}
+
+    Analice:
+
+    \begin{enumerate}
+        \item ¿Cuál es la diferencia entre \texttt{float64} y
+        \texttt{std\_msgs/msg/Float64}?
+
+        \item ¿Cuántos campos posee \texttt{Vector3}?
+
+        \item ¿Qué tipo de mensaje son \texttt{linear} y \texttt{angular}
+        dentro de \texttt{Twist}?
+
+        \item ¿Cuántos valores numéricos contiene finalmente un \texttt{Twist}?
+
+        \item ¿Por qué para movimiento planar utilizaremos principalmente
+        \texttt{linear.x} y \texttt{angular.z}?
+    \end{enumerate}
+
+\end{frame}
+
+% =========================================================
+\begin{frame}{Estamos listos para utilizar Turtlesim}
+
+    Ahora sabemos interpretar:
+
+    \[
+    \texttt{geometry\_msgs/msg/Twist}
+    \]
+
+    y entendemos que contiene:
+
+    \[
+    \boxed{
+        v \rightarrow \texttt{linear.x}
+    }
+    \]
+
+    \[
+    \boxed{
+        \omega \rightarrow \texttt{angular.z}
+    }
+    \]
+
+    \vspace{0.3cm}
+
+    \Result{
+        El siguiente paso será identificar qué nodo publica este mensaje,
+        por qué tópico viaja y qué nodo lo recibe para producir movimiento.
+    }
+
+\end{frame}
+
+% =========================================================
+\section{Turtlesim}
+
+\SectionSlide
+{Turtlesim}
+{Un laboratorio mínimo para entender ROS 2}
+
+% =========================================================
+\begin{frame}{¿Por qué usar Turtlesim?}
+
+Turtlesim permite estudiar ROS 2 sin depender todavía del robot físico.
+
+Con Turtlesim podemos practicar:
+
+\begin{itemize}
+    \item ejecución de nodos;
+    \item publicación de mensajes;
+    \item suscripción a tópicos;
+    \item comandos de inspección;
+    \item movimiento en el plano;
+    \item interpretación de pose.
+\end{itemize}
+
+\vspace{0.3cm}
+
+\Idea{
+    Turtlesim es simple, pero contiene las ideas esenciales que luego veremos
+    en un robot móvil real.
+}
+
+\end{frame}
+
+% =========================================================
+\begin{frame}{Arquitectura básica con Turtlesim}
+
+\begin{center}
+    \begin{tikzpicture}[
+        node distance=1.1cm,
+        box/.style={
+            ellipse,
+            draw=BrandBlue,
+            thick,
+            rounded corners,
+            minimum width=3.2cm,
+            minimum height=0.9cm,
+            align=center
+        },
+        topic/.style={
+            draw=BrandYellow,
+            thick,
+            rounded corners,
+            minimum width=3.0cm,
+            minimum height=0.8cm,
+            align=center
+        },
+        arrow/.style={
+            -{Latex[length=2.8mm]},
+            thick,
+            BrandBlue
+        }
+        ]
+
+        \node[box] (teleop) {Nodo\\teleop};
+        \node[topic, right=of teleop] (cmd) {\texttt{/turtle1/cmd\_vel}};
+        \node[box, right=of cmd] (turtle) {Nodo\\turtlesim};
+
+        \node[topic, below=of turtle] (pose) {\texttt{/turtle1/pose}};
+        \node[box, left=of pose] (echo) {Terminal\\\texttt{echo}};
+
+        \draw[arrow] (teleop) -- (cmd);
+        \draw[arrow] (cmd) -- (turtle);
+        \draw[arrow] (turtle) -- (pose);
+        \draw[arrow] (pose) -- (echo);
+
+    \end{tikzpicture}
+\end{center}
+
+\end{frame}
+
+% =========================================================
+\begin{frame}{Movimiento en Turtlesim}
+
+Turtlesim se mueve a partir de comandos de velocidad.
+
+La tortuga recibe mensajes en:
+
+\[
+\texttt{/turtle1/cmd\_vel}
+\]
+
+y publica su pose en:
+
+\[
+\texttt{/turtle1/pose}
+\]
+
+\vspace{0.3cm}
+
+\[
+\text{velocidad}
+\rightarrow
+\text{movimiento}
+\rightarrow
+\text{pose}
+\]
+
+\vspace{0.3cm}
+
+\Result{
+    Esta relación es la primera conexión práctica entre modelo de movimiento
+    y comunicación ROS 2.
+}
+
+\end{frame}
+
+% =========================================================
+\section{Preparar la terminal}
+
+\SectionSlide
+{Preparar la terminal}
+{Cargar ROS 2 Humble}
+
+% =========================================================
+\begin{frame}[fragile]{Verificar ROS 2}
+
+Abra una terminal y verifique la distribución activa:
+
+\begin{bashcodedark}
+    echo $ROS_DISTRO
+\end{bashcodedark}
+
+La salida esperada es:
+
+\begin{bashcode}
+    humble
+\end{bashcode}
+
+\vspace{0.3cm}
+
+\Warning{
+    Si no aparece \texttt{humble}, debe cargar el entorno de ROS 2.
+}
+
+\end{frame}
+
+% =========================================================
+\begin{frame}[fragile]{Cargar ROS 2 Humble}
+
+Ejecute:
+
+\begin{bashcodedark}
+    source /opt/ros/humble/setup.bash
+\end{bashcodedark}
+
+Verifique nuevamente:
+
+\begin{bashcodedark}
+    echo $ROS_DISTRO
+\end{bashcodedark}
+
+La salida debe ser:
+
+\begin{bashcode}
+    humble
+\end{bashcode}
+
+\vspace{0.3cm}
+
+\Idea{
+    El comando \texttt{source} carga las variables necesarias para que la
+    terminal reconozca los comandos y paquetes de ROS 2.
+}
+
+\end{frame}
+
+% =========================================================
+\section{Ejecutar Turtlesim}
+
+\SectionSlide
+{Ejecutar Turtlesim}
+{Primeros nodos ROS 2}
+
+% =========================================================
+\begin{frame}[fragile]{Instalar Turtlesim}
+
+Si Turtlesim no se encuentra instalado, ejecute:
+
+\begin{bashcodedark}
+    sudo apt update
+    sudo apt install -y ros-humble-turtlesim
+\end{bashcodedark}
+
+\vspace{0.3cm}
+
+\Result{
+    Después de instalarlo, podremos ejecutar el nodo principal del simulador.
+}
+
+\end{frame}
+
+% =========================================================
+\begin{frame}[fragile]{Ejecutar el simulador}
+
+En una terminal, ejecute:
+
+\begin{bashcodedark}
+    ros2 run turtlesim turtlesim_node
+\end{bashcodedark}
+
+Deberá aparecer una ventana con una tortuga.
+
+\vspace{0.3cm}
+
+\DefBlock[ros2 run]{
+    El comando \texttt{ros2 run} ejecuta un programa perteneciente a un paquete
+    de ROS 2.
+}
+
+\end{frame}
+
+% =========================================================
+\begin{frame}[fragile]{Mover la tortuga con teclado}
+
+Abra una segunda terminal y ejecute:
+
+\begin{bashcodedark}
+    ros2 run turtlesim turtle_teleop_key
+\end{bashcodedark}
+
+Use las flechas del teclado para mover la tortuga.
+
+\vspace{0.3cm}
+
+\Warning{
+    La terminal donde se ejecuta \texttt{turtle\_teleop\_key} debe estar activa
+    para que el teclado controle la tortuga.
+}
+
+\end{frame}
+
+% =========================================================
+\begin{frame}{¿Qué está ocurriendo?}
+
+Cuando presionamos una tecla:
+
+\begin{enumerate}
+    \item el nodo de teleoperación genera un mensaje de velocidad;
+    \item el mensaje se publica en \texttt{/turtle1/cmd\_vel};
+    \item el nodo de Turtlesim recibe el mensaje;
+    \item la tortuga modifica su movimiento;
+    \item Turtlesim publica la nueva pose.
+\end{enumerate}
+
+\vspace{0.3cm}
+
+\Result{
+    Ya tenemos un sistema con nodos, tópicos y mensajes funcionando.
+}
+
+\end{frame}
+
+% =========================================================
+\section{Inspección de nodos}
+
+\SectionSlide
+{Inspección de nodos}
+{Observar qué procesos están activos}
+
+% =========================================================
+\begin{frame}[fragile]{Listar nodos}
+
+Con Turtlesim y teleop en ejecución, abra otra terminal y ejecute:
+
+\begin{bashcodedark}
+    ros2 node list
+\end{bashcodedark}
+
+Una salida posible es:
+
+\begin{bashcode}
+    /teleop_turtle
+    /turtlesim
+\end{bashcode}
+
+\vspace{0.3cm}
+
+\DefBlock[ros2 node list]{
+    Muestra los nodos activos que actualmente participan en el sistema ROS 2.
+}
+
+\end{frame}
+
+% =========================================================
+\begin{frame}{Interpretación de los nodos}
+
+\[
+\texttt{/turtlesim}
+\]
+
+representa el nodo del simulador.
+
+\[
+\texttt{/teleop\_turtle}
+\]
+
+representa el nodo que lee el teclado y publica comandos de movimiento.
+
+\vspace{0.3cm}
+
+\begin{center}
+    \begin{tikzpicture}[
+        node distance=2.0cm,
+        box/.style={
+            ellipse,
+            draw=BrandBlue,
+            thick,
+            rounded corners,
+            minimum width=3.2cm,
+            minimum height=0.9cm,
+            align=center
+        },
+        arrow/.style={
+            -{Latex[length=3mm]},
+            thick,
+            BrandBlue
+        }
+        ]
+
+        \node[box] (teleop) {\texttt{/teleop\_turtle}};
+        \node[box, right=of teleop] (sim) {\texttt{/turtlesim}};
+
+        \draw[arrow] (teleop) -- node[above] {velocidad} (sim);
+
+    \end{tikzpicture}
+\end{center}
+
+\end{frame}
+
+% =========================================================
+\section{Inspección de tópicos}
+
+\SectionSlide
+{Inspección de tópicos}
+{Observar por dónde viajan los datos}
+
+% =========================================================
+\begin{frame}[fragile]{Listar tópicos}
+
+Ejecute:
+
+\begin{bashcodedark}
+    ros2 topic list
+\end{bashcodedark}
+
+Entre los tópicos disponibles deberían aparecer:
+
+\begin{bashcode}
+    /turtle1/cmd_vel
+    /turtle1/pose
+\end{bashcode}
+
+\vspace{0.3cm}
+
+\DefBlock[ros2 topic list]{
+    Muestra los canales de comunicación disponibles en el sistema ROS 2.
+}
+
+\end{frame}
+
+% =========================================================
+\begin{frame}{Dos tópicos importantes}
+
+\[
+\texttt{/turtle1/cmd\_vel}
+\]
+
+recibe comandos de velocidad.
+
+\vspace{0.2cm}
+
+\[
+\texttt{/turtle1/pose}
+\]
+
+publica la posición y orientación de la tortuga.
+
+\vspace{0.4cm}
+
+\begin{center}
+    \begin{tikzpicture}[
+        node distance=1.2cm,
+        box/.style={
+            ellipse,
+            draw=BrandBlue,
+            thick,
+            rounded corners,
+            minimum width=3.2cm,
+            minimum height=0.9cm,
+            align=center
+        },
+        topic/.style={
+            draw=BrandYellow,
+            thick,
+            rounded corners,
+            minimum width=3.1cm,
+            minimum height=0.85cm,
+            align=center
+        },
+        arrow/.style={
+            -{Latex[length=2.8mm]},
+            thick,
+            BrandBlue
+        }
+        ]
+
+        \node[box] (cmdnode) {Nodo\\teleop};
+        \node[topic, right=of cmdnode] (cmdvel) {\texttt{/cmd\_vel}};
+        \node[box, right=of cmdvel] (sim) {Turtlesim};
+
+        \node[topic, below=of sim] (pose) {\texttt{/pose}};
+
+        \draw[arrow] (cmdnode) -- (cmdvel);
+        \draw[arrow] (cmdvel) -- (sim);
+        \draw[arrow] (sim) -- (pose);
+
+    \end{tikzpicture}
+\end{center}
+
+\end{frame}
+
+% =========================================================
+\begin{frame}[fragile]{Información de un tópico}
+
+Para conocer el tipo de mensaje de un tópico, ejecute:
+
+\begin{bashcodedark}
+    ros2 topic info /turtle1/cmd_vel
+\end{bashcodedark}
+
+Una salida posible es:
+
+\begin{bashcode}
+    Type: geometry_msgs/msg/Twist
+    Publisher count: 1
+    Subscription count: 1
+\end{bashcode}
+
+\vspace{0.3cm}
+
+\Result{
+    El tópico \texttt{/turtle1/cmd\_vel} transporta mensajes de tipo
+    \texttt{Twist}.
+}
+
+\end{frame}
+
+% =========================================================
+\section{Mensaje Twist}
+
+\SectionSlide
+{Mensaje Twist}
+{Velocidad lineal y velocidad angular}
+
+% =========================================================
+\begin{frame}{Estructura conceptual de Twist}
+
+Un mensaje \texttt{Twist} contiene dos partes principales:
+
+\[
+\texttt{linear}
+\]
+
+y:
+
+\[
+\texttt{angular}
+\]
+
+\vspace{0.3cm}
+
+\[
+\texttt{linear.x}
+\rightarrow
+\text{velocidad lineal hacia adelante}
+\]
+
+\[
+\texttt{angular.z}
+\rightarrow
+\text{velocidad angular de giro}
+\]
+
+\vspace{0.3cm}
+
+\Idea{
+    En Turtlesim trabajaremos principalmente con \texttt{linear.x}
+    y \texttt{angular.z}.
+}
+
+\end{frame}
+
+% =========================================================
+\begin{frame}{Relación con el modelo matemático}
+
+En robótica móvil plana solemos usar:
+
+\[
+v
+\]
+
+para la velocidad lineal y:
+
+\[
+\omega
+\]
+
+para la velocidad angular.
+
+En ROS 2, para Turtlesim:
+
+\[
+v
+\longrightarrow
+\texttt{linear.x}
+\]
+
+\[
+\omega
+\longrightarrow
+\texttt{angular.z}
+\]
+
+\vspace{-0.3cm}
+
+\Result{
+    La variable matemática se convierte en un campo dentro de un mensaje.
+}
+
+\end{frame}
+
+% =========================================================
+\begin{frame}{Interpretación del movimiento}
+
+\begin{center}
+    \begin{tikzpicture}[scale=0.9]
+
+        % Ejes globales
+        \draw[-{Latex[length=3mm]}, thick]
+        (-0.5,0) -- (6,0)
+        node[right] {$X$};
+
+        \draw[-{Latex[length=3mm]}, thick]
+        (0,-0.5) -- (0,4.5)
+        node[above] {$Y$};
+
+        % Posición del robot
+        \coordinate (T) at (2.5,2);
+
+        \begin{scope}[rotate around ={-90:(T)}]
+
+
+        % Cuerpo circular
+        \draw[
+        fill=BrandBlue!15,
+        draw=BrandBlue,
+        thick
+        ]
+        (T) circle (0.55);
+
+        % Rueda izquierda
+        \draw[
+        fill=black!70,
+        draw=black,
+        thick,
+        rounded corners=1pt
+        ]
+        ($(T)+(-0.68,-0.23)$)
+        rectangle
+        ($(T)+(-0.53,0.23)$);
+
+        % Rueda derecha
+        \draw[
+        fill=black!70,
+        draw=black,
+        thick,
+        rounded corners=1pt
+        ]
+        ($(T)+(0.53,-0.23)$)
+        rectangle
+        ($(T)+(0.68,0.23)$);
+
+        % Indicador del frente
+        \draw[
+        -{Latex[length=2.5mm]},
+        very thick,
+        BrandBlue
+        ]
+        (T) -- ++(0,0.42);
+
+        % Velocidad lineal
+        \draw[
+        -{Latex[length=3mm]},
+        very thick,
+        BrandGreen
+        ]
+        ($(T)+(0,0.58)$) -- ++(0,1.2)
+        node[above] {$v$};
+
+        % Velocidad angular
+        \draw[
+        -{Latex[length=2.5mm]},
+        BrandYellow,
+        very thick
+        ]
+        ($(T)+(0.85,0)$)
+        arc[
+        start angle=0,
+        end angle=120,
+        radius=0.85
+        ];
+
+        \node[
+        BrandYellow
+        ]
+        at ($(T)+(1.0,0.78)$)
+        {$\omega$};
+
+        % Centro del robot
+        \fill[BrandBlue] (T) circle (1.7pt);
+
+        % Etiqueta opcional
+        \node[below=0.8cm] at (T) {robot};
+
+        \end{scope}
+
+    \end{tikzpicture}
+\end{center}
+
+\vspace{0.3cm}
+
+\Idea{
+    La velocidad lineal desplaza la tortuga. La velocidad angular cambia
+    su orientación.
+}
+
+\end{frame}
+
+% =========================================================
+\section{Publicar mensajes desde terminal}
+
+\SectionSlide
+{Publicar mensajes}
+{Mover Turtlesim sin teclado}
+
+% =========================================================
+\begin{frame}[fragile]{Publicar una velocidad}
+
+Podemos enviar un mensaje directamente al tópico:
+
+\begin{bashcodedark}
+    ros2 topic pub /turtle1/cmd_vel geometry_msgs/msg/Twist \
+    "{linear: {x: 2.0}, angular: {z: 0.0}}"
+\end{bashcodedark}
+
+Esto publica una velocidad lineal hacia adelante.
+
+\vspace{0.3cm}
+
+\Result{
+    Si \texttt{angular.z} es cero, la tortuga avanza sin girar.
+}
+
+\end{frame}
+
+% =========================================================
+\begin{frame}[fragile]{Publicar con frecuencia limitada}
+
+Para publicar un mensaje una sola vez:
+
+\begin{bashcodedark}
+    ros2 topic pub --once /turtle1/cmd_vel geometry_msgs/msg/Twist \
+    "{linear: {x: 2.0}, angular: {z: 0.0}}"
+\end{bashcodedark}
+
+Para publicar a una frecuencia determinada:
+
+\begin{bashcodedark}
+    ros2 topic pub -r 2 /turtle1/cmd_vel geometry_msgs/msg/Twist \
+    "{linear: {x: 1.0}, angular: {z: 0.5}}"
+\end{bashcodedark}
+
+\vspace{0.3cm}
+
+\Warning{
+    Un comando con \texttt{-r} sigue publicando hasta detenerlo con
+    \texttt{Ctrl + C}.
+}
+
+\end{frame}
+
+% =========================================================
+\begin{frame}{Efecto de los comandos}
+
+\begin{center}
+    \begin{tabular}{ccc}
+        \toprule
+        \textbf{\texttt{linear.x}} & \textbf{\texttt{angular.z}} & \textbf{Efecto} \\
+        \midrule
+        $>0$ & $0$ & avanza recto \\
+        $0$ & $>0$ & gira antihorario \\
+        $0$ & $<0$ & gira horario \\
+        $>0$ & $>0$ & curva antihoraria \\
+        $>0$ & $<0$ & curva horaria \\
+        \bottomrule
+    \end{tabular}
+\end{center}
+
+\vspace{0.3cm}
+
+\Idea{
+    El movimiento de la tortuga permite observar directamente la relación
+    entre velocidad lineal y velocidad angular.
+}
+
+\end{frame}
+
+% =========================================================
+\section{Observar la pose}
+
+\SectionSlide
+{Observar la pose}
+{Posición y orientación publicadas por Turtlesim}
+
+% =========================================================
+\begin{frame}[fragile]{Escuchar el tópico de pose}
+
+Ejecute:
+
+\begin{bashcodedark}
+    ros2 topic echo /turtle1/pose
+\end{bashcodedark}
+
+Mientras la tortuga se mueve, observe cómo cambian:
+
+\begin{itemize}
+    \item \texttt{x};
+    \item \texttt{y};
+    \item \texttt{theta};
+    \item \texttt{linear\_velocity};
+    \item \texttt{angular\_velocity}.
+\end{itemize}
+
+\end{frame}
+
+% =========================================================
+\begin{frame}{Interpretación de la pose}
+
+    La pose de Turtlesim contiene:
+
+    \[
+    \begin{bmatrix}
+        x \rightarrow \text{posición horizontal.} \\
+
+        y \rightarrow \text{posición vertical.} \\
+
+
+        \theta \rightarrow \text{orientación de la tortuga.}\\
+
+    \end{bmatrix}
+    \]
+
+    \[
+    \mathbf{x}
+    =
+    \begin{bmatrix}
+        x\\
+        y\\
+        \theta
+    \end{bmatrix}
+    \]
+
+    \vspace{-0.3cm}
+
+    \DefBlock[Pose]{
+        La pose reúne posición y orientación. En robótica móvil plana suele
+        representarse como $(x,y,\theta)$.
+    }
+
+\end{frame}
+
+% =========================================================
+\begin{frame}{Pose y orientación}
+
+\begin{center}
+    \begin{tikzpicture}[scale=0.85]
+
+        % Ejes globales
+        \draw[-{Latex[length=3mm]}, thick]
+        (0,0) -- (6.5,0)
+        node[right] {$X$};
+
+        \draw[-{Latex[length=3mm]}, thick]
+        (0,0) -- (0,5)
+        node[above] {$Y$};
+
+        % Posición de la tortuga
+        \coordinate (R) at (3.5,2.4);
+
+        % Proyecciones de posición
+        \draw[dashed, gray]
+        (R) -- (3.5,0);
+
+        \draw[dashed, gray]
+        (R) -- (0,2.4);
+
+        % Coordenadas
+        \node[below] at (3.5,0) {$x$};
+        \node[left]  at (0,2.4) {$y$};
+
+        % Tortuga rotada según theta
+        \begin{scope}[rotate around={35:(R)}]
+
+            % Caparazón
+            \draw[
+            fill=BrandBlue!15,
+            draw=BrandBlue,
+            very thick
+            ]
+            (R) ellipse (0.62 and 0.42);
+
+            % Cabeza
+            \draw[
+            fill=BrandBlue!25,
+            draw=BrandBlue,
+            thick
+            ]
+            ($(R)+(0.78,0)$) circle (0.18);
+
+            % Patas
+            \draw[
+            fill=BrandBlue!25,
+            draw=BrandBlue,
+            thick
+            ]
+            ($(R)+(0.25,0.48)$) ellipse (0.17 and 0.10);
+
+            \draw[
+            fill=BrandBlue!25,
+            draw=BrandBlue,
+            thick
+            ]
+            ($(R)+(0.25,-0.48)$) ellipse (0.17 and 0.10);
+
+            \draw[
+            fill=BrandBlue!25,
+            draw=BrandBlue,
+            thick
+            ]
+            ($(R)+(-0.30,0.48)$) ellipse (0.17 and 0.10);
+
+            \draw[
+            fill=BrandBlue!25,
+            draw=BrandBlue,
+            thick
+            ]
+            ($(R)+(-0.30,-0.48)$) ellipse (0.17 and 0.10);
+
+            % Cola
+            \draw[
+            fill=BrandBlue!25,
+            draw=BrandBlue,
+            thick
+            ]
+            ($(R)+(-0.70,0)$) -- ++(-0.22,0.10)
+            -- ++(0,-0.20) -- cycle;
+
+        \end{scope}
+
+        % Centro de referencia
+        \fill[BrandBlue] (R) circle (2pt);
+
+        % Dirección de la tortuga
+        \draw[
+        -{Latex[length=3mm]},
+        very thick,
+        BrandGreen
+        ]
+        (R) -- ++(35:1.8)
+        node[right] {dirección};
+
+        % Ángulo theta
+        \draw[
+        -{Latex[length=2.5mm]},
+        BrandYellow,
+        very thick
+        ]
+        ($(R)+(1.0,0)$)
+        arc[
+        start angle=0,
+        end angle=35,
+        radius=0.9
+        ];
+
+        \node[BrandYellow]
+        at ($(R)+(1.2,0.3)$)
+        {$\theta$};
+
+        % Etiqueta
+        \node[above left=0.45cm] at (R) {Tortuga};
+
+    \end{tikzpicture}
+\end{center}
+
+\vspace{0.2cm}
+
+\Result{
+    El tópico \texttt{/turtle1/pose} permite observar el estado geométrico
+    de la tortuga.
+}
+
+\end{frame}
+
+% =========================================================
+\section{Tipos de mensaje}
+
+\SectionSlide
+{Tipos de mensaje}
+{Saber qué estructura viaja por un tópico}
+
+% =========================================================
+\begin{frame}[fragile]{Ver el tipo de mensaje}
+
+Para conocer el tipo de mensaje de la pose:
+
+\begin{bashcodedark}
+    ros2 topic info /turtle1/pose
+\end{bashcodedark}
+
+Una salida posible es:
+
+\begin{bashcode}
+    Type: turtlesim/msg/Pose
+    Publisher count: 1
+    Subscription count: 1
+\end{bashcode}
+
+\vspace{0.3cm}
+
+\Result{
+    El tópico \texttt{/turtle1/pose} utiliza mensajes de tipo
+    \texttt{turtlesim/msg/Pose}.
+}
+
+\end{frame}
+
+% =========================================================
+\begin{frame}[fragile]{Ver la estructura de un mensaje}
+
+Ejecute:
+
+\begin{bashcodedark}
+    ros2 interface show turtlesim/msg/Pose
+\end{bashcodedark}
+
+Una salida posible es:
+
+\begin{bashcode}
+    float32 x
+    float32 y
+    float32 theta
+    float32 linear_velocity
+    float32 angular_velocity
+\end{bashcode}
+
+\vspace{0.3cm}
+
+\Idea{
+    La interfaz del mensaje indica qué datos contiene y cómo están organizados.
+}
+
+\end{frame}
+
+% =========================================================
+\begin{frame}[fragile]{Estructura de Twist}
+
+Para ver la estructura de \texttt{Twist}:
+
+\begin{bashcodedark}
+    ros2 interface show geometry_msgs/msg/Twist
+\end{bashcodedark}
+
+La estructura general es:
+
+\begin{bashcode}
+    Vector3  linear
+    Vector3  angular
+\end{bashcode}
+
+\vspace{0.3cm}
+
+\DefBlock[Twist]{
+    Un mensaje \texttt{Twist} representa velocidad lineal y velocidad angular.
+}
+
+\end{frame}
+
+% =========================================================
+\section{Laboratorio guiado}
+
+\SectionSlide
+{Laboratorio guiado}
+{Explorar nodos, tópicos, mensajes y movimiento}
+
+% =========================================================
+\begin{frame}{Parte 1: iniciar el sistema}
+
+Realice los siguientes pasos:
+
+\begin{enumerate}
+    \item abra una terminal;
+    \item cargue ROS 2 Humble si es necesario;
+    \item ejecute \texttt{turtlesim\_node};
+    \item abra una segunda terminal;
+    \item ejecute \texttt{turtle\_teleop\_key};
+    \item mueva la tortuga con el teclado.
+\end{enumerate}
+
+\vspace{0.3cm}
+
+\Practice{
+    Observe qué ocurre cuando se presionan las flechas y relacione el
+    movimiento con velocidad lineal y angular.
+}
+
+\end{frame}
+
+% =========================================================
+\begin{frame}{Parte 2: inspección}
+
+Con el sistema en ejecución:
+
+\begin{enumerate}
+    \item liste los nodos activos;
+    \item liste los tópicos disponibles;
+    \item consulte la información de \texttt{/turtle1/cmd\_vel};
+    \item consulte la información de \texttt{/turtle1/pose};
+    \item observe la estructura de \texttt{geometry\_msgs/msg/Twist};
+    \item observe la estructura de \texttt{turtlesim/msg/Pose}.
+\end{enumerate}
+
+\vspace{0.3cm}
+
+\Result{
+    Esta parte permite relacionar lo que se ve en pantalla con la arquitectura
+    interna de ROS 2.
+}
+
+\end{frame}
+
+% =========================================================
+\begin{frame}{Parte 3: publicación manual}
+
+Publique diferentes comandos de velocidad.
+
+Pruebe:
+
+\begin{itemize}
+    \item avance recto;
+    \item giro en el sitio;
+    \item curva hacia la izquierda;
+    \item curva hacia la derecha;
+    \item detener la tortuga.
+\end{itemize}
+
+\vspace{0.3cm}
+
+\Idea{
+    Cada movimiento debe interpretarse según los valores asignados a
+    \texttt{linear.x} y \texttt{angular.z}.
+}
+
+\end{frame}
+
+% =========================================================
+\begin{frame}[fragile]{Comandos sugeridos}
+
+Avanzar recto:
+
+\begin{bashcodedark}
+    ros2 topic pub --once /turtle1/cmd_vel geometry_msgs/msg/Twist \
+    "{linear: {x: 2.0}, angular: {z: 0.0}}"
+\end{bashcodedark}
+
+Girar en el sitio:
+
+\begin{bashcodedark}
+    ros2 topic pub --once /turtle1/cmd_vel geometry_msgs/msg/Twist \
+    "{linear: {x: 0.0}, angular: {z: 1.5}}"
+\end{bashcodedark}
+
+\end{frame}
+
+% =========================================================
+\begin{frame}[fragile]{Comandos sugeridos}
+
+Curva antihoraria:
+
+\begin{bashcodedark}
+    ros2 topic pub -r 2 /turtle1/cmd_vel geometry_msgs/msg/Twist \
+    "{linear: {x: 1.0}, angular: {z: 0.7}}"
+\end{bashcodedark}
+
+Curva horaria:
+
+\begin{bashcodedark}
+    ros2 topic pub -r 2 /turtle1/cmd_vel geometry_msgs/msg/Twist \
+    "{linear: {x: 1.0}, angular: {z: -0.7}}"
+\end{bashcodedark}
+
+Detenga con:
+
+\begin{center}
+    \texttt{Ctrl + C}
+\end{center}
+
+\end{frame}
+
+% =========================================================
+\begin{frame}{Parte 4: observar la pose}
+
+Mientras la tortuga se mueve:
+
+\begin{enumerate}
+    \item observe \texttt{/turtle1/pose};
+    \item registre tres valores diferentes de $(x,y,\theta)$;
+    \item identifique cuándo cambia más \texttt{x};
+    \item identifique cuándo cambia más \texttt{y};
+    \item observe qué ocurre con \texttt{theta} durante un giro.
+\end{enumerate}
+
+\vspace{0.3cm}
+
+\Practice{
+    Relacione el valor de \texttt{theta} con la orientación geométrica
+    de la tortuga en la ventana.
+}
+
+\end{frame}
+
+% =========================================================
+\section{Cierre}
+
+\SectionSlide
+{Cierre de la sesión}
+{ROS 2 como infraestructura de comunicación}
+
+% =========================================================
+\begin{frame}{¿Qué construimos hoy?}
+
+Hoy trabajamos con:
+
+\begin{itemize}
+    \item ROS 2 Humble;
+    \item Turtlesim;
+    \item nodos;
+    \item tópicos;
+    \item mensajes;
+    \item publicadores;
+    \item suscriptores;
+    \item comandos básicos de inspección;
+    \item mensajes \texttt{Twist};
+    \item pose de la tortuga.
+\end{itemize}
+
+\end{frame}
+
+% =========================================================
+\begin{frame}{La idea más importante}
+
+\[
+\boxed{
+    \text{Un robot en ROS 2 es un conjunto de nodos que intercambian mensajes}
+}
+\]
+
+\vspace{0.4cm}
+
+\[
+\text{Nodo}
+\rightarrow
+\text{Tópico}
+\rightarrow
+\text{Mensaje}
+\rightarrow
+\text{Acción}
+\]
+
+\vspace{0.3cm}
+
+\Idea{
+    Antes de programar nodos propios, es necesario comprender cómo observar,
+    publicar e interpretar información usando la terminal.
+}
+
+\end{frame}
+
+% =========================================================
+\begin{frame}{Preguntas de cierre}
+
+Responda:
+
+\begin{enumerate}
+    \item ¿Qué diferencia existe entre un nodo y un tópico?
+    \item ¿Qué función cumple un mensaje?
+    \item ¿Por qué \texttt{/turtle1/cmd\_vel} usa un mensaje \texttt{Twist}?
+    \item ¿Qué representa \texttt{linear.x}?
+    \item ¿Qué representa \texttt{angular.z}?
+    \item ¿Qué información contiene \texttt{/turtle1/pose}?
+\end{enumerate}
+
+\end{frame}
+
+% =========================================================
+\begin{frame}{Próxima clase}
+
+En la siguiente sesión trabajaremos con programación en Python para ROS 2.
+
+El objetivo será construir nuestros primeros nodos usando:
+
+\[
+\boxed{\texttt{rclpy}}
+\]
+
+y desarrollar:
+
+\begin{itemize}
+    \item un publicador de velocidad;
+    \item un suscriptor de pose;
+    \item un movimiento controlado de Turtlesim;
+    \item una primera relación entre código Python y tópicos ROS 2.
+\end{itemize}
+
+\end{frame}
+
+% =========================================================
+\begin{frame}
+\centering
+\smartimage[0.8\linewidth]{Template/gracias.png}
+\end{frame}
+
+\end{document}

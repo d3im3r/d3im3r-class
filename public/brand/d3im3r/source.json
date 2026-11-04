@@ -1,0 +1,11 @@
+{
+  "repository": "https://github.com/d3im3r/d3im3r-brand-assets",
+  "retrieved": "2026-10-29",
+  "reference": "main",
+  "files": [
+    "assets/svg/horizontal-light.svg",
+    "assets/svg/horizontal-dark.svg",
+    "BRAND.md",
+    "LICENSE"
+  ]
+}
