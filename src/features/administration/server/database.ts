@@ -52,34 +52,30 @@ export async function syncFromPostgres(force=false){
   sql.exec('BEGIN IMMEDIATE');
   try{
    if(Array.isArray(state.users)){
-    sql.prepare('DELETE FROM sessions').run();
-    sql.prepare('DELETE FROM session').run();
-    sql.prepare('DELETE FROM account').run();
-    sql.prepare('DELETE FROM user').run();
-    sql.prepare('DELETE FROM users').run();
-
     for(const u of state.users){
-     sql.prepare('INSERT INTO users(id,name,username,password,role) VALUES (?,?,?,?,?)').run(u.id,u.name,u.username,u.password,u.role);
+     sql.prepare('INSERT INTO users(id,name,username,password,role) VALUES (?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET name=excluded.name,username=excluded.username,password=excluded.password,role=excluded.role').run(u.id,u.name,u.username,u.password,u.role);
     }
    }
    if(Array.isArray(state.user)){
     for(const usr of state.user){
-     sql.prepare('INSERT INTO user(id,name,email,emailVerified,image,createdAt,updatedAt,username,displayUsername,role,banned,banReason,banExpires) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)').run(usr.id,usr.name,usr.email,usr.emailVerified?1:0,usr.image,usr.createdAt,usr.updatedAt,usr.username,usr.displayUsername,usr.role,usr.banned?1:0,usr.banReason,usr.banExpires);
+     sql.prepare('INSERT INTO user(id,name,email,emailVerified,image,createdAt,updatedAt,username,displayUsername,role,banned,banReason,banExpires) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET name=excluded.name,email=excluded.email,emailVerified=excluded.emailVerified,image=excluded.image,updatedAt=excluded.updatedAt,username=excluded.username,displayUsername=excluded.displayUsername,role=excluded.role,banned=excluded.banned,banReason=excluded.banReason,banExpires=excluded.banExpires').run(usr.id,usr.name,usr.email,usr.emailVerified?1:0,usr.image,usr.createdAt,usr.updatedAt,usr.username,usr.displayUsername,usr.role,usr.banned?1:0,usr.banReason,usr.banExpires);
     }
    }
    if(Array.isArray(state.account)){
     for(const acc of state.account){
-     sql.prepare('INSERT INTO account(id,accountId,providerId,userId,accessToken,refreshToken,idToken,accessTokenExpiresAt,refreshTokenExpiresAt,scope,password,createdAt,updatedAt) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)').run(acc.id,acc.accountId,acc.providerId,acc.userId,acc.accessToken,acc.refreshToken,acc.idToken,acc.accessTokenExpiresAt,acc.refreshTokenExpiresAt,acc.scope,acc.password,acc.createdAt,acc.updatedAt);
+     sql.prepare('INSERT INTO account(id,accountId,providerId,userId,accessToken,refreshToken,idToken,accessTokenExpiresAt,refreshTokenExpiresAt,scope,password,createdAt,updatedAt) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET password=excluded.password,updatedAt=excluded.updatedAt').run(acc.id,acc.accountId,acc.providerId,acc.userId,acc.accessToken,acc.refreshToken,acc.idToken,acc.accessTokenExpiresAt,acc.refreshTokenExpiresAt,acc.scope,acc.password,acc.createdAt,acc.updatedAt);
     }
    }
+   sql.prepare('DELETE FROM sessions WHERE expires < ?').run(Date.now());
+   sql.prepare('DELETE FROM session WHERE expiresAt < ?').run(new Date().toISOString());
    if(Array.isArray(state.sessions)){
     for(const s of state.sessions){
-     sql.prepare('INSERT INTO sessions(token,user_id,expires) VALUES (?,?,?)').run(s.token,s.user_id,Number(s.expires));
+     sql.prepare('INSERT INTO sessions(token,user_id,expires) VALUES (?,?,?) ON CONFLICT(token) DO UPDATE SET user_id=excluded.user_id,expires=excluded.expires').run(s.token,s.user_id,Number(s.expires));
     }
    }
    if(Array.isArray(state.session)){
     for(const ses of state.session){
-     sql.prepare('INSERT INTO session(id,expiresAt,token,createdAt,updatedAt,ipAddress,userAgent,userId,impersonatedBy) VALUES (?,?,?,?,?,?,?,?,?)').run(ses.id,ses.expiresAt,ses.token,ses.createdAt,ses.updatedAt,ses.ipAddress,ses.userAgent,ses.userId,ses.impersonatedBy);
+     sql.prepare('INSERT INTO session(id,expiresAt,token,createdAt,updatedAt,ipAddress,userAgent,userId,impersonatedBy) VALUES (?,?,?,?,?,?,?,?,?) ON CONFLICT(token) DO UPDATE SET expiresAt=excluded.expiresAt,updatedAt=excluded.updatedAt,userId=excluded.userId,ipAddress=excluded.ipAddress,userAgent=excluded.userAgent').run(ses.id,ses.expiresAt,ses.token,ses.createdAt,ses.updatedAt,ses.ipAddress,ses.userAgent,ses.userId,ses.impersonatedBy);
     }
    }
    if(Array.isArray(state.enrollments)){

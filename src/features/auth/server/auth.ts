@@ -129,23 +129,28 @@ export async function startSession(user:User){
   db().prepare('DELETE FROM session WHERE token=?').run(oldHash);
  }
  const token=randomBytes(32).toString('hex'),hashed=digest(token),now=Date.now(),expires=now+7*86400000,nowIso=new Date(now).toISOString(),expiresIso=new Date(expires).toISOString();
+ const sessionId=randomUUID();
  const dbUser=db().prepare('SELECT password FROM users WHERE id=?').get(user.id) as {password:string}|undefined;
  if(dbUser)syncBetterAuthUser(user.id,user.name,user.username,dbUser.password,user.role);
  db().prepare('DELETE FROM sessions WHERE expires<?').run(now);
  db().prepare('DELETE FROM session WHERE expiresAt<?').run(nowIso);
- db().prepare('INSERT INTO sessions VALUES (?,?,?)').run(hashed,user.id,expires);
- db().prepare('INSERT INTO session(id,expiresAt,token,createdAt,updatedAt,userId) VALUES (?,?,?,?,?,?)').run(randomUUID(),expiresIso,hashed,nowIso,nowIso,user.id);
+ db().prepare('INSERT INTO sessions VALUES (?,?,?) ON CONFLICT(token) DO UPDATE SET user_id=excluded.user_id,expires=excluded.expires').run(hashed,user.id,expires);
+ db().prepare('INSERT INTO session(id,expiresAt,token,createdAt,updatedAt,userId) VALUES (?,?,?,?,?,?) ON CONFLICT(token) DO UPDATE SET expiresAt=excluded.expiresAt,updatedAt=excluded.updatedAt,userId=excluded.userId').run(sessionId,expiresIso,hashed,nowIso,nowIso,user.id);
  const pool=getPgPool();
  if(pool){
-  if(old){
-   const oldHash=digest(old);
-   pool.query('DELETE FROM sessions WHERE token=$1',[oldHash]).catch(()=>{});
-   pool.query('DELETE FROM "session" WHERE token=$1',[oldHash]).catch(()=>{});
+  try{
+   if(old){
+    const oldHash=digest(old);
+    await pool.query('DELETE FROM sessions WHERE token=$1',[oldHash]);
+    await pool.query('DELETE FROM "session" WHERE token=$1',[oldHash]);
+   }
+   await pool.query('DELETE FROM sessions WHERE expires < $1',[now]);
+   await pool.query('DELETE FROM "session" WHERE "expiresAt" < $1',[nowIso]);
+   await pool.query('INSERT INTO sessions(token,user_id,expires) VALUES ($1,$2,$3) ON CONFLICT(token) DO UPDATE SET user_id=EXCLUDED.user_id,expires=EXCLUDED.expires',[hashed,user.id,expires]);
+   await pool.query('INSERT INTO "session"(id,"expiresAt",token,"createdAt","updatedAt","userId") VALUES ($1,$2,$3,$4,$4,$5) ON CONFLICT(token) DO UPDATE SET "expiresAt"=EXCLUDED."expiresAt",token=EXCLUDED.token,"updatedAt"=EXCLUDED."updatedAt","userId"=EXCLUDED."userId"',[sessionId,expiresIso,hashed,nowIso,user.id]);
+  }catch(e){
+   console.error('PG session err:',e instanceof Error?e.message:e);
   }
-  pool.query('DELETE FROM sessions WHERE expires < $1',[now]).catch(()=>{});
-  pool.query('DELETE FROM "session" WHERE "expiresAt" < $1',[nowIso]).catch(()=>{});
-  pool.query('INSERT INTO sessions(token,user_id,expires) VALUES ($1,$2,$3) ON CONFLICT(token) DO UPDATE SET user_id=EXCLUDED.user_id,expires=EXCLUDED.expires',[hashed,user.id,expires]).catch(e=>console.error('PG session err:',e.message));
-  pool.query('INSERT INTO "session"(id,"expiresAt",token,"createdAt","updatedAt","userId") VALUES ($1,$2,$3,$4,$4,$5) ON CONFLICT(id) DO UPDATE SET "expiresAt"=EXCLUDED."expiresAt",token=EXCLUDED.token,"updatedAt"=EXCLUDED."updatedAt"',[randomUUID(),expiresIso,hashed,nowIso,user.id]).catch(e=>console.error('PG session err:',e.message));
  }
  jar?.set(cookieName,token,{httpOnly:true,sameSite:'lax',secure:process.env.AULA_SECURE_COOKIES==='1',path:'/',maxAge:7*86400});
  return {token,cookieName};
@@ -161,8 +166,12 @@ export async function endSession(){
   db().prepare('DELETE FROM session WHERE token=?').run(hashed);
   const pool=getPgPool();
   if(pool){
-   pool.query('DELETE FROM sessions WHERE token=$1',[hashed]).catch(()=>{});
-   pool.query('DELETE FROM "session" WHERE token=$1',[hashed]).catch(()=>{});
+   try{
+    await pool.query('DELETE FROM sessions WHERE token=$1',[hashed]);
+    await pool.query('DELETE FROM "session" WHERE token=$1',[hashed]);
+   }catch(e){
+    console.error('PG end session err:',e instanceof Error?e.message:e);
+   }
   }
  }
  jar?.delete(cookieName);

@@ -36,14 +36,21 @@ export async function POST(request:Request,{params}:{params:Promise<{all?:string
   if(action==='logout'||action==='sign-out'||fullPath==='logout'||fullPath==='sign-out'){
    sameOrigin(request);
    await endSession();
-   return Response.json({ok:true});
+   const response=Response.json({ok:true});
+   const cookieName=process.env.AULA_SESSION_COOKIE??'aula_session';
+   response.headers.append('Set-Cookie',`${cookieName}=; Path=/; Max-Age=0; HttpOnly; SameSite=Lax`);
+   return response;
   }
   if(action==='setup'||action==='login'){
    sameOrigin(request);
    const input=await request.json();
    const user=action==='setup'?setup(input):login(input);
-   await startSession(user);
-   return Response.json({user,permissions:roles[user.role].statements});
+   const sessionRes=await startSession(user);
+   const response=Response.json({user,permissions:roles[user.role].statements});
+   const url=new URL(request.url);
+   const isSecure=url.protocol==='https:'||request.headers.get('x-forwarded-proto')==='https'||process.env.AULA_SECURE_COOKIES==='1';
+   response.headers.append('Set-Cookie',`${sessionRes.cookieName}=${sessionRes.token}; Path=/; Max-Age=${7*86400}; HttpOnly; SameSite=Lax${isSecure?'; Secure':''}`);
+   return response;
   }
   if(action==='dev-google'){
    sameOrigin(request);
