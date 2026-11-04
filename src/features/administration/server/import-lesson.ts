@@ -6,7 +6,7 @@ import {spawn} from 'node:child_process';
 import {parseLatex,extractLatexMetadata} from '@/features/latex-import/lib/parser';
 import type {Subject,Lesson,Block} from '@/features/catalog/model/types';
 import type {User} from '@/features/auth/types';
-import {db,dataDirectory,transaction,lessonRecord,userAccessibleSubjectIds} from './database';
+import {db,dataDirectory,transaction,lessonRecord,userAccessibleSubjectIds,getPgPool} from './database';
 import {sharedImage,cachedDiagramPath,cacheDiagram} from './shared-resource';
 import {AppError,text} from '@/features/auth/server/auth';
 type Resource={key:string;name:string;path:string;mime:string};
@@ -73,5 +73,13 @@ export async function importLesson(form:FormData,actor?:User){
  for(const f of parsed.frames)walk(f.blocks,b=>{if(b.type==='diagram')b.asset=figureUrls[createHash('sha256').update(b.content).digest('hex')];if(b.type==='image'){const name=path.basename(b.content.replace(/\\/g,'/')).toLowerCase();b.asset=images.get(name);if(!b.asset){const prevImg=previousResources.find(r=>r.name.toLowerCase()===name&&r.mime.startsWith('image/'));if(prevImg){resources.push(prevImg);b.asset=`/api/materials/${id}/${prevImg.key}`;images.set(name,b.asset);}else{const shared=sharedImage(b.content);if(shared){resources.push(shared);b.asset=`/api/materials/${id}/${shared.key}`;images.set(name,b.asset);}else diagnostics.add(`Falta la imagen: ${b.content}`);}}}});
  if(!pdfUrl)diagnostics.add('No se adjuntó el PDF original.');
  const lesson:Lesson={id,title,subtitle,institutionId:subject.institutionId,subjectId,topicId,source:sourceUrl,pdf:pdfUrl,frames:parsed.frames,diagnostics:[...diagnostics]};
- transaction(()=>{const latest=lessonRecord(id);if(existing&&latest?.revision!==existing.revision)throw new AppError('La clase cambió durante la importación. Vuelve a intentarlo.',409);if(createdGeneralTopic)db().prepare('UPDATE subjects SET data=? WHERE id=?').run(JSON.stringify(subject),subject.id);db().prepare("INSERT INTO lessons(id,subject_id,status,revision,reviewed,data) VALUES (?,?,'draft',?,0,?) ON CONFLICT(id) DO UPDATE SET status='draft',revision=excluded.revision,reviewed=0,data=excluded.data").run(id,subjectId,revision,JSON.stringify(lesson));if(existing)db().prepare('DELETE FROM progress WHERE lesson_id=?').run(id);db().prepare('DELETE FROM resources WHERE lesson_id=?').run(id);for(const r of resources)db().prepare('INSERT OR REPLACE INTO resources VALUES (?,?,?,?,?)').run(id,r.key,r.name,r.path,r.mime);});return {id,frames:lesson.frames.length,diagnostics:lesson.diagnostics};
+ transaction(()=>{const latest=lessonRecord(id);if(existing&&latest?.revision!==existing.revision)throw new AppError('La clase cambió durante la importación. Vuelve a intentarlo.',409);if(createdGeneralTopic)db().prepare('UPDATE subjects SET data=? WHERE id=?').run(JSON.stringify(subject),subject.id);db().prepare("INSERT INTO lessons(id,subject_id,status,revision,reviewed,data) VALUES (?,?,'draft',?,0,?) ON CONFLICT(id) DO UPDATE SET status='draft',revision=excluded.revision,reviewed=0,data=excluded.data").run(id,subjectId,revision,JSON.stringify(lesson));if(existing)db().prepare('DELETE FROM progress WHERE lesson_id=?').run(id);db().prepare('DELETE FROM resources WHERE lesson_id=?').run(id);for(const r of resources)db().prepare('INSERT OR REPLACE INTO resources VALUES (?,?,?,?,?)').run(id,r.key,r.name,r.path,r.mime);});
+ const pool=getPgPool();
+ if(pool){
+  if(createdGeneralTopic){
+   pool.query('UPDATE subjects SET data=$1 WHERE id=$2',[JSON.stringify(subject),subject.id]).catch(console.error);
+  }
+  pool.query("INSERT INTO lessons(id,subject_id,status,revision,reviewed,data) VALUES ($1,$2,'draft',$3,0,$4) ON CONFLICT(id) DO UPDATE SET status='draft',revision=EXCLUDED.revision,reviewed=0,data=EXCLUDED.data",[id,subjectId,revision,JSON.stringify(lesson)]).catch(console.error);
+ }
+ return {id,frames:lesson.frames.length,diagnostics:lesson.diagnostics};
 }

@@ -69,6 +69,10 @@ export function manage(input:Record<string,unknown>,actor?:User){return transact
   const id=typeof input.id==='string'&&input.id?input.id:randomUUID();
   const i:Institution={id,name:text(input.name,'Institución',150),shortName:text(input.shortName,'Nombre corto',35),city:text(input.city,'Ciudad',100),color:input.color==='green'?'green':'blue',logo:object(db().prepare('SELECT data FROM institutions WHERE id=?').get(id))?.logo};
   db().prepare('INSERT INTO institutions VALUES (?,?) ON CONFLICT(id) DO UPDATE SET data=excluded.data').run(id,JSON.stringify(i));
+  const pool=getPgPool();
+  if(pool){
+   pool.query('INSERT INTO institutions(id,data) VALUES ($1,$2) ON CONFLICT(id) DO UPDATE SET data=EXCLUDED.data',[id,JSON.stringify(i)]).catch(console.error);
+  }
   break;
  }
  case 'teacher':{
@@ -142,6 +146,13 @@ export function manage(input:Record<string,unknown>,actor?:User){return transact
   if(actor&&actor.role==='teacher'){
    db().prepare('INSERT OR IGNORE INTO enrollments(user_id,subject_id) VALUES (?,?)').run(actor.id,s.id);
   }
+  const pool=getPgPool();
+  if(pool){
+   pool.query('INSERT INTO subjects(id,institution_id,data) VALUES ($1,$2,$3) ON CONFLICT(id) DO UPDATE SET institution_id=EXCLUDED.institution_id,data=EXCLUDED.data',[s.id,institutionId,JSON.stringify(s)]).catch(console.error);
+   if(actor&&actor.role==='teacher'){
+    pool.query('INSERT INTO enrollments(user_id,subject_id) VALUES ($1,$2) ON CONFLICT DO NOTHING',[actor.id,s.id]).catch(console.error);
+   }
+  }
   break;
  }
  case 'topic':{
@@ -158,6 +169,10 @@ export function manage(input:Record<string,unknown>,actor?:User){return transact
    topic.name=name;
   }else s.topics.push({id:randomUUID(),name});
   db().prepare('UPDATE subjects SET data=? WHERE id=?').run(JSON.stringify(s),s.id);
+  const pool=getPgPool();
+  if(pool){
+   pool.query('UPDATE subjects SET data=$1 WHERE id=$2',[JSON.stringify(s),s.id]).catch(console.error);
+  }
   break;
  }
  case 'moveTopic':{
@@ -170,6 +185,10 @@ export function manage(input:Record<string,unknown>,actor?:User){return transact
   if(index<0||target<0||target>=s.topics.length)throw new AppError('No se puede mover el tema.');
   [s.topics[index],s.topics[target]]=[s.topics[target],s.topics[index]];
   db().prepare('UPDATE subjects SET data=? WHERE id=?').run(JSON.stringify(s),s.id);
+  const pool=getPgPool();
+  if(pool){
+   pool.query('UPDATE subjects SET data=$1 WHERE id=$2',[JSON.stringify(s),s.id]).catch(console.error);
+  }
   break;
  }
  case 'student':{
@@ -247,6 +266,10 @@ export function manage(input:Record<string,unknown>,actor?:User){return transact
   if(!l.frames.length)throw new AppError('La clase no contiene bloques.');
   if(input.acknowledged!==true)throw new AppError('Confirma que revisaste la vista previa y los avisos.');
   db().prepare('UPDATE lessons SET reviewed=revision WHERE id=?').run(row.id);
+  const pool=getPgPool();
+  if(pool){
+   pool.query('UPDATE lessons SET reviewed=revision WHERE id=$1',[row.id]).catch(console.error);
+  }
   break;
  }
  case 'publish':{
@@ -258,6 +281,10 @@ export function manage(input:Record<string,unknown>,actor?:User){return transact
   }
   if(row.reviewed!==row.revision)throw new AppError('Revisa esta versión de la clase antes de publicarla.');
   db().prepare("UPDATE lessons SET status='published' WHERE id=?").run(row.id);
+  const pool=getPgPool();
+  if(pool){
+   pool.query("UPDATE lessons SET status='published' WHERE id=$1",[row.id]).catch(console.error);
+  }
   break;
  }
  case 'unpublish':{
@@ -268,6 +295,10 @@ export function manage(input:Record<string,unknown>,actor?:User){return transact
    if(!allowedSubs||!allowedSubs.has(row.subject_id))throw new AppError('No tienes permiso para gestionar clases de esta materia.',403);
   }
   db().prepare("UPDATE lessons SET status='draft' WHERE id=?").run(row.id);
+  const pool=getPgPool();
+  if(pool){
+   pool.query("UPDATE lessons SET status='draft' WHERE id=$1",[row.id]).catch(console.error);
+  }
   break;
  }
  case 'banStudent':{
@@ -279,7 +310,12 @@ export function manage(input:Record<string,unknown>,actor?:User){return transact
    if(!allowedSubs||!allowedSubs.has(subjectId))throw new AppError('No tienes permiso para moderar alumnos en esta materia.',403);
   }
   const reason=typeof input.reason==='string'?input.reason.trim().slice(0,300):'';
-  db().prepare('INSERT OR REPLACE INTO subject_bans(user_id,subject_id,reason,banned_at) VALUES (?,?,?,?)').run(userId,subjectId,reason,new Date().toISOString());
+  const nowIso=new Date().toISOString();
+  db().prepare('INSERT OR REPLACE INTO subject_bans(user_id,subject_id,reason,banned_at) VALUES (?,?,?,?)').run(userId,subjectId,reason,nowIso);
+  const pool=getPgPool();
+  if(pool){
+   pool.query('INSERT INTO subject_bans(user_id,subject_id,reason,banned_at) VALUES ($1,$2,$3,$4) ON CONFLICT(user_id,subject_id) DO UPDATE SET reason=EXCLUDED.reason,banned_at=EXCLUDED.banned_at',[userId,subjectId,reason,nowIso]).catch(console.error);
+  }
   break;
  }
  case 'unbanStudent':{
@@ -289,6 +325,10 @@ export function manage(input:Record<string,unknown>,actor?:User){return transact
    if(!allowedSubs||!allowedSubs.has(subjectId))throw new AppError('No tienes permiso para moderar alumnos en esta materia.',403);
   }
   db().prepare('DELETE FROM subject_bans WHERE user_id=? AND subject_id=?').run(userId,subjectId);
+  const pool=getPgPool();
+  if(pool){
+   pool.query('DELETE FROM subject_bans WHERE user_id=$1 AND subject_id=$2',[userId,subjectId]).catch(console.error);
+  }
   break;
  }
  case 'getOrCreateInvite':{
@@ -300,8 +340,12 @@ export function manage(input:Record<string,unknown>,actor?:User){return transact
   }
   const existing=db().prepare('SELECT token FROM subject_invites WHERE subject_id=?').get(subjectId) as {token:string}|undefined;
   if(!existing){
-   const token=randomUUID();
-   db().prepare('INSERT INTO subject_invites(token,subject_id,created_at) VALUES (?,?,?)').run(token,subjectId,new Date().toISOString());
+   const token=randomUUID(),nowIso=new Date().toISOString();
+   db().prepare('INSERT INTO subject_invites(token,subject_id,created_at) VALUES (?,?,?)').run(token,subjectId,nowIso);
+   const pool=getPgPool();
+   if(pool){
+    pool.query('INSERT INTO subject_invites(token,subject_id,created_at) VALUES ($1,$2,$3) ON CONFLICT DO NOTHING',[token,subjectId,nowIso]).catch(console.error);
+   }
   }
   break;
  }
@@ -316,6 +360,12 @@ export function manage(input:Record<string,unknown>,actor?:User){return transact
   db().prepare('INSERT OR IGNORE INTO enrollments(user_id,subject_id) VALUES (?,?)').run(req.user_id,req.subject_id);
   db().prepare('DELETE FROM subject_bans WHERE user_id=? AND subject_id=?').run(req.user_id,req.subject_id);
   db().prepare("UPDATE subject_join_requests SET status='approved' WHERE id=?").run(req.id);
+  const pool=getPgPool();
+  if(pool){
+   pool.query('INSERT INTO enrollments(user_id,subject_id) VALUES ($1,$2) ON CONFLICT DO NOTHING',[req.user_id,req.subject_id]).catch(console.error);
+   pool.query('DELETE FROM subject_bans WHERE user_id=$1 AND subject_id=$2',[req.user_id,req.subject_id]).catch(console.error);
+   pool.query("UPDATE subject_join_requests SET status='approved' WHERE id=$1",[req.id]).catch(console.error);
+  }
   break;
  }
  case 'rejectJoinRequest':{
@@ -326,6 +376,10 @@ export function manage(input:Record<string,unknown>,actor?:User){return transact
    if(!allowedSubs||!allowedSubs.has(req.subject_id))throw new AppError('No tienes permiso para responder solicitudes de esta materia.',403);
   }
   db().prepare("UPDATE subject_join_requests SET status='rejected' WHERE id=?").run(requestId);
+  const pool=getPgPool();
+  if(pool){
+   pool.query("UPDATE subject_join_requests SET status='rejected' WHERE id=$1",[requestId]).catch(console.error);
+  }
   break;
  }
  default:throw new AppError('Acción no válida.');}

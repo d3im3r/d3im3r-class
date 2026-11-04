@@ -78,6 +78,24 @@ export async function syncFromPostgres(force=false){
      sql.prepare('INSERT INTO session(id,expiresAt,token,createdAt,updatedAt,ipAddress,userAgent,userId,impersonatedBy) VALUES (?,?,?,?,?,?,?,?,?) ON CONFLICT(token) DO UPDATE SET expiresAt=excluded.expiresAt,updatedAt=excluded.updatedAt,userId=excluded.userId,ipAddress=excluded.ipAddress,userAgent=excluded.userAgent').run(ses.id,ses.expiresAt,ses.token,ses.createdAt,ses.updatedAt,ses.ipAddress,ses.userAgent,ses.userId,ses.impersonatedBy);
     }
    }
+   if(Array.isArray(state.institutions)){
+    for(const inst of state.institutions){
+     const dataStr=typeof inst.data==='string'?inst.data:JSON.stringify(inst.data);
+     sql.prepare('INSERT INTO institutions(id,data) VALUES (?,?) ON CONFLICT(id) DO UPDATE SET data=excluded.data').run(inst.id,dataStr);
+    }
+   }
+   if(Array.isArray(state.subjects)){
+    for(const sub of state.subjects){
+     const dataStr=typeof sub.data==='string'?sub.data:JSON.stringify(sub.data);
+     sql.prepare('INSERT INTO subjects(id,institution_id,data) VALUES (?,?,?) ON CONFLICT(id) DO UPDATE SET institution_id=excluded.institution_id,data=excluded.data').run(sub.id,sub.institution_id,dataStr);
+    }
+   }
+   if(Array.isArray(state.lessons)){
+    for(const les of state.lessons){
+     const dataStr=typeof les.data==='string'?les.data:JSON.stringify(les.data);
+     sql.prepare('INSERT INTO lessons(id,subject_id,status,revision,reviewed,data) VALUES (?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET subject_id=excluded.subject_id,status=excluded.status,revision=excluded.revision,reviewed=excluded.reviewed,data=excluded.data').run(les.id,les.subject_id,les.status,les.revision,les.reviewed,dataStr);
+    }
+   }
    if(Array.isArray(state.enrollments)){
     for(const e of state.enrollments){
      sql.prepare('INSERT OR IGNORE INTO enrollments(user_id,subject_id) VALUES (?,?)').run(e.user_id,e.subject_id);
