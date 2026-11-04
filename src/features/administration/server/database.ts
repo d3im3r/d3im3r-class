@@ -1,9 +1,10 @@
 import {DatabaseSync} from 'node:sqlite';
 import {mkdirSync,readFileSync,existsSync} from 'node:fs';
+import {tmpdir} from 'node:os';
 import path from 'node:path';
 import {createHash,randomUUID} from 'node:crypto';
 import type {Catalog,Lesson,Block} from '@/features/catalog/model/types';
-const directory=process.env.AULA_DATA_DIR??path.join(process.cwd(),'.data');
+const directory=process.env.AULA_DATA_DIR??(process.env.VERCEL==='1'||process.env.AWS_LAMBDA_FUNCTION_NAME?path.join(tmpdir(),'aula-data'):path.join(process.cwd(),'.data'));
 let connection:DatabaseSync|undefined;
 export function db(){
  if(connection)return connection;
