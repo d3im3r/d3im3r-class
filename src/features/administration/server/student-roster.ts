@@ -1,7 +1,8 @@
 import ExcelJS from 'exceljs';
 import {createHash,randomUUID,randomBytes,scrypt} from 'node:crypto';
-import {db,transaction,syncBetterAuthUser} from './database';
+import {db,transaction,syncBetterAuthUser,userAccessibleSubjectIds} from './database';
 import {AppError} from '@/features/auth/server/auth';
+import type {User} from '@/features/auth/types';
 export type RosterRow={row:number;name:string;email:string;status:'ready'|'existing'|'error';issue?:string;identificationLength:number;warning?:string};
 type PrivateRow=RosterRow&{identification:string};
 export type RosterPreview={rows:RosterRow[];ready:number;existing:number;errors:number;total:number;fingerprint:string};
@@ -36,9 +37,15 @@ async function parseRoster(buffer:Buffer):Promise<{rows:PrivateRow[];fingerprint
 }
 export async function previewRoster(buffer:Buffer):Promise<RosterPreview>{const {rows,fingerprint}=await parseRoster(buffer);return {rows:rows.map(({identification:_,...row})=>row),fingerprint,total:rows.length,ready:rows.filter(r=>r.status==='ready').length,existing:rows.filter(r=>r.status==='existing').length,errors:rows.filter(r=>r.status==='error').length};}
 async function hashIdentification(value:string){const salt=randomBytes(16).toString('hex');const key=await new Promise<Buffer>((resolve,reject)=>scrypt(value,salt,64,(error,key)=>error?reject(error):resolve(key)));return salt+':'+key.toString('hex');}
-export async function importRoster(buffer:Buffer,input:{fingerprint:string;subjectIds:string[];skipErrors:boolean;enrollExisting:boolean}){
+export async function importRoster(buffer:Buffer,input:{fingerprint:string;subjectIds:string[];skipErrors:boolean;enrollExisting:boolean},actor?:User){
  const {rows,fingerprint}=await parseRoster(buffer);if(fingerprint!==input.fingerprint)throw new AppError('El archivo cambió. Revisa la vista previa nuevamente.',409);if(rows.some(r=>r.status==='error')&&!input.skipErrors)throw new AppError('Corrige las filas con errores o confirma que deseas omitirlas.');
  const ids=[...new Set(input.subjectIds)];if(ids.length>200||ids.some(id=>typeof id!=='string'||!db().prepare('SELECT id FROM subjects WHERE id=?').get(id)))throw new AppError('Selecciona materias válidas.');
+ if(actor&&actor.role==='teacher'){
+  const allowed=userAccessibleSubjectIds(actor);
+  for(const id of ids){
+   if(!allowed||!allowed.has(id))throw new AppError('No tienes permiso para matricular alumnos en materias que no impartes.',403);
+  }
+ }
  const ready=rows.filter(r=>r.status==='ready');if(!ready.length&&!(input.enrollExisting&&rows.some(r=>r.status==='existing')))throw new AppError('No hay alumnos nuevos para importar.');
  const hashes=new Map<number,string>();let next=0;await Promise.all(Array.from({length:Math.min(4,ready.length)},async()=>{while(next<ready.length){const row=ready[next++];hashes.set(row.row,await hashIdentification(row.identification));}}));
  return transaction(()=>{let created=0,enrolled=0;for(const row of rows){if(row.status==='error')continue;let user=db().prepare('SELECT id,role FROM users WHERE username=?').get(row.email);

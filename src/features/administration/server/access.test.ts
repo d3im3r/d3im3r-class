@@ -4,7 +4,7 @@ import {mkdtempSync,rmSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import path from 'node:path';
 const folder=mkdtempSync(path.join(tmpdir(),'aula-access-'));process.env.AULA_DATA_DIR=folder;
-const {db,readLesson}=await import('./database');const {setup,login,passwordMatches,sameOrigin,hasPermission,roles}=await import('../../auth/server/auth');const {getAuth}=await import('../../auth/server/better-auth');const {manage}=await import('./manage');const {importLesson}=await import('./import-lesson');const {canReadLesson,canReadResource,studentLesson,userCatalog}=await import('../../learning/server/access');
+const {db,readLesson}=await import('./database');const {setup,login,passwordMatches,sameOrigin,hasPermission,roles}=await import('../../auth/server/auth');const {getAuth}=await import('../../auth/server/better-auth');const {manage,snapshot}=await import('./manage');const {importLesson}=await import('./import-lesson');const {canReadLesson,canReadResource,studentLesson,userCatalog}=await import('../../learning/server/access');
 let teacher:ReturnType<typeof setup>,student:ReturnType<typeof setup>;
 test('crea una sola cuenta inicial y guarda contraseñas derivadas',()=>{teacher=setup({name:'Docente de prueba',username:'docente.test',password:'Prueba-privada-2026'});assert.equal(teacher.role,'admin');assert.throws(()=>setup({name:'Otro',username:'otro.test',password:'Prueba-privada-2026'}));const row=db().prepare('SELECT password FROM users WHERE id=?').get(teacher.id)!;assert.notEqual(row.password,'Prueba-privada-2026');assert.ok(passwordMatches('Prueba-privada-2026',row.password as string));});
 test('valida credenciales y no permite elegir el rol al entrar',()=>{assert.throws(()=>login({username:'docente.test',password:'incorrecta'}));const user=login({username:'docente.test',password:'Prueba-privada-2026',role:'student'});assert.equal(user.role,'admin');});
@@ -113,4 +113,43 @@ test('valida permisos granulares y sincronización con Better Auth (ac, roles, u
  assert.equal(hasPermission(profe2,{campus:['teachers']}),false);
  assert.equal(hasPermission(profe2,{user:['resetPasswordStudent']}),true);
  assert.equal(hasPermission(teacher,{user:['createTeacher','resetPasswordTeacher']}),true);
+});
+
+test('garantiza el principio de minimo privilegio (docentes y alumnos solo ven su asignacion)',()=>{
+ // 1. Admin crea institución SENA y materia en SENA
+ manage({action:'institution',id:'inst-sena',name:'Servicio Nacional de Aprendizaje',shortName:'SENA',city:'Bogotá'},teacher);
+ manage({action:'subject',institutionId:'inst-sena',name:'Programación SENA',code:'ADSO-101'},teacher);
+ const senaSubjects=userCatalog(teacher).subjects.filter(s=>s.institutionId==='inst-sena');
+ assert.equal(senaSubjects.length,1);
+ const senaSubjId=senaSubjects[0].id;
+
+ // 2. Admin crea docente de SENA asignado únicamente a SENA
+ manage({action:'teacher',name:'Docente SENA',username:'docente.sena',password:'ClaveSena-2026',institutionId:'inst-sena',subjectIds:[senaSubjId]},teacher);
+ const teacherSena=login({username:'docente.sena',password:'ClaveSena-2026'});
+ assert.equal(teacherSena.role,'teacher');
+
+ // 3. El docente de SENA solo ve SENA en el snapshot docente
+ const senaSnap=snapshot(teacherSena);
+ assert.deepEqual(senaSnap.institutions.map(i=>i.id),['inst-sena']);
+ assert.deepEqual(senaSnap.subjects.map(s=>s.id),[senaSubjId]);
+
+ // 4. El docente de SENA no puede tocar materias de otras instituciones
+ assert.throws(()=>manage({action:'subject',institutionId:'politecnico',name:'Invasión'},teacherSena),/No tienes permiso/);
+ assert.throws(()=>manage({action:'assign',userId:student.id,subjectIds:['diseno-web-1']},teacherSena),/No tienes permiso/);
+
+ // 5. El docente de SENA matricula un alumno en su materia
+ manage({action:'student',name:'Alumno SENA',username:'alumno.sena',password:'ClaveAlumno-2026',subjectIds:[senaSubjId]},teacherSena);
+ const studentSena=login({username:'alumno.sena',password:'ClaveAlumno-2026'});
+ assert.equal(studentSena.role,'student');
+
+ // 6. El docente de SENA no puede restablecer la clave del alumno de otra institución
+ assert.throws(()=>manage({action:'resetPassword',userId:student.id,password:'NuevaClave-123'},teacherSena),/No tienes permiso/);
+
+ // 7. Pero sí puede restablecer la clave de su propio alumno
+ assert.doesNotThrow(()=>manage({action:'resetPassword',userId:studentSena.id,password:'NuevaClave-123'},teacherSena));
+
+ // 8. El alumno de SENA solo ve la materia de SENA y su catálogo no tiene otras instituciones
+ const studentSenaCat=userCatalog(studentSena);
+ assert.deepEqual(studentSenaCat.institutions.map(i=>i.id),['inst-sena']);
+ assert.deepEqual(studentSenaCat.subjects.map(s=>s.id),[senaSubjId]);
 });

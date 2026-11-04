@@ -5,6 +5,7 @@ import path from 'node:path';
 import {createHash,randomUUID} from 'node:crypto';
 import {Pool} from 'pg';
 import type {Catalog,Lesson,Block} from '@/features/catalog/model/types';
+import type {User} from '@/features/auth/types';
 const directory=process.env.AULA_DATA_DIR??(process.env.VERCEL==='1'||process.env.AWS_LAMBDA_FUNCTION_NAME?path.join(tmpdir(),'aula-data'):path.join(process.cwd(),'.data'));
 let connection:DatabaseSync|undefined;
 let pgPool:Pool|undefined;
@@ -40,6 +41,7 @@ export async function syncFromPostgres(force=false){
       'subjects', COALESCE((SELECT json_agg(sub) FROM subjects sub), '[]'::json),
       'lessons', COALESCE((SELECT json_agg(l) FROM lessons l), '[]'::json),
       'enrollments', COALESCE((SELECT json_agg(e) FROM enrollments e), '[]'::json),
+      'institution_members', COALESCE((SELECT json_agg(im) FROM institution_members im), '[]'::json),
       'subject_bans', COALESCE((SELECT json_agg(b) FROM subject_bans b), '[]'::json),
       'progress', COALESCE((SELECT json_agg(p) FROM progress p), '[]'::json)
     ) as state;
@@ -85,6 +87,11 @@ export async function syncFromPostgres(force=false){
      sql.prepare('INSERT OR IGNORE INTO enrollments(user_id,subject_id) VALUES (?,?)').run(e.user_id,e.subject_id);
     }
    }
+   if(Array.isArray(state.institution_members)){
+    for(const im of state.institution_members){
+     sql.prepare('INSERT OR IGNORE INTO institution_members(user_id,institution_id) VALUES (?,?)').run(im.user_id,im.institution_id);
+    }
+   }
    if(Array.isArray(state.subject_bans)){
     for(const b of state.subject_bans){
      sql.prepare('INSERT INTO subject_bans(user_id,subject_id,reason,banned_at) VALUES (?,?,?,?) ON CONFLICT(user_id,subject_id) DO UPDATE SET reason=excluded.reason,banned_at=excluded.banned_at').run(b.user_id,b.subject_id,b.reason,b.banned_at);
@@ -128,6 +135,7 @@ export function db(){
  CREATE TABLE IF NOT EXISTS progress(user_id TEXT REFERENCES users(id) ON DELETE CASCADE,lesson_id TEXT REFERENCES lessons(id) ON DELETE CASCADE,frame_id TEXT NOT NULL,PRIMARY KEY(user_id,lesson_id,frame_id));
  CREATE TABLE IF NOT EXISTS login_attempts(username TEXT PRIMARY KEY,count INTEGER NOT NULL,until INTEGER NOT NULL);
  CREATE TABLE IF NOT EXISTS institution_logos(id TEXT PRIMARY KEY REFERENCES institutions(id),path TEXT NOT NULL,mime TEXT NOT NULL);
+ CREATE TABLE IF NOT EXISTS institution_members(user_id TEXT REFERENCES users(id) ON DELETE CASCADE, institution_id TEXT REFERENCES institutions(id) ON DELETE CASCADE, PRIMARY KEY(user_id, institution_id));
  CREATE TABLE IF NOT EXISTS metadata(key TEXT PRIMARY KEY,value TEXT NOT NULL);`);
  if(!connection.prepare("SELECT key FROM metadata WHERE key='seed-v1'").get())seed(connection);
  return connection;
@@ -178,3 +186,35 @@ export function transaction<T>(fn:()=>T):T{const sql=db();sql.exec('BEGIN IMMEDI
 const result=fn();sql.exec('COMMIT');return result;}catch(error){sql.exec('ROLLBACK');throw error;}}
 export function lessonRecord(id:string){return db().prepare('SELECT * FROM lessons WHERE id=?').get(id) as {id:string;subject_id:string;status:string;revision:number;reviewed:number;data:string}|undefined;}
 export function readLesson(id:string){const row=lessonRecord(id);return row?JSON.parse(row.data) as Lesson:undefined;}
+
+export function userAccessibleSubjectIds(user: User): Set<string> | null {
+ if(user.role==='admin')return null;
+ const sql=db();
+ const enrolled=sql.prepare('SELECT subject_id FROM enrollments WHERE user_id=?').all(user.id) as {subject_id:string}[];
+ const instSubs=sql.prepare(`
+   SELECT s.id as subject_id 
+   FROM subjects s 
+   JOIN institution_members im ON im.institution_id=s.institution_id 
+   WHERE im.user_id=?
+ `).all(user.id) as {subject_id:string}[];
+ const set=new Set<string>();
+ for(const r of enrolled)set.add(r.subject_id);
+ for(const r of instSubs)set.add(r.subject_id);
+ return set;
+}
+
+export function userAccessibleInstitutionIds(user: User): Set<string> | null {
+ if(user.role==='admin')return null;
+ const sql=db();
+ const direct=sql.prepare('SELECT institution_id FROM institution_members WHERE user_id=?').all(user.id) as {institution_id:string}[];
+ const viaSubjects=sql.prepare(`
+   SELECT DISTINCT s.institution_id 
+   FROM subjects s 
+   JOIN enrollments e ON e.subject_id=s.id 
+   WHERE e.user_id=?
+ `).all(user.id) as {institution_id:string}[];
+ const set=new Set<string>();
+ for(const r of direct)set.add(r.institution_id);
+ for(const r of viaSubjects)set.add(r.institution_id);
+ return set;
+}

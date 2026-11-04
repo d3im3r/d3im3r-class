@@ -28,7 +28,7 @@ export const roles={
   ...adminAc.statements,
   campus:['manage','import','rebuild','review','publish','students','ban'],
   tools:['use','inspectSource'],
-  catalog:['readAll','readAssigned'],
+  catalog:['readAssigned'],
   lesson:['readPublished','readDraft','downloadSource','downloadMaterial'],
   progress:['read','write'],
   user:['resetPasswordStudent'],

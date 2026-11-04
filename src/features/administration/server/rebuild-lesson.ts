@@ -3,13 +3,19 @@ import {mkdir,readFile} from 'node:fs/promises';
 import path from 'node:path';
 import {randomUUID,createHash} from 'node:crypto';
 import type {Block,Lesson} from '@/features/catalog/model/types';
+import type {User} from '@/features/auth/types';
 import {AppError} from '@/features/auth/server/auth';
-import {db,dataDirectory,lessonRecord,transaction} from './database';
+import {db,dataDirectory,lessonRecord,transaction,userAccessibleSubjectIds} from './database';
 import {parseLatex} from '@/features/latex-import/lib/parser';
 import {compileFigures} from './import-lesson';
 import {sharedImage,type StoredResource} from './shared-resource';
-export async function rebuildLesson(id:string){
- const row=lessonRecord(id);if(!row)throw new AppError('Clase no encontrada.',404);const lesson=JSON.parse(row.data) as Lesson;
+export async function rebuildLesson(id:string,actor?:User){
+ const row=lessonRecord(id);if(!row)throw new AppError('Clase no encontrada.',404);
+ if(actor&&actor.role==='teacher'){
+  const allowed=userAccessibleSubjectIds(actor);
+  if(!allowed||!allowed.has(row.subject_id))throw new AppError('No tienes permiso para reparar clases de esta materia.',403);
+ }
+ const lesson=JSON.parse(row.data) as Lesson;
  function walk(blocks:Block[],fn:(b:Block)=>void){for(const b of blocks){fn(b);if(b.children)walk(b.children,fn);for(const item of b.items??[])walk(item,fn);}}
  function available(b:Block){if(!b.asset)return false;const key=b.asset.split('/').at(-1);const resource=db().prepare('SELECT path FROM resources WHERE lesson_id=? AND key=?').get(id,key??'');return !!resource&&existsSync(String(resource.path));}
  // Recover untouched TikZ from the stored source when an earlier parser masked its comments.

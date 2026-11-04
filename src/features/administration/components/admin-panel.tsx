@@ -6,9 +6,9 @@ import type {Institution,Subject} from '@/features/catalog/model/types';
 import {StudentImport} from './student-import';
 import type {User} from '@/features/auth/types';
 type LessonInfo={id:string;title:string;subtitle:string;subjectId:string;topicId:string;status:string;revision:number;reviewed:number;frames:number;diagnostics:string[]};
-type Snapshot={institutions:Institution[];subjects:Subject[];lessons:LessonInfo[];users:User[];enrollments:{userId:string;subjectId:string}[];bans?:{userId:string;subjectId:string;reason?:string;bannedAt:string}[];invites?:{subjectId:string;token:string}[];joinRequests?:{id:string;subjectId:string;userId:string;status:string;createdAt:string;userName:string;username:string;institutionId:string}[]};
+type Snapshot={institutions:Institution[];subjects:Subject[];lessons:LessonInfo[];users:User[];enrollments:{userId:string;subjectId:string}[];institutionMembers?:{userId:string;institutionId:string}[];bans?:{userId:string;subjectId:string;reason?:string;bannedAt:string}[];invites?:{subjectId:string;token:string}[];joinRequests?:{id:string;subjectId:string;userId:string;status:string;createdAt:string;userName:string;username:string;institutionId:string}[]};
 export function AdminPanel({onCatalogChange:reloadCampus,user:currentUser}:{onCatalogChange:()=>Promise<void>;user?:User}){
- const [data,setData]=useState<Snapshot|null>(null),[tab,setTab]=useState('institutions'),[busy,setBusy]=useState(false),[message,setMessage]=useState(''),[error,setError]=useState(''),[editInstitution,setEditInstitution]=useState<Institution|null>(null),[editSubject,setEditSubject]=useState<Subject|null>(null),[selectedInstitution,setSelectedInstitution]=useState(''),[selectedSubject,setSelectedSubject]=useState(''),[selectedTopic,setSelectedTopic]=useState(''),[replace,setReplace]=useState(''),[student,setStudent]=useState(''),[assigned,setAssigned]=useState<string[]>([]),[review,setReview]=useState<Record<string,boolean>>({}),[banSubject,setBanSubject]=useState(''),[banReason,setBanReason]=useState(''),[copiedSubject,setCopiedSubject]=useState(''),[resetUserId,setResetUserId]=useState(''),[newPassword,setNewPassword]=useState('');
+ const [data,setData]=useState<Snapshot|null>(null),[tab,setTab]=useState('institutions'),[busy,setBusy]=useState(false),[message,setMessage]=useState(''),[error,setError]=useState(''),[editInstitution,setEditInstitution]=useState<Institution|null>(null),[editSubject,setEditSubject]=useState<Subject|null>(null),[selectedInstitution,setSelectedInstitution]=useState(''),[selectedSubject,setSelectedSubject]=useState(''),[selectedTopic,setSelectedTopic]=useState(''),[replace,setReplace]=useState(''),[student,setStudent]=useState(''),[assigned,setAssigned]=useState<string[]>([]),[review,setReview]=useState<Record<string,boolean>>({}),[banSubject,setBanSubject]=useState(''),[banReason,setBanReason]=useState(''),[copiedSubject,setCopiedSubject]=useState(''),[resetUserId,setResetUserId]=useState(''),[newPassword,setNewPassword]=useState(''),[teacherInstitution,setTeacherInstitution]=useState(''),[teacherSubjectIds,setTeacherSubjectIds]=useState<string[]>([]),[newStudentInstitution,setNewStudentInstitution]=useState(''),[newStudentSubjectIds,setNewStudentSubjectIds]=useState<string[]>([]);
  async function onCatalogChange(){try{sessionStorage.setItem('aula-admin-state',JSON.stringify({tab,selectedInstitution,selectedSubject,selectedTopic}));}catch{}await reloadCampus();}
  async function refresh(){const response=await fetch('/api/admin',{cache:'no-store'});const result=await response.json();if(!response.ok)throw new Error(result.error);setData(result);}
  useEffect(()=>{try{const raw=sessionStorage.getItem('aula-admin-state');if(raw){const saved=JSON.parse(raw);if(saved.selectedInstitution)setSelectedInstitution(saved.selectedInstitution);if(saved.selectedSubject)setSelectedSubject(saved.selectedSubject);if(saved.selectedTopic)setSelectedTopic(saved.selectedTopic);if(saved.tab&&['institutions','subjects','topics','lessons','students'].includes(saved.tab))setTab(saved.tab);sessionStorage.removeItem('aula-admin-state');}}catch{}refresh().catch(e=>setError(e.message));},[]);
@@ -153,7 +153,50 @@ export function AdminPanel({onCatalogChange:reloadCampus,user:currentUser}:{onCa
    </section>}
    <section className="admin-card admin-create">
     <div className="admin-card-header"><div><span className="eyebrow">AÑADIR INDIVIDUALMENTE</span><h2><Plus size={19}/>Crear cuenta de alumno</h2></div></div>
-    <form onSubmit={async e=>{const node=e.currentTarget,input=form(e);if(await mutate({...input,action:'student'},'Cuenta de alumno creada. Asigna sus materias desde el panel izquierdo.'))node.reset();}}><label>Nombre completo<input name="name" required maxLength={100} autoComplete="off"/></label><label>Usuario o correo<input name="username" required minLength={3} maxLength={100} autoComplete="off"/></label><label>Contraseña inicial<input name="password" type="password" required minLength={10} maxLength={256} autoComplete="new-password"/><small>Mínimo 10 caracteres. Comunica las credenciales al alumno por tu canal habitual.</small></label><Button disabled={busy}><Plus size={15}/>Crear alumno</Button></form>
+    <p className="admin-help">Asigna obligatoriamente una institución y al menos una materia (Principio de mínimo privilegio).</p>
+    <form onSubmit={async e=>{
+      const node=e.currentTarget,input=form(e);
+      const instId=newStudentInstitution||(data.institutions.length===1?data.institutions[0].id:'');
+      if(!instId&&newStudentSubjectIds.length===0){
+        setError('Debes asignar al alumno a una institución o al menos a una materia.');
+        return;
+      }
+      if(newStudentSubjectIds.length===0){
+        setError('Debes seleccionar al menos una materia para matricular al alumno.');
+        return;
+      }
+      if(await mutate({...input,action:'student',institutionId:instId,subjectIds:newStudentSubjectIds},'Cuenta de alumno creada y matriculada correctamente.')){
+        node.reset();
+        setNewStudentSubjectIds([]);
+      }
+    }}>
+      <label>Nombre completo<input name="name" required maxLength={100} autoComplete="off" placeholder="Ej. Carlos Mendoza"/></label>
+      <label>Usuario o correo<input name="username" required minLength={3} maxLength={100} autoComplete="off" placeholder="carlos.mendoza@correo.com"/></label>
+      <label>Contraseña inicial<input name="password" type="password" required minLength={10} maxLength={256} autoComplete="new-password" placeholder="Mínimo 10 caracteres"/><small>Mínimo 10 caracteres. Comunica las credenciales al alumno por tu canal habitual.</small></label>
+      <label>Institución asignada
+        <select value={newStudentInstitution||(data.institutions.length===1?data.institutions[0].id:'')} onChange={e=>{
+          setNewStudentInstitution(e.target.value);
+          setNewStudentSubjectIds([]);
+        }} required>
+          {data.institutions.length>1&&<option value="">Seleccionar institución</option>}
+          {data.institutions.map(i=><option key={i.id} value={i.id}>{i.name} ({i.shortName})</option>)}
+        </select>
+      </label>
+      {(()=>{
+        const currentTargetInst=newStudentInstitution||(data.institutions.length===1?data.institutions[0].id:'');
+        const availSubs=currentTargetInst?data.subjects.filter(s=>s.institutionId===currentTargetInst):data.subjects;
+        return <fieldset className="mt-2 p-3 border rounded-lg bg-stone-50 dark:bg-stone-900/40">
+          <legend className="text-xs font-semibold px-1">Materias a matricular (mínimo 1 requerida)</legend>
+          {availSubs.length>0?<div className="grid gap-2 mt-1">
+            {availSubs.map(s=><label key={s.id} className="checkbox-label text-xs flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" checked={newStudentSubjectIds.includes(s.id)} onChange={ev=>setNewStudentSubjectIds(ids=>ev.target.checked?[...ids,s.id]:ids.filter(x=>x!==s.id))}/>
+              <span><strong>{s.name}</strong> <span className="text-muted-foreground">({s.code})</span></span>
+            </label>)}
+          </div>:<p className="text-xs text-muted-foreground">Esta institución no tiene materias registradas.</p>}
+        </fieldset>;
+      })()}
+      <Button disabled={busy}><Plus size={15}/>Crear alumno</Button>
+    </form>
    </section>
    <StudentImport subjects={data.subjects} onImported={async()=>{await Promise.all([refresh(),onCatalogChange()]);setStudent('');setAssigned([]);}}/>
   </div>
@@ -163,15 +206,57 @@ export function AdminPanel({onCatalogChange:reloadCampus,user:currentUser}:{onCa
    <div className="admin-card-header"><div><span className="eyebrow">EQUIPO DEL CAMPUS</span><h2><GraduationCap size={20}/>Profesores y Administradores</h2></div><span className="admin-count-badge">{teachers.length + admins.length} usuarios</span></div>
    <p className="admin-help">Docentes autorizados para impartir y gestionar clases en el campus.</p>
    <div className="admin-list">
-    {admins.map(a=><div key={a.id} className="is-active"><span className="stat-icon sand"><Shield size={16}/></span><div><strong>{a.name}</strong><p>{a.username} · <span className="font-semibold text-primary">Super Administrador</span></p></div><Button variant="outline" size="sm" onClick={()=>{setResetUserId(a.id);setNewPassword('');}}><KeyRound size={14}/>Clave</Button></div>)}
-    {teachers.map(t=><div key={t.id}><span className="stat-icon sage"><GraduationCap size={16}/></span><div><strong>{t.name}</strong><p>{t.username} · Docente</p></div><Button variant="outline" size="sm" onClick={()=>{setResetUserId(t.id);setNewPassword('');}}><KeyRound size={14}/>Clave</Button></div>)}
+    {admins.map(a=><div key={a.id} className="is-active"><span className="stat-icon sand"><Shield size={16}/></span><div><strong>{a.name}</strong><p>{a.username} · <span className="font-semibold text-primary">Super Administrador (Acceso global)</span></p></div><Button variant="outline" size="sm" onClick={()=>{setResetUserId(a.id);setNewPassword('');}}><KeyRound size={14}/>Clave</Button></div>)}
+    {teachers.map(t=>{
+      const userInsts=(data.institutionMembers??[]).filter(im=>im.userId===t.id).map(im=>data.institutions.find(i=>i.id===im.institutionId)?.shortName).filter(Boolean);
+      const userSubs=data.enrollments.filter(e=>e.userId===t.id).length;
+      const instLabel=userInsts.length>0?userInsts.join(', '):'Sin institución asignada';
+      return <div key={t.id}><span className="stat-icon sage"><GraduationCap size={16}/></span><div><strong>{t.name}</strong><p>{t.username} · Docente · <span className="font-medium text-foreground">{instLabel}</span> {userSubs>0?`(${userSubs} ${userSubs===1?'materia':'materias'})`:''}</p></div><Button variant="outline" size="sm" onClick={()=>{setResetUserId(t.id);setNewPassword('');}}><KeyRound size={14}/>Clave</Button></div>;
+    })}
    </div>
    {resetUserId&&(teachers.some(t=>t.id===resetUserId)||admins.some(a=>a.id===resetUserId))&&(()=>{const targetUser=data.users.find(u=>u.id===resetUserId);return <div className="mt-4 p-4 rounded-lg border bg-stone-50 dark:bg-stone-900 flex flex-col gap-2"><strong className="text-xs font-semibold">Restablecer contraseña para {targetUser?.name}:</strong><div className="flex gap-2"><input type="password" value={newPassword} onChange={e=>setNewPassword(e.target.value)} placeholder="Nueva contraseña (mínimo 10 caracteres)" className="text-xs p-2 border rounded flex-1 bg-background" minLength={10}/><Button size="sm" disabled={busy||newPassword.length<10} onClick={async()=>{if(await mutate({action:'resetPassword',userId:resetUserId,password:newPassword},`Contraseña actualizada para ${targetUser?.name}.`)){setResetUserId('');setNewPassword('');}}}><Save size={14}/>Guardar clave</Button><Button size="sm" variant="ghost" onClick={()=>{setResetUserId('');setNewPassword('');}}>Cancelar</Button></div></div>;})()}
   </section>
   <section className="admin-card admin-create">
    <div className="admin-card-header"><div><span className="eyebrow">NUEVO INTEGRANTE</span><h2><Plus size={19}/>Registrar nuevo profesor</h2></div></div>
-   <p className="admin-help">Crea una cuenta docente para que pueda acceder a impartir clases y evaluar alumnos.</p>
-   <form onSubmit={async e=>{const node=e.currentTarget,input=form(e);if(await mutate({...input,action:'teacher'},'Profesor registrado con éxito. Ya puede iniciar sesión en Aula.'))node.reset();}}><label>Nombre completo<input name="name" required maxLength={100} placeholder="Ej. Prof. Andrea Gómez" autoComplete="off"/></label><label>Correo o usuario docente<input name="username" required minLength={3} maxLength={100} placeholder="andrea.gomez@campus.edu" autoComplete="off"/></label><label>Contraseña inicial<input name="password" type="password" required minLength={10} maxLength={256} placeholder="Mínimo 10 caracteres" autoComplete="new-password"/><small>Mínimo 10 caracteres. Entrega las credenciales al docente para su primer ingreso.</small></label><Button disabled={busy}><Plus size={15}/>Registrar profesor</Button></form>
+   <p className="admin-help">Crea una cuenta docente asignándole una institución o materias específicas (Principio de mínimo privilegio: solo tendrá acceso a su institución asignada).</p>
+   <form onSubmit={async e=>{
+     const node=e.currentTarget,input=form(e);
+     if(!teacherInstitution&&teacherSubjectIds.length===0){
+       setError('Debes asignar al docente a una institución o al menos a una materia.');
+       return;
+     }
+     if(await mutate({...input,action:'teacher',institutionId:teacherInstitution,subjectIds:teacherSubjectIds},'Profesor registrado y asignado con éxito.')){
+       node.reset();
+       setTeacherInstitution('');
+       setTeacherSubjectIds([]);
+     }
+   }}>
+     <label>Nombre completo<input name="name" required maxLength={100} placeholder="Ej. Prof. Andrea Gómez" autoComplete="off"/></label>
+     <label>Correo o usuario docente<input name="username" required minLength={3} maxLength={100} placeholder="andrea.gomez@campus.edu" autoComplete="off"/></label>
+     <label>Contraseña inicial<input name="password" type="password" required minLength={10} maxLength={256} placeholder="Mínimo 10 caracteres" autoComplete="new-password"/><small>Mínimo 10 caracteres. Entrega las credenciales al docente para su primer ingreso.</small></label>
+     <label>Institución asignada
+       <select value={teacherInstitution} onChange={e=>{
+         setTeacherInstitution(e.target.value);
+         setTeacherSubjectIds([]);
+       }} required>
+         <option value="">Seleccionar institución asignada</option>
+         {data.institutions.map(i=><option key={i.id} value={i.id}>{i.name} ({i.shortName})</option>)}
+       </select>
+     </label>
+     {teacherInstitution&&(()=>{
+       const availSubs=data.subjects.filter(s=>s.institutionId===teacherInstitution);
+       return <fieldset className="mt-2 p-3 border rounded-lg bg-stone-50 dark:bg-stone-900/40">
+         <legend className="text-xs font-semibold px-1">Materias asignadas (opcional: si no marcas ninguna, tendrá acceso a todas las de la institución)</legend>
+         {availSubs.length>0?<div className="grid gap-2 mt-1">
+           {availSubs.map(s=><label key={s.id} className="checkbox-label text-xs flex items-center gap-2 cursor-pointer">
+             <input type="checkbox" checked={teacherSubjectIds.includes(s.id)} onChange={ev=>setTeacherSubjectIds(ids=>ev.target.checked?[...ids,s.id]:ids.filter(x=>x!==s.id))}/>
+             <span><strong>{s.name}</strong> <span className="text-muted-foreground">({s.code})</span></span>
+           </label>)}
+         </div>:<p className="text-xs text-muted-foreground">Esta institución aún no tiene materias registradas.</p>}
+       </fieldset>;
+     })()}
+     <Button disabled={busy}><Plus size={15}/>Registrar profesor</Button>
+   </form>
   </section>
  </div>}
  </main>;

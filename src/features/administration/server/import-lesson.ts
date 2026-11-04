@@ -5,7 +5,8 @@ import {randomUUID,createHash} from 'node:crypto';
 import {spawn} from 'node:child_process';
 import {parseLatex,extractLatexMetadata} from '@/features/latex-import/lib/parser';
 import type {Subject,Lesson,Block} from '@/features/catalog/model/types';
-import {db,dataDirectory,transaction,lessonRecord} from './database';
+import type {User} from '@/features/auth/types';
+import {db,dataDirectory,transaction,lessonRecord,userAccessibleSubjectIds} from './database';
 import {sharedImage,cachedDiagramPath,cacheDiagram} from './shared-resource';
 import {AppError,text} from '@/features/auth/server/auth';
 type Resource={key:string;name:string;path:string;mime:string};
@@ -19,8 +20,13 @@ export function compileFigures(figures:string[],output:string):Promise<{results:
  if(!pending.length)return Promise.resolve({results:cachedResults,errors:[]});
  return new Promise((resolve,reject)=>{const child=spawn('python3',['scripts/compile-upload.py'],{cwd:process.cwd(),stdio:['pipe','pipe','pipe']});let result='';const timer=setTimeout(()=>{child.kill('SIGKILL');reject(new AppError('La compilación superó el tiempo permitido. Reduce la cantidad de diagramas.'));},180000);child.stdout.on('data',data=>{result+=data.toString();});child.stderr.on('data',()=>{});child.on('error',()=>{clearTimeout(timer);resolve({results:cachedResults,errors:pending.map(source=>({hash:createHash('sha256').update(source).digest('hex'),message:'No está disponible el compilador de diagramas.'}))});});child.on('close',code=>{clearTimeout(timer);if(code!==0){reject(new AppError('No se pudo procesar la compilación de diagramas.'));return;}try{const parsed=JSON.parse(result) as {results:Record<string,string>;errors:{hash:string;message:string;log?:string;line?:number}[]};for(const [hash,file] of Object.entries(parsed.results))cachedResults[hash]=cacheDiagram(hash,file);resolve({results:cachedResults,errors:parsed.errors});}catch{reject(new AppError('La compilación no produjo un resultado válido.'));}});child.stdin.end(JSON.stringify({figures:pending,output}));});
 }
-export async function importLesson(form:FormData){
- const subjectId=text(form.get('subjectId'),'Materia');const row=db().prepare('SELECT data FROM subjects WHERE id=?').get(subjectId);if(!row)throw new AppError('Materia no encontrada.');const subject=JSON.parse(row.data as string) as Subject;
+export async function importLesson(form:FormData,actor?:User){
+ const subjectId=text(form.get('subjectId'),'Materia');
+ if(actor&&actor.role==='teacher'){
+  const allowed=userAccessibleSubjectIds(actor);
+  if(!allowed||!allowed.has(subjectId))throw new AppError('No tienes permiso para importar clases en esta materia.',403);
+ }
+ const row=db().prepare('SELECT data FROM subjects WHERE id=?').get(subjectId);if(!row)throw new AppError('Materia no encontrada.');const subject=JSON.parse(row.data as string) as Subject;
  const rawTopic=typeof form.get('topicId')==='string'?String(form.get('topicId')).trim():'';
  let topicId=rawTopic,createdGeneralTopic=false;
  if(!topicId||(!subject.topics.length&&topicId==='general')){
