@@ -1,0 +1,11 @@
+node_modules
+.next
+.data
+dist
+package-lock.json
+public
+content
+docs
+scripts
+*.css
+*.json

@@ -1,16 +1,113 @@
-import {test,after} from 'node:test';
+import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
 import ExcelJS from 'exceljs';
-import {mkdtempSync,rmSync} from 'node:fs';
-import {tmpdir} from 'node:os';
+import { mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import path from 'node:path';
-const folder=mkdtempSync(path.join(tmpdir(),'aula-roster-'));process.env.AULA_DATA_DIR=folder;
-const {previewRoster,importRoster}=await import('./student-roster');const {db}=await import('./database');const {setup,login}=await import('../../auth/server/auth');
-setup({name:'Docente',username:'docente@pruebas.edu',password:'Clave-docente-prueba'});
-async function workbook(rows:(string|number)[][],numericFormat?:string){const book=new ExcelJS.Workbook(),sheet=book.addWorksheet('Alumnos');sheet.addRow(['Nombre','Correo','Identificación']);for(const row of rows)sheet.addRow(row);if(numericFormat)sheet.getCell('C2').numFmt=numericFormat;return Buffer.from(await book.xlsx.writeBuffer());}
-test('previsualiza sin exponer identificaciones y conserva ceros iniciales',async()=>{const buffer=await workbook([['Ana Prueba','ANA@PRUEBAS.EDU','00091234']]);const preview=await previewRoster(buffer);assert.equal(preview.ready,1);assert.equal(preview.rows[0].email,'ana@pruebas.edu');assert.equal(preview.rows[0].identificationLength,8);assert.ok(!JSON.stringify(preview).includes('00091234'));await importRoster(buffer,{fingerprint:preview.fingerprint,subjectIds:['diseno-web-1'],skipErrors:false,enrollExisting:false});assert.equal(login({username:'ana@pruebas.edu',password:'00091234'}).role,'student');});
-test('preserva formato numérico de identificación con ceros',async()=>{const buffer=await workbook([['Beto Prueba','beto@pruebas.edu',1234]],'000000');const preview=await previewRoster(buffer);assert.equal(preview.rows[0].identificationLength,6);await importRoster(buffer,{fingerprint:preview.fingerprint,subjectIds:[],skipErrors:false,enrollExisting:false});assert.equal(login({username:'beto@pruebas.edu',password:'001234'}).role,'student');});
-test('detecta correos inválidos, docentes y duplicados sin crear cuentas',async()=>{const buffer=await workbook([['Uno','correo-invalido','123'],['Docente','docente@pruebas.edu','456'],['Nuevo','nuevo@pruebas.edu','789'],['Duplicado','NUEVO@pruebas.edu','999']]);const preview=await previewRoster(buffer);assert.equal(preview.errors,3);assert.equal(preview.ready,1);await assert.rejects(importRoster(buffer,{fingerprint:preview.fingerprint,subjectIds:[],skipErrors:false,enrollExisting:false}));assert.equal(db().prepare('SELECT id FROM users WHERE username=?').get('nuevo@pruebas.edu'),undefined);});
-test('importar filas válidas exige omisión explícita y no permite cambiar el archivo',async()=>{const buffer=await workbook([['Válido','valido@pruebas.edu','123'],['Inválido','error','456']]);const preview=await previewRoster(buffer);await assert.rejects(importRoster(buffer,{fingerprint:'archivo-cambiado',subjectIds:[],skipErrors:true,enrollExisting:false}));const result=await importRoster(buffer,{fingerprint:preview.fingerprint,subjectIds:[],skipErrors:true,enrollExisting:false});assert.equal(result.created,1);assert.equal(result.skippedErrors,1);assert.equal(login({username:'valido@pruebas.edu',password:'123'}).role,'student');});
-test('un correo existente conserva su contraseña y puede recibir asignaciones',async()=>{const buffer=await workbook([['Ana actualizada','ana@pruebas.edu','otra-identificacion']]);const preview=await previewRoster(buffer);assert.equal(preview.existing,1);const result=await importRoster(buffer,{fingerprint:preview.fingerprint,subjectIds:['robotica-servicio'],skipErrors:false,enrollExisting:true});assert.equal(result.created,0);assert.equal(result.enrolled,1);assert.equal(login({username:'ana@pruebas.edu',password:'00091234'}).name,'Ana Prueba');assert.throws(()=>login({username:'ana@pruebas.edu',password:'otra-identificacion'}));});
-after(()=>{db().close();rmSync(folder,{recursive:true,force:true});});
+const folder = mkdtempSync(path.join(tmpdir(), 'aula-roster-'));
+process.env.AULA_DATA_DIR = folder;
+const { previewRoster, importRoster } = await import('./student-roster');
+const { db } = await import('./database');
+const { setup, login } = await import('../../auth/server/auth');
+setup({ name: 'Docente', username: 'docente@pruebas.edu', password: 'Clave-docente-prueba' });
+async function workbook(rows: (string | number)[][], numericFormat?: string) {
+  const book = new ExcelJS.Workbook(),
+    sheet = book.addWorksheet('Alumnos');
+  sheet.addRow(['Nombre', 'Correo', 'Identificación']);
+  for (const row of rows) sheet.addRow(row);
+  if (numericFormat) sheet.getCell('C2').numFmt = numericFormat;
+  return Buffer.from(await book.xlsx.writeBuffer());
+}
+test('previsualiza sin exponer identificaciones y conserva ceros iniciales', async () => {
+  const buffer = await workbook([['Ana Prueba', 'ANA@PRUEBAS.EDU', '00091234']]);
+  const preview = await previewRoster(buffer);
+  assert.equal(preview.ready, 1);
+  assert.equal(preview.rows[0].email, 'ana@pruebas.edu');
+  assert.equal(preview.rows[0].identificationLength, 8);
+  assert.ok(!JSON.stringify(preview).includes('00091234'));
+  await importRoster(buffer, {
+    fingerprint: preview.fingerprint,
+    subjectIds: ['diseno-web-1'],
+    skipErrors: false,
+    enrollExisting: false,
+  });
+  assert.equal(login({ username: 'ana@pruebas.edu', password: '00091234' }).role, 'student');
+});
+test('preserva formato numérico de identificación con ceros', async () => {
+  const buffer = await workbook([['Beto Prueba', 'beto@pruebas.edu', 1234]], '000000');
+  const preview = await previewRoster(buffer);
+  assert.equal(preview.rows[0].identificationLength, 6);
+  await importRoster(buffer, {
+    fingerprint: preview.fingerprint,
+    subjectIds: [],
+    skipErrors: false,
+    enrollExisting: false,
+  });
+  assert.equal(login({ username: 'beto@pruebas.edu', password: '001234' }).role, 'student');
+});
+test('detecta correos inválidos, docentes y duplicados sin crear cuentas', async () => {
+  const buffer = await workbook([
+    ['Uno', 'correo-invalido', '123'],
+    ['Docente', 'docente@pruebas.edu', '456'],
+    ['Nuevo', 'nuevo@pruebas.edu', '789'],
+    ['Duplicado', 'NUEVO@pruebas.edu', '999'],
+  ]);
+  const preview = await previewRoster(buffer);
+  assert.equal(preview.errors, 3);
+  assert.equal(preview.ready, 1);
+  await assert.rejects(
+    importRoster(buffer, {
+      fingerprint: preview.fingerprint,
+      subjectIds: [],
+      skipErrors: false,
+      enrollExisting: false,
+    })
+  );
+  assert.equal(
+    db().prepare('SELECT id FROM users WHERE username=?').get('nuevo@pruebas.edu'),
+    undefined
+  );
+});
+test('importar filas válidas exige omisión explícita y no permite cambiar el archivo', async () => {
+  const buffer = await workbook([
+    ['Válido', 'valido@pruebas.edu', '123'],
+    ['Inválido', 'error', '456'],
+  ]);
+  const preview = await previewRoster(buffer);
+  await assert.rejects(
+    importRoster(buffer, {
+      fingerprint: 'archivo-cambiado',
+      subjectIds: [],
+      skipErrors: true,
+      enrollExisting: false,
+    })
+  );
+  const result = await importRoster(buffer, {
+    fingerprint: preview.fingerprint,
+    subjectIds: [],
+    skipErrors: true,
+    enrollExisting: false,
+  });
+  assert.equal(result.created, 1);
+  assert.equal(result.skippedErrors, 1);
+  assert.equal(login({ username: 'valido@pruebas.edu', password: '123' }).role, 'student');
+});
+test('un correo existente conserva su contraseña y puede recibir asignaciones', async () => {
+  const buffer = await workbook([['Ana actualizada', 'ana@pruebas.edu', 'otra-identificacion']]);
+  const preview = await previewRoster(buffer);
+  assert.equal(preview.existing, 1);
+  const result = await importRoster(buffer, {
+    fingerprint: preview.fingerprint,
+    subjectIds: ['robotica-servicio'],
+    skipErrors: false,
+    enrollExisting: true,
+  });
+  assert.equal(result.created, 0);
+  assert.equal(result.enrolled, 1);
+  assert.equal(login({ username: 'ana@pruebas.edu', password: '00091234' }).name, 'Ana Prueba');
+  assert.throws(() => login({ username: 'ana@pruebas.edu', password: 'otra-identificacion' }));
+});
+after(() => {
+  db().close();
+  rmSync(folder, { recursive: true, force: true });
+});

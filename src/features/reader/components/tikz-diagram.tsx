@@ -50,7 +50,8 @@ const FALLBACK_SCRIPT = 'https://tikzjax.com/v1/tikzjax.js';
 
 function ensureTikZJaxLoaded(): Promise<void> {
   if (typeof window === 'undefined') return Promise.resolve();
-  if ((window as unknown as { __tikzjax_ready?: boolean }).__tikzjax_ready) return Promise.resolve();
+  if ((window as unknown as { __tikzjax_ready?: boolean }).__tikzjax_ready)
+    return Promise.resolve();
 
   return new Promise((resolve) => {
     if (!document.querySelector('link[data-tikzjax-fonts]')) {
@@ -147,7 +148,10 @@ export function TikZDiagram({ code }: { code: string }) {
             const bbox = svg.getBBox();
             if (bbox && bbox.width > 0 && bbox.height > 0) {
               const pad = 8;
-              svg.setAttribute('viewBox', `${(bbox.x - pad).toFixed(2)} ${(bbox.y - pad).toFixed(2)} ${(bbox.width + pad * 2).toFixed(2)} ${(bbox.height + pad * 2).toFixed(2)}`);
+              svg.setAttribute(
+                'viewBox',
+                `${(bbox.x - pad).toFixed(2)} ${(bbox.y - pad).toFixed(2)} ${(bbox.width + pad * 2).toFixed(2)} ${(bbox.height + pad * 2).toFixed(2)}`
+              );
               svg.style.maxWidth = '100%';
               svg.style.width = 'auto';
               svg.style.height = 'auto';
@@ -185,9 +189,23 @@ export function TikZDiagram({ code }: { code: string }) {
   }, [code]);
 
   return (
-    <div className="tikz-container" style={{ margin: '15px auto', textAlign: 'center', width: '100%' }}>
+    <div
+      className="tikz-container"
+      style={{ margin: '15px auto', textAlign: 'center', width: '100%' }}
+    >
       {loading && (
-        <div className="tikz-loading" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '20px', color: 'var(--muted)', fontSize: '13px' }}>
+        <div
+          className="tikz-loading"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '8px',
+            padding: '20px',
+            color: 'var(--muted)',
+            fontSize: '13px',
+          }}
+        >
           <Loader2 className="animate-spin" size={16} />
           <span>Renderizando diagrama con TikZJax…</span>
         </div>
@@ -210,7 +228,14 @@ export function TikZDiagram({ code }: { code: string }) {
             href="https://tikz.dev/"
             target="_blank"
             rel="noopener noreferrer"
-            style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', fontSize: '12px', marginTop: '6px', color: 'var(--primary)' }}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '5px',
+              fontSize: '12px',
+              marginTop: '6px',
+              color: 'var(--primary)',
+            }}
           >
             Documentación y editor en TikZ.dev <ExternalLink size={12} />
           </a>
