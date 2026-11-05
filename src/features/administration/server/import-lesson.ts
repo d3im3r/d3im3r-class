@@ -1,5 +1,5 @@
 import {existsSync} from 'node:fs';
-import {mkdir,writeFile} from 'node:fs/promises';
+import {mkdir,writeFile,readFile} from 'node:fs/promises';
 import path from 'node:path';
 import {randomUUID,createHash} from 'node:crypto';
 import {spawn} from 'node:child_process';
@@ -11,6 +11,52 @@ import {sharedImage,cachedDiagramPath,cacheDiagram} from './shared-resource';
 import {AppError,text} from '@/features/auth/server/auth';
 type Resource={key:string;name:string;path:string;mime:string};
 const types:Record<string,string>={'.pdf':'application/pdf','.tex':'text/plain; charset=utf-8','.png':'image/png','.jpg':'image/jpeg','.jpeg':'image/jpeg','.webp':'image/webp'};
+export async function compileTikzWithTikzjax(figures: string[], output: string): Promise<{ results: Record<string, string>; errors: { hash: string; message: string; log?: string; line?: number }[] }> {
+ const results: Record<string, string> = {};
+ const errors: { hash: string; message: string; log?: string; line?: number }[] = [];
+ let preambleColors = '';
+ try {
+  const p = path.join(process.cwd(), 'content/resources/latex/diagram-preamble.tex');
+  if (existsSync(p)) {
+   const c = await readFile(p, 'utf8');
+   preambleColors = c.split('\n').filter(l => l.startsWith('\\definecolor') || l.startsWith('\\usetikzlibrary')).join('\n');
+  }
+ } catch {}
+
+ const tikzjax = (await import('node-tikzjax')).default;
+
+ for (const source of figures) {
+  const hash = createHash('sha256').update(source).digest('hex');
+  const cached = cachedDiagramPath(hash);
+  if (cached) {
+   results[hash] = cached;
+   continue;
+  }
+  if (/\b(?:input|write|openin|openout|read|catcode)\b/i.test(source) || /\^\^/.test(source)) {
+   errors.push({ hash, message: 'Diagrama 1: comandos que requieren revisión: input' });
+   continue;
+  }
+  try {
+   const full = `\\begin{document}\n${preambleColors}\n${source}\n\\end{document}`;
+   const svg = await tikzjax(full);
+   const dest = path.join(output, `${hash}.svg`);
+   await writeFile(dest, svg);
+   const cachedDest = cacheDiagram(hash, dest);
+   try {
+    const inPublic = path.join(process.cwd(), 'public/assets/diagrams', `${hash}.svg`);
+    await writeFile(inPublic, svg);
+   } catch {}
+   results[hash] = cachedDest;
+  } catch (err) {
+   errors.push({
+    hash,
+    message: err instanceof Error ? err.message : 'Error al compilar diagrama con TikZJax',
+   });
+  }
+ }
+ return { results, errors };
+}
+
 export function compileFigures(figures:string[],output:string):Promise<{results:Record<string,string>;errors:{hash:string;message:string;log?:string;line?:number}[]}>{
  const cachedResults:Record<string,string>={},pending:string[]=[];
  for(const source of new Set(figures)){
@@ -18,7 +64,61 @@ export function compileFigures(figures:string[],output:string):Promise<{results:
   if(cached)cachedResults[hash]=cached;else pending.push(source);
  }
  if(!pending.length)return Promise.resolve({results:cachedResults,errors:[]});
- return new Promise((resolve,reject)=>{const child=spawn('python3',['scripts/compile-upload.py'],{cwd:process.cwd(),stdio:['pipe','pipe','pipe']});let result='';const timer=setTimeout(()=>{child.kill('SIGKILL');reject(new AppError('La compilación superó el tiempo permitido. Reduce la cantidad de diagramas.'));},180000);child.stdout.on('data',data=>{result+=data.toString();});child.stderr.on('data',()=>{});child.on('error',()=>{clearTimeout(timer);resolve({results:cachedResults,errors:pending.map(source=>({hash:createHash('sha256').update(source).digest('hex'),message:'No está disponible el compilador de diagramas.'}))});});child.on('close',code=>{clearTimeout(timer);if(code!==0){reject(new AppError('No se pudo procesar la compilación de diagramas.'));return;}try{const parsed=JSON.parse(result) as {results:Record<string,string>;errors:{hash:string;message:string;log?:string;line?:number}[]};for(const [hash,file] of Object.entries(parsed.results))cachedResults[hash]=cacheDiagram(hash,file);resolve({results:cachedResults,errors:parsed.errors});}catch{reject(new AppError('La compilación no produjo un resultado válido.'));}});child.stdin.end(JSON.stringify({figures:pending,output}));});
+ return new Promise((resolve,reject)=>{
+  const child=spawn('python3',['scripts/compile-upload.py'],{cwd:process.cwd(),stdio:['pipe','pipe','pipe']});
+  let result='';
+  const timer=setTimeout(()=>{child.kill('SIGKILL');reject(new AppError('La compilación superó el tiempo permitido. Reduce la cantidad de diagramas.'));},180000);
+  child.stdout.on('data',data=>{result+=data.toString();});
+  child.stderr.on('data',()=>{});
+  child.on('error',async()=>{
+   clearTimeout(timer);
+   try{
+    const fallback=await compileTikzWithTikzjax(pending,output);
+    resolve({results:{...cachedResults,...fallback.results},errors:fallback.errors});
+   }catch{
+    resolve({results:cachedResults,errors:pending.map(source=>({hash:createHash('sha256').update(source).digest('hex'),message:'No está disponible el compilador de diagramas.'}))});
+   }
+  });
+  child.on('close',async(code)=>{
+   clearTimeout(timer);
+   if(code!==0){
+    try{
+     const fallback=await compileTikzWithTikzjax(pending,output);
+     resolve({results:{...cachedResults,...fallback.results},errors:fallback.errors});
+     return;
+    }catch{
+     reject(new AppError('No se pudo procesar la compilación de diagramas.'));
+     return;
+    }
+   }
+   try{
+    const parsed=JSON.parse(result) as {results:Record<string,string>;errors:{hash:string;message:string;log?:string;line?:number}[]};
+    for(const [hash,file] of Object.entries(parsed.results))cachedResults[hash]=cacheDiagram(hash,file);
+    if(parsed.errors.length){
+     const failedHashes=new Set(parsed.errors.map(e=>e.hash));
+     const failedSources=pending.filter(s=>failedHashes.has(createHash('sha256').update(s).digest('hex')));
+     if(failedSources.length){
+      try{
+       const fallback=await compileTikzWithTikzjax(failedSources,output);
+       for(const [h,f] of Object.entries(fallback.results))cachedResults[h]=f;
+       const stillFailed=parsed.errors.filter(e=>!fallback.results[e.hash]);
+       resolve({results:cachedResults,errors:stillFailed});
+       return;
+      }catch{}
+     }
+    }
+    resolve({results:cachedResults,errors:parsed.errors});
+   }catch{
+    try{
+     const fallback=await compileTikzWithTikzjax(pending,output);
+     resolve({results:{...cachedResults,...fallback.results},errors:fallback.errors});
+    }catch{
+     reject(new AppError('La compilación no produjo un resultado válido.'));
+    }
+   }
+  });
+  child.stdin.end(JSON.stringify({figures:pending,output}));
+ });
 }
 export async function importLesson(form:FormData,actor?:User){
  const subjectId=text(form.get('subjectId'),'Materia');
