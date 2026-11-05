@@ -51,7 +51,11 @@ export async function compileTikzWithTikzjax(figures: string[], output: string):
   }
  } catch {}
 
- const tikzjax = (await import('node-tikzjax')).default;
+ const tikzjaxModule = await import('node-tikzjax');
+ const tikzjax = (tikzjaxModule as any).default?.default ?? (tikzjaxModule as any).default?.tex ?? (tikzjaxModule as any).tex ?? (tikzjaxModule as any).default;
+ if (typeof tikzjax !== 'function') {
+  return { results, errors: figures.map(source => ({ hash: createHash('sha256').update(source).digest('hex'), message: 'Motor TikZJax no disponible.' })) };
+ }
 
  for (const source of figures) {
   const hash = createHash('sha256').update(source).digest('hex');
@@ -171,7 +175,11 @@ export async function importLesson(form:FormData,actor?:User){
  const pdf=rawPdf instanceof File&&rawPdf.size>0?rawPdf:extraPdfs[0];
  if(extras.length>30)throw new AppError('Puedes cargar hasta 30 imágenes por clase.');
  const uploads=[tex,...(pdf instanceof File&&pdf.size>0?[pdf]:[]),...extras];if(uploads.reduce((n,f)=>n+f.size,0)>35*1024*1024)throw new AppError('El total de archivos debe ser menor a 35 MB.');
- if(pdf instanceof File&&pdf.size>0&&(!pdf.name.toLowerCase().endsWith('.pdf')||!(await pdf.text()).startsWith('%PDF-')))throw new AppError('El PDF no es válido.');
+ if(pdf instanceof File&&pdf.size>0){
+  if(!pdf.name.toLowerCase().endsWith('.pdf'))throw new AppError('El PDF no es válido.');
+  const headBytes=Buffer.from(await pdf.slice(0,8).arrayBuffer()).toString('utf8');
+  if(!headBytes.startsWith('%PDF-'))throw new AppError('El PDF no es válido.');
+ }
  const names=new Set<string>();for(const f of uploads){const name=path.basename(f.name.replace(/\\/g,'/')).toLowerCase();if(names.has(name))throw new AppError('Los archivos de una clase deben tener nombres diferentes.');names.add(name);if(!types[path.extname(name)]||f.size>20*1024*1024)throw new AppError('Formato o tamaño de archivo no admitido. Usa .tex, .pdf, PNG, JPG o WebP.');}
  const source=await tex.text();if(!source.includes('\\begin{document}'))throw new AppError('El archivo debe contener un documento LaTeX completo.');let parsed;try{parsed=parseLatex(source);}catch{throw new AppError('No se pudo interpretar el .tex. Revisa llaves y entornos sin cerrar.');}if(!parsed.frames.length)throw new AppError('No se encontraron diapositivas frame en el documento.');
  const meta=extractLatexMetadata(source,tex.name);

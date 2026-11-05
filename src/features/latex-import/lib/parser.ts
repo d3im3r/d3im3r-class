@@ -32,10 +32,11 @@ function listItems(body:string){
  while((m=tokens.exec(body))){if(m[0].startsWith('\\begin'))depth++;else if(m[0].startsWith('\\end'))depth--;else if(depth===0){if(start>=0)items.push(body.slice(start,m.index));start=tokens.lastIndex;}}
  if(start>=0)items.push(body.slice(start));return items;
 }
+const mathEnvs = new Set(['align','align*','gather','gather*','equation','equation*','multline','multline*','alignat','alignat*']);
 export function parseBlocks(source:string,diagnostics:Set<string>):Block[]{
  const blocks:Block[]=[];let cursor=0;
  // Inline $...$ remains in its paragraph; only display math becomes a standalone block.
- const token=/\\begin\{([a-zA-Z]+code(?:dark)?|minted|tikzpicture|block|alertblock|exampleblock|itemize|enumerate|tabular)\}|\\(Idea|Practice|DefBlock|Result|Warning|Compare|Question|ExampleBlock)\b|\\\[|\$\$|\\(?:smartimage|includegraphics)\b/g;let m;
+ const token=/\\begin\{([a-zA-Z]+code(?:dark)?|minted|tikzpicture|block|alertblock|exampleblock|itemize|enumerate|tabular|algorithm|algorithmic|align\*?|gather\*?|equation\*?|multline\*?|alignat\*?)\}|\\(Idea|Practice|DefBlock|Result|Warning|Compare|Question|ExampleBlock)\b|\\\[|\$\$|\\(?:smartimage|includegraphics)\b/g;let m;
  const addText=(s:string)=>{const content=cleanLayout(s);if(content)blocks.push({type:'text',content});};
  while((m=token.exec(source))){
   addText(source.slice(cursor,m.index));let end=token.lastIndex;
@@ -44,7 +45,29 @@ export function parseBlocks(source:string,diagnostics:Set<string>):Block[]{
    if(!stop){diagnostics.add(`Entorno sin cerrar: ${env}`);cursor=end;continue;}
    let body=source.slice(end,stop.start);
    if(env==='tikzpicture')blocks.push({type:'diagram',content:source.slice(m.index,stop.end)});
-   else if(env==='itemize'||env==='enumerate')blocks.push({type:'list',content:'',variant:env,items:listItems(body).map(item=>parseBlocks(item,diagnostics))});
+   else if(mathEnvs.has(env)){
+    blocks.push({type:'math',content:source.slice(m.index,stop.end),variant:'display'});
+   }else if(env==='algorithm'||env==='algorithmic'){
+    body=body.replace(/^\s*\[[^\]]*\]/,'');
+    let title='Algoritmo';
+    const captionMatch=body.match(/\\caption\{([^}]+)\}/);
+    if(captionMatch){
+     title=`Algoritmo: ${plain(captionMatch[1])}`;
+     body=body.replace(/\\caption\{[^}]+\}/g,'');
+    }
+    const rawSteps=body.replace(/\\(?:begin|end)\{(?:algorithm|algorithmic)\}(?:\[[^\]]*\])?/g,'')
+     .split(/\\(?:State|Statex)\b/)
+     .map(s=>cleanLayout(s))
+     .filter(Boolean);
+    const items=rawSteps.length?rawSteps.map(step=>[{type:'text' as const,content:step}]):[[{type:'text' as const,content:cleanLayout(body)}]];
+    blocks.push({
+     type:'callout',
+     title,
+     variant:'Practice',
+     content:'',
+     children:[{type:'list',content:'',variant:'enumerate',items}]
+    });
+   }else if(env==='itemize'||env==='enumerate')blocks.push({type:'list',content:'',variant:env,items:listItems(body).map(item=>parseBlocks(item,diagnostics))});
    else if(env==='tabular'){
     let i=body.search(/\S/);if(body[i]==='{')body=body.slice(group(body,i).end);
     body=body.replace(/\\(?:toprule|midrule|bottomrule|hline)\b/g,'');

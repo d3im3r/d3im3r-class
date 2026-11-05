@@ -25,6 +25,10 @@ test('TikZ: genera SVG, informa sintaxis y rechaza comandos restringidos',async(
 every node/.style={align=center}]\node {Interfaz\\dinámica};\end{tikzpicture}`);
   assert.equal(multiline.ok,true);
 
+  const pgfplot=await testTikz(String.raw`\begin{tikzpicture}\begin{axis}[xmin=0,xmax=5,ymin=0,ymax=10]\addplot coordinates {(0,0) (2,4) (4,8)};\addlegendentry{Datos}\end{axis}\end{tikzpicture}`);
+  assert.equal(pgfplot.ok,true);
+  assert.match(pgfplot.svg??'',/<svg/);
+
   const bad=await testTikz('\\begin{tikzpicture}[\nnode distance=2cm,\n\n]\n\\node {Prueba};\n\\end{tikzpicture}');
   assert.equal(bad.ok,false);
   assert.match(bad.message,/Paragraph ended/);

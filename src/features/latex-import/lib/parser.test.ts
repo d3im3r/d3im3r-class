@@ -16,3 +16,16 @@ test('conserva comentarios TikZ sin convertirlos en párrafos dentro de las opci
 every node/.style={font=\small}]
 \node {Interfaz\\dinámica};
 \end{tikzpicture}`;const result=parseLatex(`\\begin{frame}{Diagrama}${diagram}\\end{frame}`);assert.equal(result.frames[0].blocks[0].content,diagram);});
+
+test('interpreta entornos align* y matemáticos display',()=>{const result=parseLatex(String.raw`\begin{frame}{Ecuaciones}\begin{align*}
+a &= b + c \\
+&= d
+\end{align*}\end{frame}`);assert.equal(result.frames[0].blocks[0].type,'math');assert.equal(result.frames[0].blocks[0].variant,'display');assert.match(result.frames[0].blocks[0].content,/align\*/);});
+
+test('interpreta entornos algorithm y algorithmic como callout estructurado',()=>{const result=parseLatex(String.raw`\begin{frame}{Algoritmo}\begin{algorithm}[H]
+\caption{Actualización PI}
+\begin{algorithmic}[1]
+\State Medir velocidad $\omega_k$
+\State Calcular $e_k = \omega_k$
+\end{algorithmic}
+\end{algorithm}\end{frame}`);assert.equal(result.frames[0].blocks[0].type,'callout');assert.equal(result.frames[0].blocks[0].title,'Algoritmo: Actualización PI');const list=result.frames[0].blocks[0].children?.[0];assert.equal(list?.type,'list');assert.equal(list?.items?.length,2);});
