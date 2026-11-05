@@ -296,6 +296,12 @@ export function Workspace({
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
   const selectedSubject = catalog.subjects.find((s) => s.id === subjectSelection);
+  const subjectLessons = selectedSubject
+    ? catalog.lessons.filter((l) => l.subjectId === selectedSubject.id)
+    : [];
+  const subjectRead = selectedSubject
+    ? subjectLessons.reduce((sum, l) => sum + (progress[l.id]?.length ?? 0), 0)
+    : read;
   const currentSubject = catalog.subjects.find((s) => s.id === lesson?.subjectId);
   function subjectCard(s: Subject) {
     const lessons = catalog.lessons.filter((l) => l.subjectId === s.id);
@@ -660,8 +666,19 @@ export function Workspace({
                     <BookOpen size={20} />
                   </span>
                   <div>
-                    <strong>{catalog.subjects.length.toString().padStart(2, '0')}</strong>
-                    <span>Asignaturas disponibles</span>
+                    <strong>
+                      {(view === 'course' && selectedSubject
+                        ? selectedSubject.topics.length
+                        : catalog.subjects.length
+                      )
+                        .toString()
+                        .padStart(2, '0')}
+                    </strong>
+                    <span>
+                      {view === 'course' && selectedSubject
+                        ? 'Temas en esta materia'
+                        : 'Asignaturas disponibles'}
+                    </span>
                   </div>
                 </div>
                 <div>
@@ -669,8 +686,17 @@ export function Workspace({
                     <Building2 size={20} />
                   </span>
                   <div>
-                    <strong>{catalog.institutions.length.toString().padStart(2, '0')}</strong>
-                    <span>Instituciones</span>
+                    <strong>
+                      {(view === 'course' && selectedSubject ? 1 : catalog.institutions.length)
+                        .toString()
+                        .padStart(2, '0')}
+                    </strong>
+                    <span>
+                      {view === 'course' && selectedSubject
+                        ? (catalog.institutions.find((i) => i.id === selectedSubject.institutionId)
+                            ?.shortName ?? 'Institución')
+                        : 'Instituciones'}
+                    </span>
                   </div>
                 </div>
                 <div>
@@ -678,8 +704,21 @@ export function Workspace({
                     <Layers3 size={20} />
                   </span>
                   <div>
-                    <strong>{catalog.lessons.length.toString().padStart(2, '0')}</strong>
-                    <span>Clases para explorar</span>
+                    <strong>
+                      {(view === 'course' && selectedSubject
+                        ? subjectLessons.length
+                        : catalog.lessons.length
+                      )
+                        .toString()
+                        .padStart(2, '0')}
+                    </strong>
+                    <span>
+                      {view === 'course' && selectedSubject
+                        ? subjectLessons.length === 1
+                          ? 'Clase en esta materia'
+                          : 'Clases en esta materia'
+                        : 'Clases para explorar'}
+                    </span>
                   </div>
                 </div>
                 <div>
@@ -687,7 +726,11 @@ export function Workspace({
                     <CheckCircle2 size={20} />
                   </span>
                   <div>
-                    <strong>{read.toString().padStart(2, '0')}</strong>
+                    <strong>
+                      {(view === 'course' && selectedSubject ? subjectRead : read)
+                        .toString()
+                        .padStart(2, '0')}
+                    </strong>
                     <span>Bloques completados</span>
                   </div>
                 </div>

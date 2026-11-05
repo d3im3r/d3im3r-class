@@ -115,7 +115,7 @@ export async function rebuildLesson(id: string, actor?: User) {
   const diagnostics = new Set(
     lesson.diagnostics.filter(
       (d) =>
-        !/^Falta la imagen:|^Diagrama \d+:|^El diagrama usa comandos|^No se pudo compilar el diagrama|^Algunos diagramas TikZ/.test(
+        !/^Falta la imagen:|^Diagrama \d+:|^El diagrama usa comandos|^No se pudo compilar el diagrama|^Algunos diagramas TikZ|reading 'slice'|comandos que requieren revisión/i.test(
           d
         )
     )

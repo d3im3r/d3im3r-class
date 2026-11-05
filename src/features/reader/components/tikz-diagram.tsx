@@ -216,20 +216,53 @@ export function TikZDiagram({ code }: { code: string }) {
               for (const p of paths) {
                 const d = p.getAttribute('d');
                 if (d) {
-                  const nums = d.match(/-?[\d.]+/g);
-                  if (nums) {
-                    for (let i = 0; i < nums.length - 1; i += 2) {
-                      const x = parseFloat(nums[i]);
-                      const y = parseFloat(nums[i + 1]);
-                      if (!isNaN(x) && !isNaN(y)) {
-                        xs.push(x);
-                        ys.push(y);
+                  const commands = d.match(/([A-Za-z])|(-?[\d.]+)/g);
+                  if (commands) {
+                    let currX = 0,
+                      currY = 0;
+                    for (let i = 0; i < commands.length; i++) {
+                      const c = commands[i];
+                      if (/^[A-Za-z]$/.test(c)) {
+                        if (c === 'M' || c === 'L') {
+                          currX = parseFloat(commands[++i]);
+                          currY = parseFloat(commands[++i]);
+                          if (!isNaN(currX) && !isNaN(currY)) {
+                            xs.push(currX);
+                            ys.push(currY);
+                          }
+                        } else if (c === 'm' || c === 'l') {
+                          currX += parseFloat(commands[++i]);
+                          currY += parseFloat(commands[++i]);
+                          if (!isNaN(currX) && !isNaN(currY)) {
+                            xs.push(currX);
+                            ys.push(currY);
+                          }
+                        } else if (c === 'H') {
+                          currX = parseFloat(commands[++i]);
+                          if (!isNaN(currX)) xs.push(currX);
+                        } else if (c === 'h') {
+                          currX += parseFloat(commands[++i]);
+                          if (!isNaN(currX)) xs.push(currX);
+                        } else if (c === 'V') {
+                          currY = parseFloat(commands[++i]);
+                          if (!isNaN(currY)) ys.push(currY);
+                        } else if (c === 'v') {
+                          currY += parseFloat(commands[++i]);
+                          if (!isNaN(currY)) ys.push(currY);
+                        }
                       }
                     }
                   }
                 }
               }
-              if (xs.length > 0) {
+              const texts = Array.from(svg.querySelectorAll('text'));
+              for (const t of texts) {
+                const x = parseFloat(t.getAttribute('x') || '');
+                const y = parseFloat(t.getAttribute('y') || '');
+                if (!isNaN(x)) xs.push(x);
+                if (!isNaN(y)) ys.push(y);
+              }
+              if (xs.length > 0 && ys.length > 0) {
                 minX = Math.min(...xs);
                 minY = Math.min(...ys);
                 width = Math.max(...xs) - minX;
@@ -250,6 +283,14 @@ export function TikZDiagram({ code }: { code: string }) {
               svg.style.height = 'auto';
               svg.style.display = 'block';
               svg.style.margin = '0 auto';
+
+              // Asegurar que las puntas de flecha cerradas se rellenen
+              for (const arrow of Array.from(svg.querySelectorAll('path'))) {
+                const d = arrow.getAttribute('d') || '';
+                if (/[Zz]/.test(d) && !arrow.getAttribute('fill')) {
+                  arrow.setAttribute('fill', 'currentColor');
+                }
+              }
             }
           } catch (e) {
             console.warn('TikZJax bbox warning:', e);

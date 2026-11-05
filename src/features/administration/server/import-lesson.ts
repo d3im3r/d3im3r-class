@@ -26,40 +26,80 @@ const types: Record<string, string> = {
   '.webp': 'image/webp',
 };
 function cropSvgViewBox(svg: string): string {
-  const coords: [number, number][] = [];
-  const pathMatches = svg.matchAll(/\bd="([^"]+)"/g);
-  for (const m of pathMatches) {
-    const numbers = m[1].match(/-?[\d.]+/g);
-    if (numbers) {
-      for (let i = 0; i < numbers.length - 1; i += 2) {
-        const x = parseFloat(numbers[i]),
-          y = parseFloat(numbers[i + 1]);
-        if (!isNaN(x) && !isNaN(y)) coords.push([x, y]);
+  const xs: number[] = [];
+  const ys: number[] = [];
+
+  for (const match of svg.matchAll(/\bd="([^"]+)"/g)) {
+    const d = match[1];
+    const commands = d.match(/([A-Za-z])|(-?[\d.]+)/g);
+    if (!commands) continue;
+    let currX = 0,
+      currY = 0;
+    for (let i = 0; i < commands.length; i++) {
+      const c = commands[i];
+      if (/^[A-Za-z]$/.test(c)) {
+        if (c === 'M' || c === 'L') {
+          currX = parseFloat(commands[++i]);
+          currY = parseFloat(commands[++i]);
+          if (!isNaN(currX) && !isNaN(currY)) {
+            xs.push(currX);
+            ys.push(currY);
+          }
+        } else if (c === 'm' || c === 'l') {
+          currX += parseFloat(commands[++i]);
+          currY += parseFloat(commands[++i]);
+          if (!isNaN(currX) && !isNaN(currY)) {
+            xs.push(currX);
+            ys.push(currY);
+          }
+        } else if (c === 'H') {
+          currX = parseFloat(commands[++i]);
+          if (!isNaN(currX)) xs.push(currX);
+        } else if (c === 'h') {
+          currX += parseFloat(commands[++i]);
+          if (!isNaN(currX)) xs.push(currX);
+        } else if (c === 'V') {
+          currY = parseFloat(commands[++i]);
+          if (!isNaN(currY)) ys.push(currY);
+        } else if (c === 'v') {
+          currY += parseFloat(commands[++i]);
+          if (!isNaN(currY)) ys.push(currY);
+        }
       }
     }
   }
-  const textMatches = svg.matchAll(/x="([^"]+)"\s+y="([^"]+)"/g);
-  for (const m of textMatches) {
-    const x = parseFloat(m[1]),
-      y = parseFloat(m[2]);
-    if (!isNaN(x) && !isNaN(y)) coords.push([x, y]);
+
+  for (const match of svg.matchAll(/x="([^"]+)"\s+y="([^"]+)"/g)) {
+    const x = parseFloat(match[1]);
+    const y = parseFloat(match[2]);
+    if (!isNaN(x)) xs.push(x);
+    if (!isNaN(y)) ys.push(y);
   }
-  if (!coords.length) return svg;
-  const xs = coords.map((c) => c[0]),
-    ys = coords.map((c) => c[1]);
-  const minX = Math.min(...xs) - 8,
-    maxX = Math.max(...xs) + 8;
-  const minY = Math.min(...ys) - 8,
-    maxY = Math.max(...ys) + 8;
-  const width = Math.max(10, maxX - minX),
-    height = Math.max(10, maxY - minY);
-  return svg
+
+  if (xs.length === 0 || ys.length === 0) return svg;
+
+  const minX = Math.min(...xs) - 10;
+  const maxX = Math.max(...xs) + 10;
+  const minY = Math.min(...ys) - 10;
+  const maxY = Math.max(...ys) + 10;
+  const width = Math.max(20, maxX - minX);
+  const height = Math.max(20, maxY - minY);
+
+  let processed = svg
     .replace(
       /viewBox="[^"]+"/,
       `viewBox="${minX.toFixed(2)} ${minY.toFixed(2)} ${width.toFixed(2)} ${height.toFixed(2)}"`
     )
     .replace(/width="[^"]+"/, `width="${width.toFixed(2)}"`)
     .replace(/height="[^"]+"/, `height="${height.toFixed(2)}"`);
+
+  // Asegurar que las puntas de flecha cerradas se rellenen visiblemente
+  processed = processed.replace(
+    /<path\s+d="([^"]*[Zz])"\s*\/>/g,
+    '<path fill="currentColor" stroke="currentColor" d="$1" />'
+  );
+
+  return processed;
 }
 
 export async function compileTikzWithTikzjax(
