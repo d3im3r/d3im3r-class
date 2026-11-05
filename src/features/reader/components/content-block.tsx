@@ -2,7 +2,7 @@
 import {useState,useEffect,useContext} from 'react';
 import katex from 'katex';
 import {ResourceToolsContext} from '@/features/tools/components/resource-tools-context';
-import {Lightbulb,BookOpen,CheckCircle2,TriangleAlert,FlaskConical,Scale,HelpCircle,Puzzle,Workflow,FileText,ExternalLink} from 'lucide-react';
+import {Lightbulb,BookOpen,CheckCircle2,TriangleAlert,FlaskConical,Scale,HelpCircle,Puzzle,Workflow,FileText,ExternalLink,ZoomIn,ZoomOut,RotateCcw,Download,X,Maximize2} from 'lucide-react';
 import type {Block} from '@/features/catalog/model/types';
 import {TikZDiagram} from './tikz-diagram';
 import {CodeBlock} from './code-block';
@@ -33,23 +33,53 @@ export function calloutStyle(block:Block){
  return {kind:'note',title:'Nota',icon:BookOpen};
 }
 function Figure({block}:{block:Block}){
- const [failed,setFailed]=useState(false);const canTest=useContext(ResourceToolsContext);
- useEffect(()=>{setFailed(false);},[block.asset]);
+ const [failed,setFailed]=useState(false);
+ const [lightbox,setLightbox]=useState(false);
+ const [zoom,setZoom]=useState(1);
+ const canTest=useContext(ResourceToolsContext);
+ useEffect(()=>{setFailed(false);setZoom(1);},[block.asset]);
  const isDiagram=block.type==='diagram';
  const inspect=<details className="diagram-source"><summary><Workflow size={13}/>Ver código y revisar recurso</summary><pre>{block.content}</pre><div style={{display:'flex',gap:'8px',marginTop:'8px',flexWrap:'wrap',justifyContent:'center'}}>{canTest&&<button type="button" className="resource-inspect" onClick={event=>{event.currentTarget.closest("dialog")?.close();window.dispatchEvent(new CustomEvent("aula:inspect-resource",{detail:block.content}));}}>Abrir en herramientas</button>}{isDiagram&&<a href="https://tikz.dev/" target="_blank" rel="noopener noreferrer" className="resource-inspect" style={{display:'inline-flex',alignItems:'center',gap:'4px'}}>Documentación en tikz.dev <ExternalLink size={11}/></a>}</div></details>;
+ const alt=isDiagram?'Diagrama de la clase':(block.content.split('/').pop()?.replace(/\.[^.]+$/,'')??'Ilustración de la clase');
+ const enlargeBtn=<button type="button" className="figure-enlarge-hint" onClick={()=>setLightbox(true)} title="Ampliar imagen"><Maximize2 size={12}/><span>Ampliar</span></button>;
+
+ const lightboxModal=lightbox&&(
+  <dialog open className="image-lightbox-dialog" onClick={e=>{if(e.target===e.currentTarget)setLightbox(false);}} onKeyDown={e=>{if(e.key==='Escape')setLightbox(false);}}>
+   <header className="image-lightbox-header">
+    <div className="image-lightbox-title">
+     {isDiagram?<Workflow size={16}/>:<ZoomIn size={16}/>}
+     <span>{isDiagram?'Diagrama de clase (Vector SVG)':'Ilustración de la clase'}</span>
+     <span style={{fontSize:'11px',opacity:0.7,marginLeft:'4px'}}>{Math.round(zoom*100)}%</span>
+    </div>
+    <div className="image-lightbox-actions">
+     <button type="button" className="image-lightbox-btn" onClick={()=>setZoom(z=>Math.max(0.5,Number((z-0.25).toFixed(2))))} title="Reducir zoom"><ZoomOut size={13}/>Alejar</button>
+     <button type="button" className="image-lightbox-btn" onClick={()=>setZoom(1)} title="Restablecer tamaño original"><RotateCcw size={13}/>100%</button>
+     <button type="button" className="image-lightbox-btn" onClick={()=>setZoom(z=>Math.min(3,Number((z+0.25).toFixed(2))))} title="Aumentar zoom"><ZoomIn size={13}/>Acercar</button>
+     {block.asset&&<a href={block.asset} download className="image-lightbox-btn" title="Descargar imagen"><Download size={13}/>Descargar</a>}
+     {isDiagram&&<a href="https://tikz.dev/" target="_blank" rel="noopener noreferrer" className="image-lightbox-btn" title="Abrir en TikZ.dev">TikZ.dev <ExternalLink size={11}/></a>}
+     <button type="button" className="image-lightbox-btn" onClick={()=>setLightbox(false)} title="Cerrar"><X size={14}/></button>
+    </div>
+   </header>
+   <div className="image-lightbox-body" onClick={e=>{if(e.target===e.currentTarget)setLightbox(false);}}>
+    <div className="image-lightbox-canvas" style={{transform:`scale(${zoom})`}}>
+     {block.asset&&!failed?<img src={block.asset} alt={alt}/>:block.content?<TikZDiagram code={block.content}/>:null}
+    </div>
+   </div>
+  </dialog>
+ );
 
  if(isDiagram){
   if(block.asset&&!failed){
-   return <figure className="lesson-figure diagram-figure"><img src={block.asset} alt="Diagrama de la clase" loading="lazy" onError={()=>setFailed(true)}/>{inspect}</figure>;
+   return <figure className="lesson-figure diagram-figure"><img src={block.asset} alt={alt} loading="lazy" onError={()=>setFailed(true)} onClick={()=>setLightbox(true)} title="Clic para ampliar diagrama"/>{enlargeBtn}{inspect}{lightboxModal}</figure>;
   }
   if(block.content&&block.content.trim()){
-   return <figure className="lesson-figure diagram-figure"><TikZDiagram code={block.content}/>{inspect}</figure>;
+   return <figure className="lesson-figure diagram-figure"><TikZDiagram code={block.content}/>{inspect}{lightboxModal}</figure>;
   }
   return <div className="resource-pending"><p><FileText size={17}/> No se pudo generar o cargar este diagrama. Consulta el PDF original o informa a tu docente.</p>{inspect}</div>;
  }
 
  if(!block.asset||failed)return <div className="resource-pending"><p><FileText size={17}/> No se pudo cargar esta imagen. {canTest?'Consulta el PDF original o revisa el código del recurso.':'Consulta el PDF original o informa a tu docente.'}</p>{canTest&&inspect}</div>;
- return <figure className="lesson-figure"><img src={block.asset} alt={block.content.split('/').pop()?.replace(/\.[^.]+$/,'')??'Ilustración de la clase'} loading="lazy" onError={()=>setFailed(true)}/>{canTest&&inspect}</figure>;
+ return <figure className="lesson-figure"><img src={block.asset} alt={alt} loading="lazy" onError={()=>setFailed(true)} onClick={()=>setLightbox(true)} title="Clic para ampliar ilustración"/>{enlargeBtn}{canTest&&inspect}{lightboxModal}</figure>;
 }
 export function ContentBlock({block}:{block:Block}){
  if(block.type==='code')return <CodeBlock content={block.content} language={block.language}/>;

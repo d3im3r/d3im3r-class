@@ -17,7 +17,7 @@ for index,source in enumerate(request['figures'][:60],start=1):
   env={**os.environ,'openin_any':'p','openout_any':'p'}
   try:
    subprocess.run(['xelatex','-no-shell-escape','-interaction=nonstopmode','-halt-on-error','figure.tex'],cwd=work,env=env,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,check=True,timeout=25)
-   dest=output/(key+'.svg');subprocess.run(['dvisvgm','--pdf','--no-fonts','--exact-bbox','--output='+str(dest),'figure.pdf'],cwd=work,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,check=True,timeout=15)
+   dest=output/(key+'.svg');subprocess.run(['dvisvgm','--pdf','--no-fonts','--exact-bbox','--scale=1.35','--output='+str(dest),'figure.pdf'],cwd=work,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,check=True,timeout=15)
    results[key]=str(dest)
   except subprocess.CalledProcessError as error:
    log=(error.stdout or b'').decode(errors='replace');lines=log.splitlines();detail=next((line.strip() for line in lines if line.startswith('!')),'Error de sintaxis o paquete no disponible.')
