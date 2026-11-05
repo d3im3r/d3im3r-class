@@ -30,6 +30,8 @@ import { Button } from '@/components/ui/button';
 import { BrandSignature } from '@/features/theme/brand-signature';
 import { ThemeControls } from '@/features/theme/theme-toggle';
 import dynamic from 'next/dynamic';
+import { toast } from 'sonner';
+import { fireCelebration } from '@/lib/confetti';
 import { ResourceToolsContext } from '@/features/tools/components/resource-tools-context';
 const ToolsPanel = dynamic(
   () => import('@/features/tools/components/tools-panel').then((m) => m.ToolsPanel),
@@ -231,13 +233,20 @@ export function Workspace({
       });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error);
+      const nextDone = completed
+        ? [...new Set([...(progress[lessonId] ?? []), id])]
+        : (progress[lessonId] ?? []).filter((item) => item !== id);
       setProgress((p) => ({
         ...p,
-        [lessonId]: completed
-          ? [...new Set([...(p[lessonId] ?? []), id])]
-          : (p[lessonId] ?? []).filter((item) => item !== id),
+        [lessonId]: nextDone,
       }));
       setSaveError('');
+      if (completed && lesson.frames.length > 0 && nextDone.length === lesson.frames.length) {
+        fireCelebration();
+        toast.success(`¡Felicitaciones! Has completado el 100% de «${lesson.title}» 🎓🎉`, {
+          description: 'Todo tu avance se ha registrado exitosamente en tu perfil.',
+        });
+      }
     } catch (error) {
       setSaveError(error instanceof Error ? error.message : 'No se pudo guardar tu progreso.');
     } finally {

@@ -2,6 +2,7 @@
 import { useRef, useState, type FormEvent } from 'react';
 import { FileSpreadsheet, Download, Eye, Users, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { toast } from '@/components/ui/sonner';
 import type { Subject } from '@/features/catalog/model/types';
 import type { RosterPreview } from '../server/student-roster';
 export function StudentImport({
@@ -36,18 +37,22 @@ export function StudentImport({
       const response = await fetch('/api/admin/students/import', { method: 'POST', body: form });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error);
-      if (mode === 'preview') setPreview(result);
-      else {
+      if (mode === 'preview') {
+        setPreview(result);
+        toast.info(`Planilla analizada: ${result.totalRows} filas detectadas.`);
+      } else {
         await onImported();
         setPreview(null);
         setFile(null);
         if (fileInput.current) fileInput.current.value = '';
-        setMessage(
-          `${result.created} alumnos creados, ${result.enrolled} asignaciones añadidas y ${result.skippedErrors} filas con errores omitidas.`
-        );
+        const msg = `${result.created} alumnos creados, ${result.enrolled} asignaciones añadidas y ${result.skippedErrors} filas omitidas.`;
+        setMessage(msg);
+        toast.success(msg);
       }
     } catch (error) {
-      setError(error instanceof Error ? error.message : 'No se pudo procesar el archivo.');
+      const err = error instanceof Error ? error.message : 'No se pudo procesar el archivo.';
+      setError(err);
+      toast.error(err);
     } finally {
       setBusy(false);
     }
@@ -69,12 +74,26 @@ export function StudentImport({
             identificación como texto para no perder sus ceros iniciales.
           </p>
         </div>
-        <Button variant="outline" size="sm" asChild>
-          <a href="/api/admin/students/template">
-            <Download size={14} />
-            Descargar plantilla
-          </a>
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" asChild>
+            <a
+              href="/api/admin/students/export"
+              title="Descargar planilla completa con alumnos y bloques completados"
+            >
+              <Download size={14} />
+              Exportar reporte (.xlsx)
+            </a>
+          </Button>
+          <Button variant="outline" size="sm" asChild>
+            <a
+              href="/api/admin/students/template"
+              title="Descargar formato vacío para subir nuevos estudiantes"
+            >
+              <FileSpreadsheet size={14} />
+              Descargar plantilla
+            </a>
+          </Button>
+        </div>
       </div>
       <form onSubmit={review}>
         <label>

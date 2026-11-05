@@ -194,21 +194,65 @@ export function TikZDiagram({ code }: { code: string }) {
         const svg = container.querySelector('svg');
         if (svg && active) {
           try {
-            const bbox = svg.getBBox();
-            if (bbox && bbox.width > 0 && bbox.height > 0) {
-              const pad = 8;
+            let minX = 0,
+              minY = 0,
+              width = 0,
+              height = 0;
+            try {
+              const bbox = svg.getBBox();
+              if (bbox && bbox.width > 0 && bbox.height > 0) {
+                minX = bbox.x;
+                minY = bbox.y;
+                width = bbox.width;
+                height = bbox.height;
+              }
+            } catch {}
+
+            // Si getBBox falló o devolvió 0, inferir límites reales desde los elementos hijos
+            if (!width || !height) {
+              const paths = Array.from(svg.querySelectorAll('path'));
+              const xs: number[] = [];
+              const ys: number[] = [];
+              for (const p of paths) {
+                const d = p.getAttribute('d');
+                if (d) {
+                  const nums = d.match(/-?[\d.]+/g);
+                  if (nums) {
+                    for (let i = 0; i < nums.length - 1; i += 2) {
+                      const x = parseFloat(nums[i]);
+                      const y = parseFloat(nums[i + 1]);
+                      if (!isNaN(x) && !isNaN(y)) {
+                        xs.push(x);
+                        ys.push(y);
+                      }
+                    }
+                  }
+                }
+              }
+              if (xs.length > 0) {
+                minX = Math.min(...xs);
+                minY = Math.min(...ys);
+                width = Math.max(...xs) - minX;
+                height = Math.max(...ys) - minY;
+              }
+            }
+
+            if (width > 0 && height > 0) {
+              const pad = 12;
               svg.setAttribute(
                 'viewBox',
-                `${(bbox.x - pad).toFixed(2)} ${(bbox.y - pad).toFixed(2)} ${(bbox.width + pad * 2).toFixed(2)} ${(bbox.height + pad * 2).toFixed(2)}`
+                `${(minX - pad).toFixed(2)} ${(minY - pad).toFixed(2)} ${(width + pad * 2).toFixed(2)} ${(height + pad * 2).toFixed(2)}`
               );
+              svg.removeAttribute('width');
+              svg.removeAttribute('height');
               svg.style.maxWidth = '100%';
-              svg.style.width = 'auto';
+              svg.style.width = '100%';
               svg.style.height = 'auto';
               svg.style.display = 'block';
               svg.style.margin = '0 auto';
             }
           } catch (e) {
-            console.warn('TikZJax getBBox warning:', e);
+            console.warn('TikZJax bbox warning:', e);
           }
           setLoading(false);
           setRendered(true);

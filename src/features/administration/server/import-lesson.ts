@@ -106,8 +106,11 @@ export async function compileTikzWithTikzjax(
       results[hash] = cached;
       continue;
     }
-    if (/\b(?:input|write|openin|openout|read|catcode)\b/i.test(source) || /\^\^/.test(source)) {
-      errors.push({ hash, message: 'Diagrama 1: comandos que requieren revisión: input' });
+    if (
+      /\\(?:input|include|openin|openout|read|write|catcode)\b/i.test(source) ||
+      /\^\^/.test(source)
+    ) {
+      errors.push({ hash, message: 'Diagrama con comandos no permitidos en el compilador.' });
       continue;
     }
     try {
@@ -305,7 +308,7 @@ export async function importLesson(form: FormData, actor?: User) {
     throw new AppError('No se encontraron diapositivas frame en el documento.');
   const meta = extractLatexMetadata(source, tex.name);
   const title = (rawTitle || meta.title || parsed.frames[0]?.title || 'Nueva clase').slice(0, 150),
-    subtitle = (rawSubtitle || meta.subtitle).slice(0, 200);
+    subtitle = (rawSubtitle || meta.subtitle || '').slice(0, 200);
   const id = existing?.id ?? randomUUID(),
     revision = (existing?.revision ?? 0) + 1,
     folder = path.join(dataDirectory(), 'uploads', id, randomUUID());

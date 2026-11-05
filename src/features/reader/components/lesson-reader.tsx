@@ -382,7 +382,11 @@ export function LessonReader({
                     id={`reading-${f.id}`}
                     data-reading-frame
                     data-index={index}
-                    className="reading-frame"
+                    className={`reading-frame ${
+                      /reflexi|pensamiento|cita|frase|inspiraci/i.test(f.title)
+                        ? 'is-reflection-frame'
+                        : ''
+                    }`}
                   >
                     <div className="reading-frame-title">
                       <h3>{f.title}</h3>
@@ -551,7 +555,14 @@ export function LessonReader({
         {presenting && (
           <>
             <div className="presentation-stage">
-              <article className="presentation-slide" key={frame.id}>
+              <article
+                className={`presentation-slide ${
+                  /reflexi|pensamiento|cita|frase|inspiraci/i.test(frame.title)
+                    ? 'is-reflection-slide'
+                    : ''
+                }`}
+                key={frame.id}
+              >
                 <header className="slide-heading">
                   <div>
                     <span>{frame.section}</span>

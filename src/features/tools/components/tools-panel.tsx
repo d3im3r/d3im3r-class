@@ -3,6 +3,7 @@ import { useMemo, useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import { Wrench, Play, Download, Copy, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { toast } from '@/components/ui/sonner';
 import type { Block, Catalog } from '@/features/catalog/model/types';
 const CodeEditor = dynamic(() => import('@/features/reader/components/code-editor'), {
   ssr: false,
@@ -75,6 +76,7 @@ export function ToolsPanel({ catalog, seed }: { catalog: Catalog; seed?: string 
     setError('');
     setResult(null);
     const code = source;
+    const toastId = toast.loading('Compilando código TikZ con LaTeX vectorial…');
     try {
       const response = await fetch('/api/tools/tikz', {
         method: 'POST',
@@ -85,8 +87,15 @@ export function ToolsPanel({ catalog, seed }: { catalog: Catalog; seed?: string 
       if (!response.ok) throw new Error(data.error);
       setTestedSource(code);
       setResult(data);
+      if (data.ok) {
+        toast.success('Diagrama generado correctamente.', { id: toastId });
+      } else {
+        toast.error(data.message || 'Error en la sintaxis de TikZ.', { id: toastId });
+      }
     } catch (error) {
-      setError(error instanceof Error ? error.message : 'No se pudo probar el diagrama.');
+      const msg = error instanceof Error ? error.message : 'No se pudo probar el diagrama.';
+      setError(msg);
+      toast.error(msg, { id: toastId });
     } finally {
       setBusy(false);
     }

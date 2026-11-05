@@ -168,3 +168,116 @@
   opacity: 0.8;
   text-decoration: underline;
 }
+
+/* ==========================================================================
+   Frase de Reflexión / Cita Inspiradora
+   Texto como protagonista absoluto, imagen complementaria reducida
+   ========================================================================== */
+.reading-frame.is-reflection-frame,
+.presentation-slide.is-reflection-slide {
+  position: relative;
+}
+
+.reading-frame.is-reflection-frame .frame-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 16px 8px 32px;
+  gap: 16px;
+}
+
+.reading-frame.is-reflection-frame .lesson-text,
+.is-reflection-slide .slide-content .lesson-text {
+  font-size: clamp(1.4rem, 2.5vw, 2.25rem) !important;
+  font-weight: 600 !important;
+  line-height: 1.5 !important;
+  letter-spacing: -0.015em !important;
+  color: var(--foreground) !important;
+  text-align: center !important;
+  max-width: 860px;
+  margin: 20px auto 14px !important;
+  position: relative;
+  padding: 24px 34px;
+  background: color-mix(in srgb, var(--primary) 5%, transparent);
+  border: 1px solid color-mix(in srgb, var(--primary) 22%, transparent);
+  border-radius: 18px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.04);
+}
+
+.reading-frame.is-reflection-frame .lesson-text strong,
+.is-reflection-slide .slide-content .lesson-text strong {
+  font-weight: 650;
+  color: inherit;
+}
+
+.reading-frame.is-reflection-frame .lesson-figure,
+.is-reflection-slide .slide-content .lesson-figure {
+  margin: 10px auto 16px !important;
+  max-width: 180px !important;
+  max-height: 180px !important;
+  width: auto !important;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.reading-frame.is-reflection-frame .lesson-figure img,
+.is-reflection-slide .slide-content .lesson-figure img {
+  max-width: 165px !important;
+  max-height: 165px !important;
+  width: auto !important;
+  height: auto !important;
+  object-fit: contain !important;
+  border-radius: 14px !important;
+  padding: 8px !important;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06) !important;
+  transition: transform 0.2s ease;
+}
+
+.reading-frame.is-reflection-frame .lesson-figure img:hover,
+.is-reflection-slide .slide-content .lesson-figure img:hover {
+  transform: scale(1.04);
+}
+
+/* ==========================================================================
+   Alineación y Centrado de Diagramas TikZ y SVGs
+   ========================================================================== */
+.diagram-figure {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 100% !important;
+  margin: 20px auto !important;
+  text-align: center !important;
+}
+
+.diagram-figure > img,
+.tikz-render-target svg,
+.tikz-render-target img {
+  display: block !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  max-width: 100% !important;
+  height: auto !important;
+  box-sizing: border-box;
+}
+
+.tikz-container {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 100% !important;
+  margin: 12px auto !important;
+  text-align: center !important;
+}
+
+.tikz-render-target {
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  width: 100% !important;
+  overflow-x: auto !important;
+}

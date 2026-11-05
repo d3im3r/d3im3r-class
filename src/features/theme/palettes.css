@@ -344,3 +344,319 @@
   --tracking-widest: calc(var(--tracking-normal) + 0.1em);
   --diagram-output-accent: var(--chart-2);
 }
+
+
+/* ==========================================================================
+   Supabase Emerald Palette (de AcademiX V2)
+   ========================================================================== */
+:root[data-palette="supabase"][data-theme="light"] {
+  --background: #f8fafc;
+  --foreground: #0f172a;
+  --card: #ffffff;
+  --card-foreground: #0f172a;
+  --popover: #ffffff;
+  --popover-foreground: #0f172a;
+  --primary: #10b981;
+  --primary-foreground: #ffffff;
+  --secondary: #e2e8f0;
+  --secondary-foreground: #0f172a;
+  --muted: #f1f5f9;
+  --muted-foreground: #64748b;
+  --accent: #ecfdf5;
+  --accent-foreground: #065f46;
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+  --border: #e2e8f0;
+  --input: #f1f5f9;
+  --ring: #10b981;
+  --sidebar: #0f172a;
+  --sidebar-foreground: #f8fafc;
+  --sidebar-primary: #10b981;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #1e293b;
+  --sidebar-accent-foreground: #34d399;
+  --sidebar-border: #1e293b;
+  --radius: 0.5rem;
+}
+
+:root[data-palette="supabase"][data-theme="dark"] {
+  --background: #0d1117;
+  --foreground: #e6edf3;
+  --card: #161b22;
+  --card-foreground: #e6edf3;
+  --popover: #161b22;
+  --popover-foreground: #e6edf3;
+  --primary: #34d399;
+  --primary-foreground: #064e3b;
+  --secondary: #21262d;
+  --secondary-foreground: #e6edf3;
+  --muted: #1c2128;
+  --muted-foreground: #8b949e;
+  --accent: #132a22;
+  --accent-foreground: #34d399;
+  --destructive: #f85149;
+  --destructive-foreground: #ffffff;
+  --border: #30363d;
+  --input: #21262d;
+  --ring: #34d399;
+  --sidebar: #0b0e14;
+  --sidebar-foreground: #e6edf3;
+  --sidebar-primary: #34d399;
+  --sidebar-primary-foreground: #064e3b;
+  --sidebar-accent: #161b22;
+  --sidebar-accent-foreground: #34d399;
+  --sidebar-border: #21262d;
+  --radius: 0.5rem;
+}
+
+/* ==========================================================================
+   VS Code Blue Palette (de AcademiX V2)
+   ========================================================================== */
+:root[data-palette="vscode"][data-theme="light"] {
+  --background: #f3f3f3;
+  --foreground: #1e1e1e;
+  --card: #ffffff;
+  --card-foreground: #1e1e1e;
+  --popover: #ffffff;
+  --popover-foreground: #1e1e1e;
+  --primary: #007acc;
+  --primary-foreground: #ffffff;
+  --secondary: #e8e8e8;
+  --secondary-foreground: #1e1e1e;
+  --muted: #ebebeb;
+  --muted-foreground: #616161;
+  --accent: #e5f1fb;
+  --accent-foreground: #007acc;
+  --destructive: #d32f2f;
+  --destructive-foreground: #ffffff;
+  --border: #cccccc;
+  --input: #e8e8e8;
+  --ring: #007acc;
+  --sidebar: #2c2c2c;
+  --sidebar-foreground: #cccccc;
+  --sidebar-primary: #007acc;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #383838;
+  --sidebar-accent-foreground: #ffffff;
+  --sidebar-border: #333333;
+  --radius: 0.25rem;
+}
+
+:root[data-palette="vscode"][data-theme="dark"] {
+  --background: #181818;
+  --foreground: #cccccc;
+  --card: #1f1f1f;
+  --card-foreground: #cccccc;
+  --popover: #1f1f1f;
+  --popover-foreground: #cccccc;
+  --primary: #3794ff;
+  --primary-foreground: #ffffff;
+  --secondary: #252526;
+  --secondary-foreground: #cccccc;
+  --muted: #2d2d2d;
+  --muted-foreground: #858585;
+  --accent: #094771;
+  --accent-foreground: #ffffff;
+  --destructive: #f14c4c;
+  --destructive-foreground: #ffffff;
+  --border: #3c3c3c;
+  --input: #252526;
+  --ring: #3794ff;
+  --sidebar: #181818;
+  --sidebar-foreground: #cccccc;
+  --sidebar-primary: #3794ff;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #2a2d2e;
+  --sidebar-accent-foreground: #ffffff;
+  --sidebar-border: #2d2d2d;
+  --radius: 0.25rem;
+}
+
+/* ==========================================================================
+   Claude Terracotta Palette (de AcademiX V2)
+   ========================================================================== */
+:root[data-palette="claude"][data-theme="light"] {
+  --background: #faf9f5;
+  --foreground: #2d2b28;
+  --card: #ffffff;
+  --card-foreground: #2d2b28;
+  --popover: #ffffff;
+  --popover-foreground: #2d2b28;
+  --primary: #d97706;
+  --primary-foreground: #ffffff;
+  --secondary: #f0eee6;
+  --secondary-foreground: #2d2b28;
+  --muted: #e8e5db;
+  --muted-foreground: #78756d;
+  --accent: #fef3c7;
+  --accent-foreground: #92400e;
+  --destructive: #dc2626;
+  --destructive-foreground: #ffffff;
+  --border: #dfdcd3;
+  --input: #f0eee6;
+  --ring: #d97706;
+  --sidebar: #242220;
+  --sidebar-foreground: #faf9f5;
+  --sidebar-primary: #f59e0b;
+  --sidebar-primary-foreground: #242220;
+  --sidebar-accent: #33302c;
+  --sidebar-accent-foreground: #fef3c7;
+  --sidebar-border: #33302c;
+  --radius: 0.5rem;
+}
+
+:root[data-palette="claude"][data-theme="dark"] {
+  --background: #1c1a17;
+  --foreground: #ede8df;
+  --card: #25221e;
+  --card-foreground: #ede8df;
+  --popover: #25221e;
+  --popover-foreground: #ede8df;
+  --primary: #f59e0b;
+  --primary-foreground: #1c1a17;
+  --secondary: #302c27;
+  --secondary-foreground: #ede8df;
+  --muted: #2c2823;
+  --muted-foreground: #9e978e;
+  --accent: #3d3222;
+  --accent-foreground: #fbbf24;
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+  --border: #3d3730;
+  --input: #302c27;
+  --ring: #f59e0b;
+  --sidebar: #141210;
+  --sidebar-foreground: #ede8df;
+  --sidebar-primary: #f59e0b;
+  --sidebar-primary-foreground: #141210;
+  --sidebar-accent: #25221e;
+  --sidebar-accent-foreground: #fbbf24;
+  --sidebar-border: #2c2823;
+  --radius: 0.5rem;
+}
+
+/* ==========================================================================
+   Interstellar Cosmic Gold Palette (de AcademiX V2)
+   ========================================================================== */
+:root[data-palette="interstellar"][data-theme="light"] {
+  --background: #f7f9fc;
+  --foreground: #111827;
+  --card: #ffffff;
+  --card-foreground: #111827;
+  --popover: #ffffff;
+  --popover-foreground: #111827;
+  --primary: #ca8a04;
+  --primary-foreground: #ffffff;
+  --secondary: #e9eef6;
+  --secondary-foreground: #111827;
+  --muted: #e2e8f0;
+  --muted-foreground: #64748b;
+  --accent: #fef9c3;
+  --accent-foreground: #854d0e;
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+  --border: #d1d9e6;
+  --input: #e9eef6;
+  --ring: #ca8a04;
+  --sidebar: #0b1120;
+  --sidebar-foreground: #f8fafc;
+  --sidebar-primary: #facc15;
+  --sidebar-primary-foreground: #0b1120;
+  --sidebar-accent: #162033;
+  --sidebar-accent-foreground: #fde047;
+  --sidebar-border: #1e2c45;
+  --radius: 0.5rem;
+}
+
+:root[data-palette="interstellar"][data-theme="dark"] {
+  --background: #070a13;
+  --foreground: #f3f4f6;
+  --card: #0f1626;
+  --card-foreground: #f3f4f6;
+  --popover: #0f1626;
+  --popover-foreground: #f3f4f6;
+  --primary: #facc15;
+  --primary-foreground: #070a13;
+  --secondary: #172238;
+  --secondary-foreground: #f3f4f6;
+  --muted: #131c2e;
+  --muted-foreground: #8c9cb8;
+  --accent: #2e2810;
+  --accent-foreground: #fde047;
+  --destructive: #f87171;
+  --destructive-foreground: #ffffff;
+  --border: #22324f;
+  --input: #172238;
+  --ring: #facc15;
+  --sidebar: #05070d;
+  --sidebar-foreground: #f3f4f6;
+  --sidebar-primary: #facc15;
+  --sidebar-primary-foreground: #05070d;
+  --sidebar-accent: #0f1626;
+  --sidebar-accent-foreground: #fde047;
+  --sidebar-border: #1b263b;
+  --radius: 0.5rem;
+}
+
+/* ==========================================================================
+   Cyberpunk Neon Palette (de AcademiX V2)
+   ========================================================= */
+:root[data-palette="cyberpunk"][data-theme="light"] {
+  --background: #fdf2f8;
+  --foreground: #18181b;
+  --card: #ffffff;
+  --card-foreground: #18181b;
+  --popover: #ffffff;
+  --popover-foreground: #18181b;
+  --primary: #db2777;
+  --primary-foreground: #ffffff;
+  --secondary: #fce7f3;
+  --secondary-foreground: #18181b;
+  --muted: #f5d0fe;
+  --muted-foreground: #701a75;
+  --accent: #cffafe;
+  --accent-foreground: #155e75;
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+  --border: #f472b6;
+  --input: #fce7f3;
+  --ring: #db2777;
+  --sidebar: #18181b;
+  --sidebar-foreground: #fdf2f8;
+  --sidebar-primary: #ec4899;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #27272a;
+  --sidebar-accent-foreground: #22d3ee;
+  --sidebar-border: #3f3f46;
+  --radius: 0.25rem;
+}
+
+:root[data-palette="cyberpunk"][data-theme="dark"] {
+  --background: #09090b;
+  --foreground: #fafafa;
+  --card: #14121a;
+  --card-foreground: #fafafa;
+  --popover: #14121a;
+  --popover-foreground: #fafafa;
+  --primary: #f43f5e;
+  --primary-foreground: #ffffff;
+  --secondary: #221c2c;
+  --secondary-foreground: #fafafa;
+  --muted: #1c1824;
+  --muted-foreground: #a1a1aa;
+  --accent: #152c38;
+  --accent-foreground: #06b6d4;
+  --destructive: #f43f5e;
+  --destructive-foreground: #ffffff;
+  --border: #3b2a4a;
+  --input: #221c2c;
+  --ring: #f43f5e;
+  --sidebar: #070708;
+  --sidebar-foreground: #fafafa;
+  --sidebar-primary: #f43f5e;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #181520;
+  --sidebar-accent-foreground: #06b6d4;
+  --sidebar-border: #281d34;
+  --radius: 0.25rem;
+}

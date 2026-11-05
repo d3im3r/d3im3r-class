@@ -3,6 +3,7 @@ import 'katex/dist/katex.min.css';
 import './globals.css';
 import { ThemeProvider } from '@/features/theme/theme-provider';
 import { themeScript } from '@/features/theme/theme-script';
+import { Toaster } from '@/components/ui/sonner';
 export const metadata: Metadata = {
   title: 'Aula · Un espacio para aprender',
   description: 'Tus asignaturas, clases y laboratorios, en un solo lugar.',
@@ -40,7 +41,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
       <body>
-        <ThemeProvider>{children}</ThemeProvider>
+        <ThemeProvider>
+          {children}
+          <Toaster />
+        </ThemeProvider>
       </body>
     </html>
   );

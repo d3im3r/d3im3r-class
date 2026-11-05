@@ -314,3 +314,123 @@ export async function rosterTemplate() {
   ]);
   return book.xlsx.writeBuffer();
 }
+
+export async function exportStudentRoster(actor: User) {
+  const teacherSubjects = actor.role === 'teacher' ? userAccessibleSubjectIds(actor) : null;
+
+  const allSubjects = db().prepare('SELECT id, data FROM subjects').all() as Array<{
+    id: string;
+    data: string;
+  }>;
+  const subjectMap = new Map<string, string>();
+  for (const s of allSubjects) {
+    try {
+      const parsed = JSON.parse(s.data);
+      subjectMap.set(s.id, parsed.name || s.id);
+    } catch {
+      subjectMap.set(s.id, s.id);
+    }
+  }
+
+  let studentRows = db()
+    .prepare("SELECT id, name, username FROM users WHERE role='student' ORDER BY name ASC")
+    .all() as Array<{
+    id: string;
+    name: string;
+    username: string;
+  }>;
+
+  if (teacherSubjects) {
+    const subsArray = [...teacherSubjects];
+    const placeholders = subsArray.length > 0 ? subsArray.map(() => '?').join(',') : "''";
+    const enrolledUsers = new Set(
+      (
+        db()
+          .prepare(`SELECT user_id FROM enrollments WHERE subject_id IN (${placeholders})`)
+          .all(...subsArray) as Array<{ user_id: string }>
+      ).map((r) => r.user_id)
+    );
+    studentRows = studentRows.filter((s) => enrolledUsers.has(s.id));
+  }
+
+  const enrollments = db().prepare('SELECT user_id, subject_id FROM enrollments').all() as Array<{
+    user_id: string;
+    subject_id: string;
+  }>;
+  const userSubjectsMap = new Map<string, string[]>();
+  for (const e of enrollments) {
+    if (teacherSubjects && !teacherSubjects.has(e.subject_id)) continue;
+    const list = userSubjectsMap.get(e.user_id) ?? [];
+    list.push(subjectMap.get(e.subject_id) || e.subject_id);
+    userSubjectsMap.set(e.user_id, list);
+  }
+
+  const progressCounts = db()
+    .prepare('SELECT user_id, COUNT(*) as count FROM progress GROUP BY user_id')
+    .all() as Array<{ user_id: string; count: number }>;
+  const progressMap = new Map<string, number>();
+  for (const p of progressCounts) {
+    progressMap.set(p.user_id, p.count);
+  }
+
+  const bans = db().prepare('SELECT user_id, subject_id, reason FROM subject_bans').all() as Array<{
+    user_id: string;
+    subject_id: string;
+    reason: string;
+  }>;
+  const banMap = new Map<string, string[]>();
+  for (const b of bans) {
+    if (teacherSubjects && !teacherSubjects.has(b.subject_id)) continue;
+    const list = banMap.get(b.user_id) ?? [];
+    list.push(subjectMap.get(b.subject_id) || b.subject_id);
+    banMap.set(b.user_id, list);
+  }
+
+  const book = new ExcelJS.Workbook();
+  book.creator = 'Aula';
+  book.created = new Date();
+
+  const sheet = book.addWorksheet('Alumnos y Progreso');
+  sheet.columns = [
+    { header: 'Nombre del Estudiante', key: 'name', width: 35 },
+    { header: 'Correo / Usuario', key: 'email', width: 35 },
+    { header: 'Asignaturas Matriculadas', key: 'subjects', width: 40 },
+    { header: 'Bloques Completados', key: 'progress', width: 22 },
+    { header: 'Estado', key: 'status', width: 25 },
+  ];
+
+  sheet.views = [{ state: 'frozen', ySplit: 1 }];
+  const headerRow = sheet.getRow(1);
+  headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+  headerRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0F172A' } };
+  headerRow.height = 28;
+  headerRow.alignment = { vertical: 'middle' };
+
+  for (const s of studentRows) {
+    const enrolledSubs = userSubjectsMap.get(s.id) ?? [];
+    const bannedSubs = banMap.get(s.id) ?? [];
+    const count = progressMap.get(s.id) ?? 0;
+
+    let status = 'Activo';
+    if (bannedSubs.length > 0) {
+      status = `Suspendido en: ${bannedSubs.join(', ')}`;
+    } else if (enrolledSubs.length === 0) {
+      status = 'Sin asignaturas';
+    }
+
+    const row = sheet.addRow({
+      name: s.name,
+      email: s.username,
+      subjects: enrolledSubs.length > 0 ? enrolledSubs.join(', ') : 'Ninguna',
+      progress: count,
+      status,
+    });
+
+    row.height = 22;
+    row.alignment = { vertical: 'middle' };
+  }
+
+  sheet.autoFilter = 'A1:E1';
+
+  return book.xlsx.writeBuffer();
+}

@@ -145,7 +145,10 @@ function Figure({ block }: { block: Block }) {
           <button
             type="button"
             className="image-lightbox-btn"
-            onClick={() => setZoom((z) => Math.max(0.5, Number((z - 0.25).toFixed(2))))}
+            onClick={(e) => {
+              e.stopPropagation();
+              setZoom((z) => Math.max(0.4, Number((z - 0.25).toFixed(2))));
+            }}
             title="Reducir zoom"
           >
             <ZoomOut size={13} />
@@ -154,7 +157,10 @@ function Figure({ block }: { block: Block }) {
           <button
             type="button"
             className="image-lightbox-btn"
-            onClick={() => setZoom(1)}
+            onClick={(e) => {
+              e.stopPropagation();
+              setZoom(1);
+            }}
             title="Restablecer tamaño original"
           >
             <RotateCcw size={13} />
@@ -163,14 +169,23 @@ function Figure({ block }: { block: Block }) {
           <button
             type="button"
             className="image-lightbox-btn"
-            onClick={() => setZoom((z) => Math.min(3, Number((z + 0.25).toFixed(2))))}
+            onClick={(e) => {
+              e.stopPropagation();
+              setZoom((z) => Math.min(4, Number((z + 0.25).toFixed(2))));
+            }}
             title="Aumentar zoom"
           >
             <ZoomIn size={13} />
             Acercar
           </button>
           {block.asset && (
-            <a href={block.asset} download className="image-lightbox-btn" title="Descargar imagen">
+            <a
+              href={block.asset}
+              download
+              className="image-lightbox-btn"
+              title="Descargar imagen"
+              onClick={(e) => e.stopPropagation()}
+            >
               <Download size={13} />
               Descargar
             </a>
@@ -182,6 +197,7 @@ function Figure({ block }: { block: Block }) {
               rel="noopener noreferrer"
               className="image-lightbox-btn"
               title="Abrir en TikZ.dev"
+              onClick={(e) => e.stopPropagation()}
             >
               TikZ.dev <ExternalLink size={11} />
             </a>
@@ -189,7 +205,10 @@ function Figure({ block }: { block: Block }) {
           <button
             type="button"
             className="image-lightbox-btn"
-            onClick={() => setLightbox(false)}
+            onClick={(e) => {
+              e.stopPropagation();
+              setLightbox(false);
+            }}
             title="Cerrar"
           >
             <X size={14} />
@@ -198,11 +217,29 @@ function Figure({ block }: { block: Block }) {
       </header>
       <div
         className="image-lightbox-body"
+        onWheel={(e) => {
+          e.stopPropagation();
+          if (e.deltaY < 0) {
+            setZoom((z) => Math.min(4, Number((z + 0.2).toFixed(2))));
+          } else {
+            setZoom((z) => Math.max(0.4, Number((z - 0.2).toFixed(2))));
+          }
+        }}
         onClick={(e) => {
           if (e.target === e.currentTarget) setLightbox(false);
         }}
       >
-        <div className="image-lightbox-canvas" style={{ transform: `scale(${zoom})` }}>
+        <div
+          className="image-lightbox-canvas"
+          style={{
+            transform: `scale(${zoom})`,
+            transformOrigin: 'center center',
+            transition: 'transform 0.15s ease-out',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
           {block.asset && !failed ? (
             <img src={block.asset} alt={alt} />
           ) : block.content ? (
@@ -234,7 +271,14 @@ function Figure({ block }: { block: Block }) {
     if (block.content && block.content.trim()) {
       return (
         <figure className="lesson-figure diagram-figure">
-          <TikZDiagram code={block.content} />
+          <div
+            onClick={() => setLightbox(true)}
+            style={{ cursor: 'zoom-in', width: '100%' }}
+            title="Clic para ampliar diagrama"
+          >
+            <TikZDiagram code={block.content} />
+          </div>
+          {enlargeBtn}
           {inspect}
           {lightboxModal}
         </figure>

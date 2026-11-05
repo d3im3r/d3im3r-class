@@ -31,6 +31,7 @@ import {
   Shield,
   Trash2,
 } from 'lucide-react';
+import { toast } from '@/components/ui/sonner';
 import { Button } from '@/components/ui/button';
 import type { Institution, Subject } from '@/features/catalog/model/types';
 import { StudentImport } from './student-import';
@@ -160,9 +161,12 @@ export function AdminPanel({
       setData(result);
       await onCatalogChange();
       setMessage(success);
+      toast.success(success);
       return true;
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'No se pudo guardar.');
+      const msg = e instanceof Error ? e.message : 'No se pudo guardar.';
+      setError(msg);
+      toast.error(msg);
       return false;
     } finally {
       setBusy(false);
@@ -178,6 +182,7 @@ export function AdminPanel({
     setBusy(true);
     setError('');
     setMessage('');
+    const toastId = toast.loading('Importando y compilando clase LaTeX…');
     try {
       const formData = new FormData(node);
       let totalBytes = 0;
@@ -200,11 +205,16 @@ export function AdminPanel({
       await Promise.all([refresh(), onCatalogChange()]);
       node.reset();
       setReplace('');
-      setMessage(
-        `Clase importada: ${result.frames} bloques. Revisa la vista previa antes de publicar.`
-      );
+      const successMsg = `Clase importada: ${result.frames} bloques. Revisa la vista previa antes de publicar.`;
+      setMessage(successMsg);
+      toast.success(successMsg, { id: toastId });
+      if (result.diagnostics.length > 0) {
+        toast.warning(`La importación contiene ${result.diagnostics.length} avisos de sintaxis.`);
+      }
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'No se pudo importar.');
+      const err = e instanceof Error ? e.message : 'No se pudo importar.';
+      setError(err);
+      toast.error(err, { id: toastId });
     } finally {
       setBusy(false);
     }
@@ -221,8 +231,11 @@ export function AdminPanel({
       await parseJson(response);
       await Promise.all([refresh(), onCatalogChange()]);
       setMessage('Logo actualizado.');
+      toast.success('Logo institucional actualizado.');
     } catch (error) {
-      setError(error instanceof Error ? error.message : 'No se pudo guardar el logo.');
+      const err = error instanceof Error ? error.message : 'No se pudo guardar el logo.';
+      setError(err);
+      toast.error(err);
     } finally {
       setBusy(false);
     }
@@ -230,6 +243,7 @@ export function AdminPanel({
   async function repairResources(lessonId: string) {
     setBusy(true);
     setError('');
+    const toastId = toast.loading('Reparando recursos y diagramas vectoriales…');
     try {
       const response = await fetch('/api/admin/rebuild', {
         method: 'POST',
@@ -240,11 +254,13 @@ export function AdminPanel({
         response
       );
       await Promise.all([refresh(), onCatalogChange()]);
-      setMessage(
-        `Recursos reprocesados: ${result.repairedDiagrams} diagramas y ${result.repairedImages} imágenes restaurados.`
-      );
+      const msg = `Recursos reprocesados: ${result.repairedDiagrams} diagramas y ${result.repairedImages} imágenes restaurados.`;
+      setMessage(msg);
+      toast.success(msg, { id: toastId });
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'No se pudo reprocesar.');
+      const err = e instanceof Error ? e.message : 'No se pudo reprocesar.';
+      setError(err);
+      toast.error(err, { id: toastId });
     } finally {
       setBusy(false);
     }
@@ -316,12 +332,13 @@ export function AdminPanel({
         await navigator.clipboard.writeText(url);
         setCopiedSubject(subjectId);
         setTimeout(() => setCopiedSubject(''), 2500);
-        setMessage(
-          'Enlace de inscripción a la asignatura copiado al portapapeles. Compártelo con tus alumnos.'
-        );
+        const msg = 'Enlace de inscripción copiado al portapapeles. Compártelo con tus alumnos.';
+        setMessage(msg);
+        toast.success(msg);
       }
     } catch (e) {
       setError('No se pudo copiar el enlace de inscripción.');
+      toast.error('No se pudo copiar el enlace de inscripción.');
     }
   }
   return (
