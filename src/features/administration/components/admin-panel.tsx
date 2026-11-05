@@ -186,20 +186,43 @@ export function AdminPanel({
     try {
       const formData = new FormData(node);
       let totalBytes = 0;
-      for (const [, val] of formData.entries()) {
+      let pdfSize = 0;
+      const filteredFormData = new FormData();
+      for (const [key, val] of formData.entries()) {
         if (val instanceof File) {
           totalBytes += val.size;
+          if (val.name.toLowerCase().endsWith('.pdf')) {
+            pdfSize = val.size;
+          }
         }
       }
       // Vercel Serverless Functions tiene un límite estricto de 4.5 MB por payload HTTP
       if (totalBytes > 4.2 * 1024 * 1024) {
-        throw new Error(
-          `Los archivos pesan ${(totalBytes / (1024 * 1024)).toFixed(1)} MB y superan el límite de 4.5 MB de Vercel. Sube únicamente el archivo .tex (el PDF es opcional) o comprime el PDF a menos de 4 MB.`
-        );
+        if (pdfSize > 3 * 1024 * 1024) {
+          // El PDF excede el límite de Vercel. Omitimos el PDF para que la clase .tex se importe con éxito
+          for (const [key, val] of formData.entries()) {
+            if (val instanceof File && val.name.toLowerCase().endsWith('.pdf')) {
+              continue;
+            }
+            filteredFormData.append(key, val);
+          }
+          toast.info(
+            `El PDF pesa ${(pdfSize / (1024 * 1024)).toFixed(1)} MB y supera el límite de Vercel (4.5 MB). Importando la clase directamente desde el .tex con sus diagramas.`,
+            { duration: 6000 }
+          );
+        } else {
+          throw new Error(
+            `Los archivos pesan ${(totalBytes / (1024 * 1024)).toFixed(1)} MB y superan el límite de 4.5 MB de Vercel. Sube únicamente el archivo .tex (el PDF es opcional).`
+          );
+        }
+      } else {
+        for (const [key, val] of formData.entries()) {
+          filteredFormData.append(key, val);
+        }
       }
       const response = await fetch('/api/admin/import', {
         method: 'POST',
-        body: formData,
+        body: filteredFormData,
       });
       const result = await parseJson<{ frames: number; diagnostics: string[] }>(response);
       await Promise.all([refresh(), onCatalogChange()]);

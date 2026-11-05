@@ -198,76 +198,90 @@ export function TikZDiagram({ code }: { code: string }) {
               minY = 0,
               width = 0,
               height = 0;
-            try {
-              const bbox = svg.getBBox();
-              if (bbox && bbox.width > 0 && bbox.height > 0) {
-                minX = bbox.x;
-                minY = bbox.y;
-                width = bbox.width;
-                height = bbox.height;
-              }
-            } catch {}
-
-            // Si getBBox falló o devolvió 0, inferir límites reales desde los elementos hijos
-            if (!width || !height) {
-              const paths = Array.from(svg.querySelectorAll('path'));
-              const xs: number[] = [];
-              const ys: number[] = [];
-              for (const p of paths) {
-                const d = p.getAttribute('d');
-                if (d) {
-                  const commands = d.match(/([A-Za-z])|(-?[\d.]+)/g);
-                  if (commands) {
-                    let currX = 0,
-                      currY = 0;
-                    for (let i = 0; i < commands.length; i++) {
-                      const c = commands[i];
-                      if (/^[A-Za-z]$/.test(c)) {
-                        if (c === 'M' || c === 'L') {
-                          currX = parseFloat(commands[++i]);
-                          currY = parseFloat(commands[++i]);
-                          if (!isNaN(currX) && !isNaN(currY)) {
-                            xs.push(currX);
-                            ys.push(currY);
-                          }
-                        } else if (c === 'm' || c === 'l') {
-                          currX += parseFloat(commands[++i]);
-                          currY += parseFloat(commands[++i]);
-                          if (!isNaN(currX) && !isNaN(currY)) {
-                            xs.push(currX);
-                            ys.push(currY);
-                          }
-                        } else if (c === 'H') {
-                          currX = parseFloat(commands[++i]);
-                          if (!isNaN(currX)) xs.push(currX);
-                        } else if (c === 'h') {
-                          currX += parseFloat(commands[++i]);
-                          if (!isNaN(currX)) xs.push(currX);
-                        } else if (c === 'V') {
-                          currY = parseFloat(commands[++i]);
-                          if (!isNaN(currY)) ys.push(currY);
-                        } else if (c === 'v') {
-                          currY += parseFloat(commands[++i]);
-                          if (!isNaN(currY)) ys.push(currY);
+            // Siempre inferir los límites exactos desde las figuras y textos reales
+            const paths = Array.from(svg.querySelectorAll('path'));
+            const xs: number[] = [];
+            const ys: number[] = [];
+            for (const p of paths) {
+              const d = p.getAttribute('d');
+              if (d) {
+                const commands = d.match(/([A-Za-z])|(-?[\d.]+)/g);
+                if (commands) {
+                  let currX = 0,
+                    currY = 0;
+                  for (let i = 0; i < commands.length; i++) {
+                    const c = commands[i];
+                    if (/^[A-Za-z]$/.test(c)) {
+                      if (c === 'M' || c === 'L') {
+                        currX = parseFloat(commands[++i]);
+                        currY = parseFloat(commands[++i]);
+                        if (!isNaN(currX) && !isNaN(currY)) {
+                          xs.push(currX);
+                          ys.push(currY);
+                        }
+                      } else if (c === 'm' || c === 'l') {
+                        currX += parseFloat(commands[++i]);
+                        currY += parseFloat(commands[++i]);
+                        if (!isNaN(currX) && !isNaN(currY)) {
+                          xs.push(currX);
+                          ys.push(currY);
+                        }
+                      } else if (c === 'H') {
+                        currX = parseFloat(commands[++i]);
+                        if (!isNaN(currX)) xs.push(currX);
+                      } else if (c === 'h') {
+                        currX += parseFloat(commands[++i]);
+                        if (!isNaN(currX)) xs.push(currX);
+                      } else if (c === 'V') {
+                        currY = parseFloat(commands[++i]);
+                        if (!isNaN(currY)) ys.push(currY);
+                      } else if (c === 'v') {
+                        currY += parseFloat(commands[++i]);
+                        if (!isNaN(currY)) ys.push(currY);
+                      } else if (c === 'C') {
+                        i += 4;
+                        currX = parseFloat(commands[++i]);
+                        currY = parseFloat(commands[++i]);
+                        if (!isNaN(currX) && !isNaN(currY)) {
+                          xs.push(currX);
+                          ys.push(currY);
+                        }
+                      } else if (c === 'c') {
+                        i += 4;
+                        currX += parseFloat(commands[++i]);
+                        currY += parseFloat(commands[++i]);
+                        if (!isNaN(currX) && !isNaN(currY)) {
+                          xs.push(currX);
+                          ys.push(currY);
                         }
                       }
                     }
                   }
                 }
               }
-              const texts = Array.from(svg.querySelectorAll('text'));
-              for (const t of texts) {
-                const x = parseFloat(t.getAttribute('x') || '');
-                const y = parseFloat(t.getAttribute('y') || '');
-                if (!isNaN(x)) xs.push(x);
-                if (!isNaN(y)) ys.push(y);
-              }
-              if (xs.length > 0 && ys.length > 0) {
-                minX = Math.min(...xs);
-                minY = Math.min(...ys);
-                width = Math.max(...xs) - minX;
-                height = Math.max(...ys) - minY;
-              }
+            }
+            const texts = Array.from(svg.querySelectorAll('text'));
+            for (const t of texts) {
+              const x = parseFloat(t.getAttribute('x') || '');
+              const y = parseFloat(t.getAttribute('y') || '');
+              if (!isNaN(x)) xs.push(x);
+              if (!isNaN(y)) ys.push(y);
+            }
+            if (xs.length > 0 && ys.length > 0) {
+              minX = Math.min(...xs);
+              minY = Math.min(...ys);
+              width = Math.max(...xs) - minX;
+              height = Math.max(...ys) - minY;
+            } else {
+              try {
+                const bbox = svg.getBBox();
+                if (bbox && bbox.width > 0 && bbox.height > 0) {
+                  minX = bbox.x;
+                  minY = bbox.y;
+                  width = bbox.width;
+                  height = bbox.height;
+                }
+              } catch {}
             }
 
             if (width > 0 && height > 0) {
@@ -284,11 +298,12 @@ export function TikZDiagram({ code }: { code: string }) {
               svg.style.display = 'block';
               svg.style.margin = '0 auto';
 
-              // Asegurar que las puntas de flecha cerradas se rellenen
+              // Asegurar que las puntas de flecha cerradas se rellenen visiblemente
               for (const arrow of Array.from(svg.querySelectorAll('path'))) {
                 const d = arrow.getAttribute('d') || '';
-                if (/[Zz]/.test(d) && !arrow.getAttribute('fill')) {
-                  arrow.setAttribute('fill', 'currentColor');
+                if (/[Zz]/.test(d)) {
+                  if (!arrow.getAttribute('fill')) arrow.setAttribute('fill', '#0f172a');
+                  if (!arrow.getAttribute('stroke')) arrow.setAttribute('stroke', '#0f172a');
                 }
               }
             }

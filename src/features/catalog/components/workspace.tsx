@@ -75,6 +75,9 @@ export function Workspace({
       if (!response.ok) throw new Error();
       const next = (await response.json()) as Catalog;
       setCatalog(next);
+      setLessonId((currentId) =>
+        currentId && !next.lessons.some((l) => l.id === currentId) ? null : currentId
+      );
     } catch {
       try {
         sessionStorage.setItem('aula-restore-admin', '1');

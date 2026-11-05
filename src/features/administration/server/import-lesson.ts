@@ -25,7 +25,7 @@ const types: Record<string, string> = {
   '.jpeg': 'image/jpeg',
   '.webp': 'image/webp',
 };
-function cropSvgViewBox(svg: string): string {
+export function cropSvgViewBox(svg: string): string {
   const xs: number[] = [];
   const ys: number[] = [];
 
@@ -64,12 +64,34 @@ function cropSvgViewBox(svg: string): string {
         } else if (c === 'v') {
           currY += parseFloat(commands[++i]);
           if (!isNaN(currY)) ys.push(currY);
+        } else if (c === 'C') {
+          i += 4;
+          currX = parseFloat(commands[++i]);
+          currY = parseFloat(commands[++i]);
+          if (!isNaN(currX) && !isNaN(currY)) {
+            xs.push(currX);
+            ys.push(currY);
+          }
+        } else if (c === 'c') {
+          i += 4;
+          currX += parseFloat(commands[++i]);
+          currY += parseFloat(commands[++i]);
+          if (!isNaN(currX) && !isNaN(currY)) {
+            xs.push(currX);
+            ys.push(currY);
+          }
         }
       }
     }
   }
 
   for (const match of svg.matchAll(/x="([^"]+)"\s+y="([^"]+)"/g)) {
+    const x = parseFloat(match[1]);
+    const y = parseFloat(match[2]);
+    if (!isNaN(x)) xs.push(x);
+    if (!isNaN(y)) ys.push(y);
+  }
+  for (const match of svg.matchAll(/x='([^']+)'\s+y='([^']+)'/g)) {
     const x = parseFloat(match[1]);
     const y = parseFloat(match[2]);
     if (!isNaN(x)) xs.push(x);
@@ -87,16 +109,21 @@ function cropSvgViewBox(svg: string): string {
 
   let processed = svg
     .replace(
-      /viewBox="[^"]+"/,
+      /viewBox=["'][^"']+["']/,
       `viewBox="${minX.toFixed(2)} ${minY.toFixed(2)} ${width.toFixed(2)} ${height.toFixed(2)}"`
     )
-    .replace(/width="[^"]+"/, `width="${width.toFixed(2)}"`)
-    .replace(/height="[^"]+"/, `height="${height.toFixed(2)}"`);
+    .replace(/width=["'][^"']+["']/, `width="${width.toFixed(2)}"`)
+    .replace(/height=["'][^"']+["']/, `height="${height.toFixed(2)}"`);
 
-  // Asegurar que las puntas de flecha cerradas se rellenen visiblemente
+  // Asegurar que las puntas de flecha cerradas se rellenen de forma sólida y visible
   processed = processed.replace(
-    /<path\s+d="([^"]*[Zz])"\s*\/>/g,
-    '<path fill="currentColor" stroke="currentColor" d="$1" />'
+    /<path\s+([^>]*\bd=["'][^"']*[Zz]["'][^>]*)(\/?>)/g,
+    (match, attrs, close) => {
+      let next = attrs;
+      if (!/fill=/.test(next)) next = `fill="#0f172a" ${next}`;
+      if (!/stroke=/.test(next)) next = `stroke="#0f172a" ${next}`;
+      return `<path ${next}${close}`;
+    }
   );
 
   return processed;
@@ -414,10 +441,21 @@ export async function importLesson(form: FormData, actor?: User) {
   const figureUrls: Record<string, string> = {};
   for (const [hash, file] of Object.entries(compiled.results)) {
     const key = 'diag-' + hash.slice(0, 20);
+    let svgContent = '';
+    try {
+      if (file.startsWith('<svg') || file.startsWith('<?xml')) {
+        svgContent = file;
+      } else if (existsSync(file)) {
+        svgContent = await readFile(file, 'utf8');
+      }
+    } catch {}
+    if (svgContent) {
+      svgContent = cropSvgViewBox(svgContent);
+    }
     resources.push({
       key,
       name: 'diagrama-' + hash.slice(0, 8) + '.svg',
-      path: file,
+      path: svgContent.startsWith('<svg') || svgContent.startsWith('<?xml') ? svgContent : file,
       mime: 'image/svg+xml',
     });
     figureUrls[hash] = `/api/materials/${id}/${key}`;

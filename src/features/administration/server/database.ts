@@ -168,6 +168,15 @@ export async function syncFromPostgres(force = false) {
         }
       }
       if (Array.isArray(state.institutions)) {
+        const pgInstIds = state.institutions.map((i: any) => i.id);
+        if (pgInstIds.length > 0) {
+          const placeholders = pgInstIds.map(() => '?').join(',');
+          sql
+            .prepare(`DELETE FROM institutions WHERE id NOT IN (${placeholders})`)
+            .run(...pgInstIds);
+        } else {
+          sql.prepare('DELETE FROM institutions').run();
+        }
         for (const inst of state.institutions) {
           const dataStr = typeof inst.data === 'string' ? inst.data : JSON.stringify(inst.data);
           sql
@@ -178,6 +187,13 @@ export async function syncFromPostgres(force = false) {
         }
       }
       if (Array.isArray(state.subjects)) {
+        const pgSubIds = state.subjects.map((s: any) => s.id);
+        if (pgSubIds.length > 0) {
+          const placeholders = pgSubIds.map(() => '?').join(',');
+          sql.prepare(`DELETE FROM subjects WHERE id NOT IN (${placeholders})`).run(...pgSubIds);
+        } else {
+          sql.prepare('DELETE FROM subjects').run();
+        }
         for (const sub of state.subjects) {
           const dataStr = typeof sub.data === 'string' ? sub.data : JSON.stringify(sub.data);
           sql
@@ -188,6 +204,13 @@ export async function syncFromPostgres(force = false) {
         }
       }
       if (Array.isArray(state.lessons)) {
+        const pgLessonIds = state.lessons.map((l: any) => l.id);
+        if (pgLessonIds.length > 0) {
+          const placeholders = pgLessonIds.map(() => '?').join(',');
+          sql.prepare(`DELETE FROM lessons WHERE id NOT IN (${placeholders})`).run(...pgLessonIds);
+        } else {
+          sql.prepare('DELETE FROM lessons').run();
+        }
         for (const les of state.lessons) {
           const dataStr = typeof les.data === 'string' ? les.data : JSON.stringify(les.data);
           sql
@@ -198,6 +221,7 @@ export async function syncFromPostgres(force = false) {
         }
       }
       if (Array.isArray(state.enrollments)) {
+        sql.prepare('DELETE FROM enrollments').run();
         for (const e of state.enrollments) {
           sql
             .prepare('INSERT OR IGNORE INTO enrollments(user_id,subject_id) VALUES (?,?)')
@@ -205,6 +229,7 @@ export async function syncFromPostgres(force = false) {
         }
       }
       if (Array.isArray(state.institution_members)) {
+        sql.prepare('DELETE FROM institution_members').run();
         for (const im of state.institution_members) {
           sql
             .prepare(

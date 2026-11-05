@@ -14,7 +14,7 @@ import {
   getPgPool,
 } from './database';
 import { parseLatex } from '@/features/latex-import/lib/parser';
-import { compileFigures } from './import-lesson';
+import { compileFigures, cropSvgViewBox } from './import-lesson';
 import { sharedImage, type StoredResource } from './shared-resource';
 export async function rebuildLesson(id: string, actor?: User) {
   const row = lessonRecord(id);
@@ -104,10 +104,21 @@ export async function rebuildLesson(id: string, actor?: User) {
     urls: Record<string, string> = {};
   for (const [hash, file] of Object.entries(compiled.results)) {
     const key = 'diag-' + hash.slice(0, 20);
+    let svgContent = '';
+    try {
+      if (file.startsWith('<svg') || file.startsWith('<?xml')) {
+        svgContent = file;
+      } else if (existsSync(file)) {
+        svgContent = await readFile(file, 'utf8');
+      }
+    } catch {}
+    if (svgContent) {
+      svgContent = cropSvgViewBox(svgContent);
+    }
     resources.push({
       key,
       name: 'diagrama-' + hash.slice(0, 8) + '.svg',
-      path: file,
+      path: svgContent.startsWith('<svg') || svgContent.startsWith('<?xml') ? svgContent : file,
       mime: 'image/svg+xml',
     });
     urls[hash] = `/api/materials/${id}/${key}`;
