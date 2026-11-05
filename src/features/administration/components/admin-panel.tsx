@@ -179,9 +179,22 @@ export function AdminPanel({
     setError('');
     setMessage('');
     try {
+      const formData = new FormData(node);
+      let totalBytes = 0;
+      for (const [, val] of formData.entries()) {
+        if (val instanceof File) {
+          totalBytes += val.size;
+        }
+      }
+      // Vercel Serverless Functions tiene un límite estricto de 4.5 MB por payload HTTP
+      if (totalBytes > 4.2 * 1024 * 1024) {
+        throw new Error(
+          `Los archivos pesan ${(totalBytes / (1024 * 1024)).toFixed(1)} MB y superan el límite de 4.5 MB de Vercel. Sube únicamente el archivo .tex (el PDF es opcional) o comprime el PDF a menos de 4 MB.`
+        );
+      }
       const response = await fetch('/api/admin/import', {
         method: 'POST',
-        body: new FormData(node),
+        body: formData,
       });
       const result = await parseJson<{ frames: number; diagnostics: string[] }>(response);
       await Promise.all([refresh(), onCatalogChange()]);
@@ -1110,7 +1123,10 @@ export function AdminPanel({
                 <label>
                   PDF e imágenes (opcional)
                   <input type="file" name="images" accept=".pdf,.png,.jpg,.jpeg,.webp" multiple />
-                  <small>Opcional · PDF original y figuras (hasta 35 MB)</small>
+                  <small>
+                    Opcional · PDF original y figuras (máx. 4 MB en Vercel; el .tex es lo único
+                    obligatorio)
+                  </small>
                 </label>
                 <label>
                   Título de la clase (opcional)

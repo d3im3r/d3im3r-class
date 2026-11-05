@@ -22,6 +22,8 @@ import {
   LogOut,
   CheckCircle2,
   FolderOpen,
+  Plus,
+  Upload,
 } from 'lucide-react';
 import type { Catalog, Lesson, Subject } from '../model/types';
 import { Button } from '@/components/ui/button';
@@ -261,6 +263,28 @@ export function Workspace({
     setLessonId(null);
     setView(v);
     setMobile(false);
+    setActiveTopicFilter(null);
+  }
+  const [activeTopicFilter, setActiveTopicFilter] = useState<string | null>(null);
+
+  function goToAdmin(topicId?: string) {
+    if (!selectedSubject) {
+      home('admin');
+      return;
+    }
+    try {
+      sessionStorage.setItem(
+        'aula-admin-state',
+        JSON.stringify({
+          tab: topicId ? 'lessons' : 'topics',
+          selectedInstitution: selectedSubject.institutionId,
+          selectedSubject: selectedSubject.id,
+          selectedTopic: topicId || '',
+        })
+      );
+    } catch {}
+    setView('admin');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
   const selectedSubject = catalog.subjects.find((s) => s.id === subjectSelection);
   const currentSubject = catalog.subjects.find((s) => s.id === lesson?.subjectId);
@@ -510,8 +534,24 @@ export function Workspace({
               >
                 {sidebarShown ? <PanelLeftClose size={20} /> : <PanelLeftOpen size={20} />}
               </button>
-              <span>Mi campus</span>
+              <button
+                type="button"
+                className="breadcrumb-btn"
+                onClick={() => home()}
+                title="Volver al inicio de mi campus"
+              >
+                Mi campus
+              </button>
               <ChevronRight size={13} />
+              {view === 'course' && selectedSubject && (
+                <>
+                  <span>
+                    {catalog.institutions.find((i) => i.id === selectedSubject.institutionId)
+                      ?.shortName ?? 'Materia'}
+                  </span>
+                  <ChevronRight size={13} />
+                </>
+              )}
               <strong>
                 {lesson
                   ? currentSubject?.name
@@ -530,6 +570,18 @@ export function Workspace({
             </div>
             <span className="topbar-right">
               <ThemeControls />
+              {canManageCampus && view !== 'admin' && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => home('admin')}
+                  title="Cambiar al panel de gestión docente"
+                  style={{ fontSize: '12px', height: '30px', padding: '0 10px', gap: '6px' }}
+                >
+                  <Settings2 size={14} />
+                  Gestión docente
+                </Button>
+              )}
               <span className="live-dot" /> Tu espacio de aprendizaje{' '}
               <span className="avatar-small">{initials}</span>
             </span>
@@ -633,61 +685,180 @@ export function Workspace({
               </div>
               {view === 'course' && selectedSubject ? (
                 <>
-                  <button className="back-link" onClick={() => home()}>
-                    <ChevronLeft size={15} />
-                    Volver a mis asignaturas
-                  </button>
+                  <div className="course-nav-header">
+                    <button className="back-link" onClick={() => home()}>
+                      <ChevronLeft size={15} />
+                      Volver a mis asignaturas
+                    </button>
+                    {canManageCampus && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => goToAdmin()}
+                        title="Abrir panel de administración para esta asignatura"
+                        style={{ gap: '6px' }}
+                      >
+                        <Settings2 size={14} />
+                        <span>Gestionar asignatura</span>
+                      </Button>
+                    )}
+                  </div>
                   <div className="section-title">
-                    <h2>
-                      Temas y clases <span>{selectedSubject.topics.length}</span>
-                    </h2>
-                    <p>
-                      {
-                        catalog.institutions.find((i) => i.id === selectedSubject.institutionId)
-                          ?.name
-                      }
-                    </p>
+                    <div>
+                      <h2>
+                        Temas y clases <span>{selectedSubject.topics.length}</span>
+                      </h2>
+                      <p>
+                        {
+                          catalog.institutions.find((i) => i.id === selectedSubject.institutionId)
+                            ?.name
+                        }
+                      </p>
+                    </div>
+                    {canManageCampus && (
+                      <Button
+                        size="sm"
+                        onClick={() => {
+                          const firstTopic = selectedSubject.topics[0]?.id;
+                          goToAdmin(firstTopic);
+                        }}
+                        title="Crear o importar una clase en esta materia"
+                        style={{ gap: '6px' }}
+                      >
+                        <Plus size={15} />
+                        <span>Nueva clase</span>
+                      </Button>
+                    )}
                   </div>
-                  <div className="topic-list">
-                    {selectedSubject.topics.map((topic, index) => (
-                      <section key={topic.id} className="topic-section">
-                        <div className="topic-title">
-                          <span>{String(index + 1).padStart(2, '0')}</span>
-                          <div>
-                            <div className="eyebrow">TEMA</div>
-                            <h3>{topic.name}</h3>
-                          </div>
-                          <FolderOpen size={20} />
-                        </div>
-                        {catalog.lessons
-                          .filter(
+
+                  {selectedSubject.topics.length > 1 && (
+                    <div className="topic-filter-bar">
+                      <button
+                        type="button"
+                        className={`topic-filter-chip ${activeTopicFilter === null ? 'active' : ''}`}
+                        onClick={() => setActiveTopicFilter(null)}
+                      >
+                        Todos los temas ({selectedSubject.topics.length})
+                      </button>
+                      {selectedSubject.topics.map((t) => (
+                        <button
+                          key={t.id}
+                          type="button"
+                          className={`topic-filter-chip ${activeTopicFilter === t.id ? 'active' : ''}`}
+                          onClick={() => setActiveTopicFilter(t.id)}
+                        >
+                          {t.name}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {selectedSubject.topics.length === 0 ? (
+                    <div
+                      className="topic-empty-state"
+                      style={{ borderRadius: '12px', border: '1px solid var(--border)' }}
+                    >
+                      <FolderOpen size={32} style={{ opacity: 0.5 }} />
+                      <p>Esta materia aún no tiene temas configurados.</p>
+                      {canManageCampus && (
+                        <Button size="sm" onClick={() => goToAdmin()}>
+                          <Plus size={14} />
+                          Crear el primer tema
+                        </Button>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="topic-list">
+                      {selectedSubject.topics
+                        .filter(
+                          (topic) => activeTopicFilter === null || topic.id === activeTopicFilter
+                        )
+                        .map((topic, index) => {
+                          const topicLessons = catalog.lessons.filter(
                             (l) => l.subjectId === selectedSubject.id && l.topicId === topic.id
-                          )
-                          .map((l) => (
-                            <div className="topic-lesson" key={l.id}>
-                              <span className="stat-icon sage">
-                                <BookOpen size={20} />
-                              </span>
-                              <div>
-                                <h4>{l.title}</h4>
-                                <p>
-                                  {l.subtitle ? `${l.subtitle} · ` : ''}
-                                  {l.frames.length} bloques{' '}
-                                  {canReadDraft && l.status === 'draft' && (
-                                    <span className="status-badge draft">Borrador</span>
+                          );
+                          return (
+                            <section key={topic.id} className="topic-section">
+                              <div className="topic-title">
+                                <span>{String(index + 1).padStart(2, '0')}</span>
+                                <div>
+                                  <div className="eyebrow">TEMA</div>
+                                  <h3>{topic.name}</h3>
+                                </div>
+                                <div className="topic-actions">
+                                  <span className="topic-lesson-count">
+                                    {topicLessons.length}{' '}
+                                    {topicLessons.length === 1 ? 'clase' : 'clases'}
+                                  </span>
+                                  {canManageCampus && (
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        goToAdmin(topic.id);
+                                      }}
+                                      title="Añadir o importar clase en este tema"
+                                      style={{
+                                        gap: '5px',
+                                        height: '28px',
+                                        fontSize: '11px',
+                                        padding: '0 9px',
+                                      }}
+                                    >
+                                      <Plus size={13} />
+                                      <span>Añadir clase</span>
+                                    </Button>
                                   )}
-                                </p>
-                                <small>{progress[l.id]?.length ?? 0} bloques completados</small>
+                                  <FolderOpen size={20} />
+                                </div>
                               </div>
-                              <Button variant="outline" onClick={() => openLesson(l)}>
-                                Abrir clase
-                                <ArrowRight size={15} />
-                              </Button>
-                            </div>
-                          ))}
-                      </section>
-                    ))}
-                  </div>
+                              {topicLessons.length === 0 ? (
+                                <div className="topic-empty-state">
+                                  <p>Aún no hay clases en este tema.</p>
+                                  {canManageCampus && (
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={() => goToAdmin(topic.id)}
+                                      style={{ gap: '6px' }}
+                                    >
+                                      <Upload size={14} />
+                                      Importar clase en «{topic.name}»
+                                    </Button>
+                                  )}
+                                </div>
+                              ) : (
+                                topicLessons.map((l) => (
+                                  <div className="topic-lesson" key={l.id}>
+                                    <span className="stat-icon sage">
+                                      <BookOpen size={20} />
+                                    </span>
+                                    <div>
+                                      <h4>{l.title}</h4>
+                                      <p>
+                                        {l.subtitle ? `${l.subtitle} · ` : ''}
+                                        {l.frames.length} bloques{' '}
+                                        {canReadDraft && l.status === 'draft' && (
+                                          <span className="status-badge draft">Borrador</span>
+                                        )}
+                                      </p>
+                                      <small>
+                                        {progress[l.id]?.length ?? 0} bloques completados
+                                      </small>
+                                    </div>
+                                    <Button variant="outline" onClick={() => openLesson(l)}>
+                                      Abrir clase
+                                      <ArrowRight size={15} />
+                                    </Button>
+                                  </div>
+                                ))
+                              )}
+                            </section>
+                          );
+                        })}
+                    </div>
+                  )}
                 </>
               ) : view === 'institutions' ? (
                 <>

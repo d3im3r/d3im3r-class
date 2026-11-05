@@ -85,3 +85,86 @@
 @media(max-width:700px){.btn-danger-action{margin-left:0;width:100%}}
 
 
+
+
+/* Course navigation & Topic interaction improvements */
+.course-nav-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.topic-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-left: auto;
+}
+.topic-lesson-count {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--muted);
+  background: rgba(0, 0, 0, 0.05);
+  padding: 3px 8px;
+  border-radius: 12px;
+}
+[data-theme="dark"] .topic-lesson-count {
+  background: rgba(255, 255, 255, 0.08);
+  color: #a3b6d4;
+}
+.topic-empty-state {
+  padding: 32px 24px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: var(--card);
+}
+.topic-empty-state p {
+  font-size: 13px;
+  color: var(--muted);
+  margin: 0;
+}
+.topic-filter-bar {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 22px;
+}
+.topic-filter-chip {
+  padding: 6px 14px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--foreground);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.topic-filter-chip:hover {
+  border-color: var(--primary);
+}
+.topic-filter-chip.active {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
+}
+.breadcrumb-btn {
+  background: transparent;
+  border: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  transition: opacity 0.15s;
+}
+.breadcrumb-btn:hover {
+  opacity: 0.8;
+  text-decoration: underline;
+}
