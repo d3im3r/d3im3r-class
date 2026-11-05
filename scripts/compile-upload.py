@@ -44,13 +44,34 @@ for index,source in enumerate(request['figures'][:60],start=1):
         work=pathlib.Path(td)
         (work/'figure.tex').write_text(preamble+'\n'+r'\begin{document}'+'\n'+source+'\n'+r'\end{document}')
         env={**os.environ,'openin_any':'p','openout_any':'p'}
+        dest=output/(key+'.svg')
         try:
-            subprocess.run(['xelatex','-no-shell-escape','-interaction=nonstopmode','-halt-on-error','figure.tex'],
-                           cwd=work,env=env,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,check=True,timeout=25)
-            dest=output/(key+'.svg')
-            subprocess.run(['dvisvgm','--pdf','--no-fonts','--exact-bbox','--scale=1.35','--output='+str(dest),'figure.pdf'],
-                           cwd=work,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,check=True,timeout=15)
-            results[key]=str(dest)
+            # 1. Preferir 'latex' a DVI (lee directamente dvisvgm sin Ghostscript)
+            compiled = False
+            r_latex = subprocess.run(
+                ['latex', '-no-shell-escape', '-interaction=nonstopmode', '-halt-on-error', 'figure.tex'],
+                cwd=work, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=25
+            )
+            if r_latex.returncode == 0 and (work/'figure.dvi').exists():
+                r_svg = subprocess.run(
+                    ['dvisvgm', '--no-fonts', '--exact-bbox', '--scale=1.35', '--output='+str(dest), 'figure.dvi'],
+                    cwd=work, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=15
+                )
+                if r_svg.returncode == 0 and dest.exists():
+                    results[key]=str(dest)
+                    compiled = True
+
+            # 2. Fallback a xelatex si latex no produjo DVI o falló
+            if not compiled:
+                r_xe = subprocess.run(
+                    ['xelatex', '-no-shell-escape', '-interaction=nonstopmode', '-halt-on-error', 'figure.tex'],
+                    cwd=work, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, check=True, timeout=25
+                )
+                subprocess.run(
+                    ['dvisvgm', '--pdf', '--no-fonts', '--exact-bbox', '--scale=1.35', '--output='+str(dest), 'figure.pdf'],
+                    cwd=work, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, check=True, timeout=15
+                )
+                results[key]=str(dest)
         except subprocess.CalledProcessError as error:
             log=(error.stdout or b'').decode(errors='replace')
             lines=log.splitlines()
@@ -64,6 +85,6 @@ for index,source in enumerate(request['figures'][:60],start=1):
         except subprocess.TimeoutExpired:
             errors.append({'hash':key,'message':f'Diagrama {index}: se superó el tiempo máximo de compilación.'})
         except FileNotFoundError:
-            errors.append({'hash':key,'message':f'Diagrama {index}: XeLaTeX o dvisvgm no están disponibles.'})
+            errors.append({'hash':key,'message':f'Diagrama {index}: LaTeX o dvisvgm no están disponibles.'})
 
 json.dump({'results':results,'errors':errors},sys.stdout)

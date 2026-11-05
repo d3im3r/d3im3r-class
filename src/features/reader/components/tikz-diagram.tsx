@@ -48,6 +48,21 @@ const ROD2IK_SCRIPT = 'https://cdn.jsdelivr.net/npm/@rod2ik/tikzjax@1.6.0/dist/t
 const FALLBACK_FONTS = 'https://tikzjax.com/v1/fonts.css';
 const FALLBACK_SCRIPT = 'https://tikzjax.com/v1/tikzjax.js';
 
+async function calculateSha256(text: string): Promise<string> {
+  if (typeof window === 'undefined' || !window.crypto || !window.crypto.subtle) {
+    return '';
+  }
+  try {
+    const enc = new TextEncoder().encode(text);
+    const buf = await window.crypto.subtle.digest('SHA-256', enc);
+    return Array.from(new Uint8Array(buf))
+      .map((b) => b.toString(16).padStart(2, '0'))
+      .join('');
+  } catch {
+    return '';
+  }
+}
+
 function ensureTikZJaxLoaded(): Promise<void> {
   if (typeof window === 'undefined') return Promise.resolve();
   if ((window as unknown as { __tikzjax_ready?: boolean }).__tikzjax_ready)
@@ -86,7 +101,6 @@ function ensureTikZJaxLoaded(): Promise<void> {
       resolve();
     };
     script.onerror = () => {
-      // Fallback to legacy tikzjax if CDN fails
       const fallback = document.createElement('script');
       fallback.src = FALLBACK_SCRIPT;
       fallback.async = true;
@@ -104,6 +118,7 @@ function ensureTikZJaxLoaded(): Promise<void> {
 export function TikZDiagram({ code }: { code: string }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState(true);
+  const [svgSource, setSvgSource] = useState<string | null>(null);
   const [rendered, setRendered] = useState(false);
   const [error, setError] = useState(false);
 
@@ -115,15 +130,49 @@ export function TikZDiagram({ code }: { code: string }) {
     }
 
     let active = true;
-    const container = containerRef.current;
-    if (!container) return;
-
-    container.innerHTML = '';
     setLoading(true);
     setRendered(false);
     setError(false);
+    setSvgSource(null);
 
-    ensureTikZJaxLoaded().then(() => {
+    const tryRender = async () => {
+      // 1. Revisar si está precargado en window.TIKZ_CACHE
+      if (typeof window !== 'undefined') {
+        const win = window as unknown as {
+          TIKZ_CACHE?: Record<string, { svg?: string; asset?: string }>;
+        };
+        if (win.TIKZ_CACHE) {
+          const item = Object.values(win.TIKZ_CACHE).find((i) => i?.svg && code.includes(i.svg));
+          if (item?.svg && active) {
+            setSvgSource(item.svg);
+            setLoading(false);
+            setRendered(true);
+            return;
+          }
+        }
+      }
+
+      // 2. Intentar cargar el asset estático precompilado por hash SHA-256
+      const hash = await calculateSha256(code);
+      if (hash && active) {
+        try {
+          const res = await fetch(`/assets/diagrams/${hash}.svg`, { method: 'HEAD' });
+          if (res.ok && active) {
+            setSvgSource(`/assets/diagrams/${hash}.svg`);
+            setLoading(false);
+            setRendered(true);
+            return;
+          }
+        } catch {}
+      }
+
+      // 3. Fallback: TikZJax si no se encuentra el asset precompilado
+      if (!active) return;
+      const container = containerRef.current;
+      if (!container) return;
+
+      container.innerHTML = '';
+      await ensureTikZJaxLoaded();
       if (!active) return;
 
       const script = document.createElement('script');
@@ -175,13 +224,15 @@ export function TikZDiagram({ code }: { code: string }) {
           setError(true);
           observer.disconnect();
         }
-      }, 12000);
+      }, 7000);
 
       return () => {
         clearTimeout(timer);
         observer.disconnect();
       };
-    });
+    };
+
+    tryRender();
 
     return () => {
       active = false;
@@ -207,23 +258,45 @@ export function TikZDiagram({ code }: { code: string }) {
           }}
         >
           <Loader2 className="animate-spin" size={16} />
-          <span>Renderizando diagrama con TikZJax…</span>
+          <span>Cargando diagrama vectorial…</span>
         </div>
       )}
-      <div
-        ref={containerRef}
-        className="tikz-render-target"
-        style={{
-          display: rendered ? 'flex' : 'none',
-          justifyContent: 'center',
-          alignItems: 'center',
-          overflow: 'auto',
-          maxWidth: '100%',
-        }}
-      />
-      {error && !rendered && (
+
+      {svgSource ? (
+        <div
+          className="tikz-render-target"
+          style={{
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            overflow: 'auto',
+            maxWidth: '100%',
+          }}
+        >
+          <img
+            src={svgSource}
+            alt="Diagrama TikZ"
+            style={{ maxWidth: '100%', height: 'auto', display: 'block', margin: '0 auto' }}
+            loading="lazy"
+          />
+        </div>
+      ) : (
+        <div
+          ref={containerRef}
+          className="tikz-render-target"
+          style={{
+            display: rendered ? 'flex' : 'none',
+            justifyContent: 'center',
+            alignItems: 'center',
+            overflow: 'auto',
+            maxWidth: '100%',
+          }}
+        />
+      )}
+
+      {error && !rendered && !svgSource && (
         <div className="resource-pending">
-          <p>No se pudo renderizar este diagrama TikZ en el navegador.</p>
+          <p>No se pudo renderizar este diagrama TikZ de forma automática.</p>
           <a
             href="https://tikz.dev/"
             target="_blank"

@@ -1,12 +1,11 @@
 \documentclass[tikz,border=8pt]{standalone}
-\usepackage{fontspec}
-\setmainfont{Latin Modern Roman}
-\usepackage{amsmath,amssymb,fontawesome5}
+\usepackage{amsmath,amssymb}
 \usepackage{pgfplots}
 \pgfplotsset{compat=1.18}
 \usetikzlibrary{calc,positioning,arrows.meta,mindmap,shapes,shapes.geometric,fit,backgrounds,decorations.pathreplacing,decorations.markings,patterns,matrix,chains,scopes,trees}
-\newcommand{\ok}{\textcolor{green!60!black}{\faCheck}}
-\newcommand{\fail}{\textcolor{red}{\faTimes}}
+\usepackage{xcolor}
+\providecommand{\ok}{\textcolor{green!60!black}{\checkmark}}
+\providecommand{\fail}{\textcolor{red}{\times}}
 \definecolor{BrandYellow}{RGB}{255,185,62}
 \definecolor{BrandGreen}{RGB}{20,196,134}
 \definecolor{BrandBlue}{RGB}{30,60,120}

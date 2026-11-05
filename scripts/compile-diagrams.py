@@ -4,12 +4,13 @@ root=pathlib.Path(__file__).resolve().parents[1]
 template=(root/'content/templates/template-slide.tex').read_text()
 colors='\n'.join(re.findall(r'\\definecolor\{[^}]+\}\{[^}]+\}\{[^}]+\}',template))
 preamble=r'''\documentclass[tikz,border=8pt]{standalone}
-\usepackage{fontspec}
-\setmainfont{Latin Modern Roman}
-\usepackage{amsmath,amssymb,fontawesome5}
-\usetikzlibrary{calc,positioning,arrows.meta,mindmap,shapes,fit,backgrounds,decorations.pathreplacing}
-\newcommand{\ok}{\textcolor{green!60!black}{\faCheck}}
-\newcommand{\fail}{\textcolor{red}{\faTimes}}
+\usepackage{amsmath,amssymb}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+\usetikzlibrary{calc,positioning,arrows.meta,mindmap,shapes,shapes.geometric,fit,backgrounds,decorations.pathreplacing,decorations.markings,patterns,matrix,chains,scopes,trees}
+\usepackage{xcolor}
+\providecommand{\ok}{\textcolor{green!60!black}{\checkmark}}
+\providecommand{\fail}{\textcolor{red}{\times}}
 '''+colors+'\n'
 (root/'content/resources/latex/diagram-preamble.tex').write_text(preamble)
 output=root/'content/materials/assets/diagrams';output.mkdir(parents=True,exist_ok=True)
@@ -27,8 +28,12 @@ def compile_one(item):
  with tempfile.TemporaryDirectory(prefix='aula-tikz-') as td:
   work=pathlib.Path(td);(work/'figure.tex').write_text(preamble+'\n\\begin{document}\n'+source+'\n\\end{document}')
   try:
-   subprocess.run(['xelatex','-no-shell-escape','-interaction=nonstopmode','-halt-on-error','figure.tex'],cwd=work,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,check=True,timeout=45)
-   subprocess.run(['dvisvgm','--pdf','--no-fonts','--exact-bbox','--output='+str(dest),'figure.pdf'],cwd=work,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,check=True,timeout=30)
+   r_tex = subprocess.run(['latex','-no-shell-escape','-interaction=nonstopmode','-halt-on-error','figure.tex'],cwd=work,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,timeout=45)
+   if r_tex.returncode == 0 and (work/'figure.dvi').exists():
+    subprocess.run(['dvisvgm','--no-fonts','--exact-bbox','--output='+str(dest),'figure.dvi'],cwd=work,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,check=True,timeout=30)
+   else:
+    subprocess.run(['xelatex','-no-shell-escape','-interaction=nonstopmode','-halt-on-error','figure.tex'],cwd=work,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,check=True,timeout=45)
+    subprocess.run(['dvisvgm','--pdf','--no-fonts','--exact-bbox','--output='+str(dest),'figure.pdf'],cwd=work,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,check=True,timeout=30)
    stamp.write_text(digest);return key,'ok'
   except (subprocess.CalledProcessError,subprocess.TimeoutExpired) as e:
    log=(getattr(e,'stdout',b'') or b'').decode(errors='replace');return key,'FAILED: '+log[-1800:]

@@ -12,6 +12,7 @@
     "format": "prettier --write \"src/**/*.{ts,tsx}\" next.config.ts",
     "format:check": "prettier --check \"src/**/*.{ts,tsx}\" next.config.ts",
     "compile:diagrams": "python3 scripts/compile-diagrams.py",
+    "build:assets": "python3 scripts/build-assets.py",
     "reset-password": "tsx --env-file=.env.local scripts/reset-password.ts",
     "content:build": "npm run import:content && npm run compile:diagrams && npm run import:content"
   },
