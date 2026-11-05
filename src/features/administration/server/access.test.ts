@@ -33,6 +33,8 @@ test('el catálogo del alumno excluye fuentes TikZ también en bloques anidados'
 });
 test('bloquea fuentes y descargas de materiales para el alumno',()=>{
  for(const resource of [{mime:'text/plain; charset=utf-8',name:'clase.tex'},{mime:'application/zip',name:'fuentes.zip'},{mime:'image/svg+xml',name:'fuente.tex'},{mime:'application/pdf',name:'clase.pdf'}])assert.equal(canReadResource(student,'flexbox',resource),false);
+ assert.equal(canReadResource(student,'flexbox',{mime:'image/svg+xml',name:'diagrama.svg'}),true);
+ assert.equal(canReadResource(student,'flexbox',{mime:'image/png',name:'logo.png'}),true);
  assert.equal(canReadResource(teacher,'flexbox',{mime:'application/pdf',name:'clase.pdf'}),true);
  assert.equal(canReadResource(teacher,'flexbox',{mime:'text/plain; charset=utf-8',name:'clase.tex'}),true);
 });

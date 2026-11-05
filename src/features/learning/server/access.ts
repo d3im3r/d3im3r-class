@@ -16,8 +16,11 @@ export function canReadLesson(user:User,id:string){
 export function canReadResource(user:User,lessonId:string,resource:{mime:string;name:string}){
  if(!canReadLesson(user,lessonId))return false;
  if(hasPermission(user,{lesson:['downloadSource']}))return true;
+ const isDangerous = /\.(tex|sty|cls|bib|tikz|py|js|ts|zip)$/i.test(resource.name);
+ if(isDangerous)return false;
+ if(resource.mime.startsWith('image/'))return true;
  if(!hasPermission(user,{lesson:['downloadMaterial']}))return false;
- return (resource.mime.startsWith('image/')||resource.mime==='application/pdf')&&!/\.(tex|sty|cls|bib|tikz|py|js|ts|zip)$/i.test(resource.name);
+ return resource.mime==='application/pdf';
 }
 export function studentLesson(lesson:Lesson):Lesson{
  function visible(block:Block):Block{return {...block,content:block.type==='diagram'||block.children?'':block.content,children:block.children?.map(visible),items:block.items?.map(item=>item.map(visible))};}

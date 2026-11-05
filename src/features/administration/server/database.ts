@@ -43,7 +43,8 @@ export async function syncFromPostgres(force=false){
       'enrollments', COALESCE((SELECT json_agg(e) FROM enrollments e), '[]'::json),
       'institution_members', COALESCE((SELECT json_agg(im) FROM institution_members im), '[]'::json),
       'subject_bans', COALESCE((SELECT json_agg(b) FROM subject_bans b), '[]'::json),
-      'progress', COALESCE((SELECT json_agg(p) FROM progress p), '[]'::json)
+      'progress', COALESCE((SELECT json_agg(p) FROM progress p), '[]'::json),
+      'resources', COALESCE((SELECT json_agg(r) FROM resources r), '[]'::json)
     ) as state;
   `);
   const state=res.rows[0]?.state;
@@ -114,6 +115,11 @@ export async function syncFromPostgres(force=false){
    if(Array.isArray(state.progress)){
     for(const p of state.progress){
      sql.prepare('INSERT OR IGNORE INTO progress(user_id,lesson_id,frame_id) VALUES (?,?,?)').run(p.user_id,p.lesson_id,p.frame_id);
+    }
+   }
+   if(Array.isArray(state.resources)){
+    for(const r of state.resources){
+     sql.prepare('INSERT OR REPLACE INTO resources(lesson_id,key,name,path,mime) VALUES (?,?,?,?,?)').run(r.lesson_id,r.key,r.name,r.path,r.mime);
     }
    }
    sql.exec('COMMIT');

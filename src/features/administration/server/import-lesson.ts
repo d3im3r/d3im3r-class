@@ -79,7 +79,11 @@ export async function importLesson(form:FormData,actor?:User){
   if(createdGeneralTopic){
    pool.query('UPDATE subjects SET data=$1 WHERE id=$2',[JSON.stringify(subject),subject.id]).catch(console.error);
   }
-  pool.query("INSERT INTO lessons(id,subject_id,status,revision,reviewed,data) VALUES ($1,$2,'draft',$3,0,$4) ON CONFLICT(id) DO UPDATE SET status='draft',revision=EXCLUDED.revision,reviewed=0,data=EXCLUDED.data",[id,subjectId,revision,JSON.stringify(lesson)]).catch(console.error);
+  pool.query("INSERT INTO lessons(id,subject_id,status,revision,reviewed,data) VALUES ($1,$2,'draft',$3,0,$4) ON CONFLICT(id) DO UPDATE SET status='draft',revision=EXCLUDED.revision,reviewed=0,data=EXCLUDED.data",[id,subjectId,revision,JSON.stringify(lesson)]).then(()=>{
+   for(const r of resources){
+    pool.query('INSERT INTO resources(lesson_id,key,name,path,mime) VALUES ($1,$2,$3,$4,$5) ON CONFLICT(lesson_id,key) DO UPDATE SET name=EXCLUDED.name,path=EXCLUDED.path,mime=EXCLUDED.mime',[id,r.key,r.name,r.path,r.mime]).catch(console.error);
+   }
+  }).catch(console.error);
  }
  return {id,frames:lesson.frames.length,diagnostics:lesson.diagnostics};
 }

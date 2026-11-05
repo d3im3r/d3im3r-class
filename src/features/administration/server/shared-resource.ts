@@ -4,12 +4,24 @@ import {createHash} from 'node:crypto';
 import {dataDirectory} from './database';
 export type StoredResource={key:string;name:string;path:string;mime:string};
 export function sharedImage(name:string):StoredResource|null{
- const folder=path.join(process.cwd(),'content/materials/assets/teaching');const base=path.basename(name.replace(/\\/g,'/')).toLowerCase();
- const match=readdirSync(folder).find(file=>file.toLowerCase()===base&&/\.(png|jpe?g|webp)$/i.test(file));if(!match)return null;
- const extension=path.extname(match).toLowerCase(),key=createHash('sha256').update(`shared:${match}`).digest('hex').slice(0,24);
- return {key,name:match,path:path.join(folder,match),mime:extension==='.png'?'image/png':extension==='.webp'?'image/webp':'image/jpeg'};
+ const base=path.basename(name.replace(/\\/g,'/')).toLowerCase();
+ const folders=[
+  path.join(process.cwd(),'public/assets/teaching'),
+  path.join(process.cwd(),'content/materials/assets/teaching'),
+ ];
+ for(const folder of folders){
+  if(!existsSync(folder))continue;
+  const match=readdirSync(folder).find(file=>file.toLowerCase()===base&&/\.(png|jpe?g|webp)$/i.test(file));
+  if(match){
+   const extension=path.extname(match).toLowerCase(),key=createHash('sha256').update(`shared:${match}`).digest('hex').slice(0,24);
+   return {key,name:match,path:path.join(folder,match),mime:extension==='.png'?'image/png':extension==='.webp'?'image/webp':'image/jpeg'};
+  }
+ }
+ return null;
 }
 export function cachedDiagramPath(hash:string):string|null{
+ const inPublic=path.join(process.cwd(),'public/assets/diagrams',`${hash}.svg`);
+ if(existsSync(inPublic))return inPublic;
  const precompiled=path.join(process.cwd(),'content/materials/assets/diagrams',`${hash}.svg`);
  if(existsSync(precompiled))return precompiled;
  const cached=path.join(dataDirectory(),'cache/diagrams',`${hash}.svg`);
