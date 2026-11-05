@@ -53,8 +53,9 @@ function ensureTikZJaxLoaded(): Promise<void> {
   if ((window as unknown as { __tikzjax_ready?: boolean }).__tikzjax_ready) return Promise.resolve();
 
   return new Promise((resolve) => {
-    if (!document.querySelector('link[href*="fonts"]')) {
+    if (!document.querySelector('link[data-tikzjax-fonts]')) {
       const link = document.createElement('link');
+      link.setAttribute('data-tikzjax-fonts', 'true');
       link.rel = 'stylesheet';
       link.href = ROD2IK_FONTS;
       link.onerror = () => {
@@ -140,12 +141,25 @@ export function TikZDiagram({ code }: { code: string }) {
       }
 
       const observer = new MutationObserver(() => {
-        if (container.querySelector('svg')) {
-          if (active) {
-            setLoading(false);
-            setRendered(true);
-            observer.disconnect();
+        const svg = container.querySelector('svg');
+        if (svg && active) {
+          try {
+            const bbox = svg.getBBox();
+            if (bbox && bbox.width > 0 && bbox.height > 0) {
+              const pad = 8;
+              svg.setAttribute('viewBox', `${(bbox.x - pad).toFixed(2)} ${(bbox.y - pad).toFixed(2)} ${(bbox.width + pad * 2).toFixed(2)} ${(bbox.height + pad * 2).toFixed(2)}`);
+              svg.style.maxWidth = '100%';
+              svg.style.width = 'auto';
+              svg.style.height = 'auto';
+              svg.style.display = 'block';
+              svg.style.margin = '0 auto';
+            }
+          } catch (e) {
+            console.warn('TikZJax getBBox warning:', e);
           }
+          setLoading(false);
+          setRendered(true);
+          observer.disconnect();
         }
       });
 

@@ -33,27 +33,23 @@ function resolvePath(filePath: string): string | null {
 
 function findFallbackResource(key: string): { path: string; mime: string; name: string } | null {
  const cwd = process.cwd();
- if (key.startsWith('diag-')) {
-  const hash = key.slice(5);
-  const candidates = [
-   path.join(cwd, 'public/assets/diagrams', `${hash}.svg`),
-   path.join(cwd, 'content/materials/assets/diagrams', `${hash}.svg`),
-   path.join(dataDirectory(), 'cache/diagrams', `${hash}.svg`),
-  ];
-  for (const c of candidates) {
-   if (existsSync(c)) return { path: c, mime: 'image/svg+xml', name: `diagrama-${hash.slice(0, 8)}.svg` };
-  }
- }
- // Check diagrams directory for key prefix or match
- const diagDirs = [path.join(cwd, 'public/assets/diagrams'), path.join(cwd, 'content/materials/assets/diagrams')];
+ const searchPrefix = key.startsWith('diag-') ? key.slice(5) : key;
+ const diagDirs = [
+  path.join(cwd, 'public/assets/diagrams'),
+  path.join(cwd, 'content/materials/assets/diagrams'),
+  path.join(dataDirectory(), 'cache/diagrams'),
+ ];
  for (const d of diagDirs) {
   if (existsSync(d)) {
    try {
     for (const f of readdirSync(d)) {
      if (!f.endsWith('.svg')) continue;
+     if (f.startsWith(searchPrefix) || f === `${searchPrefix}.svg`) {
+      return { path: path.join(d, f), mime: 'image/svg+xml', name: f };
+     }
      const rel = `assets/diagrams/${f}`;
      const k = createHash('sha256').update(rel).digest('hex').slice(0, 24);
-     if (k === key || f.startsWith(key)) {
+     if (k === key) {
       return { path: path.join(d, f), mime: 'image/svg+xml', name: f };
      }
     }

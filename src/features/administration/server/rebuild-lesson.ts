@@ -1,4 +1,4 @@
-import {existsSync} from 'node:fs';
+import {existsSync,readFileSync} from 'node:fs';
 import {mkdir,readFile} from 'node:fs/promises';
 import path from 'node:path';
 import {randomUUID,createHash} from 'node:crypto';
@@ -19,14 +19,25 @@ export async function rebuildLesson(id:string,actor?:User){
  function walk(blocks:Block[],fn:(b:Block)=>void){for(const b of blocks){fn(b);if(b.children)walk(b.children,fn);for(const item of b.items??[])walk(item,fn);}}
  function available(b:Block){
   if(!b.asset)return false;
+  let filePath:string|null=null;
   if(b.asset.startsWith('/assets/')){
    const inPublic=path.join(process.cwd(),'public',b.asset.slice(1));
    const inMaterials=path.join(process.cwd(),'content/materials',b.asset.slice(1));
-   return existsSync(inPublic)||existsSync(inMaterials);
+   if(existsSync(inPublic))filePath=inPublic;
+   else if(existsSync(inMaterials))filePath=inMaterials;
+  }else{
+   const key=b.asset.split('/').at(-1);
+   const resource=db().prepare('SELECT path FROM resources WHERE lesson_id=? AND key=?').get(id,key??'');
+   if(resource&&existsSync(String(resource.path)))filePath=String(resource.path);
   }
-  const key=b.asset.split('/').at(-1);
-  const resource=db().prepare('SELECT path FROM resources WHERE lesson_id=? AND key=?').get(id,key??'');
-  return !!resource&&existsSync(String(resource.path));
+  if(!filePath)return false;
+  if(b.type==='diagram'){
+   try{
+    const content=readFileSync(filePath,'utf8');
+    if(!content||content.length<50||content.includes('<text ')||content.includes('<text>'))return false;
+   }catch{return false;}
+  }
+  return true;
  }
  // Recover untouched TikZ from the stored source when an earlier parser masked its comments.
  const sourceResource=db().prepare('SELECT path FROM resources WHERE lesson_id=? AND key=?').get(id,lesson.source.split('/').at(-1)??'');
