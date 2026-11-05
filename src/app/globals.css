@@ -78,4 +78,10 @@
 .image-lightbox-canvas img,.image-lightbox-canvas svg{background:#fff;border-radius:8px;padding:24px;max-width:90vw;max-height:80vh;object-fit:contain;box-shadow:0 16px 48px rgba(0,0,0,.6)}
 .figure-enlarge-hint{display:inline-flex;align-items:center;gap:5px;font-size:11px;color:var(--muted);background:transparent;border:0;padding:4px 8px;margin-top:6px;cursor:pointer;border-radius:4px;transition:color .15s}
 .figure-enlarge-hint:hover{color:var(--foreground);background:color-mix(in srgb,var(--foreground) 6%,transparent)}
+.btn-danger-action{color:#b91c1c!important;border-color:#fca5a5!important;background-color:transparent;margin-left:auto;transition:all .15s ease}
+.btn-danger-action:hover:not(:disabled){background-color:#fef2f2!important;border-color:#ef4444!important;color:#991b1b!important}
+[data-theme="dark"] .btn-danger-action{color:#f87171!important;border-color:#7f1d1d!important;background-color:transparent}
+[data-theme="dark"] .btn-danger-action:hover:not(:disabled){background-color:#450a0a!important;border-color:#dc2626!important;color:#fca5a5!important}
+@media(max-width:700px){.btn-danger-action{margin-left:0;width:100%}}
+
 

@@ -155,3 +155,28 @@ test('garantiza el principio de minimo privilegio (docentes y alumnos solo ven s
  assert.deepEqual(studentSenaCat.institutions.map(i=>i.id),['inst-sena']);
  assert.deepEqual(studentSenaCat.subjects.map(s=>s.id),[senaSubjId]);
 });
+
+test('permite eliminar clases con limpieza en cascada respetando permisos',async()=>{
+ const createdSubj=userCatalog(teacher).subjects[0];
+ const lessonId='clase-test-eliminar';
+ const lData={id:lessonId,subjectId:createdSubj.id,topicId:'t1',title:'Clase a borrar',subtitle:'',frames:[]};
+ db().prepare('INSERT INTO lessons(id,subject_id,status,revision,reviewed,data) VALUES (?,?,?,1,1,?)').run(lessonId,createdSubj.id,'published',JSON.stringify(lData));
+ db().prepare('INSERT INTO progress(user_id,lesson_id,frame_id) VALUES (?,?,?)').run(student.id,lessonId,'f1');
+ db().prepare('INSERT INTO resources(lesson_id,key,name,path,mime) VALUES (?,?,?,?,?)').run(lessonId,'k1','res.png','/dummy/res.png','image/png');
+
+ const {dataDirectory}=await import('./database');
+ const {mkdirSync,writeFileSync,existsSync}=await import('node:fs');
+ const uploadDir=path.join(dataDirectory(),'uploads',lessonId);
+ mkdirSync(uploadDir,{recursive:true});
+ writeFileSync(path.join(uploadDir,'test.txt'),'hello');
+ assert.ok(existsSync(uploadDir));
+
+ const teacherSena=login({username:'docente.sena',password:'ClaveSena-2026'});
+ assert.throws(()=>manage({action:'deleteLesson',lessonId},teacherSena),/No tienes permiso/);
+
+ assert.doesNotThrow(()=>manage({action:'deleteLesson',lessonId},teacher));
+ assert.equal(readLesson(lessonId),undefined);
+ assert.equal(db().prepare('SELECT 1 FROM progress WHERE lesson_id=?').get(lessonId),undefined);
+ assert.equal(db().prepare('SELECT 1 FROM resources WHERE lesson_id=?').get(lessonId),undefined);
+ assert.equal(existsSync(uploadDir),false);
+});

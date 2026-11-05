@@ -1,5 +1,7 @@
 import {randomUUID} from 'node:crypto';
-import {db,transaction,lessonRecord,userAccessibleSubjectIds,userAccessibleInstitutionIds,getPgPool} from './database';
+import {existsSync,rmSync} from 'node:fs';
+import path from 'node:path';
+import {db,transaction,lessonRecord,userAccessibleSubjectIds,userAccessibleInstitutionIds,getPgPool,dataDirectory} from './database';
 import {AppError,text,createUser,resetPassword} from '@/features/auth/server/auth';
 import type {Subject,Institution,Lesson} from '@/features/catalog/model/types';
 import type {User} from '@/features/auth/types';
@@ -379,6 +381,39 @@ export function manage(input:Record<string,unknown>,actor?:User){return transact
   const pool=getPgPool();
   if(pool){
    pool.query("UPDATE subject_join_requests SET status='rejected' WHERE id=$1",[requestId]).catch(console.error);
+  }
+  break;
+ }
+ case 'deleteLesson':{
+  const lessonId=text(input.lessonId,'Clase');
+  const row=lessonRecord(lessonId);
+  if(!row)throw new AppError('Clase no encontrada.',404);
+  if(actor&&actor.role==='teacher'){
+   const allowedSubs=userAccessibleSubjectIds(actor);
+   if(!allowedSubs||!allowedSubs.has(row.subject_id))throw new AppError('No tienes permiso para eliminar clases de esta materia.',403);
+  }
+  db().prepare('DELETE FROM progress WHERE lesson_id=?').run(row.id);
+  db().prepare('DELETE FROM resources WHERE lesson_id=?').run(row.id);
+  db().prepare('DELETE FROM class_join_requests WHERE lesson_id=?').run(row.id);
+  db().prepare('DELETE FROM class_invites WHERE lesson_id=?').run(row.id);
+  db().prepare('DELETE FROM lessons WHERE id=?').run(row.id);
+
+  try{
+   const lessonDir=path.join(dataDirectory(),'uploads',row.id);
+   if(existsSync(lessonDir)){
+    rmSync(lessonDir,{recursive:true,force:true});
+   }
+  }catch(err){
+   console.error('Error removing lesson uploads folder:',err);
+  }
+
+  const pool=getPgPool();
+  if(pool){
+   pool.query('DELETE FROM progress WHERE lesson_id=$1',[row.id]).catch(console.error);
+   pool.query('DELETE FROM resources WHERE lesson_id=$1',[row.id]).catch(console.error);
+   pool.query('DELETE FROM class_join_requests WHERE lesson_id=$1',[row.id]).catch(()=>{});
+   pool.query('DELETE FROM class_invites WHERE lesson_id=$1',[row.id]).catch(()=>{});
+   pool.query('DELETE FROM lessons WHERE id=$1',[row.id]).catch(console.error);
   }
   break;
  }
