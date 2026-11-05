@@ -1,0 +1,2538 @@
+\documentclass[aspectratio=169,11pt]{beamer}
+
+% =========================================================
+% TEMPLATE
+% =========================================================
+\input{~/Dropbox/Latex/TemplateSlides/template-slide.tex}
+
+% =========================================================
+% INFORMACIÓN DEL CURSO
+% =========================================================
+\renewcommand{\CourseName}{Programación con JavaScript}
+\renewcommand{\CourseCode}{ADSO - CTMA}
+\renewcommand{\Faculty}{Análisis y Desarrollo de Software}
+\renewcommand{\Institution}{Servicio Nacional de Aprendizaje SENA}
+\renewcommand{\Instructor}{Deimer Miranda Montoya, MSc.(c).}
+\renewcommand{\Email}{damiranda@sena.edu.co}
+\renewcommand{\InstitutionLogo}{Template/LogoSena.png}
+
+% =========================================================
+% COMANDOS AUXILIARES
+% =========================================================
+\newcommand{\concept}[1]{%
+\textcolor{BrandBlue}{\textbf{#1}}%
+}
+
+\newcommand{\file}[1]{%
+\texttt{#1}%
+}
+
+% =========================================================
+% META
+% =========================================================
+\title{\CourseName}
+\author{\Instructor}
+\date{\today}
+
+% =========================================================
+% DOCUMENTO
+% =========================================================
+\begin{document}
+
+% =========================================================
+% PORTADA
+% =========================================================
+\TitleSlide
+
+% =========================================================
+% NORMAS
+% =========================================================
+\NormasSlide
+
+% =========================================================
+% REFLEXIÓN INICIAL
+% =========================================================
+\begin{frame}{Reflexión inicial}
+    \centering
+
+    \textbf{\large
+        "Aprender algo nuevo no siempre significa empezar desde cero;\\
+        muchas veces significa conectar lo que ya sabemos."}
+
+
+
+    \smartimage[4cm]{Template/person.png}
+\end{frame}
+
+%==========================================================================================================================
+\SectionSlide{Clase 4}{Condicionales, eventos e interacción dinámica con el DOM}
+%==========================================================================================================================
+
+
+% =========================================================
+% RUTA DE LA CLASE
+% =========================================================
+\begin{frame}{Ruta de trabajo}
+
+    \Idea[Partimos de conocimientos previos]{
+        Ya conocemos variables, operadores, condicionales y lógica básica
+        gracias a Python. En esta clase nos concentraremos en trasladar
+        esos conceptos a JavaScript y utilizarlos para construir
+        interfaces web interactivas.
+    }
+
+
+
+    \begin{center}
+        \begin{tikzpicture}[
+            node distance=0.65cm,
+            every node/.style={font=\small}
+            ]
+
+            \node[
+            draw,
+            rounded corners,
+            fill=IdeaBody,
+            text width=2cm,
+            align=center,
+            minimum height=0.9cm
+            ] (dom) {
+                DOM
+            };
+
+            \node[
+            draw,
+            rounded corners,
+            fill=DefBody,
+            right=of dom,
+            text width=2cm,
+            align=center,
+            minimum height=0.9cm
+            ] (evento) {
+                Evento
+            };
+
+            \node[
+            draw,
+            rounded corners,
+            fill=QuestionBody,
+            right=of evento,
+            text width=2cm,
+            align=center,
+            minimum height=0.9cm
+            ] (dato) {
+                Dato
+            };
+
+            \node[
+            draw,
+            rounded corners,
+            fill=PracticeBody,
+            right=of dato,
+            text width=2cm,
+            align=center,
+            minimum height=0.9cm
+            ] (decision) {
+                Condición
+            };
+
+            \node[
+            draw,
+            rounded corners,
+            fill=ResultBody,
+            right=of decision,
+            text width=2cm,
+            align=center,
+            minimum height=0.9cm
+            ] (salida) {
+                Interfaz
+            };
+
+            \draw[-{Latex[length=2.5mm]}, thick] (dom) -- (evento);
+            \draw[-{Latex[length=2.5mm]}, thick] (evento) -- (dato);
+            \draw[-{Latex[length=2.5mm]}, thick] (dato) -- (decision);
+            \draw[-{Latex[length=2.5mm]}, thick] (decision) -- (salida);
+
+        \end{tikzpicture}
+    \end{center}
+
+\end{frame}
+
+
+% =========================================================
+% OBJETIVOS
+% =========================================================
+\begin{frame}{¿Qué vamos a construir?}
+
+    \Result[Al finalizar la clase]{
+        El aprendiz podrá:
+        \begin{itemize}
+            \item trasladar estructuras condicionales de Python a JavaScript;
+            \item diferenciar \texttt{==} de \texttt{===};
+            \item usar \texttt{addEventListener()};
+            \item reconocer los eventos más usados del navegador;
+            \item actualizar una interfaz mientras el usuario interactúa;
+            \item validar campos mediante eventos;
+            \item procesar correctamente un formulario con \texttt{submit}.
+        \end{itemize}
+    }
+
+\end{frame}
+
+
+%==========================================================================================================================
+\SectionSlide{Bloque 1}{Decisiones: de Python a JavaScript}
+%==========================================================================================================================
+
+
+% =========================================================
+% PYTHON VS JS
+% =========================================================
+\begin{frame}[fragile]{El concepto no cambia, la sintaxis sí}
+
+    \begin{columns}[T,onlytextwidth]
+
+        \begin{column}{0.45\textwidth}
+
+            \DefBlock[Python]{
+                La estructura depende de indentación.
+            }
+
+            \begin{consolecode}
+            if temperatura > 30:
+                print("Hace calor")
+            else:
+                print("Temperatura moderada")
+            \end{consolecode}
+
+        \end{column}
+
+        \begin{column}{0.5\textwidth}
+
+            \DefBlock[JavaScript]{
+                La estructura utiliza paréntesis y llaves.
+            }
+
+            \begin{javascriptcode}
+                if (temperatura > 30) {
+                    console.log("Hace calor");
+                } else {
+                    console.log("Temperatura moderada");
+                }
+            \end{javascriptcode}
+
+        \end{column}
+
+    \end{columns}
+
+\end{frame}
+
+
+% =========================================================
+% IF ELSE IF
+% =========================================================
+\begin{frame}[fragile]{Selección múltiple con \texttt{else if}}
+
+    \DefBlock[En JavaScript]{
+        Podemos encadenar condiciones mediante
+        \texttt{if}, \texttt{else if} y \texttt{else}.
+    }
+
+
+
+    \begin{javascriptcode}
+        let nivel = 72;
+
+        if (nivel >= 90) {
+            console.log("Nivel alto");
+        } else if (nivel >= 60) {
+            console.log("Nivel medio");
+        } else {
+            console.log("Nivel bajo");
+        }
+    \end{javascriptcode}
+
+    \vspace{-0.25cm}
+
+    \Idea[Recordatorio]{
+        Las condiciones se evalúan de arriba hacia abajo.
+        Cuando una condición es verdadera,
+        las alternativas posteriores no se ejecutan.
+    }
+
+\end{frame}
+
+
+% =========================================================
+% RELACIONALES
+% =========================================================
+\begin{frame}{Operadores que utilizaremos}
+
+    \begin{center}
+        \begin{tabular}{
+            cll
+        }
+
+        \toprule
+        \textbf{Operador} & \textbf{Significado} & \textbf{Ejemplo} \\
+        \midrule
+
+        \texttt{>}
+        & Mayor que
+        & \texttt{edad > 18}
+        \\[0.12cm]
+
+        \texttt{>=}
+        & Mayor o igual
+        & \texttt{nota >= 3}
+        \\[0.12cm]
+
+        \texttt{<}
+        & Menor que
+        & \texttt{stock < 5}
+        \\[0.12cm]
+
+        \texttt{<=}
+        & Menor o igual
+        & \texttt{nivel <= 100}
+        \\[0.12cm]
+
+        \texttt{===}
+        & Igualdad estricta
+        & \texttt{opcion === 1}
+        \\[0.12cm]
+
+        \texttt{!==}
+        & Diferencia estricta
+        & \texttt{estado !== "activo"}
+        \\
+
+        \bottomrule
+
+    \end{tabular}
+    \end{center}
+
+\end{frame}
+
+
+% =========================================================
+% IGUALDAD ESTRICTA
+% =========================================================
+\begin{frame}[fragile]{Igualdad estricta: \texttt{===}}
+
+    \DefBlock[\texttt{===}]{
+        Compara simultáneamente el valor y el tipo de dato.
+        La expresión solo será verdadera si ambos coinciden.
+    }
+
+
+
+    \begin{javascriptcode}
+        console.log(5 === 5);
+        console.log(5 === "5");
+        console.log("admin" === "admin");
+        console.log(true === 1);
+    \end{javascriptcode}
+
+
+
+    \Result[Lectura]{
+        \texttt{5 === "5"} produce \texttt{false},
+        porque un valor es \texttt{number}
+        y el otro es \texttt{string}.
+    }
+
+\end{frame}
+
+
+% =========================================================
+% ESTRICTA VS NO ESTRICTA
+% =========================================================
+\begin{frame}[fragile]{\texttt{===} frente a \texttt{==}}
+
+    \DefBlock[Diferencia principal]{
+        \texttt{==} puede convertir automáticamente los tipos
+        antes de comparar. \texttt{===} no realiza esa conversión.
+    }
+
+    \vspace{-0.25cm}
+
+    \begin{javascriptcode}
+        console.log(5 == "5");
+        console.log(5 === "5");
+        console.log(0 == false);
+        console.log(0 === false);
+    \end{javascriptcode}
+
+
+
+    \begin{center}
+        \begin{tabular}{
+            lll
+        }
+
+        \toprule
+        \textbf{Valores} & \textbf{\texttt{==}} & \textbf{\texttt{===}} \\
+        \midrule
+        \texttt{5} y \texttt{"5"} & \texttt{true} & \texttt{false} \\[0.12cm]
+        \texttt{0} y \texttt{false} & \texttt{true} & \texttt{false} \\
+        \bottomrule
+
+    \end{tabular}
+    \end{center}
+
+
+
+    \Idea[Buena práctica]{
+        Utilizaremos preferentemente \texttt{===} y \texttt{!==}.
+    }
+
+\end{frame}
+
+
+% =========================================================
+% OPERADORES LÓGICOS
+% =========================================================
+\begin{frame}{Operadores lógicos}
+
+    \begin{center}
+        \begin{tabular}{
+            c
+            c
+            p{0.5\linewidth}
+        }
+
+        \toprule
+        \textbf{JS} & \textbf{Python} & \textbf{Uso} \\
+        \midrule
+
+        \texttt{\&\&}
+        & \texttt{and}
+        & Ambas condiciones deben cumplirse.
+        \\[0.18cm]
+
+        \texttt{||}
+        & \texttt{or}
+        & Basta que una condición se cumpla.
+        \\[0.18cm]
+
+        \texttt{!}
+        & \texttt{not}
+        & Niega una expresión booleana.
+        \\
+
+        \bottomrule
+
+    \end{tabular}
+    \end{center}
+
+
+
+    \Result[Ejemplo]{
+        \texttt{edad >= 18 \&\& edad <= 60}
+    }
+
+\end{frame}
+
+
+% =========================================================
+% EJEMPLO LÓGICOS
+% =========================================================
+\begin{frame}[fragile]{Ejemplo: rango de operación}
+
+    \DefBlock[Situación]{
+        Un sensor debe considerarse dentro del rango normal
+        solamente entre 20 y 80 unidades.
+    }
+
+
+
+    \begin{javascriptcode}
+        let lectura = 63;
+
+        if (lectura >= 20 && lectura <= 80) {
+            console.log("Lectura dentro del rango");
+        } else {
+            console.log("Lectura fuera del rango");
+        }
+    \end{javascriptcode}
+
+
+
+    \Idea[Traducción mental]{
+        \texttt{\&\&} puede leerse como ``y''.
+    }
+
+\end{frame}
+
+
+%==========================================================================================================================
+\SectionSlide{Bloque 2}{Eventos y addEventListener()}
+%==========================================================================================================================
+
+
+% =========================================================
+% DE CÓDIGO LINEAL A INTERACCIÓN
+% =========================================================
+\begin{frame}{¿Qué cambia en una aplicación web?}
+
+    \Idea[Programa tradicional]{
+        El programa ejecuta instrucciones siguiendo un flujo previsto.
+    }
+
+
+
+    \Idea[Aplicación web]{
+        Muchas acciones ocurren cuando el usuario interactúa:
+        escribe, hace clic, cambia una opción, entra a un campo
+        o envía un formulario.
+    }
+
+
+
+    \begin{center}
+        \begin{tikzpicture}[
+            node distance=0.5cm,
+            every node/.style={font=\small}
+            ]
+
+            \node[
+            draw,
+            rounded corners,
+            fill=IdeaBody,
+%            text width=2.3cm,
+            align=center,
+            minimum height=0.9cm
+            ] (usuario) {
+                Usuario
+            };
+
+            \node[
+            draw,
+            rounded corners,
+            fill=QuestionBody,
+            right=of usuario,
+%            text width=2.3cm,
+            align=center,
+            minimum height=0.9cm
+            ] (evento) {
+                Evento
+            };
+
+            \node[
+            draw,
+            rounded corners,
+            fill=PracticeBody,
+            right=of evento,
+%            text width=2.6cm,
+            align=center,
+            minimum height=0.9cm
+            ] (listener) {
+                \texttt{addEventListener()}
+            };
+
+            \node[
+            draw,
+            rounded corners,
+            fill=DefBody,
+            right=of listener,
+%            text width=2.3cm,
+            align=center,
+            minimum height=0.9cm
+            ] (funcion) {
+                Función
+            };
+
+            \node[
+            draw,
+            rounded corners,
+            fill=ResultBody,
+            right=of funcion,
+%            text width=2.3cm,
+            align=center,
+            minimum height=0.9cm
+            ] (dom) {
+                DOM cambia
+            };
+
+            \draw[-{Latex[length=2.5mm]}, thick] (usuario) -- (evento);
+            \draw[-{Latex[length=2.5mm]}, thick] (evento) -- (listener);
+            \draw[-{Latex[length=2.5mm]}, thick] (listener) -- (funcion);
+            \draw[-{Latex[length=2.5mm]}, thick] (funcion) -- (dom);
+
+        \end{tikzpicture}
+    \end{center}
+
+\end{frame}
+
+
+% =========================================================
+% QUÉ ES EVENTO
+% =========================================================
+\begin{frame}{¿Qué es un evento?}
+
+    \DefBlock[Evento]{
+        Es una acción o suceso que ocurre en la página
+        y que JavaScript puede detectar.
+    }
+
+
+
+    \ExampleBlock[Ejemplos]{
+        \begin{itemize}
+            \item El usuario hace clic.
+            \item Escribe dentro de un campo.
+            \item Selecciona una opción.
+            \item Entra o sale de un campo.
+            \item Presiona una tecla.
+            \item Envía un formulario.
+        \end{itemize}
+    }
+
+\end{frame}
+
+
+% =========================================================
+% SINTAXIS EVENTLISTENER
+% =========================================================
+\begin{frame}[fragile]{Estructura de \texttt{addEventListener()}}
+
+    \begin{javascriptcode}
+        elemento.addEventListener("evento", function () {
+            // instrucciones que se ejecutarán
+        });
+    \end{javascriptcode}
+
+
+
+\begin{center}
+        \begin{tabular}{
+            ll
+        }
+
+        \toprule
+        \textbf{Parte} & \textbf{Función} \\
+        \midrule
+
+        \texttt{elemento}
+        & Referencia a un elemento del DOM.
+        \\[0.14cm]
+
+        \texttt{addEventListener()}
+        & Registra un escuchador de eventos.
+        \\[0.14cm]
+
+        \texttt{"evento"}
+        & Indica qué acción queremos detectar.
+        \\[0.14cm]
+
+        \texttt{function()}
+        & Contiene el código que debe ejecutarse.
+        \\
+
+        \bottomrule
+
+    \end{tabular}
+\end{center}
+
+\end{frame}
+
+
+% =========================================================
+% EVENTOS A ESTUDIAR
+% =========================================================
+\begin{frame}{Eventos que utilizaremos}
+
+\begin{center}
+        \begin{tabular}{
+            ll
+        }
+
+        \toprule
+        \textbf{Evento} & \textbf{Cuándo ocurre} \\
+        \midrule
+
+        \texttt{click}
+        & Al hacer clic sobre un elemento.
+        \\[0.12cm]
+
+        \texttt{input}
+        & Cada vez que cambia el contenido de un campo.
+        \\[0.12cm]
+
+        \texttt{change}
+        & Cuando se confirma un cambio de valor.
+        \\[0.12cm]
+
+        \texttt{focus}
+        & Cuando un elemento recibe el foco.
+        \\[0.12cm]
+
+        \texttt{blur}
+        & Cuando un elemento pierde el foco.
+        \\[0.12cm]
+
+        \texttt{keydown}
+        & Cuando se presiona una tecla.
+        \\[0.12cm]
+
+        \texttt{submit}
+        & Cuando se intenta enviar un formulario.
+        \\
+
+        \bottomrule
+
+    \end{tabular}
+\end{center}
+
+\end{frame}
+%==========================================================================================================================
+\SectionSlide{Bloque 3}{Eventos de interacción}
+%==========================================================================================================================
+
+
+% =========================================================
+% CLICK
+% =========================================================
+\begin{frame}[fragile]{Evento \texttt{click}}
+
+    \DefBlock[\texttt{click}]{
+        Se ejecuta cuando el usuario hace clic sobre el elemento.
+        Es frecuente en botones.
+    }
+
+
+
+    \begin{htmlcode}
+        <button id="mostrar">Mostrar mensaje</button>
+        <p id="salida"></p>
+    \end{htmlcode}
+
+
+
+    \begin{javascriptcode}
+        const boton = document.getElementById("mostrar");
+        const salida = document.getElementById("salida");
+
+        boton.addEventListener("click", function () {
+            salida.textContent = "El botón fue presionado.";
+        });
+    \end{javascriptcode}
+
+\end{frame}
+
+
+% =========================================================
+% INPUT
+% =========================================================
+\begin{frame}[fragile]{Evento \texttt{input}: actualización inmediata}
+
+    \DefBlock[\texttt{input}]{
+        Se dispara cada vez que cambia el contenido
+        de un campo de entrada.
+    }
+
+
+
+    \begin{htmlcode}
+        <input id="nombre" type="text">
+        <p id="vista"></p>
+    \end{htmlcode}
+
+
+
+    \begin{javascriptcode}
+        const nombre = document.getElementById("nombre");
+        const vista = document.getElementById("vista");
+
+        nombre.addEventListener("input", function () {
+            vista.textContent = nombre.value;
+        });
+    \end{javascriptcode}
+
+
+
+    \Idea[Característica]{
+        No es necesario pulsar un botón.
+        El resultado cambia mientras el usuario escribe.
+    }
+
+\end{frame}
+
+
+% =========================================================
+% FLUJO INPUT
+% =========================================================
+\begin{frame}{¿Por qué \texttt{input} resulta tan útil?}
+
+    \centering
+
+    \begin{tikzpicture}[
+        node distance=0.5cm,
+        every node/.style={font=\small}
+        ]
+
+        \node[
+        draw,
+        rounded corners,
+        fill=IdeaBody,
+        text width=2.3cm,
+        align=center,
+        minimum height=0.9cm
+        ] (escribe) {
+            Usuario\\
+            escribe
+        };
+
+        \node[
+        draw,
+        rounded corners,
+        fill=QuestionBody,
+        right=of escribe,
+        text width=2.3cm,
+        align=center,
+        minimum height=0.9cm
+        ] (input) {
+            Evento\\
+            \texttt{input}
+        };
+
+        \node[
+        draw,
+        rounded corners,
+        fill=DefBody,
+        right=of input,
+        text width=2.3cm,
+        align=center,
+        minimum height=0.9cm
+        ] (value) {
+            Leer\\
+            \texttt{.value}
+        };
+
+        \node[
+        draw,
+        rounded corners,
+        fill=PracticeBody,
+        right=of value,
+        text width=2.3cm,
+        align=center,
+        minimum height=0.9cm
+        ] (process) {
+            Procesar
+        };
+
+        \node[
+        draw,
+        rounded corners,
+        fill=ResultBody,
+        right=of process,
+        text width=2.3cm,
+        align=center,
+        minimum height=0.9cm
+        ] (dom) {
+            Actualizar\\
+            DOM
+        };
+
+        \draw[-{Latex[length=2.5mm]}, thick] (escribe) -- (input);
+        \draw[-{Latex[length=2.5mm]}, thick] (input) -- (value);
+        \draw[-{Latex[length=2.5mm]}, thick] (value) -- (process);
+        \draw[-{Latex[length=2.5mm]}, thick] (process) -- (dom);
+
+    \end{tikzpicture}
+
+
+
+    \Result[Resultado]{
+        La interfaz puede reaccionar inmediatamente
+        sin esperar un clic adicional.
+    }
+
+\end{frame}
+
+
+% =========================================================
+% EJEMPLO INPUT CONTADOR
+% =========================================================
+\begin{frame}[fragile]{Ejemplo: contador de caracteres}
+
+    \DefBlock[Situación]{
+        Mostrar cuántos caracteres ha escrito el usuario.
+    }
+
+
+
+    \begin{htmlcode}
+        <input id="mensaje" type="text">
+        <p id="contador"></p>
+    \end{htmlcode}
+
+
+
+    \begin{javascriptcode}
+        const mensaje = document.getElementById("mensaje");
+        const contador = document.getElementById("contador");
+
+        mensaje.addEventListener("input", function () {
+            let cantidad = mensaje.value.length;
+
+            contador.textContent =
+            "Caracteres escritos: " + cantidad;
+        });
+    \end{javascriptcode}
+
+\end{frame}
+
+
+% =========================================================
+% INPUT CON IF
+% =========================================================
+\begin{frame}[fragile]{Condicional + \texttt{input}}
+
+    \DefBlock[Interacción dinámica]{
+        Podemos evaluar el valor cada vez que el usuario lo modifica.
+    }
+
+
+
+    \begin{javascriptcode}
+        const entradaNivel = document.getElementById("nivel");
+        const salidaNivel = document.getElementById("estado");
+
+        entradaNivel.addEventListener("input", function () {
+            let nivel = Number(entradaNivel.value);
+
+            if (nivel >= 80) {
+                salidaNivel.textContent = "Nivel alto";
+            } else if (nivel >= 40) {
+                salidaNivel.textContent = "Nivel medio";
+            } else {
+                salidaNivel.textContent = "Nivel bajo";
+            }
+        });
+    \end{javascriptcode}
+
+\end{frame}
+
+
+% =========================================================
+% MICROPRÁCTICA 1
+% =========================================================
+\begin{frame}{Micropráctica 1}
+
+    \Practice[Indicador de aforo]{
+        Crear un campo que permita ingresar la cantidad
+        de personas presentes en un lugar.
+        La salida debe actualizarse mientras se escribe.
+    }
+
+
+
+    \Result[Clasificación]{
+        \begin{itemize}
+            \item menos de 20 personas: \texttt{Aforo bajo};
+            \item entre 20 y 49: \texttt{Aforo medio};
+            \item 50 o más: \texttt{Aforo alto}.
+        \end{itemize}
+    }
+
+
+
+    \Idea[Condición]{
+        No utilizar un botón: emplear el evento \texttt{input}.
+    }
+
+\end{frame}
+
+
+% =========================================================
+% CHANGE
+% =========================================================
+\begin{frame}[fragile]{Evento \texttt{change}}
+
+    \DefBlock[\texttt{change}]{
+        Se utiliza cuando queremos reaccionar
+        a un cambio confirmado en un control.
+        Es especialmente útil con \texttt{select}.
+    }
+
+
+
+    \begin{htmlcode}
+    <select id="transporte">
+        <option value="">Seleccione</option>
+        <option value="bus">Bus</option>
+        <option value="metro">Metro</option>
+        <option value="bici">Bicicleta</option>
+    </select>
+    <p id="respuesta"></p>
+    \end{htmlcode}
+
+    \vspace{0.1cm}
+
+    \begin{javascriptcode}
+        transporte.addEventListener("change", function () {
+            respuesta.textContent =
+            "Opción seleccionada: " + transporte.value;
+        });
+    \end{javascriptcode}
+
+\end{frame}
+
+
+% =========================================================
+% INPUT VS CHANGE
+% =========================================================
+\begin{frame}{\texttt{input} frente a \texttt{change}}
+
+    \begin{tabular}{
+           lll
+        }
+
+        \toprule
+        & \textbf{\texttt{input}} & \textbf{\texttt{change}} \\
+        \midrule
+
+        Momento
+        &
+        Mientras cambia el valor.
+        &
+        Cuando el cambio queda establecido.
+        \\[0.18cm]
+
+        Uso frecuente
+        &
+        Campos de texto y número.
+        &
+        \texttt{select}, checkbox y otros controles.
+        \\[0.18cm]
+
+        Sensación
+        &
+        Tiempo real.
+        &
+        Cambio confirmado.
+        \\
+
+        \bottomrule
+
+    \end{tabular}
+
+
+
+    \Idea[No son enemigos]{
+        Elegimos el evento según el comportamiento
+        que queremos para la interfaz.
+    }
+
+\end{frame}
+
+
+% =========================================================
+% CHANGE CON CONDICIONAL
+% =========================================================
+\begin{frame}[fragile]{Ejemplo: método de entrega}
+
+    \DefBlock[Situación]{
+        Mostrar información diferente según
+        la opción elegida por el usuario.
+    }
+
+%<label for="tipoEntrega">Tipo de entrega:</label>
+%
+%<select id="tipoEntrega">
+%<option value="">Seleccione una opción</option>
+%<option value="domicilio">Entrega a domicilio</option>
+%<option value="tienda">Recoger en tienda</option>
+%</select>
+%
+%<p id="salida">Seleccione una opción.</p>
+
+
+    \begin{javascriptcode}
+        tipoEntrega.addEventListener("change", function () {
+            let opcion = tipoEntrega.value;
+
+            if (opcion === "domicilio") {
+                salida.textContent = "Entrega estimada: 2 días.";
+            } else if (opcion === "tienda") {
+                salida.textContent = "Puede recoger hoy.";
+            } else {
+                salida.textContent = "Seleccione una opción.";
+            }
+        });
+    \end{javascriptcode}
+
+\end{frame}
+
+
+% =========================================================
+% MICROPRÁCTICA 2
+% =========================================================
+\begin{frame}{Micropráctica 2}
+
+    \Practice[Selector de prioridad]{
+        Crear un \texttt{select} con tres opciones:
+        baja, media y alta.
+    }
+
+
+
+    \Result[Comportamiento]{
+        Al cambiar la selección:
+        \begin{itemize}
+            \item baja: mostrar \texttt{Puede esperar};
+            \item media: mostrar \texttt{Atender próximamente};
+            \item alta: mostrar \texttt{Atención prioritaria}.
+        \end{itemize}
+    }
+
+
+
+    \Idea[Evento]{
+        Utilizar \texttt{change}.
+    }
+
+\end{frame}
+
+
+% =========================================================
+% FOCUS
+% =========================================================
+\begin{frame}[fragile]{Evento \texttt{focus}}
+
+    \DefBlock[\texttt{focus}]{
+        Ocurre cuando un elemento recibe el foco;
+        por ejemplo, cuando el usuario hace clic dentro de un campo.
+    }
+
+
+
+    \begin{htmlcode}
+        <input id="usuario" type="text">
+        <p id="ayuda"></p>
+    \end{htmlcode}
+
+
+
+    \begin{javascriptcode}
+        usuario.addEventListener("focus", function () {
+            ayuda.textContent =
+            "Use entre 5 y 12 caracteres.";
+        });
+    \end{javascriptcode}
+
+
+
+    \Idea[Aplicación]{
+        Es útil para mostrar ayuda contextual.
+    }
+
+\end{frame}
+
+
+% =========================================================
+% BLUR
+% =========================================================
+\begin{frame}[fragile]{Evento \texttt{blur}}
+
+    \DefBlock[\texttt{blur}]{
+        Ocurre cuando un elemento pierde el foco.
+        Es útil para revisar un campo después de que el usuario termina.
+    }
+
+
+
+    \begin{javascriptcode}
+        usuario.addEventListener("blur", function () {
+            let cantidad = usuario.value.length;
+
+            if (cantidad < 5) {
+                ayuda.textContent = "Nombre demasiado corto.";
+            } else {
+                ayuda.textContent = "Nombre válido.";
+            }
+        });
+    \end{javascriptcode}
+
+\end{frame}
+
+
+% =========================================================
+% FOCUS BLUR DIAGRAM
+% =========================================================
+\begin{frame}{Ciclo \texttt{focus} -- \texttt{blur}}
+
+    \centering
+
+    \begin{tikzpicture}[
+        node distance=1.1cm,
+        every node/.style={font=\small}
+        ]
+
+        \node[
+        draw,
+        rounded corners,
+        fill=IdeaBody,
+        text width=2.7cm,
+        align=center,
+        minimum height=0.9cm
+        ] (fuera) {
+            Campo sin foco
+        };
+
+        \node[
+        draw,
+        rounded corners,
+        fill=PracticeBody,
+        right=of fuera,
+        text width=2.7cm,
+        align=center,
+        minimum height=0.9cm
+        ] (focus) {
+            \texttt{focus}\\
+            mostrar ayuda
+        };
+
+        \node[
+        draw,
+        rounded corners,
+        fill=DefBody,
+        right=of focus,
+        text width=2.7cm,
+        align=center,
+        minimum height=0.9cm
+        ] (editar) {
+            Usuario escribe
+        };
+
+        \node[
+        draw,
+        rounded corners,
+        fill=ResultBody,
+        right=of editar,
+        text width=2.7cm,
+        align=center,
+        minimum height=0.9cm
+        ] (blur) {
+            \texttt{blur}\\
+            validar
+        };
+
+        \draw[-{Latex[length=2.5mm]}, thick] (fuera) -- (focus);
+        \draw[-{Latex[length=2.5mm]}, thick] (focus) -- (editar);
+        \draw[-{Latex[length=2.5mm]}, thick] (editar) -- (blur);
+
+    \end{tikzpicture}
+
+
+
+    \Idea[Patrón útil]{
+        \texttt{focus}: orientar al usuario.
+        \qquad
+        \texttt{blur}: validar lo que escribió.
+    }
+
+\end{frame}
+%==========================================================================================================================
+\SectionSlide{Bloque 4}{Teclado, formularios y objeto event}
+%==========================================================================================================================
+
+
+% =========================================================
+% KEYDOWN
+% =========================================================
+\begin{frame}[fragile]{Evento \texttt{keydown}}
+
+    \DefBlock[\texttt{keydown}]{
+        Se dispara cuando el usuario presiona una tecla
+        mientras un elemento tiene el foco.
+    }
+
+
+
+    \begin{javascriptcode}
+        entrada.addEventListener("keydown", function (event) {
+            console.log(event.key);
+        });
+    \end{javascriptcode}
+
+
+
+    \Idea[Nuevo elemento]{
+        La función puede recibir un objeto denominado \texttt{event}
+        con información sobre lo que ocurrió.
+    }
+
+\end{frame}
+
+
+% =========================================================
+% EVENT OBJECT
+% =========================================================
+\begin{frame}{El objeto \texttt{event}}
+
+    \DefBlock[\texttt{event}]{
+        Representa el evento que acaba de ocurrir
+        y contiene información relacionada con él.
+    }
+
+
+
+\begin{center}
+        \begin{tabular}{
+            l
+            p{0.52\linewidth}
+        }
+
+        \toprule
+        \textbf{Elemento} & \textbf{Información} \\
+        \midrule
+
+        \texttt{event.key}
+        &
+        Tecla presionada.
+        \\[0.15cm]
+
+        \texttt{event.target}
+        &
+        Elemento que produjo el evento.
+        \\[0.15cm]
+
+        \texttt{event.type}
+        &
+        Tipo de evento ocurrido.
+        \\[0.15cm]
+
+        \texttt{event.preventDefault()}
+        &
+        Evita el comportamiento predeterminado del navegador.
+        \\
+
+        \bottomrule
+
+    \end{tabular}
+\end{center}
+
+\end{frame}
+
+
+% =========================================================
+% ENTER
+% =========================================================
+\begin{frame}[fragile]{Detectar una tecla específica}
+
+    \DefBlock[Ejemplo]{
+        Podemos ejecutar una acción únicamente
+        cuando la tecla presionada sea \texttt{Enter}.
+    }
+
+
+
+    \begin{javascriptcode}
+        busqueda.addEventListener("keydown", function (event) {
+
+            if (event.key === "Enter") {
+                salida.textContent =
+                "Buscando: " + busqueda.value;
+            }
+
+        });
+    \end{javascriptcode}
+
+
+
+    \Result[Combinación]{
+        Evento de teclado + igualdad estricta + condicional + DOM.
+    }
+
+\end{frame}
+
+
+% =========================================================
+% MICROPRÁCTICA 3
+% =========================================================
+\begin{frame}{Micropráctica 3}
+
+    \Practice[Campo de búsqueda]{
+        Crear un campo de texto donde el usuario escriba
+        una palabra.
+    }
+
+
+
+    \Result[Comportamiento]{
+        \begin{itemize}
+            \item Mientras escribe, mostrar el texto actual.
+            \item Si presiona \texttt{Enter}, mostrar:
+            \texttt{Buscando: ...}
+        \end{itemize}
+    }
+
+
+
+    \Idea[Eventos]{
+        Utilizar \texttt{input} y \texttt{keydown}.
+    }
+
+\end{frame}
+
+
+% =========================================================
+% FORMULARIOS
+% =========================================================
+\begin{frame}{¿Por qué trabajar con \texttt{submit}?}
+
+    \Idea[Un error frecuente]{
+        Cuando existe un formulario, no conviene depender
+        únicamente del clic sobre el botón.
+    }
+
+
+
+    \DefBlock[Formulario]{
+        El evento \texttt{submit} representa la intención
+        de enviar el formulario completo.
+    }
+
+
+
+    \Result[Ventaja]{
+        El formulario puede enviarse mediante un botón
+        o mediante acciones equivalentes del navegador,
+        como presionar \texttt{Enter}.
+    }
+
+\end{frame}
+
+
+% =========================================================
+% HTML FORM
+% =========================================================
+\begin{frame}[fragile]{Estructura básica de un formulario}
+
+    \begin{htmlcode}
+    <form id="formulario">
+
+        <label for="correo">Correo:</label>
+        <input id="correo" type="email">
+
+        <button type="submit">
+        Enviar
+        </button>
+
+    </form>
+
+    <p id="mensaje"></p>
+    \end{htmlcode}
+
+
+
+    \Idea[Elemento importante]{
+        El botón utiliza \texttt{type="submit"}
+        porque pertenece al formulario.
+    }
+
+\end{frame}
+
+
+% =========================================================
+% SUBMIT
+% =========================================================
+\begin{frame}[fragile]{Evento \texttt{submit}}
+
+    \begin{javascriptcode}
+        const formulario = document.getElementById("formulario");
+
+        formulario.addEventListener("submit", function (event) {
+
+            event.preventDefault();
+
+            console.log("Formulario procesado");
+
+        });
+    \end{javascriptcode}
+
+
+
+    \DefBlock[\texttt{preventDefault()}]{
+        Evita temporalmente el comportamiento predeterminado
+        del navegador, como recargar la página al enviar el formulario.
+    }
+
+\end{frame}
+
+
+% =========================================================
+% POR QUÉ PREVENT DEFAULT
+% =========================================================
+\begin{frame}{Flujo de un formulario con JavaScript}
+
+    \centering
+
+    \begin{tikzpicture}[
+        node distance=0.75cm,
+        every node/.style={font=\small}
+        ]
+
+        \node[
+        draw,
+        rounded corners,
+        fill=IdeaBody,
+%        text width=2.2cm,
+        align=center,
+        minimum height=0.9cm
+        ] (form) {
+            Formulario
+        };
+
+        \node[
+        draw,
+        rounded corners,
+        fill=QuestionBody,
+        right=of form,
+%        text width=2.2cm,
+        align=center,
+        minimum height=0.9cm
+        ] (submit) {
+            \texttt{submit}
+        };
+
+        \node[
+        draw,
+        rounded corners,
+        fill=WarningBody,
+        right=of submit,
+%        text width=2.6cm,
+        align=center,
+        minimum height=0.9cm
+        ] (prevent) {
+            \texttt{preventDefault()}
+        };
+
+        \node[
+        draw,
+        rounded corners,
+        fill=PracticeBody,
+        right=of prevent,
+%        text width=2.2cm,
+        align=center,
+        minimum height=0.9cm
+        ] (validate) {
+            Validar
+        };
+
+        \node[
+        draw,
+        rounded corners,
+        fill=ResultBody,
+        right=of validate,
+%        text width=2.2cm,
+        align=center,
+        minimum height=0.9cm
+        ] (result) {
+            Responder
+        };
+
+        \draw[-{Latex[length=2.5mm]}, thick] (form) -- (submit);
+        \draw[-{Latex[length=2.5mm]}, thick] (submit) -- (prevent);
+        \draw[-{Latex[length=2.5mm]}, thick] (prevent) -- (validate);
+        \draw[-{Latex[length=2.5mm]}, thick] (validate) -- (result);
+
+    \end{tikzpicture}
+
+\end{frame}
+
+
+% =========================================================
+% VALIDACION EN SUBMIT
+% =========================================================
+\begin{frame}[fragile]{Validar antes de procesar}
+
+    \DefBlock[Ejemplo]{
+        Verificar que un código tenga al menos cuatro caracteres.
+    }
+
+
+
+    \begin{javascriptcode}
+        formulario.addEventListener("submit", function (event) {
+
+            event.preventDefault();
+
+            let codigo = entradaCodigo.value;
+
+            if (codigo.length >= 4) {
+                mensaje.textContent = "Código aceptado.";
+            } else {
+                mensaje.textContent =
+                "El código debe tener mínimo 4 caracteres.";
+            }
+
+        });
+    \end{javascriptcode}
+
+\end{frame}
+
+
+%==========================================================================================================================
+\SectionSlide{Bloque 5}{Condiciones y eventos trabajando juntos}
+%==========================================================================================================================
+
+
+% =========================================================
+% REALTIME VALIDATION
+% =========================================================
+\begin{frame}[fragile]{Validación en tiempo real}
+
+    \DefBlock[Ejemplo]{
+        Verificar un porcentaje mientras el usuario modifica el campo.
+    }
+
+
+
+    \begin{javascriptcode}
+        porcentaje.addEventListener("input", function () {
+
+            let valor = Number(porcentaje.value);
+            if (valor < 0 || valor > 100) {
+                estado.textContent = "Valor fuera de rango";
+            } else {
+                estado.textContent = "Valor válido";
+            }
+
+        });
+    \end{javascriptcode}
+
+\vspace{-0.25cm}
+
+    \Result[Resultado]{
+        El usuario recibe retroalimentación sin pulsar un botón.
+    }
+
+\end{frame}
+
+
+% =========================================================
+% EMPTY FIELD
+% =========================================================
+\begin{frame}[fragile]{¿Qué ocurre si el campo está vacío?}
+
+    \DefBlock[Validación de texto]{
+        Podemos comparar directamente el contenido del campo
+        con una cadena vacía.
+    }
+
+
+
+    \begin{javascriptcode}
+        nombre.addEventListener("blur", function () {
+
+            if (nombre.value === "") {
+                mensaje.textContent =
+                "Este campo es obligatorio.";
+            } else {
+                mensaje.textContent =
+                "Campo diligenciado.";
+            }
+
+        });
+    \end{javascriptcode}
+
+\end{frame}
+
+
+% =========================================================
+% COMBINACIÓN VARIOS EVENTOS
+% =========================================================
+\begin{frame}{Un mismo elemento puede tener varios eventos}
+
+    \Idea[Ejemplo conceptual]{
+        Un campo de correo podría:
+        \begin{itemize}
+            \item mostrar ayuda con \texttt{focus};
+            \item actualizar información con \texttt{input};
+            \item validarse con \texttt{blur};
+            \item detectar \texttt{Enter} con \texttt{keydown}.
+        \end{itemize}
+    }
+
+
+
+    \begin{center}
+        \begin{tikzpicture}[
+            node distance=0.7cm,
+            every node/.style={font=\small}
+            ]
+
+            \node[
+            draw,
+            rounded corners,
+            fill=DefBody,
+            text width=2cm,
+            align=center,
+            minimum height=0.9cm
+            ] (campo) {
+                Campo
+            };
+
+            \node[
+            draw,
+            rounded corners,
+            fill=IdeaBody,
+            above right=0.55cm and 1cm of campo,
+            text width=1.8cm,
+            align=center
+            ] (focus) {
+                focus
+            };
+
+            \node[
+            draw,
+            rounded corners,
+            fill=PracticeBody,
+            below right=-0.65cm and 1cm of campo,
+            text width=1.8cm,
+            align=center
+            ] (input) {
+                input
+            };
+
+            \node[
+            draw,
+            rounded corners,
+            fill=QuestionBody,
+            below right=0.55cm and 1cm of campo,
+            text width=1.8cm,
+            align=center
+            ] (blur) {
+                blur
+            };
+
+            \node[
+            draw,
+            rounded corners,
+            fill=ResultBody,
+            right=4.1cm of campo,
+            text width=2cm,
+            align=center
+            ] (interface) {
+                Interfaz\\dinámica
+            };
+
+            \draw[-{Latex[length=2mm]}] (campo) -- (focus);
+            \draw[-{Latex[length=2mm]}] (campo) -- (input);
+            \draw[-{Latex[length=2mm]}] (campo) -- (blur);
+
+            \draw[-{Latex[length=2mm]}] (focus) -- (interface);
+            \draw[-{Latex[length=2mm]}] (input) -- (interface);
+            \draw[-{Latex[length=2mm]}] (blur) -- (interface);
+
+        \end{tikzpicture}
+    \end{center}
+
+\end{frame}
+
+
+% =========================================================
+% MICROPRÁCTICA 4
+% =========================================================
+\begin{frame}{Micropráctica 4}
+
+    \Practice[Control de contraseña]{
+        Crear un campo para una contraseña.
+    }
+
+
+
+    \Result[Comportamiento]{
+        \begin{itemize}
+            \item Con \texttt{focus}: mostrar los requisitos.
+            \item Con \texttt{input}: mostrar cantidad de caracteres.
+            \item Con \texttt{blur}: indicar si tiene mínimo 8 caracteres.
+        \end{itemize}
+    }
+
+
+
+    \Idea[Objetivo]{
+        Utilizar varios eventos sobre el mismo elemento.
+    }
+
+\end{frame}
+
+
+% =========================================================
+% TABLA RESUMEN
+% =========================================================
+\begin{frame}{¿Qué evento elegir?}
+
+    \begin{center}
+        \begin{tabular}{
+            lc
+        }
+
+        \toprule
+        \textbf{Necesito...} & \textbf{Evento recomendado} \\
+        \midrule
+
+        Responder a un botón
+        & \texttt{click}
+        \\[0.12cm]
+
+        Actualizar mientras escribe
+        & \texttt{input}
+        \\[0.12cm]
+
+        Detectar una selección
+        & \texttt{change}
+        \\[0.12cm]
+
+        Mostrar ayuda al entrar
+        & \texttt{focus}
+        \\[0.12cm]
+
+        Validar al salir
+        & \texttt{blur}
+        \\[0.12cm]
+
+        Detectar teclas
+        & \texttt{keydown}
+        \\[0.12cm]
+
+        Procesar un formulario
+        & \texttt{submit}
+        \\
+
+        \bottomrule
+
+    \end{tabular}
+    \end{center}
+
+\end{frame}
+%==========================================================================================================================
+\SectionSlide{Laboratorio guiado}{Registro interactivo a una actividad}
+%==========================================================================================================================
+
+
+% =========================================================
+% LAB INTRO
+% =========================================================
+\begin{frame}{Objetivo del laboratorio}
+
+    \Practice[Aplicación]{
+        Construiremos un formulario de registro para una actividad.
+        La interfaz reaccionará mientras el usuario interactúa
+        con los diferentes campos.
+    }
+
+
+
+    \Result[Datos]{
+        \begin{itemize}
+            \item Nombre.
+            \item Edad.
+            \item Modalidad.
+            \item Correo electrónico.
+            \item Confirmación final mediante formulario.
+        \end{itemize}
+    }
+
+\end{frame}
+
+
+% =========================================================
+% EVENTOS LAB
+% =========================================================
+\begin{frame}{Eventos utilizados en el laboratorio}
+
+    \begin{center}
+        \begin{tabular}{
+            lcl
+            }
+
+            \toprule
+            \textbf{Elemento} & \textbf{Evento} & \textbf{Función} \\
+            \midrule
+
+            Nombre
+            & \texttt{input}
+            & Vista previa en tiempo real.
+            \\[0.15cm]
+
+            Edad
+            & \texttt{input}
+            & Validación inmediata.
+            \\[0.15cm]
+
+            Modalidad
+            & \texttt{change}
+            & Mostrar información específica.
+            \\[0.15cm]
+
+            Correo
+            & \texttt{focus / blur}
+            & Ayuda y validación.
+            \\[0.15cm]
+
+            Formulario
+            & \texttt{submit}
+            & Procesar el registro completo.
+            \\
+
+            \bottomrule
+
+        \end{tabular}
+\end{center}
+    \end{frame}
+
+
+
+    % =========================================================
+    % ESTRUCTURA
+    % =========================================================
+    \begin{frame}[fragile]{Paso 1: estructura del proyecto}
+
+        \begin{consolecode}
+            clase04-eventos/
+            ├── index.html
+            └── js/
+                └── app.js
+        \end{consolecode}
+
+
+
+        \Idea[Separación]{
+            HTML define la interfaz.
+            JavaScript gestionará interacción,
+            validaciones y actualización del DOM.
+        }
+
+    \end{frame}
+
+
+    % =========================================================
+    % HTML 1
+    % =========================================================
+    \begin{frame}[fragile]{Paso 2: formulario HTML}
+
+        \begin{htmlcode}
+        <form id="registro">
+
+            <label for="nombre">Nombre:</label>
+            <input id="nombre" type="text">
+            <p id="vistaNombre"></p>
+
+            <label for="edad">Edad:</label>
+            <input id="edad" type="number">
+            <p id="estadoEdad"></p>
+
+            <label for="modalidad">Modalidad:</label>
+            <select id="modalidad">
+                <option value="">Seleccione</option>
+                <option value="presencial">Presencial</option>
+                <option value="virtual">Virtual</option>
+            </select>
+
+            <p id="infoModalidad"></p>
+        \end{htmlcode}
+
+    \end{frame}
+
+
+    % =========================================================
+    % HTML 2
+    % =========================================================
+    \begin{frame}[fragile]{Paso 2: completar formulario HTML}
+
+        \begin{htmlcode}
+            <label for="correo">Correo:</label>
+            <input id="correo" type="email">
+
+            <p id="ayudaCorreo"></p>
+
+            <button type="submit">
+            Registrar
+            </button>
+
+        </form>
+
+        <p id="resultado"></p>
+
+        <script src="js/app.js"></script>
+        \end{htmlcode}
+
+    \end{frame}
+
+
+    % =========================================================
+    % JS SELECTORES
+    % =========================================================
+    \begin{frame}[fragile]{Paso 3: referencias al DOM}
+
+        \begin{javascriptcode}
+            const formulario = document.getElementById("registro");
+            const nombre = document.getElementById("nombre");
+            const edad = document.getElementById("edad");
+            const modalidad = document.getElementById("modalidad");
+            const correo = document.getElementById("correo");
+
+            const vistaNombre = document.getElementById("vistaNombre");
+            const estadoEdad = document.getElementById("estadoEdad");
+            const infoModalidad = document.getElementById("infoModalidad");
+            const ayudaCorreo = document.getElementById("ayudaCorreo");
+            const resultado = document.getElementById("resultado");
+        \end{javascriptcode}
+
+    \end{frame}
+
+
+    % =========================================================
+    % NOMBRE INPUT
+    % =========================================================
+    \begin{frame}[fragile]{Paso 4: nombre en tiempo real}
+
+        \DefBlock[Evento \texttt{input}]{
+            La vista previa cambia mientras el usuario escribe.
+        }
+
+
+
+        \begin{javascriptcode}
+            nombre.addEventListener("input", function () {
+
+                if (nombre.value === "") {
+                    vistaNombre.textContent = "";
+                } else {
+                    vistaNombre.textContent =
+                    "Participante: " + nombre.value;
+                }
+
+            });
+        \end{javascriptcode}
+
+    \end{frame}
+
+
+    % =========================================================
+    % EDAD INPUT
+    % =========================================================
+    \begin{frame}[fragile]{Paso 5: validar edad en tiempo real}
+
+        \begin{javascriptcode}
+            edad.addEventListener("input", function () {
+
+                let valorEdad = Number(edad.value);
+
+                if (valorEdad < 14 || valorEdad > 100) {
+                    estadoEdad.textContent =
+                    "Edad fuera del rango permitido.";
+                } else {
+                    estadoEdad.textContent =
+                    "Edad válida.";
+                }
+
+            });
+        \end{javascriptcode}
+
+
+
+        \Idea[Combinación]{
+            Aquí utilizamos DOM + \texttt{input}
+            + conversión + condicional + operador lógico.
+        }
+
+    \end{frame}
+
+
+    % =========================================================
+    % MODALIDAD CHANGE
+    % =========================================================
+    \begin{frame}[fragile]{Paso 6: reaccionar a la modalidad}
+
+        \begin{javascriptcode}
+            modalidad.addEventListener("change", function () {
+
+                if (modalidad.value === "presencial") {
+                    infoModalidad.textContent = "Debe asistir a la sede asignada.";
+
+                } else if (modalidad.value === "virtual") {
+                    infoModalidad.textContent = "Recibirá un enlace de conexión.";
+
+                } else {
+                    infoModalidad.textContent = "";
+                }
+
+            });
+        \end{javascriptcode}
+
+    \end{frame}
+
+
+    % =========================================================
+    % CORREO FOCUS
+    % =========================================================
+    \begin{frame}[fragile]{Paso 7: ayuda mediante \texttt{focus}}
+
+        \begin{javascriptcode}
+            correo.addEventListener("focus", function () {
+
+                ayudaCorreo.textContent = "Ingrese un correo electrónico válido.";
+
+            });
+        \end{javascriptcode}
+
+
+
+        \Result[Comportamiento]{
+            El mensaje aparece cuando el usuario
+            comienza a trabajar con ese campo.
+        }
+
+    \end{frame}
+
+
+    % =========================================================
+    % CORREO BLUR
+    % =========================================================
+    \begin{frame}[fragile]{Paso 8: revisar al perder el foco}
+
+        \begin{javascriptcode}
+            correo.addEventListener("blur", function () {
+
+                if (correo.value === "") {
+                    ayudaCorreo.textContent = "El correo es obligatorio.";
+
+                } else {
+                    ayudaCorreo.textContent = "Correo registrado.";
+                }
+
+            });
+        \end{javascriptcode}
+
+    \end{frame}
+
+
+    % =========================================================
+    % SUBMIT
+    % =========================================================
+    \begin{frame}[fragile]{Paso 9: procesar el formulario}
+
+        \begin{javascriptcode}
+            formulario.addEventListener("submit", function (event) {
+
+                event.preventDefault();
+
+                let valorEdad = Number(edad.value);
+
+                let nombreValido = nombre.value !== "";
+                let edadValida = valorEdad >= 14 && valorEdad <= 100;
+
+                let modalidadValida = modalidad.value !== "";
+
+                let correoValido = correo.value !== "";
+            \end{javascriptcode}
+
+        \end{frame}
+
+
+        % =========================================================
+        % SUBMIT 2
+        % =========================================================
+        \begin{frame}[fragile]{Paso 10: decisión final}
+
+            \begin{javascriptcode}
+                if ( nombreValido &&
+                edadValida &&
+                modalidadValida &&
+                correoValido
+                ) {
+                    resultado.textContent = "Registro completado correctamente.";
+
+                } else {
+                    resultado.textContent = "Revise los datos del formulario.";
+
+                }
+
+            });
+        \end{javascriptcode}
+
+
+
+        \Result[Integración]{
+            El formulario completo se valida antes
+            de aceptar el registro.
+        }
+
+    \end{frame}
+
+
+    % =========================================================
+    % DIAGRAMA LAB
+    % =========================================================
+    \begin{frame}{Arquitectura del laboratorio}
+
+        \centering
+
+        \begin{tikzpicture}[
+            node distance=0.65cm,
+            every node/.style={font=\small}
+            ]
+
+            \node[
+            draw,
+            rounded corners,
+            fill=IdeaBody,
+            text width=2cm,
+            align=center,
+            minimum height=0.9cm
+            ] (html) {
+                HTML
+            };
+
+            \node[
+            draw,
+            rounded corners,
+            fill=DefBody,
+            right=of html,
+            text width=2cm,
+            align=center,
+            minimum height=0.9cm
+            ] (dom) {
+                DOM
+            };
+
+            \node[
+            draw,
+            rounded corners,
+            fill=QuestionBody,
+            right=of dom,
+            text width=2.2cm,
+            align=center,
+            minimum height=0.9cm
+            ] (events) {
+                Eventos
+            };
+
+            \node[
+            draw,
+            rounded corners,
+            fill=PracticeBody,
+            right=of events,
+            text width=2.2cm,
+            align=center,
+            minimum height=0.9cm
+            ] (condition) {
+                Condicionales
+            };
+
+            \node[
+            draw,
+            rounded corners,
+            fill=ResultBody,
+            right=of condition,
+            text width=2.2cm,
+            align=center,
+            minimum height=0.9cm
+            ] (result) {
+                Respuesta
+            };
+
+            \draw[-{Latex[length=2.5mm]}, thick] (html) -- (dom);
+            \draw[-{Latex[length=2.5mm]}, thick] (dom) -- (events);
+            \draw[-{Latex[length=2.5mm]}, thick] (events) -- (condition);
+            \draw[-{Latex[length=2.5mm]}, thick] (condition) -- (result);
+
+        \end{tikzpicture}
+
+
+
+        \Idea[Idea central]{
+            La lógica ya conocida comienza a controlar
+            el comportamiento de una aplicación web.
+        }
+
+    \end{frame}
+
+
+    % =========================================================
+    % RETO
+    % =========================================================
+    \begin{frame}{Reto de ampliación}
+
+        \Practice[Agregar un campo de experiencia]{
+            Añadir un \texttt{select} con las opciones:
+            \begin{itemize}
+                \item Principiante.
+                \item Intermedio.
+                \item Avanzado.
+            \end{itemize}
+        }
+
+
+
+        \Result[Comportamiento]{
+            Utilizar \texttt{change} para mostrar
+            una recomendación distinta para cada nivel.
+            El campo también debe formar parte
+            de la validación final del formulario.
+        }
+
+    \end{frame}
+
+
+    % =========================================================
+    % RETO EXTRA
+    % =========================================================
+    \begin{frame}{Reto adicional}
+
+        \Practice[Contador del nombre]{
+            Utilizar el mismo evento \texttt{input}
+            del campo nombre para mostrar también
+            la cantidad de caracteres escritos.
+        }
+
+
+
+        \Result[Ejemplo esperado]{
+            \texttt{Participante: Ana | 3 caracteres}
+        }
+
+
+
+        \Idea[Pista]{
+            Recuerda la propiedad \texttt{.length}.
+        }
+
+    \end{frame}
+
+
+    %==========================================================================================================================
+    \SectionSlide{Cierre}{Síntesis y evidencia}
+    %==========================================================================================================================
+
+
+    % =========================================================
+    % ERRORES FRECUENTES
+    % =========================================================
+    \begin{frame}{Errores frecuentes}
+
+        \Warning[Revisar]{
+            \begin{itemize}
+                \item Leer \texttt{.value} fuera del evento cuando necesitamos el valor actualizado.
+                \item Confundir \texttt{==} con \texttt{===}.
+                \item Olvidar convertir campos numéricos con \texttt{Number()}.
+                \item Escribir mal el nombre del evento.
+                \item Colocar \texttt{submit} sobre el botón en lugar del formulario.
+                \item Olvidar \texttt{event.preventDefault()}.
+                \item Utilizar un \texttt{id} diferente en HTML y JavaScript.
+            \end{itemize}
+        }
+
+    \end{frame}
+
+
+    % =========================================================
+    % EVIDENCIA
+    % =========================================================
+    \begin{frame}{Evidencia de la clase}
+
+        \Practice[Producto]{
+            Entregar el proyecto \file{clase04-eventos}
+            con el formulario interactivo funcional.
+        }
+
+
+
+        \Result[Debe evidenciar]{
+            \begin{itemize}
+                \item Selección de elementos del DOM.
+                \item Uso de \texttt{input}.
+                \item Uso de \texttt{change}.
+                \item Uso de \texttt{focus} y \texttt{blur}.
+                \item Procesamiento mediante \texttt{submit}.
+                \item Uso de \texttt{event.preventDefault()}.
+                \item Condicionales y operadores lógicos.
+                \item Actualización mediante \texttt{textContent}.
+            \end{itemize}
+        }
+
+    \end{frame}
+
+
+    % =========================================================
+    % LISTA VERIFICACION
+    % =========================================================
+    \begin{frame}{Lista de verificación}
+
+        \begin{itemize}
+            \item El archivo JavaScript está enlazado correctamente.
+            \item Los elementos HTML tienen identificadores únicos.
+            \item Los eventos se ejecutan en el momento esperado.
+            \item Los campos numéricos son convertidos con \texttt{Number()}.
+            \item Se utiliza igualdad estricta cuando corresponde.
+            \item Las validaciones responden mientras el usuario interactúa.
+            \item El formulario no recarga la página al procesarse.
+            \item El mensaje final cambia según la validez de los datos.
+            \item No aparecen errores en la consola.
+        \end{itemize}
+
+    \end{frame}
+
+
+    % =========================================================
+    % SINTESIS EVENTOS
+    % =========================================================
+    \begin{frame}{Síntesis de eventos}
+
+\begin{center}
+            \begin{tabular}{
+                ll
+            }
+
+            \toprule
+            \textbf{Evento} & \textbf{Uso típico} \\
+            \midrule
+
+            \texttt{click} & Ejecutar una acción puntual. \\[0.10cm]
+            \texttt{input} & Actualización en tiempo real. \\[0.10cm]
+            \texttt{change} & Reaccionar a una selección. \\[0.10cm]
+            \texttt{focus} & Mostrar ayuda al ingresar a un campo. \\[0.10cm]
+            \texttt{blur} & Validar al abandonar un campo. \\[0.10cm]
+            \texttt{keydown} & Detectar teclas. \\[0.10cm]
+            \texttt{submit} & Procesar formularios. \\
+
+            \bottomrule
+
+        \end{tabular}
+\end{center}
+
+    \end{frame}
+
+
+    % =========================================================
+    % MAPA FINAL
+    % =========================================================
+    \begin{frame}{Lo que ahora podemos hacer}
+
+        \centering
+
+        \begin{tikzpicture}[
+            node distance=0.7cm,
+            every node/.style={font=\small}
+            ]
+
+            \node[
+            draw,
+            rounded corners,
+            fill=IdeaBody,
+            text width=2cm,
+            align=center,
+            minimum height=0.9cm
+            ] (user) {
+                Usuario
+            };
+
+            \node[
+            draw,
+            rounded corners,
+            fill=QuestionBody,
+            right=of user,
+            text width=2cm,
+            align=center,
+            minimum height=0.9cm
+            ] (event) {
+                Evento
+            };
+
+            \node[
+            draw,
+            rounded corners,
+            fill=DefBody,
+            right=of event,
+            text width=2cm,
+            align=center,
+            minimum height=0.9cm
+            ] (value) {
+                Valor
+            };
+
+            \node[
+            draw,
+            rounded corners,
+            fill=PracticeBody,
+            right=of value,
+            text width=2cm,
+            align=center,
+            minimum height=0.9cm
+            ] (if) {
+                Decisión
+            };
+
+            \node[
+            draw,
+            rounded corners,
+            fill=ResultBody,
+            right=of if,
+            text width=2cm,
+            align=center,
+            minimum height=0.9cm
+            ] (dom) {
+                DOM
+            };
+
+            \draw[-{Latex[length=2.5mm]}, thick] (user) -- (event);
+            \draw[-{Latex[length=2.5mm]}, thick] (event) -- (value);
+            \draw[-{Latex[length=2.5mm]}, thick] (value) -- (if);
+            \draw[-{Latex[length=2.5mm]}, thick] (if) -- (dom);
+
+        \end{tikzpicture}
+
+
+
+        \Result[Progreso]{
+            JavaScript ya no se limita a ejecutar cálculos:
+            ahora responde a las acciones del usuario
+            y modifica la interfaz dinámicamente.
+        }
+
+    \end{frame}
+
+
+    % =========================================================
+    % PROXIMA CLASE
+    % =========================================================
+    \begin{frame}{Continuación de la ruta}
+
+        \DefBlock[Clase 5]{
+            El siguiente paso será automatizar tareas
+            mediante estructuras repetitivas y selección múltiple.
+        }
+
+
+
+        \Practice[Próximos contenidos]{
+            \begin{itemize}
+                \item \texttt{switch}.
+                \item Ciclo \texttt{while}.
+                \item Ciclo \texttt{do...while}.
+                \item Ciclo \texttt{for}.
+                \item Contadores.
+                \item Acumuladores.
+                \item Generación repetitiva de contenido.
+            \end{itemize}
+        }
+
+    \end{frame}
+
+
+    % =========================================================
+    % FIN
+    % =========================================================
+    \begin{frame}
+        \centering
+        \smartimage[0.8\linewidth]{Template/gracias.png}
+    \end{frame}
+
+\end{document}

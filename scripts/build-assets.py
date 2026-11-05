@@ -16,6 +16,8 @@ import hashlib
 import tempfile
 import argparse
 import subprocess
+import shutil
+import xml.etree.ElementTree as ET
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -83,11 +85,28 @@ def hash_md5_short(code: str) -> str:
     cleaned = re.sub(r'\s+', ' ', code.strip())
     return hashlib.md5(cleaned.encode("utf-8")).hexdigest()[:12]
 
+def apply_svg_background(svg_path: Path):
+    try:
+        svg_text = svg_path.read_text(encoding="utf-8")
+        root = ET.fromstring(svg_text)
+        viewbox = root.attrib.get("viewBox")
+        if viewbox:
+            values = [float(v) for v in re.split(r"[\s,]+", viewbox.strip())]
+            if len(values) == 4:
+                x, y, width, height = values
+                rect = f'\n  <rect x="{x:g}" y="{y:g}" width="{width:g}" height="{height:g}" fill="#ffffff" stroke="none"/>\n'
+                opening = re.search(r"<svg\b[^>]*>", svg_text, re.DOTALL)
+                if opening:
+                    svg_path.write_text(svg_text[:opening.end()] + rect + svg_text[opening.end():], encoding="utf-8")
+    except Exception:
+        pass
+
 def compile_tikz_to_svg(tikz_content: str, preamble: str, dest_paths: list[Path]) -> bool:
-    """Compila un bloque TikZ a SVG vectorial nítido usando latex + dvisvgm."""
+    """Compila un bloque TikZ a SVG vectorial nítido usando XeLaTeX + Inkscape (o latex + dvisvgm como fallback)."""
     with tempfile.TemporaryDirectory(prefix="tikz_build_") as tmpdir:
         work = Path(tmpdir)
         tex_file = work / "figure.tex"
+        pdf_file = work / "figure.pdf"
         dvi_file = work / "figure.dvi"
         svg_file = work / "figure.svg"
 
@@ -95,35 +114,44 @@ def compile_tikz_to_svg(tikz_content: str, preamble: str, dest_paths: list[Path]
         tex_file.write_text(full_doc, encoding="utf-8")
 
         env = {**os.environ, "openin_any": "p", "openout_any": "p"}
+        compiled = False
 
-        # 1. Compilación latex -> DVI
-        try:
-            r_latex = subprocess.run(
-                ["latex", "-no-shell-escape", "-interaction=nonstopmode", "-halt-on-error", "figure.tex"],
-                cwd=work, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=25, text=True
-            )
-        except Exception as e:
-            print(f"[-] Excepción ejecutando latex: {e}")
-            return False
+        # 1. XeLaTeX + Inkscape (máxima nitidez vectorial, bounding box exacto y texto a trazados)
+        if shutil.which("xelatex") and shutil.which("inkscape"):
+            try:
+                r_xe = subprocess.run(
+                    ["xelatex", "-no-shell-escape", "-interaction=nonstopmode", "-halt-on-error", "figure.tex"],
+                    cwd=work, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=25, text=True
+                )
+                if r_xe.returncode == 0 and pdf_file.exists():
+                    r_ink = subprocess.run(
+                        ["inkscape", str(pdf_file), "--export-area-drawing", f"--export-filename={svg_file}", "--export-text-to-path"],
+                        cwd=work, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=15, text=True
+                    )
+                    if r_ink.returncode == 0 and svg_file.exists() and svg_file.stat().st_size > 0:
+                        apply_svg_background(svg_file)
+                        compiled = True
+            except Exception as e:
+                print(f"[!] XeLaTeX + Inkscape fallo: {e}, intentando fallback")
 
-        if r_latex.returncode != 0 or not dvi_file.exists():
-            log = r_latex.stdout or ""
-            err_line = next((l for l in log.splitlines() if l.startswith("!")), "Error de compilación LaTeX")
-            print(f"[-] Error latex: {err_line}")
-            return False
+        # 2. Fallback a latex + dvisvgm si no hay Inkscape o falló
+        if not compiled and shutil.which("latex") and shutil.which("dvisvgm"):
+            try:
+                r_latex = subprocess.run(
+                    ["latex", "-no-shell-escape", "-interaction=nonstopmode", "-halt-on-error", "figure.tex"],
+                    cwd=work, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=25, text=True
+                )
+                if r_latex.returncode == 0 and dvi_file.exists():
+                    r_svg = subprocess.run(
+                        ["dvisvgm", "--no-fonts", "--exact-bbox", "--scale=1.35", "-o", str(svg_file), "figure.dvi"],
+                        cwd=work, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=15, text=True
+                    )
+                    if r_svg.returncode == 0 and svg_file.exists():
+                        compiled = True
+            except Exception as e:
+                print(f"[-] Excepción ejecutando dvisvgm: {e}")
 
-        # 2. Conversión DVI -> SVG vectorial con dvisvgm (--no-fonts convierte texto a trazados SVG limpios)
-        try:
-            r_svg = subprocess.run(
-                ["dvisvgm", "--no-fonts", "--exact-bbox", "--scale=1.35", "-o", str(svg_file), "figure.dvi"],
-                cwd=work, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=15, text=True
-            )
-        except Exception as e:
-            print(f"[-] Excepción ejecutando dvisvgm: {e}")
-            return False
-
-        if r_svg.returncode != 0 or not svg_file.exists():
-            print(f"[-] Error en dvisvgm: {r_svg.stdout[-300:]}")
+        if not compiled or not svg_file.exists():
             return False
 
         svg_content = svg_file.read_text(encoding="utf-8")
@@ -143,7 +171,7 @@ def extract_tikz_blocks(tex_content: str) -> list[str]:
     pattern = re.compile(r'(\\begin\{tikzpicture\}[\s\S]*?\\end\{tikzpicture\})', re.MULTILINE)
     return pattern.findall(tex_content)
 
-def process_file(fpath: Path, preamble: str, all_tikz: dict, preloaded: dict):
+def process_file(fpath: Path, preamble: str, all_tikz: dict, preloaded: dict, force: bool = False):
     try:
         content = fpath.read_text(encoding="utf-8", errors="replace")
     except Exception as e:
@@ -167,8 +195,8 @@ def process_file(fpath: Path, preamble: str, all_tikz: dict, preloaded: dict):
         md5_legacy = LEGACY_CACHE_DIR / f"tikz_{md5_short}.svg"
         destinations = [sha_public, sha_materials, md5_legacy]
 
-        # Si ya existe en public, leemos su contenido
-        if not sha_public.exists() or sha_public.stat().st_size == 0:
+        # Si ya existe en public y no forzamos, leemos su contenido
+        if force or not sha_public.exists() or sha_public.stat().st_size == 0:
             ok = compile_tikz_to_svg(block, preamble, destinations)
             if ok:
                 print(f"    [+] Generado SVG para diagrama {sha[:10]}… -> {sha_public.name}")
@@ -214,6 +242,7 @@ def main():
     parser = argparse.ArgumentParser(description="Compilador y sincronizador de diagramas TikZ y LaTeX.")
     parser.add_argument("--docs-dir", default=str(DOCS_DIR), help="Directorio con archivos .tex (por defecto: docs/)")
     parser.add_argument("--scan-content", action="store_true", default=True, help="Escanear también content/ en busca de .tex")
+    parser.add_argument("--force", action="store_true", help="Recompilar todos los diagramas con XeLaTeX + Inkscape aunque ya existan")
     args = parser.parse_args()
 
     print("[*] Iniciando motor de compilación TikZ y .tex...")
@@ -236,7 +265,7 @@ def main():
 
     print(f"[*] Archivos .tex a procesar: {len(unique_files)}")
     for fpath in unique_files:
-        process_file(fpath, preamble, all_tikz, preloaded)
+        process_file(fpath, preamble, all_tikz, preloaded, force=args.force)
 
     # 3. Guardar en preloaded-data.js (ubicaciones canónicas y legacy)
     js_content = (

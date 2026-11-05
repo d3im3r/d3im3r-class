@@ -1,8 +1,25 @@
 """Restricted TikZ worker: JSON stdin, JSON stdout. Only figures from authenticated imports."""
-import json,sys,re,pathlib,subprocess,tempfile,os,hashlib
+import json,sys,re,pathlib,subprocess,tempfile,os,hashlib,shutil
+import xml.etree.ElementTree as ET
 request=json.load(sys.stdin)
 preamble=pathlib.Path('content/resources/latex/diagram-preamble.tex').read_text()
 output=pathlib.Path(request['output']).resolve();output.mkdir(parents=True,exist_ok=True)
+
+def apply_svg_background(svg_path: pathlib.Path):
+    try:
+        svg_text = svg_path.read_text(encoding='utf-8')
+        root = ET.fromstring(svg_text)
+        viewbox = root.attrib.get('viewBox')
+        if viewbox:
+            values = [float(v) for v in re.split(r'[\s,]+', viewbox.strip())]
+            if len(values) == 4:
+                x, y, width, height = values
+                rect = f'\n  <rect x="{x:g}" y="{y:g}" width="{width:g}" height="{height:g}" fill="#ffffff" stroke="none"/>\n'
+                opening = re.search(r'<svg\b[^>]*>', svg_text, re.DOTALL)
+                if opening:
+                    svg_path.write_text(svg_text[:opening.end()] + rect + svg_text[opening.end():], encoding='utf-8')
+    except Exception:
+        pass
 
 BLOCKED_COMMANDS = {
     'input', 'include', 'openin', 'openout', 'read', 'write', 'immediate',
@@ -46,23 +63,44 @@ for index,source in enumerate(request['figures'][:60],start=1):
         env={**os.environ,'openin_any':'p','openout_any':'p'}
         dest=output/(key+'.svg')
         try:
-            # 1. Preferir 'latex' a DVI (lee directamente dvisvgm sin Ghostscript)
             compiled = False
-            r_latex = subprocess.run(
-                ['latex', '-no-shell-escape', '-interaction=nonstopmode', '-halt-on-error', 'figure.tex'],
-                cwd=work, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=25
-            )
-            if r_latex.returncode == 0 and (work/'figure.dvi').exists():
-                r_svg = subprocess.run(
-                    ['dvisvgm', '--no-fonts', '--exact-bbox', '--scale=1.35', '--output='+str(dest), 'figure.dvi'],
-                    cwd=work, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=15
-                )
-                if r_svg.returncode == 0 and dest.exists():
-                    results[key]=str(dest)
-                    compiled = True
+            # 1. Preferir XeLaTeX + Inkscape (máxima nitidez vectorial, bounding box exacto y texto a trazados)
+            if shutil.which('xelatex') and shutil.which('inkscape'):
+                try:
+                    r_xe = subprocess.run(
+                        ['xelatex', '-no-shell-escape', '-interaction=nonstopmode', '-halt-on-error', 'figure.tex'],
+                        cwd=work, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=25
+                    )
+                    pdf_file = work / 'figure.pdf'
+                    if r_xe.returncode == 0 and pdf_file.exists():
+                        r_ink = subprocess.run(
+                            ['inkscape', str(pdf_file), '--export-area-drawing', f'--export-filename={dest}', '--export-text-to-path'],
+                            cwd=work, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=15
+                        )
+                        if r_ink.returncode == 0 and dest.exists() and dest.stat().st_size > 0:
+                            apply_svg_background(dest)
+                            results[key] = str(dest)
+                            compiled = True
+                except Exception:
+                    pass
 
-            # 2. Fallback a xelatex si latex no produjo DVI o falló
-            if not compiled:
+            # 2. Fallback a latex + dvisvgm si no hay Inkscape
+            if not compiled and shutil.which('latex') and shutil.which('dvisvgm'):
+                r_latex = subprocess.run(
+                    ['latex', '-no-shell-escape', '-interaction=nonstopmode', '-halt-on-error', 'figure.tex'],
+                    cwd=work, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=25
+                )
+                if r_latex.returncode == 0 and (work/'figure.dvi').exists():
+                    r_svg = subprocess.run(
+                        ['dvisvgm', '--no-fonts', '--exact-bbox', '--scale=1.35', '--output='+str(dest), 'figure.dvi'],
+                        cwd=work, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=15
+                    )
+                    if r_svg.returncode == 0 and dest.exists():
+                        results[key]=str(dest)
+                        compiled = True
+
+            # 3. Fallback a xelatex + dvisvgm
+            if not compiled and shutil.which('xelatex') and shutil.which('dvisvgm'):
                 r_xe = subprocess.run(
                     ['xelatex', '-no-shell-escape', '-interaction=nonstopmode', '-halt-on-error', 'figure.tex'],
                     cwd=work, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, check=True, timeout=25

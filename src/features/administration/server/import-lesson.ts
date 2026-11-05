@@ -26,6 +26,10 @@ const types: Record<string, string> = {
   '.webp': 'image/webp',
 };
 export function cropSvgViewBox(svg: string): string {
+  // Los SVGs generados por Inkscape (--export-area-drawing) ya tienen el viewBox exacto y óptimo
+  if (svg.includes('inkscape') || svg.includes('sodipodi')) {
+    return svg;
+  }
   const xs: number[] = [];
   const ys: number[] = [];
 
