@@ -11,6 +11,34 @@ import {sharedImage,cachedDiagramPath,cacheDiagram} from './shared-resource';
 import {AppError,text} from '@/features/auth/server/auth';
 type Resource={key:string;name:string;path:string;mime:string};
 const types:Record<string,string>={'.pdf':'application/pdf','.tex':'text/plain; charset=utf-8','.png':'image/png','.jpg':'image/jpeg','.jpeg':'image/jpeg','.webp':'image/webp'};
+function cropSvgViewBox(svg: string): string {
+ const coords: [number, number][] = [];
+ const pathMatches = svg.matchAll(/\bd="([^"]+)"/g);
+ for (const m of pathMatches) {
+  const numbers = m[1].match(/-?[\d.]+/g);
+  if (numbers) {
+   for (let i = 0; i < numbers.length - 1; i += 2) {
+    const x = parseFloat(numbers[i]), y = parseFloat(numbers[i + 1]);
+    if (!isNaN(x) && !isNaN(y)) coords.push([x, y]);
+   }
+  }
+ }
+ const textMatches = svg.matchAll(/x="([^"]+)"\s+y="([^"]+)"/g);
+ for (const m of textMatches) {
+  const x = parseFloat(m[1]), y = parseFloat(m[2]);
+  if (!isNaN(x) && !isNaN(y)) coords.push([x, y]);
+ }
+ if (!coords.length) return svg;
+ const xs = coords.map(c => c[0]), ys = coords.map(c => c[1]);
+ const minX = Math.min(...xs) - 8, maxX = Math.max(...xs) + 8;
+ const minY = Math.min(...ys) - 8, maxY = Math.max(...ys) + 8;
+ const width = Math.max(10, maxX - minX), height = Math.max(10, maxY - minY);
+ return svg
+  .replace(/viewBox="[^"]+"/, `viewBox="${minX.toFixed(2)} ${minY.toFixed(2)} ${width.toFixed(2)} ${height.toFixed(2)}"`)
+  .replace(/width="[^"]+"/, `width="${width.toFixed(2)}"`)
+  .replace(/height="[^"]+"/, `height="${height.toFixed(2)}"`);
+}
+
 export async function compileTikzWithTikzjax(figures: string[], output: string): Promise<{ results: Record<string, string>; errors: { hash: string; message: string; log?: string; line?: number }[] }> {
  const results: Record<string, string> = {};
  const errors: { hash: string; message: string; log?: string; line?: number }[] = [];
@@ -38,7 +66,7 @@ export async function compileTikzWithTikzjax(figures: string[], output: string):
   }
   try {
    const full = `\\begin{document}\n${preambleColors}\n${source}\n\\end{document}`;
-   const svg = await tikzjax(full);
+   const svg = cropSvgViewBox(await tikzjax(full));
    const dest = path.join(output, `${hash}.svg`);
    await writeFile(dest, svg);
    const cachedDest = cacheDiagram(hash, dest);

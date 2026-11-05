@@ -43,19 +43,27 @@ export const TIKZ_PREAMBLE = `
 \\definecolor{CodigoOscuroBorde}{HTML}{444444}
 `;
 
+const ROD2IK_FONTS = 'https://cdn.jsdelivr.net/npm/@rod2ik/tikzjax@1.6.0/dist/fonts.min.css';
+const ROD2IK_SCRIPT = 'https://cdn.jsdelivr.net/npm/@rod2ik/tikzjax@1.6.0/dist/tikzjax.min.js';
+const FALLBACK_FONTS = 'https://tikzjax.com/v1/fonts.css';
+const FALLBACK_SCRIPT = 'https://tikzjax.com/v1/tikzjax.js';
+
 function ensureTikZJaxLoaded(): Promise<void> {
   if (typeof window === 'undefined') return Promise.resolve();
   if ((window as unknown as { __tikzjax_ready?: boolean }).__tikzjax_ready) return Promise.resolve();
 
   return new Promise((resolve) => {
-    if (!document.querySelector('link[href*="fonts.css"]')) {
+    if (!document.querySelector('link[href*="fonts"]')) {
       const link = document.createElement('link');
       link.rel = 'stylesheet';
-      link.href = 'https://tikzjax.com/v1/fonts.css';
+      link.href = ROD2IK_FONTS;
+      link.onerror = () => {
+        link.href = FALLBACK_FONTS;
+      };
       document.head.appendChild(link);
     }
 
-    const existing = document.querySelector('script[src*="tikzjax.js"]');
+    const existing = document.querySelector('script[src*="tikzjax"]');
     if (existing) {
       if ((window as unknown as { __tikzjax_ready?: boolean }).__tikzjax_ready) {
         resolve();
@@ -69,13 +77,24 @@ function ensureTikZJaxLoaded(): Promise<void> {
     }
 
     const script = document.createElement('script');
-    script.src = 'https://tikzjax.com/v1/tikzjax.js';
+    script.src = ROD2IK_SCRIPT;
     script.async = true;
     script.onload = () => {
       (window as unknown as { __tikzjax_ready?: boolean }).__tikzjax_ready = true;
       resolve();
     };
-    script.onerror = () => resolve();
+    script.onerror = () => {
+      // Fallback to legacy tikzjax if CDN fails
+      const fallback = document.createElement('script');
+      fallback.src = FALLBACK_SCRIPT;
+      fallback.async = true;
+      fallback.onload = () => {
+        (window as unknown as { __tikzjax_ready?: boolean }).__tikzjax_ready = true;
+        resolve();
+      };
+      fallback.onerror = () => resolve();
+      document.head.appendChild(fallback);
+    };
     document.head.appendChild(script);
   });
 }
