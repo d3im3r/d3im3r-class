@@ -241,7 +241,7 @@
 }
 
 /* ==========================================================================
-   Alineación y Centrado de Diagramas TikZ y SVGs
+   Alineación, Escala y Centrado Responsivo de Diagramas TikZ y SVGs
    ========================================================================== */
 .diagram-figure {
   display: flex !important;
@@ -280,4 +280,244 @@
   align-items: center !important;
   width: 100% !important;
   overflow-x: auto !important;
+}
+
+/* Escala completa en Lightbox (Pantalla completa de diagramas e imágenes) */
+.image-lightbox-canvas .tikz-container,
+.image-lightbox-canvas .tikz-render-target {
+  width: 100% !important;
+  max-width: 96vw !important;
+  margin: 0 auto !important;
+}
+
+.image-lightbox-canvas img,
+.image-lightbox-canvas svg,
+.image-lightbox-canvas .tikz-render-target img,
+.image-lightbox-canvas .tikz-render-target svg {
+  background: #fff !important;
+  border-radius: 8px !important;
+  padding: 24px !important;
+  width: 100% !important;
+  max-width: 96vw !important;
+  height: auto !important;
+  max-height: 84vh !important;
+  object-fit: contain !important;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.6) !important;
+}
+
+/* Escala óptima y legible en diapositivas (Modo Presentación) */
+.slide-content .lesson-figure,
+.slide-content .diagram-figure,
+.slide-content .tikz-container,
+.slide-content .tikz-render-target {
+  width: 100% !important;
+  max-width: 100% !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+}
+
+.slide-content .lesson-figure img,
+.slide-content .diagram-figure img,
+.slide-content .tikz-render-target svg,
+.slide-content .tikz-render-target img,
+.slide-content .lesson-figure svg {
+  display: block !important;
+  margin: 0 auto !important;
+  width: 100% !important;
+  max-width: min(100%, 1240px) !important;
+  height: auto !important;
+  max-height: calc(var(--slide-space, 65vh) * 0.85) !important;
+  object-fit: contain !important;
+  cursor: zoom-in !important;
+}
+
+/* ==========================================================================
+   Laboratorio de Ejecución Interactiva de Código (JS, Python WASM, HTML/CSS)
+   ========================================================================== */
+.code-run-btn {
+  background: #16a34a !important;
+  color: #fff !important;
+  font-weight: 600;
+  gap: 6px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  transition: all 0.15s ease;
+}
+.code-run-btn:hover:not(:disabled) {
+  background: #15803d !important;
+}
+.code-kbd {
+  font-size: 10px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+  padding: 1px 4px;
+  font-family: inherit;
+  margin-left: 2px;
+}
+.code-tabs {
+  display: inline-flex;
+  background: rgba(0, 0, 0, 0.08);
+  border-radius: 5px;
+  padding: 2px;
+  gap: 2px;
+}
+[data-theme="dark"] .code-tabs {
+  background: rgba(255, 255, 255, 0.08);
+}
+.code-tab-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  opacity: 0.7;
+  transition: all 0.15s ease;
+}
+.code-tab-btn.active {
+  background: var(--background, #fff);
+  color: var(--foreground, #000);
+  opacity: 1;
+  font-weight: 600;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+.html-preview-container {
+  width: 100%;
+  background: #fff;
+  border-bottom-left-radius: 6px;
+  border-bottom-right-radius: 6px;
+  overflow: hidden;
+  min-height: 220px;
+}
+.html-preview-frame {
+  width: 100%;
+  height: 280px;
+  border: 0;
+  display: block;
+  background: #fff;
+}
+.code-console {
+  background: #0d1117;
+  color: #c9d1d9;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  border-bottom-left-radius: 6px;
+  border-bottom-right-radius: 6px;
+  overflow: hidden;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 12px;
+}
+.code-console-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 7px 12px;
+  background: #161b22;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+.code-console-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #8b949e;
+}
+.code-console-badge {
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  font-weight: 500;
+}
+.code-console-badge.is-success {
+  background: rgba(35, 134, 54, 0.2);
+  color: #3fb950;
+  border: 1px solid rgba(35, 134, 54, 0.4);
+}
+.code-console-badge.is-error {
+  background: rgba(218, 54, 51, 0.2);
+  color: #f85149;
+  border: 1px solid rgba(218, 54, 51, 0.4);
+}
+.code-console-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.code-console-btn {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #8b949e;
+  border-radius: 4px;
+  padding: 3px 7px;
+  font-size: 11px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.code-console-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #c9d1d9;
+}
+.code-console-body {
+  padding: 10px 14px;
+  max-height: 240px;
+  overflow-y: auto;
+}
+.code-console-loading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #58a6ff;
+  font-size: 12px;
+  padding: 4px 0;
+}
+.code-console-error {
+  background: rgba(218, 54, 51, 0.12);
+  border: 1px solid rgba(218, 54, 51, 0.35);
+  border-radius: 6px;
+  padding: 8px 12px;
+  color: #f85149;
+  margin-bottom: 8px;
+}
+.code-console-error pre {
+  margin: 0;
+  white-space: pre-wrap;
+  font-family: inherit;
+  font-size: 11px;
+  line-height: 1.5;
+}
+.code-console-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.code-console-line {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  line-height: 1.5;
+}
+.code-console-prompt {
+  color: #8b949e;
+  user-select: none;
+  font-size: 11px;
+  line-height: 1.5;
+}
+.code-console-text {
+  margin: 0;
+  white-space: pre-wrap;
+  font-family: inherit;
+  font-size: 12px;
+  color: #f0f6fc;
+}
+.code-console-empty {
+  color: #8b949e;
+  font-size: 11px;
+  font-style: italic;
+  padding: 4px 0;
 }

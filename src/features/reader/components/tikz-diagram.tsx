@@ -376,7 +376,13 @@ export function TikZDiagram({ code }: { code: string }) {
           <img
             src={svgSource}
             alt="Diagrama TikZ"
-            style={{ maxWidth: '100%', height: 'auto', display: 'block', margin: '0 auto' }}
+            style={{
+              width: '100%',
+              maxWidth: '100%',
+              height: 'auto',
+              display: 'block',
+              margin: '0 auto',
+            }}
             loading="lazy"
           />
         </div>

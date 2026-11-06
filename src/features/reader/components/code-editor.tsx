@@ -58,6 +58,8 @@ export default function CodeEditor({
   const container = useRef<HTMLDivElement>(null);
   const change = useRef(onChange);
   change.current = onChange;
+  const isInternalChange = useRef(false);
+
   useEffect(() => {
     if (!container.current) return;
     const lang = { css, html, python, sql, javascript }[language];
@@ -75,7 +77,10 @@ export default function CodeEditor({
           EditorView.lineWrapping,
           EditorView.contentAttributes.of({ 'aria-label': `Editor de código ${language}` }),
           EditorView.updateListener.of((u) => {
-            if (u.docChanged) change.current(u.state.doc.toString());
+            if (u.docChanged) {
+              isInternalChange.current = true;
+              change.current(u.state.doc.toString());
+            }
           }),
         ],
       }),
@@ -85,7 +90,24 @@ export default function CodeEditor({
       view.destroy();
       viewRef.current = null;
     };
-  }, [initial, language]);
+  }, [language]);
+
+  // Si el componente padre actualiza 'initial' desde el exterior (ej. botón Restablecer)
+  useEffect(() => {
+    if (isInternalChange.current) {
+      isInternalChange.current = false;
+      return;
+    }
+    const view = viewRef.current;
+    if (view) {
+      const currentDoc = view.state.doc.toString();
+      if (currentDoc !== initial) {
+        view.dispatch({
+          changes: { from: 0, to: currentDoc.length, insert: initial },
+        });
+      }
+    }
+  }, [initial]);
   useEffect(() => {
     viewRef.current?.dispatch({
       effects: appearance.current.reconfigure(themeExtension(theme === 'dark')),
