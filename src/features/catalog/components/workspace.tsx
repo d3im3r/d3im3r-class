@@ -216,10 +216,27 @@ export function Workspace({
         .includes(query.toLowerCase())
   );
   const read = Object.values(progress).reduce((sum, items) => sum + items.length, 0);
-  function handlePreviewLesson(id: string) {
+  async function handlePreviewLesson(id: string) {
     setReturnToAdmin(true);
+    let targetCatalog = catalog;
+    if (!catalog.lessons.some((l) => l.id === id)) {
+      try {
+        const response = await fetch('/api/catalog', { cache: 'no-store' });
+        if (response.ok) {
+          const next = (await response.json()) as Catalog;
+          setCatalog(next);
+          targetCatalog = next;
+        }
+      } catch {}
+    }
+    const found = targetCatalog.lessons.find((l) => l.id === id);
+    if (!found) {
+      window.location.href = `/?class=${id}`;
+      return;
+    }
     setLessonId(id);
     setFrameIndex(0);
+    setView('course');
     setMobile(false);
   }
   function openLesson(l: Lesson) {
@@ -640,12 +657,6 @@ export function Workspace({
           )}
           {view === 'tools' && canUseTools ? (
             <ToolsPanel key={toolVersion} catalog={catalog} seed={toolSeed} />
-          ) : view === 'admin' && canManageCampus ? (
-            <AdminPanel
-              onCatalogChange={refreshCatalog}
-              user={user}
-              onPreviewLesson={handlePreviewLesson}
-            />
           ) : lesson && frame ? (
             <LessonReader
               key={lesson.id}
@@ -666,6 +677,12 @@ export function Workspace({
                   setView('course');
                 }
               }}
+            />
+          ) : view === 'admin' && canManageCampus ? (
+            <AdminPanel
+              onCatalogChange={refreshCatalog}
+              user={user}
+              onPreviewLesson={handlePreviewLesson}
             />
           ) : (
             <main className="dashboard">

@@ -1106,6 +1106,7 @@ export function AdminPanel({
                           </p>
                         </div>
                         <Button
+                          type="button"
                           variant="outline"
                           size="sm"
                           onClick={() => {
