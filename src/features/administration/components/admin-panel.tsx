@@ -88,9 +88,11 @@ async function parseJson<T = any>(response: Response): Promise<T> {
 export function AdminPanel({
   onCatalogChange: reloadCampus,
   user: currentUser,
+  onPreviewLesson,
 }: {
   onCatalogChange: () => Promise<void>;
   user?: User;
+  onPreviewLesson?: (lessonId: string) => void;
 }) {
   const [data, setData] = useState<Snapshot | null>(null),
     [tab, setTab] = useState('institutions'),
@@ -128,6 +130,10 @@ export function AdminPanel({
     const response = await fetch('/api/admin', { cache: 'no-store' });
     const result = await parseJson<Snapshot>(response);
     setData(result);
+    if (currentUser?.role !== 'admin' && result.institutions.length === 1) {
+      setSelectedInstitution((prev) => prev || result.institutions[0].id);
+      setTab((prev) => (prev === 'institutions' ? 'subjects' : prev));
+    }
   }
   useEffect(() => {
     try {
@@ -301,7 +307,11 @@ export function AdminPanel({
         )}
       </main>
     );
-  const currentInstitution = data.institutions.find((i) => i.id === selectedInstitution) ?? null;
+  const isAdmin = currentUser?.role === 'admin';
+  const showInstitutionsTab = isAdmin || data.institutions.length > 1;
+  const currentInstitution =
+    data.institutions.find((i) => i.id === selectedInstitution) ??
+    (!showInstitutionsTab && data.institutions.length === 1 ? data.institutions[0] : null);
   const institutionSubjects = currentInstitution
     ? data.subjects.filter((s) => s.institutionId === currentInstitution.id)
     : [];
@@ -314,25 +324,32 @@ export function AdminPanel({
           (l) => l.subjectId === currentSubject.id && l.topicId === currentTopic.id
         )
       : [];
-  const isAdmin = currentUser?.role === 'admin';
   const students = data.users.filter((u) => u.role === 'student');
   const teachers = data.users.filter((u) => u.role === 'teacher');
   const admins = data.users.filter((u) => u.role === 'admin');
   const pendingRequests = data.joinRequests ?? [];
-  const activeTab =
-    tab === 'lessons' && !currentTopic
-      ? currentSubject
+  const activeTab = (() => {
+    let t = tab;
+    if (!showInstitutionsTab && t === 'institutions' && currentInstitution) {
+      t = 'subjects';
+    }
+    if (t === 'lessons' && !currentTopic) {
+      return currentSubject
         ? 'topics'
         : currentInstitution
           ? 'subjects'
-          : 'institutions'
-      : tab === 'topics' && !currentSubject
-        ? currentInstitution
-          ? 'subjects'
-          : 'institutions'
-        : tab === 'subjects' && !currentInstitution
-          ? 'institutions'
-          : tab;
+          : showInstitutionsTab
+            ? 'institutions'
+            : 'subjects';
+    }
+    if (t === 'topics' && !currentSubject) {
+      return currentInstitution ? 'subjects' : showInstitutionsTab ? 'institutions' : 'subjects';
+    }
+    if (t === 'subjects' && !currentInstitution && showInstitutionsTab) {
+      return 'institutions';
+    }
+    return t;
+  })();
   function goTab(next: string) {
     setTab(next);
     setError('');
@@ -371,8 +388,9 @@ export function AdminPanel({
           <div className="eyebrow">{isAdmin ? 'PANEL DE ADMINISTRACIÓN' : 'ESPACIO DOCENTE'}</div>
           <h1>Construye tu campus.</h1>
           <p>
-            Selecciona una institución, entra a una materia y su tema para gestionar únicamente sus
-            clases.
+            {showInstitutionsTab
+              ? 'Selecciona una institución, entra a una materia y su tema para gestionar únicamente sus clases.'
+              : `Gestiona las materias, temas y clases de ${currentInstitution?.name ?? 'tu campus'}.`}
           </p>
         </div>
         <span className="admin-role">
@@ -381,21 +399,26 @@ export function AdminPanel({
         </span>
       </div>
       <div className="admin-steps">
-        <button
-          type="button"
-          className={activeTab === 'institutions' ? 'active' : ''}
-          onClick={() => goTab('institutions')}
-        >
-          1. Institución{currentInstitution ? `: ${currentInstitution.shortName}` : ''}
-        </button>
-        <ArrowRight size={13} />
+        {showInstitutionsTab && (
+          <>
+            <button
+              type="button"
+              className={activeTab === 'institutions' ? 'active' : ''}
+              onClick={() => goTab('institutions')}
+            >
+              1. Institución{currentInstitution ? `: ${currentInstitution.shortName}` : ''}
+            </button>
+            <ArrowRight size={13} />
+          </>
+        )}
         <button
           type="button"
           className={activeTab === 'subjects' ? 'active' : ''}
           disabled={!currentInstitution}
           onClick={() => currentInstitution && goTab('subjects')}
         >
-          2. Materia{currentSubject ? `: ${currentSubject.name}` : ''}
+          {showInstitutionsTab ? '2. Materia' : '1. Materias'}
+          {currentSubject ? `: ${currentSubject.name}` : ''}
         </button>
         <ArrowRight size={13} />
         <button
@@ -404,7 +427,8 @@ export function AdminPanel({
           disabled={!currentSubject}
           onClick={() => currentSubject && goTab('topics')}
         >
-          3. Tema{currentTopic ? `: ${currentTopic.name}` : ''}
+          {showInstitutionsTab ? '3. Tema' : '2. Temas'}
+          {currentTopic ? `: ${currentTopic.name}` : ''}
         </button>
         <ArrowRight size={13} />
         <button
@@ -413,17 +437,20 @@ export function AdminPanel({
           disabled={!currentTopic}
           onClick={() => currentTopic && goTab('lessons')}
         >
-          4. Clases{currentTopic ? ` (${topicLessons.length})` : ''}
+          {showInstitutionsTab ? '4. Clases' : '3. Clases'}
+          {currentTopic ? ` (${topicLessons.length})` : ''}
         </button>
       </div>
       <nav className="admin-tabs" aria-label="Gestión docente">
-        <button
-          className={activeTab === 'institutions' ? 'selected' : ''}
-          onClick={() => goTab('institutions')}
-        >
-          <Building2 size={16} />
-          Instituciones<span>{data.institutions.length}</span>
-        </button>
+        {showInstitutionsTab && (
+          <button
+            className={activeTab === 'institutions' ? 'selected' : ''}
+            onClick={() => goTab('institutions')}
+          >
+            <Building2 size={16} />
+            Instituciones<span>{data.institutions.length}</span>
+          </button>
+        )}
         <button
           className={activeTab === 'subjects' ? 'selected' : ''}
           disabled={!currentInstitution}
@@ -646,10 +673,12 @@ export function AdminPanel({
       )}
       {activeTab === 'subjects' && currentInstitution && (
         <>
-          <button type="button" className="back-link" onClick={() => goTab('institutions')}>
-            <ChevronLeft size={15} />
-            Volver a instituciones
-          </button>
+          {showInstitutionsTab && (
+            <button type="button" className="back-link" onClick={() => goTab('institutions')}>
+              <ChevronLeft size={15} />
+              Volver a instituciones
+            </button>
+          )}
           <div className="admin-two-columns">
             <section className="admin-card admin-established">
               <div className="admin-card-header">
@@ -707,6 +736,39 @@ export function AdminPanel({
                         >
                           <Pencil size={15} />
                         </Button>
+                        {isAdmin && (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="btn-danger-action"
+                            aria-label={`Eliminar materia ${s.name}`}
+                            title="Eliminar materia y todo su contenido"
+                            disabled={busy}
+                            onClick={async () => {
+                              const msg =
+                                lessonCount > 0
+                                  ? `¿Eliminar la materia "${s.name}" (${s.code}) con sus ${s.topics.length} temas y ${lessonCount} clases? Esta acción no se puede deshacer.`
+                                  : `¿Eliminar la materia "${s.name}" (${s.code})?`;
+                              if (!window.confirm(msg)) return;
+                              if (selectedSubject === s.id) {
+                                setSelectedSubject('');
+                                setSelectedTopic('');
+                              }
+                              if (editSubject?.id === s.id) setEditSubject(null);
+                              await mutate(
+                                {
+                                  action: 'deleteSubject',
+                                  subjectId: s.id,
+                                },
+                                'Materia eliminada.'
+                              );
+                              await onCatalogChange();
+                            }}
+                          >
+                            <Trash2 size={14} />
+                          </Button>
+                        )}
                         <Button
                           size="sm"
                           onClick={() => {
@@ -920,6 +982,34 @@ export function AdminPanel({
                         >
                           Ver clases ({count})<ArrowRight size={14} />
                         </Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          className="btn-danger-action"
+                          aria-label={`Eliminar tema ${t.name}`}
+                          title="Eliminar tema y sus clases asociadas"
+                          disabled={busy}
+                          onClick={async () => {
+                            const msg =
+                              count > 0
+                                ? `¿Eliminar el tema "${t.name}" y sus ${count} clase(s) asociada(s)? Esta acción no se puede deshacer.`
+                                : `¿Eliminar el tema "${t.name}"?`;
+                            if (!window.confirm(msg)) return;
+                            if (selectedTopic === t.id) setSelectedTopic('');
+                            await mutate(
+                              {
+                                action: 'deleteTopic',
+                                subjectId: currentSubject.id,
+                                topicId: t.id,
+                              },
+                              'Tema eliminado.'
+                            );
+                            await onCatalogChange();
+                          }}
+                        >
+                          <Trash2 size={14} />
+                        </Button>
                       </form>
                     );
                   })}
@@ -1015,11 +1105,20 @@ export function AdminPanel({
                             {l.frames} bloques · Versión {l.revision}
                           </p>
                         </div>
-                        <Button variant="outline" size="sm" asChild>
-                          <a href={`/?class=${l.id}`} target="_blank" rel="noreferrer">
-                            <Eye size={14} />
-                            Vista previa
-                          </a>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            if (onPreviewLesson) {
+                              onPreviewLesson(l.id);
+                            } else {
+                              window.location.href = `/?class=${l.id}`;
+                            }
+                          }}
+                          title="Previsualizar clase en esta pestaña"
+                        >
+                          <Eye size={14} />
+                          Vista previa
                         </Button>
                       </div>
                       {l.diagnostics.length > 0 && (

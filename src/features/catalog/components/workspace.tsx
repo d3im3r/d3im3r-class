@@ -98,11 +98,13 @@ export function Workspace({
     [frameIndex, setFrameIndex] = useState(0),
     [progress, setProgress] = useState<Progress>(initialProgress),
     [ready, setReady] = useState(false),
+    [returnToAdmin, setReturnToAdmin] = useState(false),
     [mobile, setMobile] = useState(false);
   const canManageCampus = hasPermission(user, { campus: ['manage'] }),
     canUseTools = hasPermission(user, { tools: ['use'] }),
     canInspectSource = hasPermission(user, { tools: ['inspectSource'] }),
     canReadDraft = hasPermission(user, { lesson: ['readDraft'] });
+  const showCampusResource = user.role === 'admin' || catalog.institutions.length > 1;
   useEffect(() => {
     try {
       if (canManageCampus && sessionStorage.getItem('aula-restore-admin') === '1') {
@@ -214,7 +216,14 @@ export function Workspace({
         .includes(query.toLowerCase())
   );
   const read = Object.values(progress).reduce((sum, items) => sum + items.length, 0);
+  function handlePreviewLesson(id: string) {
+    setReturnToAdmin(true);
+    setLessonId(id);
+    setFrameIndex(0);
+    setMobile(false);
+  }
   function openLesson(l: Lesson) {
+    setReturnToAdmin(false);
     setLessonId(l.id);
     const done = progress[l.id] ?? [];
     const next = l.frames.findIndex((f) => !done.includes(f.id));
@@ -273,7 +282,8 @@ export function Workspace({
   }, [canUseTools]);
   function home(v = 'subjects') {
     setLessonId(null);
-    setView(v);
+    setReturnToAdmin(false);
+    setView(!showCampusResource && v === 'institutions' ? 'subjects' : v);
     setMobile(false);
     setActiveTopicFilter(null);
   }
@@ -410,7 +420,16 @@ export function Workspace({
           inert={!sidebarShown}
           className={`sidebar ${sidebarShown ? 'is-open' : ''}`}
         >
-          <a href="/" className="brand">
+          <a
+            href="/"
+            className="brand"
+            onClick={(e) => {
+              if (!e.ctrlKey && !e.metaKey && !e.shiftKey) {
+                e.preventDefault();
+                home();
+              }
+            }}
+          >
             <span className="aula-wordmark">
               aula<span>.</span>
             </span>
@@ -430,7 +449,11 @@ export function Workspace({
             </button>
           )}
           <div className="workspace-label">ESPACIO DE APRENDIZAJE</div>
-          <button className="workspace-switch" onClick={() => home('institutions')}>
+          <button
+            className="workspace-switch"
+            onClick={() => (showCampusResource ? home('institutions') : home('subjects'))}
+            title={showCampusResource ? 'Cambiar de institución' : 'Ir a mis asignaturas'}
+          >
             <span className="workspace-icon">
               <GraduationCap size={20} />
             </span>
@@ -438,7 +461,7 @@ export function Workspace({
               <strong>Mi campus</strong>
               <small>{user.name}</small>
             </span>
-            <ChevronDown size={15} />
+            {showCampusResource && <ChevronDown size={15} />}
           </button>
           <nav>
             {canManageCampus && (
@@ -467,13 +490,15 @@ export function Workspace({
               <LayoutGrid size={18} />
               Mis asignaturas<span className="nav-count">{catalog.subjects.length}</span>
             </button>
-            <button
-              className={!lesson && view === 'institutions' ? 'active' : ''}
-              onClick={() => home('institutions')}
-            >
-              <Building2 size={18} />
-              Instituciones
-            </button>
+            {showCampusResource && (
+              <button
+                className={!lesson && view === 'institutions' ? 'active' : ''}
+                onClick={() => home('institutions')}
+              >
+                <Building2 size={18} />
+                Instituciones
+              </button>
+            )}
             <button
               className={!lesson && view === 'progress' ? 'active' : ''}
               onClick={() => home('progress')}
@@ -482,22 +507,26 @@ export function Workspace({
               Mi progreso
             </button>
           </nav>
-          <div className="sidebar-divider" />
-          <div className="workspace-label">MIS INSTITUCIONES</div>
-          {catalog.institutions.map((i) => (
-            <button
-              key={i.id}
-              className={`institution-link ${institution === i.id ? 'selected' : ''}`}
-              onClick={() => {
-                setInstitution(i.id);
-                home();
-              }}
-            >
-              <span className={`institution-dot ${i.color}`} />
-              {i.shortName}
-              <ChevronRight size={14} />
-            </button>
-          ))}
+          {showCampusResource && (
+            <>
+              <div className="sidebar-divider" />
+              <div className="workspace-label">MIS INSTITUCIONES</div>
+              {catalog.institutions.map((i) => (
+                <button
+                  key={i.id}
+                  className={`institution-link ${institution === i.id ? 'selected' : ''}`}
+                  onClick={() => {
+                    setInstitution(i.id);
+                    home();
+                  }}
+                >
+                  <span className={`institution-dot ${i.color}`} />
+                  {i.shortName}
+                  <ChevronRight size={14} />
+                </button>
+              ))}
+            </>
+          )}
           <div className="sidebar-note">
             <div>
               <BookOpen size={19} />
@@ -612,7 +641,11 @@ export function Workspace({
           {view === 'tools' && canUseTools ? (
             <ToolsPanel key={toolVersion} catalog={catalog} seed={toolSeed} />
           ) : view === 'admin' && canManageCampus ? (
-            <AdminPanel onCatalogChange={refreshCatalog} user={user} />
+            <AdminPanel
+              onCatalogChange={refreshCatalog}
+              user={user}
+              onPreviewLesson={handlePreviewLesson}
+            />
           ) : lesson && frame ? (
             <LessonReader
               key={lesson.id}
@@ -625,8 +658,13 @@ export function Workspace({
               onToggle={toggle}
               onBack={() => {
                 setLessonId(null);
-                setSubjectSelection(lesson.subjectId);
-                setView('course');
+                if (returnToAdmin) {
+                  setReturnToAdmin(false);
+                  setView('admin');
+                } else {
+                  setSubjectSelection(lesson.subjectId);
+                  setView('course');
+                }
               }}
             />
           ) : (

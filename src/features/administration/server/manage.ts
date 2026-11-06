@@ -150,6 +150,31 @@ function subjectIds(value: unknown) {
   if (!Array.isArray(value) || value.length > 200) throw new AppError('Selecciona las materias.');
   return [...new Set(value.map((v) => subject(v).id))];
 }
+function removeLessonCascade(rowId: string) {
+  db().prepare('DELETE FROM progress WHERE lesson_id=?').run(rowId);
+  db().prepare('DELETE FROM resources WHERE lesson_id=?').run(rowId);
+  db().prepare('DELETE FROM class_join_requests WHERE lesson_id=?').run(rowId);
+  db().prepare('DELETE FROM class_invites WHERE lesson_id=?').run(rowId);
+  db().prepare('DELETE FROM lessons WHERE id=?').run(rowId);
+
+  try {
+    const lessonDir = path.join(dataDirectory(), 'uploads', rowId);
+    if (existsSync(lessonDir)) {
+      rmSync(lessonDir, { recursive: true, force: true });
+    }
+  } catch (err) {
+    console.error('Error removing lesson uploads folder:', err);
+  }
+
+  const pool = getPgPool();
+  if (pool) {
+    pool.query('DELETE FROM progress WHERE lesson_id=$1', [rowId]).catch(console.error);
+    pool.query('DELETE FROM resources WHERE lesson_id=$1', [rowId]).catch(console.error);
+    pool.query('DELETE FROM class_join_requests WHERE lesson_id=$1', [rowId]).catch(() => {});
+    pool.query('DELETE FROM class_invites WHERE lesson_id=$1', [rowId]).catch(() => {});
+    pool.query('DELETE FROM lessons WHERE id=$1', [rowId]).catch(console.error);
+  }
+}
 export function manage(input: Record<string, unknown>, actor?: User) {
   return transaction(() => {
     switch (input.action) {
@@ -698,30 +723,75 @@ export function manage(input: Record<string, unknown>, actor?: User) {
           if (!allowedSubs || !allowedSubs.has(row.subject_id))
             throw new AppError('No tienes permiso para eliminar clases de esta materia.', 403);
         }
-        db().prepare('DELETE FROM progress WHERE lesson_id=?').run(row.id);
-        db().prepare('DELETE FROM resources WHERE lesson_id=?').run(row.id);
-        db().prepare('DELETE FROM class_join_requests WHERE lesson_id=?').run(row.id);
-        db().prepare('DELETE FROM class_invites WHERE lesson_id=?').run(row.id);
-        db().prepare('DELETE FROM lessons WHERE id=?').run(row.id);
-
-        try {
-          const lessonDir = path.join(dataDirectory(), 'uploads', row.id);
-          if (existsSync(lessonDir)) {
-            rmSync(lessonDir, { recursive: true, force: true });
-          }
-        } catch (err) {
-          console.error('Error removing lesson uploads folder:', err);
+        removeLessonCascade(row.id);
+        break;
+      }
+      case 'deleteTopic': {
+        const subjectId = String(input.subjectId);
+        const topicId = String(input.topicId);
+        if (actor && actor.role === 'teacher') {
+          const allowedSubs = userAccessibleSubjectIds(actor);
+          if (!allowedSubs || !allowedSubs.has(subjectId))
+            throw new AppError('No tienes permiso para eliminar temas de esta materia.', 403);
         }
+        const s = subject(subjectId);
+        const topicIndex = s.topics.findIndex((t) => t.id === topicId);
+        if (topicIndex < 0) throw new AppError('Tema no encontrado.', 404);
+        s.topics.splice(topicIndex, 1);
+        db().prepare('UPDATE subjects SET data=? WHERE id=?').run(JSON.stringify(s), s.id);
+        const pool = getPgPool();
+        if (pool) {
+          pool
+            .query('UPDATE subjects SET data=$1 WHERE id=$2', [JSON.stringify(s), s.id])
+            .catch(console.error);
+        }
+
+        // Eliminar en cascada las clases pertenecientes a este tema
+        const topicLessons = db()
+          .prepare('SELECT id, data FROM lessons WHERE subject_id=?')
+          .all(s.id) as { id: string; data: string }[];
+        for (const l of topicLessons) {
+          try {
+            const data = JSON.parse(l.data);
+            if (data.topicId === topicId) {
+              removeLessonCascade(l.id);
+            }
+          } catch {}
+        }
+        break;
+      }
+      case 'deleteSubject': {
+        if (!actor || actor.role !== 'admin')
+          throw new AppError('Solo los administradores pueden eliminar materias.', 403);
+        const subjectId = String(input.subjectId);
+        const s = subject(subjectId);
+
+        // Eliminar en cascada todas las lecciones de la materia
+        const subjectLessons = db()
+          .prepare('SELECT id FROM lessons WHERE subject_id=?')
+          .all(s.id) as { id: string }[];
+        for (const l of subjectLessons) {
+          removeLessonCascade(l.id);
+        }
+
+        // Eliminar relaciones de la materia
+        db().prepare('DELETE FROM enrollments WHERE subject_id=?').run(s.id);
+        db().prepare('DELETE FROM subject_bans WHERE subject_id=?').run(s.id);
+        db().prepare('DELETE FROM subject_invites WHERE subject_id=?').run(s.id);
+        db().prepare('DELETE FROM subject_join_requests WHERE subject_id=?').run(s.id);
+        db().prepare('DELETE FROM subjects WHERE id=?').run(s.id);
 
         const pool = getPgPool();
         if (pool) {
-          pool.query('DELETE FROM progress WHERE lesson_id=$1', [row.id]).catch(console.error);
-          pool.query('DELETE FROM resources WHERE lesson_id=$1', [row.id]).catch(console.error);
+          pool.query('DELETE FROM enrollments WHERE subject_id=$1', [s.id]).catch(console.error);
+          pool.query('DELETE FROM subject_bans WHERE subject_id=$1', [s.id]).catch(console.error);
           pool
-            .query('DELETE FROM class_join_requests WHERE lesson_id=$1', [row.id])
-            .catch(() => {});
-          pool.query('DELETE FROM class_invites WHERE lesson_id=$1', [row.id]).catch(() => {});
-          pool.query('DELETE FROM lessons WHERE id=$1', [row.id]).catch(console.error);
+            .query('DELETE FROM subject_invites WHERE subject_id=$1', [s.id])
+            .catch(console.error);
+          pool
+            .query('DELETE FROM subject_join_requests WHERE subject_id=$1', [s.id])
+            .catch(console.error);
+          pool.query('DELETE FROM subjects WHERE id=$1', [s.id]).catch(console.error);
         }
         break;
       }

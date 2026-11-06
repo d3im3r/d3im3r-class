@@ -468,3 +468,91 @@ test('permite eliminar clases con limpieza en cascada respetando permisos', asyn
   assert.equal(db().prepare('SELECT 1 FROM resources WHERE lesson_id=?').get(lessonId), undefined);
   assert.equal(existsSync(uploadDir), false);
 });
+
+test('permite eliminar temas con limpieza en cascada respetando permisos', async () => {
+  const teacherSena = login({ username: 'docente.sena', password: 'ClaveSena-2026' });
+  const inst = (
+    db()
+      .prepare('SELECT institution_id FROM institution_members WHERE user_id=? LIMIT 1')
+      .get(teacherSena.id) as { institution_id: string }
+  ).institution_id;
+
+  manage(
+    { action: 'subject', institutionId: inst, name: 'Materia Pruebas Temas', code: 'PRUTOP1' },
+    teacherSena
+  );
+  const allSubs = db().prepare('SELECT id, data FROM subjects').all() as {
+    id: string;
+    data: string;
+  }[];
+  const sub = allSubs.find((s) => JSON.parse(s.data).code === 'PRUTOP1')!;
+  const subId = sub.id;
+
+  manage({ action: 'topic', subjectId: subId, name: 'Tema Para Borrar' }, teacherSena);
+  const updatedSub = JSON.parse(
+    (db().prepare('SELECT data FROM subjects WHERE id=?').get(subId) as { data: string }).data
+  );
+  const topicId = updatedSub.topics[0].id;
+
+  // Insertar una clase bajo ese tema
+  const lessonId = 'clase-tema-eliminar';
+  db()
+    .prepare(
+      'INSERT INTO lessons(id,subject_id,status,revision,reviewed,data) VALUES (?,?,?,1,1,?)'
+    )
+    .run(
+      lessonId,
+      subId,
+      'published',
+      JSON.stringify({
+        id: lessonId,
+        subjectId: subId,
+        topicId,
+        title: 'Clase de prueba tema',
+        frames: [{ id: 'f1', title: 'F1', blocks: [] }],
+      })
+    );
+
+  // Otro docente que no imparte esta materia no puede borrar el tema
+  const otherTeacher = { ...teacherSena, id: 'otro-profe-id' };
+  assert.throws(
+    () => manage({ action: 'deleteTopic', subjectId: subId, topicId }, otherTeacher),
+    /No tienes permiso/
+  );
+
+  // El docente a cargo sí puede borrar el tema
+  assert.doesNotThrow(() =>
+    manage({ action: 'deleteTopic', subjectId: subId, topicId }, teacherSena)
+  );
+  const subAfter = JSON.parse(
+    (db().prepare('SELECT data FROM subjects WHERE id=?').get(subId) as { data: string }).data
+  );
+  assert.equal(subAfter.topics.length, 0);
+  assert.equal(readLesson(lessonId), undefined);
+});
+
+test('permite eliminar materias solo a administradores con limpieza completa', async () => {
+  const teacherSena = login({ username: 'docente.sena', password: 'ClaveSena-2026' });
+  const inst = (db().prepare('SELECT id FROM institutions LIMIT 1').get() as { id: string }).id;
+
+  manage(
+    { action: 'subject', institutionId: inst, name: 'Materia a Borrar Admin', code: 'DELADM1' },
+    teacher
+  );
+  const allSubs = db().prepare('SELECT id, data FROM subjects').all() as {
+    id: string;
+    data: string;
+  }[];
+  const sub = allSubs.find((s) => JSON.parse(s.data).code === 'DELADM1')!;
+  const subId = sub.id;
+
+  // Docente intenta borrar materia -> prohibido
+  assert.throws(
+    () => manage({ action: 'deleteSubject', subjectId: subId }, teacherSena),
+    /Solo los administradores pueden eliminar materias/
+  );
+
+  // Admin (teacher tiene rol admin) sí puede borrar la materia
+  assert.doesNotThrow(() => manage({ action: 'deleteSubject', subjectId: subId }, teacher));
+  assert.equal(db().prepare('SELECT 1 FROM subjects WHERE id=?').get(subId), undefined);
+});

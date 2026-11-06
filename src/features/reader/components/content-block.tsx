@@ -17,7 +17,6 @@ import {
   ZoomIn,
   ZoomOut,
   RotateCcw,
-  Download,
   X,
   Maximize2,
 } from 'lucide-react';
@@ -178,30 +177,6 @@ function Figure({ block }: { block: Block }) {
             <ZoomIn size={13} />
             Acercar
           </button>
-          {block.asset && (
-            <a
-              href={block.asset}
-              download
-              className="image-lightbox-btn"
-              title="Descargar imagen"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <Download size={13} />
-              Descargar
-            </a>
-          )}
-          {isDiagram && (
-            <a
-              href="https://tikz.dev/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="image-lightbox-btn"
-              title="Abrir en TikZ.dev"
-              onClick={(e) => e.stopPropagation()}
-            >
-              TikZ.dev <ExternalLink size={11} />
-            </a>
-          )}
           <button
             type="button"
             className="image-lightbox-btn"
@@ -238,6 +213,7 @@ function Figure({ block }: { block: Block }) {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
+            width: '100%',
           }}
         >
           {block.asset && !failed ? (
