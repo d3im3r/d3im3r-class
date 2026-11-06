@@ -67,24 +67,6 @@ export function createUser(
       )
       .catch((e) => console.error('PG create user err:', e.message));
   }
-  if (role === 'student') {
-    const subjects = db().prepare('SELECT id FROM subjects').all() as { id: string }[];
-    for (const s of subjects) {
-      db()
-        .prepare(
-          'INSERT OR IGNORE INTO subject_bans(user_id,subject_id,reason,banned_at) VALUES (?,?,?,?)'
-        )
-        .run(user.id, s.id, 'Esperando autorización del docente', new Date().toISOString());
-      if (pool) {
-        pool
-          .query(
-            'INSERT INTO subject_bans(user_id,subject_id,reason,banned_at) VALUES ($1,$2,$3,$4) ON CONFLICT DO NOTHING',
-            [user.id, s.id, 'Esperando autorización del docente', new Date().toISOString()]
-          )
-          .catch(() => {});
-      }
-    }
-  }
   return user;
 }
 export async function needsSetup(): Promise<boolean> {
@@ -208,16 +190,6 @@ export async function currentUser(): Promise<User | null> {
         db()
           .prepare('INSERT OR IGNORE INTO users VALUES (?,?,?,?,?)')
           .run(u.id, u.name, uname, 'google-oauth', role);
-        if (role === 'student') {
-          const subjects = db().prepare('SELECT id FROM subjects').all() as { id: string }[];
-          for (const s of subjects) {
-            db()
-              .prepare(
-                'INSERT OR IGNORE INTO subject_bans(user_id,subject_id,reason,banned_at) VALUES (?,?,?,?)'
-              )
-              .run(u.id, s.id, 'Esperando autorización del docente', new Date().toISOString());
-          }
-        }
       }
       return {
         id: u.id,

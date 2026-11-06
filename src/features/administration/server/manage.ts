@@ -506,6 +506,12 @@ export function manage(input: Record<string, unknown>, actor?: User) {
                     [userId, row.subject_id]
                   )
                   .catch(console.error);
+                pool
+                  .query('DELETE FROM subject_bans WHERE user_id=$1 AND subject_id=$2', [
+                    userId,
+                    row.subject_id,
+                  ])
+                  .catch(console.error);
               }
             })
             .catch(console.error);

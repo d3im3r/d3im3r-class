@@ -73,6 +73,8 @@ export async function syncFromPostgres(force = false) {
       'enrollments', COALESCE((SELECT json_agg(e) FROM enrollments e), '[]'::json),
       'institution_members', COALESCE((SELECT json_agg(im) FROM institution_members im), '[]'::json),
       'subject_bans', COALESCE((SELECT json_agg(b) FROM subject_bans b), '[]'::json),
+      'subject_invites', COALESCE((SELECT json_agg(si) FROM subject_invites si), '[]'::json),
+      'subject_join_requests', COALESCE((SELECT json_agg(sjr) FROM subject_join_requests sjr), '[]'::json),
       'progress', COALESCE((SELECT json_agg(p) FROM progress p), '[]'::json),
       'resources', COALESCE((SELECT json_agg(r) FROM resources r), '[]'::json)
     ) as state;
@@ -239,12 +241,33 @@ export async function syncFromPostgres(force = false) {
         }
       }
       if (Array.isArray(state.subject_bans)) {
+        sql.prepare('DELETE FROM subject_bans').run();
         for (const b of state.subject_bans) {
           sql
             .prepare(
               'INSERT INTO subject_bans(user_id,subject_id,reason,banned_at) VALUES (?,?,?,?) ON CONFLICT(user_id,subject_id) DO UPDATE SET reason=excluded.reason,banned_at=excluded.banned_at'
             )
             .run(b.user_id, b.subject_id, b.reason, b.banned_at);
+        }
+      }
+      if (Array.isArray(state.subject_invites)) {
+        sql.prepare('DELETE FROM subject_invites').run();
+        for (const si of state.subject_invites) {
+          sql
+            .prepare(
+              'INSERT INTO subject_invites(token,subject_id,created_at) VALUES (?,?,?) ON CONFLICT(token) DO UPDATE SET subject_id=excluded.subject_id,created_at=excluded.created_at'
+            )
+            .run(si.token, si.subject_id, si.created_at);
+        }
+      }
+      if (Array.isArray(state.subject_join_requests)) {
+        sql.prepare('DELETE FROM subject_join_requests').run();
+        for (const sjr of state.subject_join_requests) {
+          sql
+            .prepare(
+              'INSERT INTO subject_join_requests(id,subject_id,user_id,status,created_at) VALUES (?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET status=excluded.status'
+            )
+            .run(sjr.id, sjr.subject_id, sjr.user_id, sjr.status, sjr.created_at);
         }
       }
       if (Array.isArray(state.progress)) {

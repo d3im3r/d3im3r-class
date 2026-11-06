@@ -1,11 +1,17 @@
 import { currentUser, errorResponse, AppError } from '@/features/auth/server/auth';
-import { db } from '@/features/administration/server/database';
+import {
+  db,
+  syncFromPostgres,
+  getPgPool,
+  flushPg,
+} from '@/features/administration/server/database';
 import { randomUUID } from 'node:crypto';
 
 export const runtime = 'nodejs';
 
 export async function GET(request: Request, { params }: { params: Promise<{ token: string }> }) {
   try {
+    await syncFromPostgres();
     const { token } = await params;
     const invite = db()
       .prepare(
@@ -76,6 +82,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ toke
 
 export async function POST(request: Request, { params }: { params: Promise<{ token: string }> }) {
   try {
+    await syncFromPostgres();
     const { token } = await params;
     const invite = db()
       .prepare('SELECT subject_id FROM subject_invites WHERE token=?')
@@ -120,11 +127,23 @@ export async function POST(request: Request, { params }: { params: Promise<{ tok
     }
 
     const reqId = randomUUID();
+    const nowIso = new Date().toISOString();
     db()
       .prepare(
         'INSERT INTO subject_join_requests(id,subject_id,user_id,status,created_at) VALUES (?,?,?,?,?)'
       )
-      .run(reqId, invite.subject_id, user.id, 'pending', new Date().toISOString());
+      .run(reqId, invite.subject_id, user.id, 'pending', nowIso);
+
+    const pool = getPgPool();
+    if (pool) {
+      pool
+        .query(
+          'INSERT INTO subject_join_requests(id,subject_id,user_id,status,created_at) VALUES ($1,$2,$3,$4,$5) ON CONFLICT(subject_id,user_id) DO UPDATE SET status=EXCLUDED.status',
+          [reqId, invite.subject_id, user.id, 'pending', nowIso]
+        )
+        .catch(console.error);
+    }
+    await flushPg();
 
     return Response.json({
       ok: true,
