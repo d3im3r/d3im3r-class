@@ -521,3 +521,140 @@
   font-style: italic;
   padding: 4px 0;
 }
+
+/* ==========================================================================
+   Full Responsiveness: Móviles (320px-650px) y Tablets (651px-1024px)
+   ========================================================================== */
+
+/* Fórmulas matemáticas KaTeX seguras contra desbordamiento horizontal */
+.math-block,
+.katex-display {
+  max-width: 100% !important;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  -webkit-overflow-scrolling: touch !important;
+}
+
+/* Lightbox visor de diagramas e ilustraciones */
+.image-lightbox-dialog {
+  width: 100vw;
+  width: 100dvw;
+  height: 100vh;
+  height: 100dvh;
+}
+
+@media (max-width: 650px) {
+  /* Toolbar del bloque de código interactivo */
+  .code-toolbar {
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+    padding: 8px 10px !important;
+  }
+  .code-toolbar > div {
+    flex-wrap: wrap !important;
+    gap: 6px !important;
+  }
+  .code-kbd {
+    display: none !important;
+  }
+  .code-tabs {
+    flex-wrap: wrap !important;
+  }
+  .code-tab-btn {
+    padding: 3px 6px !important;
+    font-size: 10px !important;
+  }
+  .code-run-btn {
+    padding: 5px 10px !important;
+    font-size: 11px !important;
+  }
+
+  /* Consola de ejecución en pantallas pequeñas */
+  .code-console-header {
+    padding: 6px 10px !important;
+    flex-wrap: wrap !important;
+    gap: 6px !important;
+  }
+  .code-console-body {
+    padding: 8px 10px !important;
+    max-height: 200px !important;
+  }
+  .code-console-text {
+    font-size: 11px !important;
+    word-break: break-word !important;
+    overflow-wrap: anywhere !important;
+  }
+  .html-preview-container {
+    min-height: 180px !important;
+  }
+  .html-preview-frame {
+    height: 220px !important;
+  }
+
+  /* Lightbox en móviles */
+  .image-lightbox-header {
+    padding: 8px 12px !important;
+  }
+  .image-lightbox-title {
+    font-size: 11px !important;
+    max-width: 140px !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+  .lightbox-btn-label {
+    display: none !important;
+  }
+  .image-lightbox-btn {
+    padding: 6px 8px !important;
+  }
+  .image-lightbox-body {
+    padding: 8px 4px !important;
+  }
+  .image-lightbox-canvas img,
+  .image-lightbox-canvas svg,
+  .image-lightbox-canvas .tikz-render-target img,
+  .image-lightbox-canvas .tikz-render-target svg {
+    padding: 10px 6px !important;
+    max-width: 98vw !important;
+    max-height: 84dvh !important;
+  }
+
+  /* Pestañas de administración en móviles */
+  .admin-tabs {
+    overflow-x: auto !important;
+    flex-wrap: nowrap !important;
+    -webkit-overflow-scrolling: touch !important;
+    padding-bottom: 10px !important;
+  }
+  .admin-tabs button {
+    flex-shrink: 0 !important;
+    white-space: nowrap !important;
+  }
+
+  /* Control de acceso y lista de alumnos en móvil */
+  .admin-list > div {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 8px !important;
+  }
+  .admin-list > div > button {
+    align-self: flex-start !important;
+  }
+}
+
+@media (min-width: 651px) and (max-width: 1024px) {
+  /* Optimizaciones para Tablets */
+  .reader-page {
+    padding: 24px 20px 40px !important;
+  }
+  .continuous-reader .reading-document {
+    padding: 32px 28px !important;
+  }
+  .admin-page {
+    padding: 28px 20px 50px !important;
+  }
+  .code-toolbar {
+    flex-wrap: wrap !important;
+  }
+}

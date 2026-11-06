@@ -149,9 +149,10 @@ function Figure({ block }: { block: Block }) {
               setZoom((z) => Math.max(0.4, Number((z - 0.25).toFixed(2))));
             }}
             title="Reducir zoom"
+            aria-label="Reducir zoom"
           >
             <ZoomOut size={13} />
-            Alejar
+            <span className="lightbox-btn-label">Alejar</span>
           </button>
           <button
             type="button"
@@ -161,9 +162,10 @@ function Figure({ block }: { block: Block }) {
               setZoom(1);
             }}
             title="Restablecer tamaño original"
+            aria-label="Restablecer tamaño original (100%)"
           >
             <RotateCcw size={13} />
-            100%
+            <span className="lightbox-btn-label">100%</span>
           </button>
           <button
             type="button"
@@ -173,9 +175,10 @@ function Figure({ block }: { block: Block }) {
               setZoom((z) => Math.min(4, Number((z + 0.25).toFixed(2))));
             }}
             title="Aumentar zoom"
+            aria-label="Aumentar zoom"
           >
             <ZoomIn size={13} />
-            Acercar
+            <span className="lightbox-btn-label">Acercar</span>
           </button>
           <button
             type="button"
@@ -184,7 +187,8 @@ function Figure({ block }: { block: Block }) {
               e.stopPropagation();
               setLightbox(false);
             }}
-            title="Cerrar"
+            title="Cerrar visor"
+            aria-label="Cerrar visor"
           >
             <X size={14} />
           </button>
