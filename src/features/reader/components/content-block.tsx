@@ -364,6 +364,9 @@ export function ContentBlock({ block }: { block: Block }) {
       </div>
     );
   if (block.type === 'callout') {
+    const hasContent = !!block.content?.trim();
+    const hasChildren = !!block.children?.length;
+    if (!hasContent && !hasChildren) return null;
     const style = calloutStyle(block),
       Icon = style.icon;
     const title = block.title === block.variant ? style.title : (block.title ?? style.title);
@@ -374,8 +377,8 @@ export function ContentBlock({ block }: { block: Block }) {
           <strong>{title}</strong>
         </div>
         <div className="teaching-body">
-          {block.children?.length ? (
-            block.children.map((b, i) => <ContentBlock key={i} block={b} />)
+          {hasChildren ? (
+            block.children!.map((b, i) => <ContentBlock key={i} block={b} />)
           ) : (
             <RichText text={block.content} />
           )}

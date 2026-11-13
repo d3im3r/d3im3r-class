@@ -30,6 +30,7 @@ import type { Block, Frame, Institution, Lesson, Subject } from '@/features/cata
 import { slideUnits, groupSlidePages, type SlidePage } from '../presentation-pages';
 import { ResourceToolsContext } from '@/features/tools/components/resource-tools-context';
 import { ContentBlock } from './content-block';
+import { InlineText } from './rich-text';
 import { institutionLogo } from '@/features/catalog/model/institution-logo';
 export function LessonReader({
   lesson,
@@ -389,7 +390,9 @@ export function LessonReader({
                     }`}
                   >
                     <div className="reading-frame-title">
-                      <h3>{f.title}</h3>
+                      <h3>
+                        <InlineText text={f.title} />
+                      </h3>
                       <button
                         className={`read-marker ${completed.includes(f.id) ? 'is-read' : ''}`}
                         aria-label={`${completed.includes(f.id) ? 'Desmarcar' : 'Marcar como leído'}: ${f.title}`}
@@ -566,7 +569,9 @@ export function LessonReader({
                 <header className="slide-heading">
                   <div>
                     <span>{frame.section}</span>
-                    <h2>{frame.title}</h2>
+                    <h2>
+                      <InlineText text={frame.title} />
+                    </h2>
                   </div>
                   {institutionLogo(institution) && (
                     <img src={institutionLogo(institution)!} alt={institution.shortName} />

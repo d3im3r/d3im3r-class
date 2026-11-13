@@ -110,6 +110,13 @@ def clean_layout(text: str) -> str:
     if not text:
         return ''
     s = re.sub(r'(?<!\\)%[^\n]*', '', text)
+    # Beamer column environments y macros
+    s = re.sub(r'\\begin\{columns\}\s*(?:\[[^\]]*\])?', '', s)
+    s = re.sub(r'\\end\{columns\}', '', s)
+    s = re.sub(r'\\begin\{column\}\s*(?:\[[^\]]*\])?\s*\{[^}]*\}', '', s)
+    s = re.sub(r'\\end\{column\}', '', s)
+    s = re.sub(r'\\column\s*(?:\[[^\]]*\])?\s*\{[^}]*\}', '', s)
+    s = re.sub(r'\\column\b', '', s)
     s = re.sub(r'\\(?:vspace|hspace)\*?\{[^}]*\}', '', s)
     s = re.sub(r'\\(?:begin|end)\{(?:center|columns|column|minipage)\}(?:\[[^\]]*\])?(?:\{[^}]*\})?', '', s)
     s = re.sub(
@@ -118,6 +125,14 @@ def clean_layout(text: str) -> str:
         s
     )
     s = re.sub(r'\\texorpdfstring\{([^{}]*)\}\{([^{}]*)\}', r'\2', s)
+
+    # Remanentes de parámetros y anchos de columnas Beamer: [T], [t], [c], 0.48\textwidth, etc.
+    s = re.sub(r'(?m)^\s*\[[TtCcBb]\]\s*$', '', s)
+    s = re.sub(r'\[[TtCcBb]\]\s*(?=\d|\n|\\|\s|$)', '', s)
+    s = re.sub(r'\b\d+(?:\.\d+)?\\(?:textwidth|linewidth|columnwidth|paperwidth|paperheight)\b', '', s)
+    s = re.sub(r'\\(?:textwidth|linewidth|columnwidth|paperwidth|paperheight)\b', '', s)
+    s = re.sub(r'(?m)^\s*\d+\.\d+\s*$', '', s)
+
     return s.strip()
 
 def plain_text(text: str) -> str:
@@ -486,9 +501,10 @@ class LessonParser:
 
                 # --- B. Fórmulas Matemáticas de visualización ---
                 elif env_name in MATH_ENVS:
+                    clean_math = re.sub(r'\\pause\b', '', total_env).strip()
                     blocks.append({
                         "type": "math",
-                        "content": total_env,
+                        "content": clean_math,
                         "variant": "display"
                     })
 
@@ -527,13 +543,16 @@ class LessonParser:
                         title_callout = plain_text(t_val)
                         clean_body = clean_body[b_end:]
 
-                    blocks.append({
-                        "type": "callout",
-                        "title": title_callout,
-                        "variant": env_name,
-                        "content": clean_layout(clean_body),
-                        "children": self._parse_blocks(clean_body)
-                    })
+                    clean_content = clean_layout(clean_body)
+                    parsed_children = self._parse_blocks(clean_body)
+                    if clean_content or parsed_children:
+                        blocks.append({
+                            "type": "callout",
+                            "title": title_callout,
+                            "variant": env_name,
+                            "content": clean_content,
+                            "children": parsed_children
+                        })
 
                 # --- E. Listas (itemize / enumerate) ---
                 elif env_name in ['itemize', 'enumerate']:
@@ -576,13 +595,16 @@ class LessonParser:
                     temp_idx += 1
                 if temp_idx < len(source) and source[temp_idx] == '{':
                     body_val, next_cursor = find_closing_brace(source, temp_idx)
-                    blocks.append({
-                        "type": "callout",
-                        "title": title,
-                        "variant": callout_cmd,
-                        "content": clean_layout(body_val),
-                        "children": self._parse_blocks(body_val)
-                    })
+                    clean_content = clean_layout(body_val)
+                    parsed_children = self._parse_blocks(body_val)
+                    if clean_content or parsed_children:
+                        blocks.append({
+                            "type": "callout",
+                            "title": title,
+                            "variant": callout_cmd,
+                            "content": clean_content,
+                            "children": parsed_children
+                        })
                     cursor = next_cursor
                 else:
                     cursor = temp_idx
@@ -609,6 +631,7 @@ class LessonParser:
                 closing_idx = source.find(close_delim, end_pos)
                 if closing_idx != -1:
                     math_content = source[end_pos:closing_idx].strip()
+                    math_content = re.sub(r'\\pause\b', '', math_content).strip()
                     blocks.append({
                         "type": "math",
                         "content": math_content,

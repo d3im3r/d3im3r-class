@@ -27,13 +27,24 @@ export function group(source: string, start: number, open = '{', close = '}') {
 export function cleanLayout(input: string) {
   return input
     .replace(/(?<!\\)%[^\n]*/g, '')
+    .replace(/\\begin\{columns\}\s*(?:\[[^\]]*\])?/g, '')
+    .replace(/\\end\{columns\}/g, '')
+    .replace(/\\begin\{column\}\s*(?:\[[^\]]*\])?\s*\{[^}]*\}/g, '')
+    .replace(/\\end\{column\}/g, '')
+    .replace(/\\column\s*(?:\[[^\]]*\])?\s*\{[^}]*\}/g, '')
+    .replace(/\\column\b/g, '')
     .replace(/\\(?:vspace|hspace)\*?\{[^}]*\}/g, '')
-    .replace(/\\(?:begin|end)\{(?:center|columns|column)\}(?:\[[^\]]*\])?(?:\{[^}]*\})?/g, '')
+    .replace(/\\(?:begin|end)\{(?:center|columns|column|minipage)\}(?:\[[^\]]*\])?(?:\{[^}]*\})?/g, '')
     .replace(
-      /\\(?:centering|tiny|small|large|Large|LARGE|huge|Huge|footnotesize|scriptsize|normalsize|medskip|bigskip|pause)\b/g,
+      /\\(?:centering|tiny|small|large|Large|LARGE|huge|Huge|footnotesize|scriptsize|normalsize|medskip|bigskip|smallskip|pause)\b/g,
       ''
     )
     .replace(/\\texorpdfstring\{([^{}]*)\}\{([^{}]*)\}/g, '$2')
+    .replace(/^\s*\[[TtCcBb]\]\s*$/gm, '')
+    .replace(/\[[TtCcBb]\]\s*(?=\d|\n|\\|\s|$)/g, '')
+    .replace(/\b\d+(?:\.\d+)?\\(?:textwidth|linewidth|columnwidth|paperwidth|paperheight)\b/g, '')
+    .replace(/\\(?:textwidth|linewidth|columnwidth|paperwidth|paperheight)\b/g, '')
+    .replace(/^\s*\d+\.\d+\s*$/gm, '')
     .trim();
 }
 export function plain(input: string): string {
@@ -118,7 +129,8 @@ export function parseBlocks(source: string, diagnostics: Set<string>): Block[] {
       if (env === 'tikzpicture')
         blocks.push({ type: 'diagram', content: source.slice(m.index, stop.end) });
       else if (mathEnvs.has(env)) {
-        blocks.push({ type: 'math', content: source.slice(m.index, stop.end), variant: 'display' });
+        const mathContent = source.slice(m.index, stop.end).replace(/\\pause\b/g, '').trim();
+        blocks.push({ type: 'math', content: mathContent, variant: 'display' });
       } else if (env === 'algorithm' || env === 'algorithmic') {
         body = body.replace(/^\s*\[[^\]]*\]/, '');
         let title = 'Algoritmo';
@@ -169,13 +181,17 @@ export function parseBlocks(source: string, diagnostics: Set<string>): Block[] {
           title = plain(g.value);
           body = body.slice(g.end);
         }
-        blocks.push({
-          type: 'callout',
-          title,
-          variant: env,
-          content: cleanLayout(body),
-          children: parseBlocks(body, diagnostics),
-        });
+        const cleanContent = cleanLayout(body);
+        const children = parseBlocks(body, diagnostics);
+        if (cleanContent || children.length) {
+          blocks.push({
+            type: 'callout',
+            title,
+            variant: env,
+            content: cleanContent,
+            children,
+          });
+        }
       } else {
         let language = codeLanguages[env.replace(/codedark$|code$/, '')] ?? 'text';
         if (env === 'minted') {
@@ -211,13 +227,17 @@ export function parseBlocks(source: string, diagnostics: Set<string>): Block[] {
       while (i < source.length && /\s/.test(source[i])) i++;
       if (source[i] === '{') {
         const g = group(source, i);
-        blocks.push({
-          type: 'callout',
-          title,
-          variant: m[2],
-          content: cleanLayout(g.value),
-          children: parseBlocks(g.value, diagnostics),
-        });
+        const cleanContent = cleanLayout(g.value);
+        const children = parseBlocks(g.value, diagnostics);
+        if (cleanContent || children.length) {
+          blocks.push({
+            type: 'callout',
+            title,
+            variant: m[2],
+            content: cleanContent,
+            children,
+          });
+        }
         end = g.end;
       }
     } else if (/smartimage|includegraphics/.test(m[0])) {
@@ -234,7 +254,8 @@ export function parseBlocks(source: string, diagnostics: Set<string>): Block[] {
       const closing = m[0] === '\\[' ? '\\]' : m[0],
         stop = source.indexOf(closing, end);
       if (stop >= 0) {
-        blocks.push({ type: 'math', content: source.slice(end, stop).trim(), variant: 'display' });
+        const mathContent = source.slice(end, stop).replace(/\\pause\b/g, '').trim();
+        blocks.push({ type: 'math', content: mathContent, variant: 'display' });
         end = stop + closing.length;
       }
     }

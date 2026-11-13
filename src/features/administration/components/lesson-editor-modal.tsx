@@ -26,6 +26,7 @@ import {
 import { Button } from '@/components/ui/button';
 import type { Frame, Block } from '@/features/catalog/model/types';
 import { ContentBlock } from '@/features/reader/components/content-block';
+import { InlineText } from '@/features/reader/components/rich-text';
 
 type LessonEditorProps = {
   initialTitle: string;
@@ -997,7 +998,7 @@ export function LessonEditorModal({
                   <span style={{ fontSize: '10px', color: '#94a3b8' }}>Vista previa en vivo</span>
                 </div>
                 <h2 style={{ fontSize: '24px', fontWeight: 700, margin: '8px 0 0', color: '#0f172a' }}>
-                  {currentFrame.title || 'Sin título'}
+                  <InlineText text={currentFrame.title || 'Sin título'} />
                 </h2>
               </div>
 

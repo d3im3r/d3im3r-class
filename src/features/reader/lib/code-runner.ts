@@ -159,6 +159,46 @@ export async function runPython(
     onStatusChange?.('Cargando Python...');
     const pyodide = await getPyodide(onStatusChange);
 
+    // Cargar NumPy automáticamente si el código lo requiere o usa matrices
+    const needsNumpy = /\b(np|numpy|Rx|Ry|Rz|linalg)\b/.test(code);
+    if (needsNumpy) {
+      onStatusChange?.('Cargando librería científica NumPy...');
+      if (typeof pyodide.loadPackage === 'function') {
+        try {
+          await pyodide.loadPackage('numpy');
+        } catch (e) {
+          console.warn('No se pudo cargar numpy desde CDN:', e);
+        }
+      }
+    }
+
+    // Inyectar utilidades de rotación robótica si el código las invoca
+    const needsRotations = /\b(Rx|Ry|Rz)\s*\(/.test(code);
+    if (needsRotations) {
+      const rotationPreamble = `
+import numpy as np
+import math
+
+def Rx(theta_deg):
+    rad = np.radians(theta_deg)
+    c, s = np.cos(rad), np.sin(rad)
+    return np.array([[1.0, 0.0, 0.0], [0.0, c, -s], [0.0, s, c]])
+
+def Ry(theta_deg):
+    rad = np.radians(theta_deg)
+    c, s = np.cos(rad), np.sin(rad)
+    return np.array([[c, 0.0, s], [0.0, 1.0, 0.0], [-s, 0.0, c]])
+
+def Rz(theta_deg):
+    rad = np.radians(theta_deg)
+    c, s = np.cos(rad), np.sin(rad)
+    return np.array([[c, -s, 0.0], [s, c, 0.0], [0.0, 0.0, 1.0]])
+`;
+      await pyodide.runPythonAsync(rotationPreamble);
+    } else if (needsNumpy && !/\bimport\s+numpy\b/.test(code)) {
+      await pyodide.runPythonAsync('import numpy as np\nimport math\n');
+    }
+
     onStatusChange?.('Ejecutando script Python...');
 
     // Redirigir stdout y stderr a nuestro capturador
