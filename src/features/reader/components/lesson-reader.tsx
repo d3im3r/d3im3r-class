@@ -27,7 +27,6 @@ import { Button } from '@/components/ui/button';
 import { BrandSignature } from '@/features/theme/brand-signature';
 import { ThemeControls } from '@/features/theme/theme-toggle';
 import type { Block, Frame, Institution, Lesson, Subject } from '@/features/catalog/model/types';
-import { slideUnits, groupSlidePages, type SlidePage } from '../presentation-pages';
 import { ResourceToolsContext } from '@/features/tools/components/resource-tools-context';
 import { ContentBlock } from './content-block';
 import { InlineText } from './rich-text';
@@ -57,26 +56,13 @@ export function LessonReader({
     indexToggle = useRef<HTMLButtonElement>(null);
   const [presenting, setPresenting] = useState(false),
     [fullscreen, setFullscreen] = useState(false);
-  const [compactSlide, setCompactSlide] = useState(false),
-    [part, setPart] = useState(0),
-    [pages, setPages] = useState<SlidePage[]>([{ start: 0, end: 100000, offset: 0 }]);
-  const lastPart = useRef(false),
-    preloaded = useRef(new Set<string>());
+  const preloaded = useRef(new Set<string>());
   const slideContent = useRef<HTMLDivElement>(null);
   const dialog = useRef<HTMLDialogElement>(null),
     returnFocus = useRef<HTMLButtonElement>(null),
     initial = useRef(frameIndex);
   const current = Math.min(frameIndex, lesson.frames.length - 1),
     frame = lesson.frames[current];
-  const units = useMemo(() => slideUnits(frame.blocks, compactSlide), [frame, compactSlide]);
-  const page = pages[Math.min(part, pages.length - 1)];
-  useEffect(() => {
-    const media = matchMedia('(max-width:650px)');
-    const update = () => setCompactSlide(media.matches);
-    update();
-    media.addEventListener('change', update);
-    return () => media.removeEventListener('change', update);
-  }, []);
   const sections = lesson.frames.reduce<
     { name: string; frames: { frame: Frame; index: number }[] }[]
   >((groups, f, index) => {
@@ -162,16 +148,11 @@ export function LessonReader({
     }
   }, []);
   const nextSlide = useCallback(() => {
-    if (part < pages.length - 1) setPart((p) => p + 1);
-    else change(current + 1);
-  }, [part, pages.length, current, change]);
+    if (current < lesson.frames.length - 1) change(current + 1);
+  }, [current, lesson.frames.length, change]);
   const previousSlide = useCallback(() => {
-    if (part > 0) setPart((p) => p - 1);
-    else if (current > 0) {
-      lastPart.current = true;
-      change(current - 1);
-    }
-  }, [part, current, change]);
+    if (current > 0) change(current - 1);
+  }, [current, change]);
   useEffect(() => {
     if (!presenting) return;
     const onKey = (e: KeyboardEvent) => {
@@ -191,72 +172,66 @@ export function LessonReader({
       }
       if (e.key === 'Home') {
         e.preventDefault();
-        setPart(0);
         change(0);
       }
       if (e.key === 'End') {
         e.preventDefault();
-        if (current === lesson.frames.length - 1) setPart(pages.length - 1);
-        else {
-          lastPart.current = true;
-          change(lesson.frames.length - 1);
-        }
+        change(lesson.frames.length - 1);
       }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [presenting, nextSlide, previousSlide, change, lesson.frames.length, current, pages.length]);
+  }, [presenting, nextSlide, previousSlide, change, lesson.frames.length]);
   useLayoutEffect(() => {
     if (!presenting) return;
     const container = slideContent.current,
       inner = container?.firstElementChild as HTMLElement | null;
     if (!container || !inner) return;
     let scheduled = 0,
-      first = true,
       active = true;
     const measure = () => {
       cancelAnimationFrame(scheduled);
       scheduled = requestAnimationFrame(() => {
         if (!active) return;
-        const padding = getComputedStyle(container),
-          space =
-            container.clientHeight -
-            parseFloat(padding.paddingTop) -
-            parseFloat(padding.paddingBottom) -
-            8,
-          width =
-            container.clientWidth -
-            parseFloat(padding.paddingLeft) -
-            parseFloat(padding.paddingRight);
+        const padding = getComputedStyle(container);
+        const space =
+          container.clientHeight -
+          parseFloat(padding.paddingTop || '0') -
+          parseFloat(padding.paddingBottom || '0');
+        const width =
+          container.clientWidth -
+          parseFloat(padding.paddingLeft || '0') -
+          parseFloat(padding.paddingRight || '0');
         if (space <= 0 || width <= 0) return;
+
         container.style.setProperty('--slide-space', `${space}px`);
-        const elements = Array.from(inner.children) as HTMLElement[];
-        for (const unit of elements) {
-          unit.style.zoom = '1';
-          const r = unit.getBoundingClientRect(),
-            naturalWidth = Math.max(unit.scrollWidth, unit.clientWidth, r.width),
-            scale = Math.min(1, space / Math.max(1, r.height), width / Math.max(1, naturalWidth));
-          if (scale < 0.998) {
-            unit.style.zoom = String(Math.max(0.5, scale * 0.99));
-            const after = unit.getBoundingClientRect();
-            if (after.height > space)
-              unit.style.zoom = String(
-                Math.max(0.5, Number(unit.style.zoom) * (space / after.height) * 0.99)
-              );
-          }
+
+        // Restablecer dimensiones naturales para medir la altura total de todos los bloques
+        inner.style.transform = 'none';
+        inner.style.width = '100%';
+        inner.style.maxWidth = '100%';
+
+        const naturalHeight = inner.scrollHeight;
+        const naturalWidth = inner.scrollWidth;
+
+        // Auto-escala proporcional si los elementos superan el alto o ancho de la diapositiva
+        const scaleY = (space - 8) / Math.max(1, naturalHeight);
+        const scaleX = width / Math.max(1, naturalWidth);
+        const rawScale = Math.min(scaleY, scaleX);
+
+        if (rawScale < 0.99) {
+          // Escala suavizada con límite inferior legible para garantizar que todos los elementos se vean juntos
+          const scale = Math.max(0.58, rawScale * 0.98);
+          inner.style.transform = `scale(${scale})`;
+          inner.style.transformOrigin = 'top center';
+          inner.style.width = `${100 / scale}%`;
+          inner.style.maxWidth = `${100 / scale}%`;
+        } else {
+          inner.style.transform = 'none';
+          inner.style.transformOrigin = 'top center';
+          inner.style.width = '100%';
+          inner.style.maxWidth = '100%';
         }
-        const top = inner.getBoundingClientRect().top;
-        const metrics = elements.map((unit) => ({
-          top: unit.getBoundingClientRect().top - top,
-          height: unit.getBoundingClientRect().height,
-        }));
-        const grouped = groupSlidePages(metrics, space);
-        setPages(grouped);
-        if (first) {
-          setPart(lastPart.current ? grouped.length - 1 : 0);
-          lastPart.current = false;
-          first = false;
-        } else setPart((p) => Math.min(p, grouped.length - 1));
       });
     };
     const observer = new ResizeObserver(measure);
@@ -265,7 +240,7 @@ export function LessonReader({
     container.addEventListener('load', measure, true);
     document.addEventListener('fullscreenchange', measure);
     measure();
-    document.fonts.ready.then(measure);
+    document.fonts?.ready?.then(measure);
     return () => {
       active = false;
       cancelAnimationFrame(scheduled);
@@ -273,7 +248,7 @@ export function LessonReader({
       container.removeEventListener('load', measure, true);
       document.removeEventListener('fullscreenchange', measure);
     };
-  }, [presenting, current, units]);
+  }, [presenting, current, frame]);
   useEffect(() => {
     if (!presenting) return;
     const previous = document.body.style.overflow;
@@ -577,20 +552,14 @@ export function LessonReader({
                     <img src={institutionLogo(institution)!} alt={institution.shortName} />
                   )}
                 </header>
-                <div className="slide-content" ref={slideContent}>
-                  <div
-                    className="slide-content-inner"
-                    style={{ transform: `translateY(-${page.offset}px)` }}
-                  >
-                    {units.map((b, i) => (
-                      <div
-                        className="slide-unit"
-                        key={i}
-                        aria-hidden={i < page.start || i >= page.end}
-                        style={{
-                          visibility: i >= page.start && i < page.end ? 'visible' : 'hidden',
-                        }}
-                      >
+                <div
+                  className="slide-content"
+                  ref={slideContent}
+                  data-has-multiple={frame.blocks.length > 1}
+                >
+                  <div className="slide-content-inner">
+                    {frame.blocks.map((b, i) => (
+                      <div className="slide-unit" key={i}>
                         <ContentBlock block={b} />
                       </div>
                     ))}
@@ -602,7 +571,6 @@ export function LessonReader({
                   </span>
                   <span>
                     {current + 1} / {lesson.frames.length}
-                    {pages.length > 1 && ` · Parte ${part + 1} de ${pages.length}`}
                   </span>
                 </footer>
               </article>
@@ -626,7 +594,7 @@ export function LessonReader({
               <div>
                 <Button
                   variant="ghost"
-                  disabled={current === 0 && part === 0}
+                  disabled={current === 0}
                   onClick={previousSlide}
                   aria-label="Diapositiva anterior"
                 >
@@ -638,10 +606,7 @@ export function LessonReader({
                   <select
                     aria-label="Ir a diapositiva"
                     value={current}
-                    onChange={(e) => {
-                      setPart(0);
-                      change(Number(e.target.value));
-                    }}
+                    onChange={(e) => change(Number(e.target.value))}
                   >
                     {lesson.frames.map((f, i) => (
                       <option key={f.id} value={i}>
@@ -652,7 +617,7 @@ export function LessonReader({
                 </label>
                 <Button
                   variant="ghost"
-                  disabled={current === lesson.frames.length - 1 && part === pages.length - 1}
+                  disabled={current === lesson.frames.length - 1}
                   onClick={nextSlide}
                   aria-label="Diapositiva siguiente"
                 >
@@ -664,7 +629,7 @@ export function LessonReader({
             <div className="presentation-progress">
               <i
                 style={{
-                  width: `${((current + (part + 1) / pages.length) / lesson.frames.length) * 100}%`,
+                  width: `${((current + 1) / lesson.frames.length) * 100}%`,
                 }}
               />
             </div>

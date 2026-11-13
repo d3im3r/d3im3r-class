@@ -326,9 +326,44 @@
   width: 100% !important;
   max-width: min(100%, 1240px) !important;
   height: auto !important;
-  max-height: calc(var(--slide-space, 65vh) * 0.85) !important;
+  max-height: calc(var(--slide-space, 65vh) * 0.82) !important;
   object-fit: contain !important;
   cursor: zoom-in !important;
+}
+
+/* Cuando un frame contiene múltiples elementos (texto, listas y diagramas juntos en un solo slide) */
+.slide-content[data-has-multiple="true"] .diagram-figure,
+.slide-content[data-has-multiple="true"] .lesson-figure {
+  margin: 6px auto !important;
+  padding: 4px 0 !important;
+}
+
+.slide-content[data-has-multiple="true"] .diagram-figure img,
+.slide-content[data-has-multiple="true"] .lesson-figure img,
+.slide-content[data-has-multiple="true"] .tikz-render-target svg {
+  max-height: calc(var(--slide-space, 65vh) * 0.46) !important;
+}
+
+.slide-content[data-has-multiple="true"] .teaching-block {
+  margin: 8px 0 !important;
+}
+
+.slide-content[data-has-multiple="true"] .lesson-list {
+  margin: 6px 0 10px !important;
+}
+
+.slide-content[data-has-multiple="true"] .lesson-list li {
+  margin: 2px 0 !important;
+}
+
+.slide-content[data-has-multiple="true"] .math-block {
+  margin: 8px 0 !important;
+}
+
+.slide-content {
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  scrollbar-gutter: stable;
 }
 
 /* ==========================================================================

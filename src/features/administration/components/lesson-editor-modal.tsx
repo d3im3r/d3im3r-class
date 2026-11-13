@@ -1103,8 +1103,16 @@ export function LessonEditorModal({
                         <h2><InlineText text={currentFrame.title || 'Sin título'} /></h2>
                       </div>
                     </div>
-                    <div className="slide-content" style={{ overflow: 'visible', padding: '24px clamp(20px, 3vw, 48px)' }}>
-                      <div className="slide-content-inner" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                    <div
+                      className="slide-content"
+                      data-has-multiple={currentFrame.blocks.length > 1}
+                      style={{
+                        padding: '18px clamp(16px, 3vw, 40px)',
+                        overflowY: 'auto',
+                        maxHeight: '68vh',
+                      }}
+                    >
+                      <div className="slide-content-inner" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                         {currentFrame.blocks.map((block, idx) => (
                           <ContentBlock key={idx} block={block} />
                         ))}
