@@ -610,7 +610,7 @@ export function LessonReader({
                   >
                     {lesson.frames.map((f, i) => (
                       <option key={f.id} value={i}>
-                        {i + 1} · {f.title}
+                        {i + 1} · {f.title.replace(/\$([^\$]+)\$/g, '$1')}
                       </option>
                     ))}
                   </select>

@@ -45,6 +45,7 @@ export function cleanLayout(input: string) {
     .replace(/\b\d+(?:\.\d+)?\\(?:textwidth|linewidth|columnwidth|paperwidth|paperheight)\b/g, '')
     .replace(/\\(?:textwidth|linewidth|columnwidth|paperwidth|paperheight)\b/g, '')
     .replace(/^\s*\d+\.\d+\s*$/gm, '')
+    .replace(/\{[ \t\r\n]*\}/g, '')
     .trim();
 }
 export function plain(input: string): string {
@@ -112,7 +113,9 @@ export function parseBlocks(source: string, diagnostics: Set<string>): Block[] {
   let m;
   const addText = (s: string) => {
     const content = cleanLayout(s);
-    if (content) blocks.push({ type: 'text', content });
+    if (content && content !== '{}' && content !== '[]' && content !== '()') {
+      blocks.push({ type: 'text', content });
+    }
   };
   while ((m = token.exec(source))) {
     addText(source.slice(cursor, m.index));

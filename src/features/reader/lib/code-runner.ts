@@ -172,11 +172,12 @@ export async function runPython(
       }
     }
 
-    // Inyectar utilidades de rotación robótica si el código las invoca
+    // Inyectar utilidades de rotación robótica y NumPy si el código las invoca
     const needsRotations = /\b(Rx|Ry|Rz)\s*\(/.test(code);
+    let finalCode = code;
+
     if (needsRotations) {
-      const rotationPreamble = `
-import numpy as np
+      const rotationPreamble = `import numpy as np
 import math
 
 def Rx(theta_deg):
@@ -193,10 +194,10 @@ def Rz(theta_deg):
     rad = np.radians(theta_deg)
     c, s = np.cos(rad), np.sin(rad)
     return np.array([[c, -s, 0.0], [s, c, 0.0], [0.0, 0.0, 1.0]])
-`;
-      await pyodide.runPythonAsync(rotationPreamble);
-    } else if (needsNumpy && !/\bimport\s+numpy\b/.test(code)) {
-      await pyodide.runPythonAsync('import numpy as np\nimport math\n');
+\n`;
+      finalCode = rotationPreamble + finalCode;
+    } else if (needsNumpy && !/\bimport\s+numpy\b/.test(finalCode)) {
+      finalCode = 'import numpy as np\nimport math\n\n' + finalCode;
     }
 
     onStatusChange?.('Ejecutando script Python...');
@@ -216,7 +217,7 @@ def Rz(theta_deg):
       },
     });
 
-    const result = await pyodide.runPythonAsync(code);
+    const result = await pyodide.runPythonAsync(finalCode);
 
     if (result !== undefined && result !== null && String(result) !== 'None') {
       output.push(String(result));

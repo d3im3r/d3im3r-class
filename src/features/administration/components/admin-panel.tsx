@@ -1375,18 +1375,16 @@ export function AdminPanel({
                     <a
                       href="/tools/export_lesson.py"
                       download="export_lesson.py"
+                      className="ui-button"
+                      data-variant="outline"
                       style={{
                         display: 'inline-flex',
                         alignItems: 'center',
                         gap: '6px',
-                        background: '#1e293b',
-                        color: '#f8fafc',
                         padding: '6px 12px',
-                        borderRadius: '6px',
                         fontSize: '11px',
                         fontWeight: 600,
                         textDecoration: 'none',
-                        border: '1px solid rgba(255, 255, 255, 0.15)',
                       }}
                     >
                       <Download size={13} /> Descargar exportador local (export_lesson.py)

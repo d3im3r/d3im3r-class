@@ -132,8 +132,10 @@ def clean_layout(text: str) -> str:
     s = re.sub(r'\b\d+(?:\.\d+)?\\(?:textwidth|linewidth|columnwidth|paperwidth|paperheight)\b', '', s)
     s = re.sub(r'\\(?:textwidth|linewidth|columnwidth|paperwidth|paperheight)\b', '', s)
     s = re.sub(r'(?m)^\s*\d+\.\d+\s*$', '', s)
+    s = re.sub(r'\{[ \t\r\n]*\}', '', s)
 
-    return s.strip()
+    res = s.strip()
+    return '' if res in ['{}', '[]', '()'] else res
 
 def plain_text(text: str) -> str:
     """Convierte texto enriquecido con macros LaTeX a texto plano legible."""
@@ -572,13 +574,34 @@ class LessonParser:
                         "rows": rows
                     })
 
+                # --- G. Columnas y mini-páginas Beamer ---
+                elif env_name in ['columns', 'column', 'minipage']:
+                    clean_body = body
+                    # Quitar [opt] inicial
+                    m_opt = re.match(r'^\s*\[[^\]]*\]', clean_body)
+                    if m_opt:
+                        clean_body = clean_body[m_opt.end():]
+                    # Quitar {arg} inicial (ej. {0.48\textwidth})
+                    m_arg = re.match(r'^\s*\{[^{}]*\}', clean_body)
+                    if m_arg:
+                        clean_body = clean_body[m_arg.end():]
+                    nested = self._parse_blocks(clean_body)
+                    if nested:
+                        blocks.extend(nested)
+                    else:
+                        cleaned = clean_layout(clean_body)
+                        if cleaned and cleaned not in ['{}', '[]', '()']:
+                            blocks.append({"type": "text", "content": cleaned})
+
                 else:
                     # Contenedor genérico
                     nested = self._parse_blocks(body)
                     if nested:
                         blocks.extend(nested)
                     elif clean_layout(body):
-                        blocks.append({"type": "text", "content": clean_layout(body)})
+                        cleaned = clean_layout(body)
+                        if cleaned and cleaned not in ['{}', '[]', '()']:
+                            blocks.append({"type": "text", "content": cleaned})
 
                 cursor = stop[1]
 

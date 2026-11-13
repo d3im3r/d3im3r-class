@@ -305,12 +305,16 @@ function Figure({ block }: { block: Block }) {
 }
 export function ContentBlock({ block }: { block: Block }) {
   if (block.type === 'code') return <CodeBlock content={block.content} language={block.language} />;
-  if (block.type === 'math')
+  if (block.type === 'math') {
+    const cleanMath = (block.content || '')
+      .replace(/\\pause\b/g, '')
+      .replace(/\\label\{[^}]*\}/g, '')
+      .trim();
     return (
       <div
         className="math-block"
         dangerouslySetInnerHTML={{
-          __html: katex.renderToString(block.content, {
+          __html: katex.renderToString(cleanMath, {
             throwOnError: false,
             trust: false,
             displayMode: true,
@@ -318,6 +322,7 @@ export function ContentBlock({ block }: { block: Block }) {
         }}
       />
     );
+  }
   if (block.type === 'image' || block.type === 'diagram') return <Figure block={block} />;
   if (block.type === 'list') {
     const List = block.variant === 'enumerate' ? 'ol' : 'ul';
@@ -364,8 +369,14 @@ export function ContentBlock({ block }: { block: Block }) {
       </div>
     );
   if (block.type === 'callout') {
-    const hasContent = !!block.content?.trim();
-    const hasChildren = !!block.children?.length;
+    const hasContent = !!block.content?.trim() && block.content.trim() !== '{}';
+    const validChildren = block.children?.filter(
+      (c) =>
+        (c.content && c.content.trim() && c.content.trim() !== '{}') ||
+        (c.children && c.children.length > 0) ||
+        ['diagram', 'math', 'code', 'image', 'list', 'table'].includes(c.type)
+    );
+    const hasChildren = !!validChildren?.length;
     if (!hasContent && !hasChildren) return null;
     const style = calloutStyle(block),
       Icon = style.icon;
@@ -374,11 +385,13 @@ export function ContentBlock({ block }: { block: Block }) {
       <aside className={`teaching-block teaching-${style.kind}`}>
         <div className="teaching-title">
           <Icon size={19} />
-          <strong>{title}</strong>
+          <strong>
+            <InlineText text={title} />
+          </strong>
         </div>
         <div className="teaching-body">
           {hasChildren ? (
-            block.children!.map((b, i) => <ContentBlock key={i} block={b} />)
+            validChildren!.map((b, i) => <ContentBlock key={i} block={b} />)
           ) : (
             <RichText text={block.content} />
           )}

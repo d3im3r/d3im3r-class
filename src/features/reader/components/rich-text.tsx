@@ -2,11 +2,12 @@ import { Fragment, type ReactNode } from 'react';
 import katex from 'katex';
 import { group } from '@/features/latex-import/lib/parser';
 function MathInline({ source }: { source: string }) {
+  const clean = (source || '').replace(/\\pause\b/g, '').replace(/\\label\{[^}]*\}/g, '').trim();
   return (
     <span
       className="inline-math"
       dangerouslySetInnerHTML={{
-        __html: katex.renderToString(source, {
+        __html: katex.renderToString(clean, {
           throwOnError: false,
           trust: false,
           displayMode: false,
