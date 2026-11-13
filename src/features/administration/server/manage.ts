@@ -575,6 +575,65 @@ export function manage(input: Record<string, unknown>, actor?: User) {
         }
         break;
       }
+      case 'saveLesson': {
+        const subjectId = text(input.subjectId, 'Materia');
+        const topicId = text(input.topicId, 'Tema');
+        const subj = subject(subjectId);
+        if (actor && actor.role === 'teacher') {
+          const allowedSubs = userAccessibleSubjectIds(actor);
+          if (!allowedSubs || !allowedSubs.has(subjectId))
+            throw new AppError('No tienes permiso para gestionar clases de esta materia.', 403);
+        }
+        const title = text(input.title, 'Título de la clase', 150);
+        const subtitle =
+          typeof input.subtitle === 'string' ? input.subtitle.trim().slice(0, 200) : '';
+        const frames = Array.isArray(input.frames) ? input.frames : [];
+        if (!frames.length)
+          throw new AppError('La clase debe contener al menos un bloque de contenido.');
+
+        const existingId =
+          typeof input.lessonId === 'string' && input.lessonId.trim() ? input.lessonId.trim() : '';
+        const existing = existingId ? lessonRecord(existingId) : null;
+        const id = existing?.id ?? randomUUID();
+        const revision = (existing?.revision ?? 0) + 1;
+        const isPublish = input.publish === true;
+        const status: 'draft' | 'published' = isPublish ? 'published' : 'draft';
+        const reviewed = isPublish ? revision : 0;
+        const diagnostics = Array.isArray(input.diagnostics) ? input.diagnostics : [];
+
+        const l: Lesson = {
+          id,
+          title,
+          subtitle,
+          institutionId: subj.institutionId,
+          subjectId,
+          topicId,
+          source: existing ? (JSON.parse(existing.data) as Lesson).source || '' : '',
+          pdf: existing ? (JSON.parse(existing.data) as Lesson).pdf || '' : '',
+          frames,
+          diagnostics,
+          status,
+        };
+
+        db()
+          .prepare(
+            "INSERT INTO lessons(id,subject_id,status,revision,reviewed,data) VALUES (?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET status=excluded.status,revision=excluded.revision,reviewed=excluded.reviewed,data=excluded.data"
+          )
+          .run(id, subjectId, status, revision, reviewed, JSON.stringify(l));
+
+        if (existing) db().prepare('DELETE FROM progress WHERE lesson_id=?').run(id);
+
+        const pool = getPgPool();
+        if (pool) {
+          pool
+            .query(
+              "INSERT INTO lessons(id,subject_id,status,revision,reviewed,data) VALUES ($1,$2,$3,$4,$5,$6) ON CONFLICT(id) DO UPDATE SET status=EXCLUDED.status,revision=EXCLUDED.revision,reviewed=EXCLUDED.reviewed,data=EXCLUDED.data",
+              [id, subjectId, status, revision, reviewed, JSON.stringify(l)]
+            )
+            .catch(console.error);
+        }
+        break;
+      }
       case 'banStudent': {
         const userId = text(input.userId, 'Alumno'),
           subjectId = text(input.subjectId, 'Materia');

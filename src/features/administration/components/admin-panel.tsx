@@ -30,11 +30,16 @@ import {
   GraduationCap,
   Shield,
   Trash2,
+  Edit3,
+  Sparkles,
+  Download,
+  FileJson,
 } from 'lucide-react';
 import { toast } from '@/components/ui/sonner';
 import { Button } from '@/components/ui/button';
-import type { Institution, Subject } from '@/features/catalog/model/types';
+import type { Institution, Subject, Frame } from '@/features/catalog/model/types';
 import { StudentImport } from './student-import';
+import { LessonEditorModal } from './lesson-editor-modal';
 import type { User } from '@/features/auth/types';
 type LessonInfo = {
   id: string;
@@ -116,7 +121,17 @@ export function AdminPanel({
     [teacherInstitution, setTeacherInstitution] = useState(''),
     [teacherSubjectIds, setTeacherSubjectIds] = useState<string[]>([]),
     [newStudentInstitution, setNewStudentInstitution] = useState(''),
-    [newStudentSubjectIds, setNewStudentSubjectIds] = useState<string[]>([]);
+    [newStudentSubjectIds, setNewStudentSubjectIds] = useState<string[]>([]),
+    [editingLesson, setEditingLesson] = useState<{
+      lessonId?: string;
+      title: string;
+      subtitle: string;
+      frames: Frame[];
+      subjectId: string;
+      topicId: string;
+      topicName?: string;
+    } | null>(null),
+    [importMethod, setImportMethod] = useState<'json' | 'latex'>('json');
   async function onCatalogChange() {
     try {
       sessionStorage.setItem(
@@ -1105,22 +1120,60 @@ export function AdminPanel({
                             {l.frames} bloques · Versión {l.revision}
                           </p>
                         </div>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            if (onPreviewLesson) {
-                              onPreviewLesson(l.id);
-                            } else {
-                              window.location.href = `/?class=${l.id}`;
-                            }
-                          }}
-                          title="Previsualizar clase en esta pestaña"
-                        >
-                          <Eye size={14} />
-                          Vista previa
-                        </Button>
+                        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              if (onPreviewLesson) {
+                                onPreviewLesson(l.id);
+                              } else {
+                                window.location.href = `/?class=${l.id}`;
+                              }
+                            }}
+                            title="Previsualizar clase en esta pestaña"
+                          >
+                            <Eye size={14} />
+                            Vista previa
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={async () => {
+                              try {
+                                setBusy(true);
+                                const res = await fetch('/api/catalog');
+                                const cat = await res.json();
+                                const full = (cat.lessons || []).find((x: any) => x.id === l.id);
+                                if (!full)
+                                  throw new Error('No se pudo cargar el contenido de la clase.');
+                                setEditingLesson({
+                                  lessonId: l.id,
+                                  title: full.title,
+                                  subtitle: full.subtitle || '',
+                                  frames: full.frames || [],
+                                  subjectId: currentSubject.id,
+                                  topicId: currentTopic.id,
+                                  topicName: currentTopic.name,
+                                });
+                              } catch (err) {
+                                toast.error(
+                                  err instanceof Error
+                                    ? err.message
+                                    : 'Error al cargar la clase para edición.'
+                                );
+                              } finally {
+                                setBusy(false);
+                              }
+                            }}
+                            title="Editar diapositivas, textos y diagramas en vivo"
+                          >
+                            <Edit3 size={14} />
+                            Editar
+                          </Button>
+                        </div>
                       </div>
                       {l.diagnostics.length > 0 && (
                         <details className="review-warnings">
@@ -1245,65 +1298,250 @@ export function AdminPanel({
                   </span>
                   <h2>
                     <Upload size={19} />
-                    Importar clase
+                    Gestión de clase
                   </h2>
                 </div>
               </div>
-              <p className="admin-help">
-                Carga el archivo .tex; el título y el subtítulo se detectan automáticamente.
-              </p>
-              <form onSubmit={importClass}>
-                <input type="hidden" name="subjectId" value={currentSubject.id} />
-                <input type="hidden" name="topicId" value={currentTopic.id} />
-                <label>
-                  Documento LaTeX (.tex)
-                  <input type="file" name="source" accept=".tex" required />
-                  <small>Archivo .tex de la clase · hasta 2 MB</small>
-                </label>
-                <label>
-                  PDF e imágenes (opcional)
-                  <input type="file" name="images" accept=".pdf,.png,.jpg,.jpeg,.webp" multiple />
-                  <small>
-                    Opcional · PDF original y figuras (máx. 4 MB en Vercel; el .tex es lo único
-                    obligatorio)
-                  </small>
-                </label>
-                <label>
-                  Título de la clase (opcional)
-                  <input
-                    name="title"
-                    maxLength={150}
-                    placeholder="Opcional · se detecta del .tex"
-                  />
-                </label>
-                {topicLessons.length > 0 && (
-                  <label>
-                    Acción
-                    <select
-                      name="lessonId"
-                      value={replace}
-                      onChange={(e) => setReplace(e.target.value)}
+
+              {/* Selector de método de importación */}
+              <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
+                <button
+                  type="button"
+                  onClick={() => setImportMethod('json')}
+                  style={{
+                    flex: 1,
+                    padding: '8px 10px',
+                    borderRadius: '6px',
+                    fontSize: '11px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    border: importMethod === 'json' ? '1px solid #2563eb' : '1px solid var(--border)',
+                    background: importMethod === 'json' ? '#2563eb' : 'transparent',
+                    color: importMethod === 'json' ? '#fff' : 'inherit',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '5px',
+                  }}
+                >
+                  <Sparkles size={13} />
+                  JSON / Editor en vivo (Recomendado)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setImportMethod('latex')}
+                  style={{
+                    flex: 1,
+                    padding: '8px 10px',
+                    borderRadius: '6px',
+                    fontSize: '11px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    border: importMethod === 'latex' ? '1px solid #2563eb' : '1px solid var(--border)',
+                    background: importMethod === 'latex' ? '#2563eb' : 'transparent',
+                    color: importMethod === 'latex' ? '#fff' : 'inherit',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '5px',
+                  }}
+                >
+                  <Upload size={13} />
+                  Directo .tex
+                </button>
+              </div>
+
+              {importMethod === 'json' ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                  <div
+                    style={{
+                      background: 'rgba(37, 99, 235, 0.08)',
+                      border: '1px solid rgba(37, 99, 235, 0.25)',
+                      borderRadius: '8px',
+                      padding: '12px 14px',
+                      fontSize: '11px',
+                      lineHeight: 1.6,
+                    }}
+                  >
+                    <strong style={{ color: '#60a5fa', display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '4px' }}>
+                      <Sparkles size={14} /> Flujo sin errores de diagramas ni rutas:
+                    </strong>
+                    <ol style={{ margin: '4px 0 10px 16px', padding: 0 }}>
+                      <li>Exporta tu .tex localmente con el script de Python (convierte TikZ a SVG nativo).</li>
+                      <li>Sube aquí el <strong>clase.json</strong> generado para previsualizarlo y retocarlo en vivo.</li>
+                    </ol>
+                    <a
+                      href="/tools/export_lesson.py"
+                      download="export_lesson.py"
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        background: '#1e293b',
+                        color: '#f8fafc',
+                        padding: '6px 12px',
+                        borderRadius: '6px',
+                        fontSize: '11px',
+                        fontWeight: 600,
+                        textDecoration: 'none',
+                        border: '1px solid rgba(255, 255, 255, 0.15)',
+                      }}
                     >
-                      <option value="">Crear nueva clase en este tema</option>
-                      {topicLessons.map((l) => (
-                        <option key={l.id} value={l.id}>
-                          Actualizar: {l.title}
-                        </option>
-                      ))}
-                    </select>
+                      <Download size={13} /> Descargar exportador local (export_lesson.py)
+                    </a>
+                  </div>
+
+                  {topicLessons.length > 0 && (
+                    <label>
+                      Destino de la clase
+                      <select
+                        name="lessonId"
+                        value={replace}
+                        onChange={(e) => setReplace(e.target.value)}
+                      >
+                        <option value="">Crear nueva clase en este tema</option>
+                        {topicLessons.map((l) => (
+                          <option key={l.id} value={l.id}>
+                            Actualizar: {l.title}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  )}
+
+                  <label>
+                    Subir archivo clase.json exportado
+                    <input
+                      type="file"
+                      accept=".json"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        const reader = new FileReader();
+                        reader.onload = (event) => {
+                          try {
+                            const json = JSON.parse(event.target?.result as string);
+                            if (!json.frames || !Array.isArray(json.frames)) {
+                              throw new Error(
+                                'El archivo JSON no tiene la estructura de clase válida (falta el arreglo "frames").'
+                              );
+                            }
+                            setEditingLesson({
+                              lessonId: replace || undefined,
+                              title: json.title || 'Nueva clase',
+                              subtitle: json.subtitle || '',
+                              frames: json.frames,
+                              subjectId: currentSubject.id,
+                              topicId: currentTopic.id,
+                              topicName: currentTopic.name,
+                            });
+                            toast.success(
+                              `Clase cargada: ${json.frames.length} diapositivas listas para previsualizar y editar.`
+                            );
+                            e.target.value = '';
+                          } catch (err) {
+                            toast.error(
+                              err instanceof Error ? err.message : 'Error al procesar el archivo JSON.'
+                            );
+                          }
+                        };
+                        reader.readAsText(file);
+                      }}
+                    />
+                    <small>Se abrirá de inmediato la ventana de edición y previsualización en vivo.</small>
                   </label>
-                )}
-                {replace && (
-                  <p className="admin-help">
-                    La versión anterior se sustituirá y la clase volverá a borrador hasta revisar y
-                    publicar esta versión.
-                  </p>
-                )}
-                <Button disabled={busy}>
-                  <Upload size={15} />
-                  {busy ? 'Importando y compilando…' : 'Importar como borrador'}
-                </Button>
-              </form>
+
+                  <div style={{ textAlign: 'center', margin: '4px 0', fontSize: '11px', color: 'var(--muted)' }}>
+                    — o —
+                  </div>
+
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      setEditingLesson({
+                        lessonId: replace || undefined,
+                        title: 'Nueva clase interactiva',
+                        subtitle: '',
+                        frames: [
+                          {
+                            id: 'frame-1',
+                            title: 'Introducción',
+                            section: currentTopic.name,
+                            line: 1,
+                            blocks: [
+                              {
+                                type: 'text',
+                                content: 'Escribe aquí el contenido introductorio de la clase...',
+                              },
+                            ],
+                          },
+                        ],
+                        subjectId: currentSubject.id,
+                        topicId: currentTopic.id,
+                        topicName: currentTopic.name,
+                      });
+                    }}
+                    style={{ gap: '6px' }}
+                  >
+                    <Plus size={14} />
+                    Crear clase desde cero en el editor
+                  </Button>
+                </div>
+              ) : (
+                <form onSubmit={importClass}>
+                  <input type="hidden" name="subjectId" value={currentSubject.id} />
+                  <input type="hidden" name="topicId" value={currentTopic.id} />
+                  <label>
+                    Documento LaTeX (.tex)
+                    <input type="file" name="source" accept=".tex" required />
+                    <small>Archivo .tex de la clase · hasta 2 MB</small>
+                  </label>
+                  <label>
+                    PDF e imágenes (opcional)
+                    <input type="file" name="images" accept=".pdf,.png,.jpg,.jpeg,.webp" multiple />
+                    <small>
+                      Opcional · PDF original y figuras (máx. 4 MB en Vercel; el .tex es lo único
+                      obligatorio)
+                    </small>
+                  </label>
+                  <label>
+                    Título de la clase (opcional)
+                    <input
+                      name="title"
+                      maxLength={150}
+                      placeholder="Opcional · se detecta del .tex"
+                    />
+                  </label>
+                  {topicLessons.length > 0 && (
+                    <label>
+                      Acción
+                      <select
+                        name="lessonId"
+                        value={replace}
+                        onChange={(e) => setReplace(e.target.value)}
+                      >
+                        <option value="">Crear nueva clase en este tema</option>
+                        {topicLessons.map((l) => (
+                          <option key={l.id} value={l.id}>
+                            Actualizar: {l.title}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  )}
+                  {replace && (
+                    <p className="admin-help">
+                      La versión anterior se sustituirá y la clase volverá a borrador hasta revisar y
+                      publicar esta versión.
+                    </p>
+                  )}
+                  <Button disabled={busy}>
+                    <Upload size={15} />
+                    {busy ? 'Importando y compilando…' : 'Importar como borrador'}
+                  </Button>
+                </form>
+              )}
             </section>
           </div>
         </>
@@ -2136,6 +2374,33 @@ export function AdminPanel({
             </form>
           </section>
         </div>
+      )}
+
+      {editingLesson && (
+        <LessonEditorModal
+          initialTitle={editingLesson.title}
+          initialSubtitle={editingLesson.subtitle}
+          initialFrames={editingLesson.frames}
+          subjectId={editingLesson.subjectId}
+          topicId={editingLesson.topicId}
+          topicName={editingLesson.topicName}
+          lessonId={editingLesson.lessonId}
+          onSave={async (lessonData) => {
+            const success = await mutate(
+              {
+                action: 'saveLesson',
+                ...lessonData,
+              },
+              lessonData.publish
+                ? 'Clase guardada y publicada con éxito.'
+                : 'Clase guardada como borrador.'
+            );
+            if (success) {
+              await reloadCampus();
+            }
+          }}
+          onClose={() => setEditingLesson(null)}
+        />
       )}
     </main>
   );
