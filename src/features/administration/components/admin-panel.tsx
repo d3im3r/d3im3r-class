@@ -120,6 +120,8 @@ export function AdminPanel({
     [newPassword, setNewPassword] = useState(''),
     [teacherInstitution, setTeacherInstitution] = useState(''),
     [teacherSubjectIds, setTeacherSubjectIds] = useState<string[]>([]),
+    [selectedTeacherForAssign, setSelectedTeacherForAssign] = useState(''),
+    [teacherEditingSubjectIds, setTeacherEditingSubjectIds] = useState<string[]>([]),
     [newStudentInstitution, setNewStudentInstitution] = useState(''),
     [newStudentSubjectIds, setNewStudentSubjectIds] = useState<string[]>([]),
     [editingLesson, setEditingLesson] = useState<{
@@ -2159,21 +2161,140 @@ export function AdminPanel({
                           : ''}
                       </p>
                     </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        setResetUserId(t.id);
-                        setNewPassword('');
-                      }}
-                    >
-                      <KeyRound size={14} />
-                      Clave
-                    </Button>
+                    <div style={{ display: 'flex', gap: '6px' }}>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          if (selectedTeacherForAssign === t.id) {
+                            setSelectedTeacherForAssign('');
+                            setTeacherEditingSubjectIds([]);
+                          } else {
+                            setSelectedTeacherForAssign(t.id);
+                            setTeacherEditingSubjectIds(
+                              data.enrollments
+                                .filter((e) => e.userId === t.id)
+                                .map((e) => e.subjectId)
+                            );
+                            setResetUserId('');
+                          }
+                        }}
+                      >
+                        <BookOpen size={14} />
+                        Materias
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setResetUserId(t.id);
+                          setNewPassword('');
+                          setSelectedTeacherForAssign('');
+                        }}
+                      >
+                        <KeyRound size={14} />
+                        Clave
+                      </Button>
+                    </div>
                   </div>
                 );
               })}
             </div>
+            {selectedTeacherForAssign &&
+              teachers.some((t) => t.id === selectedTeacherForAssign) &&
+              (() => {
+                const targetTeacher = data.users.find((u) => u.id === selectedTeacherForAssign);
+                return (
+                  <div className="mt-4 p-4 rounded-lg border bg-stone-50 dark:bg-stone-900 flex flex-col gap-3">
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <strong className="text-xs font-semibold">
+                          Asignar materias a {targetTeacher?.name}:
+                        </strong>
+                        <p className="text-[11px] text-muted-foreground mt-0.5">
+                          Selecciona las materias que este docente tendrá permiso de impartir, editar y gestionar.
+                        </p>
+                      </div>
+                      <span className="text-[11px] font-semibold px-2 py-0.5 bg-primary/10 text-primary rounded">
+                        {teacherEditingSubjectIds.length} seleccionada{teacherEditingSubjectIds.length === 1 ? '' : 's'}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 my-1 max-h-60 overflow-y-auto pr-1">
+                      {data.subjects.map((sub) => {
+                        const inst = data.institutions.find((i) => i.id === sub.institutionId);
+                        const isChecked = teacherEditingSubjectIds.includes(sub.id);
+                        return (
+                          <label
+                            key={sub.id}
+                            className={`flex items-start gap-2 p-2 rounded border cursor-pointer transition-colors text-xs ${
+                              isChecked
+                                ? 'bg-primary/5 border-primary/40 font-medium'
+                                : 'bg-background hover:bg-stone-100 dark:hover:bg-stone-800 border-border'
+                            }`}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={isChecked}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setTeacherEditingSubjectIds((prev) => [...prev, sub.id]);
+                                } else {
+                                  setTeacherEditingSubjectIds((prev) =>
+                                    prev.filter((id) => id !== sub.id)
+                                  );
+                                }
+                              }}
+                              className="mt-0.5 rounded text-primary focus:ring-primary"
+                            />
+                            <div className="min-w-0">
+                              <span className="block truncate">{sub.name}</span>
+                              <span className="text-[10px] text-muted-foreground block">
+                                {inst?.shortName ?? 'Campus'} · {sub.code}
+                              </span>
+                            </div>
+                          </label>
+                        );
+                      })}
+                    </div>
+
+                    <div className="flex gap-2 justify-end pt-2 border-t border-border">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => {
+                          setSelectedTeacherForAssign('');
+                          setTeacherEditingSubjectIds([]);
+                        }}
+                      >
+                        Cancelar
+                      </Button>
+                      <Button
+                        size="sm"
+                        disabled={busy}
+                        onClick={async () => {
+                          if (
+                            await mutate(
+                              {
+                                action: 'assignTeacher',
+                                teacherId: selectedTeacherForAssign,
+                                subjectIds: teacherEditingSubjectIds,
+                              },
+                              `Materias asignadas con éxito a ${targetTeacher?.name}.`
+                            )
+                          ) {
+                            setSelectedTeacherForAssign('');
+                            setTeacherEditingSubjectIds([]);
+                          }
+                        }}
+                      >
+                        <Save size={14} />
+                        Guardar asignaciones
+                      </Button>
+                    </div>
+                  </div>
+                );
+              })()}
             {resetUserId &&
               (teachers.some((t) => t.id === resetUserId) ||
                 admins.some((a) => a.id === resetUserId)) &&

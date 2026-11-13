@@ -456,12 +456,20 @@ export function manage(input: Record<string, unknown>, actor?: User) {
         }
         break;
       }
+      case 'assignTeacher':
       case 'assign': {
-        const userId = text(input.userId, 'Alumno');
-        if (!db().prepare("SELECT id FROM users WHERE id=? AND role='student'").get(userId))
-          throw new AppError('Alumno no encontrado.');
+        const userId = text(input.userId || input.teacherId, 'Usuario');
+        const targetUser = db()
+          .prepare('SELECT id, name, username, role FROM users WHERE id=?')
+          .get(userId) as User | undefined;
+        if (!targetUser) throw new AppError('Usuario no encontrado.', 404);
+
+        if (targetUser.role === 'teacher' && actor && actor.role !== 'admin') {
+          throw new AppError('Solo los administradores pueden asignar materias a un docente.', 403);
+        }
+
         const ids = subjectIds(input.subjectIds);
-        if (actor && actor.role === 'teacher') {
+        if (actor && actor.role === 'teacher' && targetUser.role === 'student') {
           const teacherSubjects = userAccessibleSubjectIds(actor);
           if (!teacherSubjects) throw new AppError('No tienes materias asignadas.', 403);
           for (const sId of ids) {
@@ -491,6 +499,22 @@ export function manage(input: Record<string, unknown>, actor?: User) {
               .run(userId, id);
           }
         }
+
+        // Si el usuario es docente, sincronizar membresías institucionales
+        if (targetUser.role === 'teacher' && ids.length > 0) {
+          const placeholders = ids.map(() => '?').join(',');
+          const subjectInstitutions = db()
+            .prepare(`SELECT DISTINCT institution_id FROM subjects WHERE id IN (${placeholders})`)
+            .all(...ids) as { institution_id: string }[];
+          for (const inst of subjectInstitutions) {
+            db()
+              .prepare(
+                'INSERT OR IGNORE INTO institution_members(user_id,institution_id) VALUES (?,?)'
+              )
+              .run(userId, inst.institution_id);
+          }
+        }
+
         const pool = getPgPool();
         if (pool) {
           pool
@@ -512,6 +536,22 @@ export function manage(input: Record<string, unknown>, actor?: User) {
                     row.subject_id,
                   ])
                   .catch(console.error);
+              }
+              if (targetUser.role === 'teacher' && ids.length > 0) {
+                const placeholders = ids.map(() => '?').join(',');
+                const subjectInstitutions = db()
+                  .prepare(
+                    `SELECT DISTINCT institution_id FROM subjects WHERE id IN (${placeholders})`
+                  )
+                  .all(...ids) as { institution_id: string }[];
+                for (const inst of subjectInstitutions) {
+                  pool
+                    .query(
+                      'INSERT INTO institution_members(user_id,institution_id) VALUES ($1,$2) ON CONFLICT DO NOTHING',
+                      [userId, inst.institution_id]
+                    )
+                    .catch(console.error);
+                }
               }
             })
             .catch(console.error);

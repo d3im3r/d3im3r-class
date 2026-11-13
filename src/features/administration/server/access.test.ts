@@ -556,3 +556,35 @@ test('permite eliminar materias solo a administradores con limpieza completa', a
   assert.doesNotThrow(() => manage({ action: 'deleteSubject', subjectId: subId }, teacher));
   assert.equal(db().prepare('SELECT 1 FROM subjects WHERE id=?').get(subId), undefined);
 });
+
+test('permite a administradores asignar nuevas materias a docentes existentes', () => {
+  const teacherSena = login({ username: 'docente.sena', password: 'ClaveSena-2026' });
+  const inst = (db().prepare('SELECT id FROM institutions LIMIT 1').get() as { id: string }).id;
+
+  manage(
+    { action: 'subject', institutionId: inst, name: 'Nueva Materia Docente', code: 'NEWDOC1' },
+    teacher
+  );
+  const allSubs = db().prepare('SELECT id, data FROM subjects').all() as {
+    id: string;
+    data: string;
+  }[];
+  const newSub = allSubs.find((s) => JSON.parse(s.data).code === 'NEWDOC1')!;
+
+  // Docente intenta auto-asignarse materias -> prohibido
+  assert.throws(
+    () => manage({ action: 'assignTeacher', teacherId: teacherSena.id, subjectIds: [newSub.id] }, teacherSena),
+    /Solo los administradores pueden asignar materias a un docente/
+  );
+
+  // Admin le asigna la nueva materia al docente existente
+  manage(
+    { action: 'assignTeacher', teacherId: teacherSena.id, subjectIds: [newSub.id] },
+    teacher
+  );
+
+  const enrollments = db()
+    .prepare('SELECT subject_id FROM enrollments WHERE user_id=?')
+    .all(teacherSena.id) as { subject_id: string }[];
+  assert.ok(enrollments.some((e) => e.subject_id === newSub.id));
+});
