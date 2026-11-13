@@ -22,6 +22,7 @@ import {
   FileText,
   AlertTriangle,
   Download,
+  MonitorPlay,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { Frame, Block } from '@/features/catalog/model/types';
@@ -76,6 +77,7 @@ export function LessonEditorModal({
   );
   const [selectedFrameIndex, setSelectedFrameIndex] = useState(0);
   const [activeTab, setActiveTab] = useState<'both' | 'edit' | 'preview'>('both');
+  const [previewViewMode, setPreviewViewMode] = useState<'reader' | 'slide'>('reader');
   const [saving, setSaving] = useState(false);
 
   const currentFrame = frames[selectedFrameIndex] || frames[0];
@@ -964,60 +966,171 @@ export function LessonEditorModal({
           </div>
         )}
 
-        {/* Panel Derecho: Vista Previa en Vivo (WYSIWYG) */}
+        {/* Panel Derecho: Vista Previa en Vivo (WYSIWYG con temas nativos y barra fija) */}
         {(activeTab === 'both' || activeTab === 'preview') && (
           <div
             style={{
               flex: 1,
-              overflowY: 'auto',
-              padding: '28px clamp(16px, 3vw, 40px)',
-              background: 'var(--background, #0c121e)',
               display: 'flex',
               flexDirection: 'column',
+              minWidth: 0,
+              height: '100%',
+              background: 'var(--background, #0c121e)',
+              borderLeft: activeTab === 'both' ? '1px solid rgba(255, 255, 255, 0.1)' : 'none',
+              overflow: 'hidden',
             }}
           >
-            <div
-              style={{
-                maxWidth: '820px',
-                margin: '0 auto',
-                width: '100%',
-                background: '#ffffff',
-                color: '#1e293b',
-                borderRadius: '12px',
-                padding: '36px 40px',
-                boxShadow: '0 12px 40px rgba(0, 0, 0, 0.45)',
-                minHeight: '480px',
-              }}
-            >
-              {/* Encabezado de la diapositiva */}
-              <div style={{ borderBottom: '2px solid #e2e8f0', paddingBottom: '14px', marginBottom: '20px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ fontSize: '10px', fontWeight: 700, color: '#64748b', letterSpacing: '1px', textTransform: 'uppercase' }}>
-                    {currentFrame.section || 'General'} · Diapositiva {selectedFrameIndex + 1} de {frames.length}
-                  </span>
-                  <span style={{ fontSize: '10px', color: '#94a3b8' }}>Vista previa en vivo</span>
-                </div>
-                <h2 style={{ fontSize: '24px', fontWeight: 700, margin: '8px 0 0', color: '#0f172a' }}>
-                  <InlineText text={currentFrame.title || 'Sin título'} />
-                </h2>
-              </div>
-
-              {/* Render de bloques reales de la diapositiva */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                {currentFrame.blocks.map((block, idx) => (
-                  <ContentBlock key={idx} block={block} />
-                ))}
-              </div>
-            </div>
-
-            {/* Controles de diapositiva previa / siguiente */}
+            {/* Barra superior de herramientas del Preview */}
             <div
               style={{
                 display: 'flex',
-                justifyContent: 'center',
+                justifyContent: 'space-between',
                 alignItems: 'center',
+                padding: '8px 18px',
+                background: 'rgba(15, 23, 42, 0.75)',
+                borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+                flexShrink: 0,
                 gap: '12px',
-                marginTop: '20px',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '11px', color: '#94a3b8', fontWeight: 600 }}>Vista previa:</span>
+                <div style={{ display: 'flex', background: 'rgba(0, 0, 0, 0.4)', borderRadius: '6px', padding: '2px', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
+                  <button
+                    type="button"
+                    onClick={() => setPreviewViewMode('reader')}
+                    style={{
+                      background: previewViewMode === 'reader' ? '#2563eb' : 'transparent',
+                      color: previewViewMode === 'reader' ? '#fff' : '#94a3b8',
+                      border: 0,
+                      borderRadius: '4px',
+                      fontSize: '11px',
+                      fontWeight: 500,
+                      padding: '3px 10px',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '5px',
+                    }}
+                  >
+                    <BookOpen size={12} /> Lectura interactiva
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPreviewViewMode('slide')}
+                    style={{
+                      background: previewViewMode === 'slide' ? '#2563eb' : 'transparent',
+                      color: previewViewMode === 'slide' ? '#fff' : '#94a3b8',
+                      border: 0,
+                      borderRadius: '4px',
+                      fontSize: '11px',
+                      fontWeight: 500,
+                      padding: '3px 10px',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '5px',
+                    }}
+                  >
+                    <MonitorPlay size={12} /> Diapositiva
+                  </button>
+                </div>
+              </div>
+
+              <span style={{ fontSize: '11px', color: '#94a3b8' }}>
+                {currentFrame.section || 'General'} · Diapositiva {selectedFrameIndex + 1} de {frames.length}
+              </span>
+            </div>
+
+            {/* Área de documento con scroll independiente */}
+            <div
+              style={{
+                flex: 1,
+                overflowY: 'auto',
+                padding: '28px clamp(14px, 3vw, 40px)',
+              }}
+            >
+              {previewViewMode === 'reader' ? (
+                <div
+                  className="continuous-reader"
+                  style={{
+                    background: 'transparent',
+                    padding: 0,
+                    maxWidth: '860px',
+                    margin: '0 auto',
+                    width: '100%',
+                  }}
+                >
+                  <div className="reading-document" style={{ width: '100%', margin: '0 auto' }}>
+                    <div style={{ borderBottom: '1px solid var(--border, #e2e8f0)', paddingBottom: '14px', marginBottom: '20px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontSize: '10px', fontWeight: 700, color: 'var(--muted, #64748b)', letterSpacing: '1px', textTransform: 'uppercase' }}>
+                          {currentFrame.section || 'General'} · Diapositiva {selectedFrameIndex + 1} de {frames.length}
+                        </span>
+                        <span style={{ fontSize: '10px', color: 'var(--muted, #94a3b8)', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                          <Eye size={12} /> Vista previa WYSIWYG
+                        </span>
+                      </div>
+                      <h2 style={{ fontSize: '24px', fontWeight: 700, margin: '8px 0 0', color: 'var(--foreground, #0f172a)' }}>
+                        <InlineText text={currentFrame.title || 'Sin título'} />
+                      </h2>
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                      {currentFrame.blocks.map((block, idx) => (
+                        <ContentBlock key={idx} block={block} />
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="presentation-stage" style={{ padding: '0', minHeight: 'auto', background: 'transparent' }}>
+                  <div
+                    className="presentation-slide"
+                    style={{
+                      maxWidth: '920px',
+                      width: '100%',
+                      height: 'auto',
+                      minHeight: '440px',
+                      borderRadius: '12px',
+                      margin: '0 auto',
+                      boxShadow: '0 12px 40px rgba(0, 0, 0, 0.35)',
+                    }}
+                  >
+                    <div className="slide-heading">
+                      <div>
+                        <span>{currentFrame.section || 'General'} · DIAPOSITIVA {selectedFrameIndex + 1} DE {frames.length}</span>
+                        <h2><InlineText text={currentFrame.title || 'Sin título'} /></h2>
+                      </div>
+                    </div>
+                    <div className="slide-content" style={{ overflow: 'visible', padding: '24px clamp(20px, 3vw, 48px)' }}>
+                      <div className="slide-content-inner" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                        {currentFrame.blocks.map((block, idx) => (
+                          <ContentBlock key={idx} block={block} />
+                        ))}
+                      </div>
+                    </div>
+                    <div className="slide-footer">
+                      <span>{selectedFrameIndex + 1} / {frames.length}</span>
+                      <span>Aula · Vista previa de presentación</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Barra de navegación inferior fija (nunca se superpone a las imágenes) */}
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                padding: '10px 20px',
+                background: 'rgba(11, 17, 32, 0.95)',
+                backdropFilter: 'blur(10px)',
+                borderTop: '1px solid rgba(255, 255, 255, 0.1)',
+                flexShrink: 0,
+                zIndex: 20,
               }}
             >
               <Button
@@ -1029,9 +1142,32 @@ export function LessonEditorModal({
               >
                 <ChevronLeft size={14} /> Anterior
               </Button>
-              <span style={{ fontSize: '11px', color: '#94a3b8' }}>
-                {selectedFrameIndex + 1} / {frames.length}
-              </span>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <span style={{ fontSize: '12px', color: '#94a3b8', fontWeight: 600 }}>
+                  {selectedFrameIndex + 1} / {frames.length}
+                </span>
+                <select
+                  value={selectedFrameIndex}
+                  onChange={(e) => setSelectedFrameIndex(Number(e.target.value))}
+                  style={{
+                    background: '#162338',
+                    color: '#e2ecff',
+                    border: '1px solid #3b5070',
+                    borderRadius: '6px',
+                    padding: '4px 10px',
+                    fontSize: '11px',
+                    maxWidth: '260px',
+                  }}
+                >
+                  {frames.map((f, i) => (
+                    <option key={f.id || i} value={i}>
+                      {String(i + 1).padStart(2, '0')}. {f.title || `Diapositiva ${i + 1}`}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
               <Button
                 size="sm"
                 variant="outline"
