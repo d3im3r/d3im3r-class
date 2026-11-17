@@ -237,7 +237,7 @@ function Figure({ block }: { block: Block }) {
           <img
             src={block.asset}
             alt={alt}
-            loading="lazy"
+            loading="eager"
             onError={() => setFailed(true)}
             onClick={() => setLightbox(true)}
             title="Clic para ampliar diagrama"
@@ -292,7 +292,7 @@ function Figure({ block }: { block: Block }) {
       <img
         src={block.asset}
         alt={alt}
-        loading="lazy"
+        loading="eager"
         onError={() => setFailed(true)}
         onClick={() => setLightbox(true)}
         title="Clic para ampliar ilustración"

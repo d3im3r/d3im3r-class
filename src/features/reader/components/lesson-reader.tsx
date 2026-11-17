@@ -250,18 +250,15 @@ export function LessonReader({
           const scale = Math.max(0.40, rawScale * 0.96);
           inner.style.transform = `scale(${scale})`;
           inner.style.transformOrigin = 'top center';
-          inner.style.width = `${Math.round(10000 / scale) / 100}%`;
-          inner.style.maxWidth = `${Math.round(10000 / scale) / 100}%`;
         } else {
           inner.style.transform = 'none';
           inner.style.transformOrigin = 'top center';
-          inner.style.width = '100%';
-          inner.style.maxWidth = '100%';
         }
       });
     };
     const observer = new ResizeObserver(measure);
     observer.observe(container);
+    observer.observe(inner);
     container.addEventListener('load', measure, true);
     window.addEventListener('resize', measure);
     const handleFullscreen = () => {
@@ -271,6 +268,9 @@ export function LessonReader({
     };
     document.addEventListener('fullscreenchange', handleFullscreen);
     measure();
+    setTimeout(measure, 50);
+    setTimeout(measure, 200);
+    setTimeout(measure, 500);
     document.fonts?.ready?.then(measure);
     return () => {
       active = false;
