@@ -304,10 +304,24 @@ function Figure({ block }: { block: Block }) {
   );
 }
 export function ContentBlock({ block }: { block: Block }) {
+  if (block.type === 'text') {
+    const trimmed = (block.content || '').trim();
+    if (
+      !trimmed ||
+      trimmed === '{}' ||
+      trimmed === '[]' ||
+      trimmed === '()' ||
+      /^\s*\[[TtCcBb]\]\s*$/.test(trimmed) ||
+      /^\s*\d+(?:\.\d+)?\\(?:textwidth|linewidth|columnwidth)\s*$/.test(trimmed)
+    ) {
+      return null;
+    }
+  }
   if (block.type === 'code') return <CodeBlock content={block.content} language={block.language} />;
   if (block.type === 'math') {
     const cleanMath = (block.content || '')
-      .replace(/\\pause\b/g, '')
+      .replace(/\\pause(\[[^\]]*\])?/g, '')
+      .replace(/\\(onslide|only|invisible)<[^>]*>/g, '')
       .replace(/\\label\{[^}]*\}/g, '')
       .trim();
     return (

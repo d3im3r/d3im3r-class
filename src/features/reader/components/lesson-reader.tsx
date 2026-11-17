@@ -63,6 +63,29 @@ export function LessonReader({
     initial = useRef(frameIndex);
   const current = Math.min(frameIndex, lesson.frames.length - 1),
     frame = lesson.frames[current];
+  const visibleBlocks = useMemo(() => {
+    return (frame?.blocks || []).filter((b) => {
+      if (b.type === 'text') {
+        const trimmed = (b.content || '').trim();
+        if (
+          !trimmed ||
+          trimmed === '{}' ||
+          trimmed === '[]' ||
+          trimmed === '()' ||
+          /^\s*\[[TtCcBb]\]\s*$/.test(trimmed) ||
+          /^\s*\d+(?:\.\d+)?\\(?:textwidth|linewidth|columnwidth)\s*$/.test(trimmed)
+        ) {
+          return false;
+        }
+      }
+      if (b.type === 'callout') {
+        const hasContent = !!b.content?.trim() && b.content.trim() !== '{}';
+        const hasChildren = !!b.children?.length;
+        if (!hasContent && !hasChildren) return false;
+      }
+      return true;
+    });
+  }, [frame]);
   const sections = lesson.frames.reduce<
     { name: string; frames: { frame: Frame; index: number }[] }[]
   >((groups, f, index) => {
@@ -192,7 +215,7 @@ export function LessonReader({
     const measure = () => {
       cancelAnimationFrame(scheduled);
       scheduled = requestAnimationFrame(() => {
-        if (!active) return;
+        if (!active || !container || !inner) return;
         const padding = getComputedStyle(container);
         const space =
           container.clientHeight -
@@ -214,18 +237,21 @@ export function LessonReader({
         const naturalHeight = inner.scrollHeight;
         const naturalWidth = inner.scrollWidth;
 
-        // Auto-escala proporcional si los elementos superan el alto o ancho de la diapositiva
-        const scaleY = (space - 8) / Math.max(1, naturalHeight);
+        // Margen de seguridad amplio (36px) para garantizar que el último bloque no quede cortado ni pegado al pie
+        const safetyMargin = 36;
+        const availableHeight = Math.max(10, space - safetyMargin);
+
+        const scaleY = availableHeight / Math.max(1, naturalHeight);
         const scaleX = width / Math.max(1, naturalWidth);
         const rawScale = Math.min(scaleY, scaleX);
 
         if (rawScale < 0.99) {
-          // Escala suavizada con límite inferior legible para garantizar que todos los elementos se vean juntos
-          const scale = Math.max(0.58, rawScale * 0.98);
+          // Permite reducir hasta 0.40 para diapositivas con múltiples callouts o fórmulas extensas
+          const scale = Math.max(0.40, rawScale * 0.96);
           inner.style.transform = `scale(${scale})`;
           inner.style.transformOrigin = 'top center';
-          inner.style.width = `${100 / scale}%`;
-          inner.style.maxWidth = `${100 / scale}%`;
+          inner.style.width = `${Math.round(10000 / scale) / 100}%`;
+          inner.style.maxWidth = `${Math.round(10000 / scale) / 100}%`;
         } else {
           inner.style.transform = 'none';
           inner.style.transformOrigin = 'top center';
@@ -236,9 +262,14 @@ export function LessonReader({
     };
     const observer = new ResizeObserver(measure);
     observer.observe(container);
-    observer.observe(inner);
     container.addEventListener('load', measure, true);
-    document.addEventListener('fullscreenchange', measure);
+    window.addEventListener('resize', measure);
+    const handleFullscreen = () => {
+      measure();
+      setTimeout(measure, 50);
+      setTimeout(measure, 200);
+    };
+    document.addEventListener('fullscreenchange', handleFullscreen);
     measure();
     document.fonts?.ready?.then(measure);
     return () => {
@@ -246,7 +277,8 @@ export function LessonReader({
       cancelAnimationFrame(scheduled);
       observer.disconnect();
       container.removeEventListener('load', measure, true);
-      document.removeEventListener('fullscreenchange', measure);
+      window.removeEventListener('resize', measure);
+      document.removeEventListener('fullscreenchange', handleFullscreen);
     };
   }, [presenting, current, frame]);
   useEffect(() => {
@@ -555,10 +587,10 @@ export function LessonReader({
                 <div
                   className="slide-content"
                   ref={slideContent}
-                  data-has-multiple={frame.blocks.length > 1}
+                  data-has-multiple={visibleBlocks.length > 1}
                 >
                   <div className="slide-content-inner">
-                    {frame.blocks.map((b, i) => (
+                    {visibleBlocks.map((b, i) => (
                       <div className="slide-unit" key={i}>
                         <ContentBlock block={b} />
                       </div>
@@ -569,24 +601,26 @@ export function LessonReader({
                   <span>
                     {institution.shortName} · {lesson.title}
                   </span>
-                  <span>
-                    {current + 1} / {lesson.frames.length}
-                  </span>
+                  <div className="slide-footer-right">
+                    {fullscreen && (
+                      <button
+                        type="button"
+                        className="presentation-fullscreen-exit"
+                        onClick={toggleFullscreen}
+                        aria-label="Salir de pantalla completa"
+                        title="Salir de pantalla completa (Esc)"
+                      >
+                        <Minimize size={13} />
+                        <span>Salir de pantalla completa</span>
+                      </button>
+                    )}
+                    <span>
+                      {current + 1} / {lesson.frames.length}
+                    </span>
+                  </div>
                 </footer>
               </article>
             </div>
-            {fullscreen && (
-              <button
-                type="button"
-                className="presentation-fullscreen-exit"
-                onClick={toggleFullscreen}
-                aria-label="Salir de pantalla completa"
-                title="Salir de pantalla completa (Esc)"
-              >
-                <Minimize size={15} />
-                <span>Salir de pantalla completa</span>
-              </button>
-            )}
             <footer className="presentation-controls">
               <div className="slide-shortcuts">
                 ← → Navegar <span>·</span> Esc Volver a lectura
