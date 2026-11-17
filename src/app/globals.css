@@ -692,3 +692,226 @@
     flex-wrap: wrap !important;
   }
 }
+
+
+/* ==========================================================================
+   SlideDeck: Virtual Canvas (16:9) + Smart 2-Column Responsive Engine
+   ========================================================================== */
+.slide-deck-container {
+  display: flex;
+  flex-direction: column;
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;
+  background: var(--background);
+  color: var(--foreground);
+  overflow: hidden;
+}
+
+.presentation-stage {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+  padding: 0;
+  background: rgba(0, 0, 0, 0.08);
+}
+[data-theme="dark"] .presentation-stage {
+  background: rgba(0, 0, 0, 0.35);
+}
+
+.slide-canvas-scaler {
+  flex-shrink: 0;
+  position: relative;
+  box-shadow: 0 16px 56px rgba(0, 0, 0, 0.3);
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--card, #fff);
+  display: flex;
+}
+
+.slide-canvas-scaler .presentation-slide {
+  width: 100% !important;
+  height: 100% !important;
+  max-width: none !important;
+  max-height: none !important;
+  display: flex;
+  flex-direction: column;
+  border-radius: 12px;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.slide-canvas-scaler .slide-heading {
+  height: 80px;
+  min-height: 80px;
+  max-height: 80px;
+  padding: 12px 48px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+  border-bottom: 2px solid var(--border);
+  box-sizing: border-box;
+}
+.slide-canvas-scaler .slide-heading h2 {
+  font-size: 28px;
+  font-weight: 700;
+  margin: 4px 0 0;
+  line-height: 1.2;
+}
+.slide-canvas-scaler .slide-heading span {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  opacity: 0.75;
+}
+.slide-canvas-scaler .slide-heading img {
+  max-height: 44px;
+  width: auto;
+}
+
+.slide-canvas-scaler .slide-content {
+  flex: 1;
+  min-height: 0;
+  padding: 16px 48px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+}
+
+/* Distribución inteligente en 2 columnas */
+.slide-canvas-scaler .slide-split-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 32px;
+  align-items: center;
+  min-height: 100%;
+  width: 100%;
+}
+.slide-canvas-scaler .slide-col {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+/* Distribución centrada de 1 columna */
+.slide-canvas-scaler .slide-single-flow {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 100%;
+  gap: 12px;
+  max-width: 1380px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.slide-canvas-scaler .slide-unit {
+  min-width: 0;
+}
+.slide-canvas-scaler .slide-unit:last-child > :last-child {
+  margin-bottom: 0 !important;
+}
+
+.slide-canvas-scaler .lesson-text {
+  font-size: 19px;
+  line-height: 1.5;
+  margin: 3px 0;
+}
+.slide-canvas-scaler .lesson-list {
+  margin: 3px 0;
+}
+.slide-canvas-scaler .lesson-list li {
+  font-size: 18px;
+  line-height: 1.5;
+  margin: 2px 0;
+}
+
+.slide-canvas-scaler .math-block {
+  font-size: 21px;
+  margin: 5px 0;
+  text-align: center;
+  overflow: visible;
+}
+
+.slide-canvas-scaler .teaching-block {
+  margin: 5px 0;
+}
+.slide-canvas-scaler .teaching-title {
+  padding: 8px 16px;
+}
+.slide-canvas-scaler .teaching-title strong {
+  font-size: 15px;
+}
+.slide-canvas-scaler .teaching-body {
+  padding: 8px 16px 10px;
+}
+.slide-canvas-scaler .teaching-body .lesson-text {
+  font-size: 17px;
+  line-height: 1.45;
+}
+
+.slide-canvas-scaler .code-block {
+  margin: 8px 0;
+  max-width: 100%;
+}
+.slide-canvas-scaler .code-block pre {
+  font-size: 16px;
+  line-height: 1.55;
+  max-height: 520px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.slide-canvas-scaler .code-toolbar {
+  padding: 8px 14px;
+}
+.slide-canvas-scaler .code-run-btn {
+  font-size: 13px;
+  padding: 6px 14px;
+}
+
+.slide-canvas-scaler .diagram-figure {
+  margin: 0 auto;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.slide-canvas-scaler .diagram-figure > img,
+.slide-canvas-scaler .tikz-render-target svg {
+  max-height: 540px;
+  max-width: 100%;
+  height: auto;
+  width: auto;
+  object-fit: contain;
+  margin: 0 auto;
+}
+
+.slide-canvas-scaler .slide-footer {
+  height: 48px;
+  min-height: 48px;
+  max-height: 48px;
+  padding: 0 48px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 13px;
+  flex-shrink: 0;
+  border-top: 1px solid var(--border);
+  box-sizing: border-box;
+}
+.slide-canvas-scaler .slide-footer-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
