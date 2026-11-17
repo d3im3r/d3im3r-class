@@ -13,6 +13,7 @@ import {
   Maximize,
   Minimize,
   X,
+  List,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { BrandSignature } from '@/features/theme/brand-signature';
@@ -127,6 +128,7 @@ export function SlideDeck({
 }: SlideDeckProps) {
   const stageRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
+  const [indexOpen, setIndexOpen] = useState(false);
   const preloaded = useRef(new Set<string>());
 
   const frame: Frame | undefined = lesson.frames[current];
@@ -223,9 +225,14 @@ export function SlideDeck({
       } else if (e.key.toLowerCase() === 'f') {
         e.preventDefault();
         onToggleFullscreen();
+      } else if (e.key.toLowerCase() === 'i') {
+        e.preventDefault();
+        setIndexOpen((open) => !open);
       } else if (e.key === 'Escape') {
         e.preventDefault();
-        if (fullscreen) {
+        if (indexOpen) {
+          setIndexOpen(false);
+        } else if (fullscreen) {
           onToggleFullscreen();
         } else {
           onClose();
@@ -235,7 +242,7 @@ export function SlideDeck({
 
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [nextSlide, previousSlide, onFrameChange, lesson.frames.length, onToggleFullscreen, fullscreen, onClose]);
+  }, [nextSlide, previousSlide, onFrameChange, lesson.frames.length, onToggleFullscreen, fullscreen, onClose, indexOpen]);
 
   const isReflection = frame && /reflexi|pensamiento|cita|frase|inspiraci/i.test(frame.title);
 
@@ -247,7 +254,17 @@ export function SlideDeck({
           <BrandSignature />
           <span>{subject.name}</span>
         </div>
-        <div>
+        <div className="presentation-actions-right">
+          <Button
+            variant="ghost"
+            onClick={() => setIndexOpen((open) => !open)}
+            aria-label="Índice de diapositivas"
+            title="Índice interactivo de la clase (I)"
+            className="presentation-index-toggle"
+          >
+            <List size={17} />
+            <span>Índice</span>
+          </Button>
           <ThemeControls />
           <Button
             variant="ghost"
@@ -359,9 +376,19 @@ export function SlideDeck({
       {/* Barra de controles inferiores de navegación */}
       <footer className="presentation-controls">
         <div className="slide-shortcuts">
-          ← → Navegar <span>·</span> F Pantalla completa <span>·</span> Esc Volver a lectura
+          ← → Navegar <span>·</span> I Índice <span>·</span> F Pantalla completa <span>·</span> Esc Volver
         </div>
-        <div>
+        <div className="presentation-nav-group">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setIndexOpen((open) => !open)}
+            aria-label="Abrir índice de diapositivas"
+            className="presentation-btn-index"
+          >
+            <List size={16} />
+            <span>Índice</span>
+          </Button>
           <Button
             variant="ghost"
             disabled={current === 0}
@@ -405,6 +432,74 @@ export function SlideDeck({
           }}
         />
       </div>
+
+      {/* Cajón / Modal de índice interactivo de diapositivas */}
+      {indexOpen && (
+        <div
+          className="presentation-index-overlay"
+          role="dialog"
+          aria-modal="true"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setIndexOpen(false);
+          }}
+        >
+          <aside className="presentation-index-drawer">
+            <header className="presentation-index-header">
+              <div>
+                <span>ÍNDICE DE DIAPOSITIVAS</span>
+                <h3>{lesson.title}</h3>
+                <small>{lesson.frames.length} diapositivas en total</small>
+              </div>
+              <button
+                type="button"
+                className="presentation-index-close"
+                onClick={() => setIndexOpen(false)}
+                title="Cerrar índice (Esc / I)"
+                aria-label="Cerrar índice"
+              >
+                <X size={18} />
+              </button>
+            </header>
+
+            <div className="presentation-index-scroll">
+              <div className="presentation-index-grid">
+                {lesson.frames.map((f, i) => {
+                  const isCurrent = i === current;
+                  const hasCode = f.blocks.some((b) => b.type === 'code');
+                  const hasDiagram = f.blocks.some((b) => b.type === 'diagram' || b.type === 'image');
+                  return (
+                    <button
+                      key={f.id}
+                      type="button"
+                      className={`presentation-index-card ${isCurrent ? 'is-current' : ''}`}
+                      onClick={() => {
+                        onFrameChange(i);
+                        setIndexOpen(false);
+                      }}
+                    >
+                      <div className="index-card-header">
+                        <span className="index-card-num">{i + 1}</span>
+                        <div className="index-card-badges">
+                          {hasDiagram && <span className="index-badge diagram">SVG</span>}
+                          {hasCode && <span className="index-badge code">Python</span>}
+                        </div>
+                      </div>
+                      <span className="index-card-section">{f.section}</span>
+                      <strong className="index-card-title">
+                        {f.title.replace(/\$([^\$]+)\$/g, '$1')}
+                      </strong>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <footer className="presentation-index-footer">
+              <span>Navega haciendo clic en cualquier diapositiva o presiona <kbd>I</kbd> / <kbd>Esc</kbd> para cerrar.</span>
+            </footer>
+          </aside>
+        </div>
+      )}
     </div>
   );
 }

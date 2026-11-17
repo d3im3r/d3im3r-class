@@ -915,3 +915,308 @@
   align-items: center;
   gap: 16px;
 }
+
+/* ==========================================================================
+   Image Lightbox (Zoom de Diagramas e Ilustraciones)
+   ========================================================================== */
+.image-lightbox-dialog {
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  height: 100dvh !important;
+  max-width: none !important;
+  max-height: none !important;
+  background: rgba(8, 12, 18, 0.94) !important;
+  backdrop-filter: blur(12px) !important;
+  border: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  z-index: 999999 !important;
+  color: #f0f3f6 !important;
+  box-sizing: border-box !important;
+}
+
+.image-lightbox-header {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  padding: 14px 28px !important;
+  background: rgba(18, 24, 34, 0.98) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15) !important;
+  flex-shrink: 0 !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+.image-lightbox-title {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  color: #e2e8f0 !important;
+}
+
+.lightbox-zoom-badge {
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  padding: 2px 7px !important;
+  border-radius: 4px !important;
+  background: rgba(255, 255, 255, 0.1) !important;
+  color: #94a3b8 !important;
+}
+
+.image-lightbox-actions {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+}
+
+.image-lightbox-btn {
+  background: rgba(255, 255, 255, 0.1) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  color: #fff !important;
+  border-radius: 6px !important;
+  padding: 7px 14px !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  cursor: pointer !important;
+  transition: all 0.15s !important;
+}
+
+.image-lightbox-btn:hover {
+  background: rgba(255, 255, 255, 0.22) !important;
+  border-color: rgba(255, 255, 255, 0.35) !important;
+}
+
+.image-lightbox-btn.close-main {
+  background: #2563eb !important;
+  border-color: #3b82f6 !important;
+  font-weight: 600 !important;
+}
+
+.image-lightbox-btn.close-main:hover {
+  background: #1d4ed8 !important;
+}
+
+/* ==========================================================================
+   Índice interactivo de Diapositivas (Modo Presentación)
+   ========================================================================== */
+.presentation-actions-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.presentation-nav-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.presentation-index-overlay {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;
+  background: rgba(5, 10, 18, 0.75);
+  backdrop-filter: blur(8px);
+  z-index: 99999;
+  display: flex;
+  justify-content: flex-end;
+  animation: fadeIn 0.15s ease-out;
+}
+
+.presentation-index-drawer {
+  width: min(520px, 94vw);
+  height: 100%;
+  background: var(--card, #131b28);
+  border-left: 1px solid var(--border);
+  box-shadow: -16px 0 48px rgba(0, 0, 0, 0.4);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: slideInRight 0.2s ease-out;
+}
+
+@keyframes slideInRight {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+.presentation-index-header {
+  padding: 20px 24px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.presentation-index-header span {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: var(--primary, #3b82f6);
+}
+.presentation-index-header h3 {
+  font-size: 18px;
+  font-weight: 700;
+  margin: 4px 0 2px;
+  line-height: 1.3;
+}
+.presentation-index-header small {
+  font-size: 12px;
+  opacity: 0.7;
+}
+
+.presentation-index-close {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.08);
+  color: inherit;
+  border: 1px solid var(--border);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.presentation-index-close:hover {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.presentation-index-scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 20px;
+}
+
+.presentation-index-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.presentation-index-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  width: 100%;
+  padding: 12px 16px;
+  border-radius: 9px;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.03);
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.presentation-index-card:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: var(--primary, #3b82f6);
+  transform: translateX(3px);
+}
+.presentation-index-card.is-current {
+  background: rgba(59, 130, 246, 0.15);
+  border-color: #3b82f6;
+  box-shadow: inset 3px 0 0 #3b82f6;
+}
+
+.index-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  margin-bottom: 4px;
+}
+
+.index-card-num {
+  font-size: 11px;
+  font-weight: 700;
+  opacity: 0.7;
+}
+
+.index-card-badges {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.index-badge {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+}
+.index-badge.diagram {
+  background: rgba(16, 185, 129, 0.18);
+  color: #10b981;
+}
+.index-badge.code {
+  background: rgba(139, 92, 246, 0.18);
+  color: #8b5cf6;
+}
+
+.index-card-section {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  opacity: 0.6;
+  margin-bottom: 2px;
+}
+
+.index-card-title {
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.presentation-index-footer {
+  padding: 14px 20px;
+  border-top: 1px solid var(--border);
+  font-size: 12px;
+  opacity: 0.75;
+  text-align: center;
+  flex-shrink: 0;
+}
+.presentation-index-footer kbd {
+  background: rgba(255, 255, 255, 0.12);
+  padding: 2px 5px;
+  border-radius: 4px;
+  font-family: inherit;
+}
+
+/* ==========================================================================
+   Corrección de Navegación e Índice en Modo Lectura
+   ========================================================================== */
+@media (min-width: 1280px) {
+  .continuous-reader .reader-layout {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) 300px !important;
+    gap: 36px !important;
+    align-items: start !important;
+  }
+  .continuous-reader .lesson-outline {
+    display: block !important;
+    position: sticky !important;
+    top: 96px !important;
+    max-height: calc(100vh - 120px) !important;
+    overflow-y: auto !important;
+  }
+}
+
+@media (max-width: 1279px) {
+  .continuous-reader .lesson-outline {
+    display: none !important;
+  }
+}

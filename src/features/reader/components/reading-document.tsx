@@ -95,22 +95,28 @@ export function ReadingDocument({
   }, [lesson, onFrameChange]);
 
   const closeIndex = useCallback(() => {
-    indexDialog.current?.close();
     setIndexOpen(false);
-    indexToggle.current?.focus({ preventScroll: true });
+    indexDialog.current?.close();
   }, []);
 
   const jump = useCallback(
     (index: number) => {
-      closeIndex();
+      setIndexOpen(false);
+      indexDialog.current?.close();
+      document.body.style.overflow = '';
       onFrameChange(index);
-      requestAnimationFrame(() => {
-        document
-          .getElementById(`reading-${lesson.frames[index]?.id}`)
-          ?.scrollIntoView({ behavior: 'auto', block: 'start' });
-      });
+
+      const frameId = lesson.frames[index]?.id;
+      if (!frameId) return;
+
+      setTimeout(() => {
+        const el = document.getElementById(`reading-${frameId}`);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }, 50);
     },
-    [closeIndex, onFrameChange, lesson.frames]
+    [onFrameChange, lesson.frames]
   );
 
   useEffect(() => {
