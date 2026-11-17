@@ -361,9 +361,8 @@
 }
 
 .slide-content {
-  overflow-y: auto !important;
-  overflow-x: hidden !important;
-  scrollbar-gutter: stable;
+  overflow: hidden !important;
+  scrollbar-gutter: auto !important;
 }
 
 /* ==========================================================================
