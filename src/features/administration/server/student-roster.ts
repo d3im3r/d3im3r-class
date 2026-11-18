@@ -60,7 +60,151 @@ const normalize = (text: string) =>
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase()
-    .replace(/[^a-z]/g, '');
+    .replace(/[^a-z0-9]/g, '');
+
+export function cleanIdentification(val: string): string {
+  if (!val) return '';
+  let s = String(val).trim();
+  // Quitar prefijo común de documento: CC, T.I, TI, CE, DNI, PAS, RUT, etc.
+  s = s.replace(/^(?:c\.?c\.?|t\.?i\.?|c\.?e\.?|d\.?n\.?i\.?|pas\.?|rut\.?)\s*:?\s*/i, '');
+  // Si contiene puntos, comas o espacios como separadores de miles
+  const numericOnly = s.replace(/[\s.,_-]/g, '');
+  if (/^\d{4,20}$/.test(numericOnly) && /[\s.,]/.test(s)) {
+    if (/\.00?$/.test(s) || /,00?$/.test(s)) {
+      s = s.replace(/[.,]00?$/, '');
+    }
+    return s.replace(/[\s.,]/g, '');
+  }
+  // Eliminar .0 o ,0 final si vino de float de Excel
+  if (/^\d+[.,]00?$/.test(s)) {
+    s = s.replace(/[.,]00?$/, '');
+  }
+  return s.replace(/\s+/g, '');
+}
+
+export function cleanName(val: string): string {
+  return val.replace(/\s+/g, ' ').trim();
+}
+
+export function cleanEmail(val: string): string {
+  let e = val.trim().toLowerCase();
+  e = e.replace(/\.+$/, '');
+  return e;
+}
+
+function findHeaderRowAndColumns(sheet: ExcelJS.Worksheet): {
+  headerRow: number;
+  columns: { name: number; email: number; identification: number };
+} {
+  const maxScanRow = Math.min(10, sheet.rowCount);
+  for (let r = 1; r <= maxScanRow; r++) {
+    const row = sheet.getRow(r);
+    const cols: Partial<Record<'name' | 'email' | 'identification', number>> = {};
+    row.eachCell((cell, index) => {
+      const header = normalize(cell.text || String(cell.value || ''));
+      if (
+        !cols.name &&
+        /^(nombre|nombres|nombrecompleto|nombresyapellidos|apellidosynombres|nombreyapellido|estudiante|alumno|aprendiz|participante|alumnos)/.test(
+          header
+        )
+      ) {
+        cols.name = index;
+      }
+      if (
+        !cols.email &&
+        /^(correo|email|correoelectronico|correoinstitucional|correosena|mail|usuario)/.test(
+          header
+        )
+      ) {
+        cols.email = index;
+      }
+      if (
+        !cols.identification &&
+        /^(identificacion|documento|cedula|dni|ti|cc|numerodedocumento|nodocumento|nodoc|numdocumento|tarjetadeidentidad|id$)/.test(
+          header
+        )
+      ) {
+        cols.identification = index;
+      }
+    });
+
+    if (cols.name && cols.email && cols.identification) {
+      return {
+        headerRow: r,
+        columns: {
+          name: cols.name,
+          email: cols.email,
+          identification: cols.identification,
+        },
+      };
+    }
+  }
+
+  // Fallback heurístico: detectar por el contenido de las columnas
+  const scores: Record<number, { emails: number; ids: number; names: number }> = {};
+  const scanLimit = Math.min(25, sheet.rowCount);
+  for (let r = 1; r <= scanLimit; r++) {
+    const row = sheet.getRow(r);
+    row.eachCell((cell, index) => {
+      if (!scores[index]) scores[index] = { emails: 0, ids: 0, names: 0 };
+      const val = String(cell.value || '').trim();
+      if (!val) return;
+      if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)) scores[index].emails++;
+      else if (/^(?:cc|ti|ce)?[\s.]*\d[\d.,\s-]{4,20}$/i.test(val)) scores[index].ids++;
+      else if (val.split(/\s+/).length >= 2 && !/\d/.test(val) && val.length < 80)
+        scores[index].names++;
+    });
+  }
+
+  let emailCol = 0,
+    idCol = 0,
+    nameCol = 0;
+  let maxEmail = 0,
+    maxId = 0,
+    maxName = 0;
+  for (const [colStr, s] of Object.entries(scores)) {
+    const col = Number(colStr);
+    if (s.emails > maxEmail && s.emails >= 1) {
+      maxEmail = s.emails;
+      emailCol = col;
+    }
+    if (s.ids > maxId && s.ids >= 1) {
+      maxId = s.ids;
+      idCol = col;
+    }
+    if (s.names > maxName && s.names >= 1) {
+      maxName = s.names;
+      nameCol = col;
+    }
+  }
+
+  if (
+    emailCol &&
+    idCol &&
+    nameCol &&
+    emailCol !== idCol &&
+    emailCol !== nameCol &&
+    idCol !== nameCol
+  ) {
+    let dataStartRow = 1;
+    for (let r = 1; r <= Math.min(10, sheet.rowCount); r++) {
+      const emailVal = String(sheet.getRow(r).getCell(emailCol).value || '');
+      if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailVal)) {
+        dataStartRow = r;
+        break;
+      }
+    }
+    return {
+      headerRow: Math.max(1, dataStartRow - 1),
+      columns: { name: nameCol, email: emailCol, identification: idCol },
+    };
+  }
+
+  throw new AppError(
+    'La primera fila debe tener las columnas nombre, correo e identificación.'
+  );
+}
+
 function value(cell: ExcelJS.Cell, identifier = false) {
   const raw = cell.value;
   if (raw === null || raw === undefined) return '';
@@ -94,20 +238,11 @@ async function parseRoster(buffer: Buffer): Promise<{ rows: PrivateRow[]; finger
   const sheet = workbook.worksheets[0];
   if (!sheet) throw new AppError('El archivo no contiene hojas.');
   if (sheet.rowCount > 501) throw new AppError('Importa un máximo de 500 alumnos por archivo.');
-  const columns: Partial<Record<'name' | 'email' | 'identification', number>> = {};
-  sheet.getRow(1).eachCell((cell, index) => {
-    const header = normalize(cell.text);
-    if (['nombre', 'nombrecompleto', 'nombres'].includes(header)) columns.name = index;
-    if (['correo', 'email', 'correoelectronico'].includes(header)) columns.email = index;
-    if (['identificacion', 'documento', 'cedula', 'dni'].includes(header))
-      columns.identification = index;
-  });
-  if (!columns.name || !columns.email || !columns.identification)
-    throw new AppError('La primera fila debe tener las columnas nombre, correo e identificación.');
+  const { headerRow, columns } = findHeaderRowAndColumns(sheet);
   const rows: PrivateRow[] = [],
     emails = new Set<string>(),
     identifications = new Set<string>();
-  for (let rowNumber = 2; rowNumber <= sheet.rowCount; rowNumber++) {
+  for (let rowNumber = headerRow + 1; rowNumber <= sheet.rowCount; rowNumber++) {
     const row = sheet.getRow(rowNumber);
     if (
       [columns.name, columns.email, columns.identification].every(
@@ -121,11 +256,15 @@ async function parseRoster(buffer: Buffer): Promise<{ rows: PrivateRow[]; finger
       issue = '',
       warning: string | undefined;
     try {
-      name = value(row.getCell(columns.name));
-      email = value(row.getCell(columns.email)).toLowerCase();
-      identification = value(row.getCell(columns.identification), true);
-      if (typeof row.getCell(columns.identification).value === 'number')
+      name = cleanName(value(row.getCell(columns.name)));
+      email = cleanEmail(value(row.getCell(columns.email)));
+      const rawId = value(row.getCell(columns.identification), true);
+      identification = cleanIdentification(rawId);
+      if (rawId && rawId !== identification && /[\s.,]/.test(rawId)) {
+        warning = 'Puntos o separadores limpiados automáticamente para inicio de sesión.';
+      } else if (typeof row.getCell(columns.identification).value === 'number') {
         warning = 'Identificación numérica: comprueba que no faltan ceros iniciales en el archivo.';
+      }
     } catch (error) {
       issue = error instanceof Error ? error.message : 'Fila no válida.';
     }
@@ -142,7 +281,8 @@ async function parseRoster(buffer: Buffer): Promise<{ rows: PrivateRow[]; finger
     if (!issue && identifications.has(identification))
       issue = 'La identificación está repetida en el archivo.';
     const existing = email
-      ? db().prepare('SELECT role FROM users WHERE username=?').get(email)
+      ? (db().prepare('SELECT role FROM users WHERE username=?').get(email) ||
+         db().prepare('SELECT role FROM user WHERE email=? OR username=?').get(email, email))
       : undefined;
     if (!issue && (existing?.role === 'teacher' || existing?.role === 'admin'))
       issue = 'El correo ya pertenece a una cuenta docente o administrativa.';
@@ -232,30 +372,44 @@ export async function importRoster(
       enrolled = 0;
     for (const row of rows) {
       if (row.status === 'error') continue;
-      let user = db().prepare('SELECT id,role FROM users WHERE username=?').get(row.email);
+      let user = db().prepare('SELECT id,role FROM users WHERE username=?').get(row.email) as
+        | { id: string; role: string }
+        | undefined;
+      if (!user) {
+        const u = db()
+          .prepare('SELECT id,role FROM user WHERE email=? OR username=?')
+          .get(row.email, row.email) as { id: string; role: string } | undefined;
+        if (u) user = u;
+      }
       if (row.status === 'ready') {
-        if (user)
-          throw new AppError(
-            'Un correo fue registrado durante la importación. Actualiza la vista previa.',
-            409
-          );
-        const id = randomUUID(),
-          hashed = hashes.get(row.row)!;
-        db()
-          .prepare("INSERT INTO users(id,name,username,password,role) VALUES (?,?,?,?,'student')")
-          .run(id, row.name, row.email, hashed);
-        syncBetterAuthUser(id, row.name, row.email, hashed, 'student');
-        const pool = getPgPool();
-        if (pool) {
-          pool
-            .query(
-              'INSERT INTO users(id,name,username,password,role) VALUES ($1,$2,$3,$4,$5) ON CONFLICT(id) DO UPDATE SET name=EXCLUDED.name,username=EXCLUDED.username,password=EXCLUDED.password,role=EXCLUDED.role',
-              [id, row.name, row.email, hashed, 'student']
+        if (!user) {
+          const id = randomUUID(),
+            hashed = hashes.get(row.row)!;
+          db()
+            .prepare(
+              "INSERT INTO users(id,name,username,password,role) VALUES (?,?,?,?,'student') ON CONFLICT(username) DO UPDATE SET name=excluded.name,password=excluded.password"
             )
-            .catch(console.error);
+            .run(id, row.name, row.email, hashed);
+          syncBetterAuthUser(id, row.name, row.email, hashed, 'student');
+          const pool = getPgPool();
+          if (pool) {
+            pool
+              .query(
+                'INSERT INTO users(id,name,username,password,role) VALUES ($1,$2,$3,$4,$5) ON CONFLICT(username) DO UPDATE SET name=EXCLUDED.name,password=EXCLUDED.password,role=EXCLUDED.role',
+                [id, row.name, row.email, hashed, 'student']
+              )
+              .catch(console.error);
+          }
+          user = { id, role: 'student' };
+          created++;
+        } else {
+          // Ya existía en user o users: actualizar contraseña si vino en el archivo
+          const hashed = hashes.get(row.row);
+          if (hashed) {
+            db().prepare('UPDATE users SET password=? WHERE id=?').run(hashed, user.id);
+            syncBetterAuthUser(user.id, row.name, row.email, hashed, 'student');
+          }
         }
-        user = { id, role: 'student' };
-        created++;
       } else if (!input.enrollExisting) continue;
       if (!user || user.role !== 'student')
         throw new AppError(

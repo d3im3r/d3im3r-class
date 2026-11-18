@@ -1,8 +1,10 @@
 import { requirePermission, errorResponse } from '@/features/auth/server/auth';
 import { exportStudentRoster } from '@/features/administration/server/student-roster';
+import { syncFromPostgres } from '@/features/administration/server/database';
 
 export async function GET() {
   try {
+    await syncFromPostgres();
     const actor = await requirePermission({ campus: ['students'] });
     const buffer = await exportStudentRoster(actor);
     const date = new Date().toISOString().split('T')[0];

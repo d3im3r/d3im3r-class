@@ -107,6 +107,33 @@ test('un correo existente conserva su contraseña y puede recibir asignaciones',
   assert.equal(login({ username: 'ana@pruebas.edu', password: '00091234' }).name, 'Ana Prueba');
   assert.throws(() => login({ username: 'ana@pruebas.edu', password: 'otra-identificacion' }));
 });
+test('limpia puntos y separadores en la identificación y permite iniciar sesión sin puntos', async () => {
+  const buffer = await workbook([['Carlos Cédula', 'carlos.cedula@pruebas.edu', '1.025.761.967']]);
+  const preview = await previewRoster(buffer);
+  assert.equal(preview.ready, 1);
+  assert.equal(preview.rows[0].identificationLength, 10);
+  assert.ok(preview.rows[0].warning?.includes('Puntos o separadores'));
+  await importRoster(buffer, {
+    fingerprint: preview.fingerprint,
+    subjectIds: [],
+    skipErrors: false,
+    enrollExisting: false,
+  });
+  // El alumno puede iniciar sesión con la identificación limpia sin puntos
+  assert.equal(login({ username: 'carlos.cedula@pruebas.edu', password: '1025761967' }).role, 'student');
+});
+test('detecta encabezados en filas intermedias y encabezados institucionales (Aprendiz, Cédula)', async () => {
+  const book = new ExcelJS.Workbook();
+  const sheet = book.addWorksheet('Alumnos');
+  sheet.addRow(['CENTRO DE FORMACION - LISTADO']);
+  sheet.addRow(['Nombres y Apellidos del Aprendiz', 'Correo Electrónico', 'Número de Documento']);
+  sheet.addRow(['Estudiante Sena', 'sena.aprendiz@pruebas.edu', '1035305165']);
+  const buffer = Buffer.from(await book.xlsx.writeBuffer());
+  const preview = await previewRoster(buffer);
+  assert.equal(preview.ready, 1);
+  assert.equal(preview.rows[0].name, 'Estudiante Sena');
+  assert.equal(preview.rows[0].email, 'sena.aprendiz@pruebas.edu');
+});
 after(() => {
   db().close();
   rmSync(folder, { recursive: true, force: true });

@@ -373,14 +373,21 @@ export function syncBetterAuthUser(
   const sql = db(),
     now = new Date().toISOString(),
     email = username.includes('@') ? username : `${username}@aula.local`;
+
+  // Comprobar si ya existe un usuario por correo o username para reutilizar su ID y evitar violación de UNIQUE
+  const existingUser = sql
+    .prepare('SELECT id FROM user WHERE email=? OR username=?')
+    .get(email, username) as { id: string } | undefined;
+  const targetId = existingUser?.id ?? id;
+
   sql
     .prepare(
       'INSERT INTO user(id,name,email,emailVerified,createdAt,updatedAt,username,displayUsername,role,banned) VALUES (?,?,?,1,?,?,?,?,?,0) ON CONFLICT(id) DO UPDATE SET name=excluded.name,email=excluded.email,updatedAt=excluded.updatedAt,username=excluded.username,displayUsername=excluded.displayUsername,role=excluded.role'
     )
-    .run(id, name, email, now, now, username, username, role);
+    .run(targetId, name, email, now, now, username, username, role);
   const existingAcc = sql
     .prepare("SELECT id FROM account WHERE userId=? AND providerId='credential'")
-    .get(id) as { id: string } | undefined;
+    .get(targetId) as { id: string } | undefined;
   if (existingAcc)
     sql
       .prepare('UPDATE account SET password=?,updatedAt=? WHERE id=?')
@@ -390,7 +397,7 @@ export function syncBetterAuthUser(
       .prepare(
         "INSERT INTO account(id,accountId,providerId,userId,password,createdAt,updatedAt) VALUES (?,?,'credential',?,?,?,?)"
       )
-      .run(randomUUID(), id, id, password, now, now);
+      .run(randomUUID(), targetId, targetId, password, now, now);
 
   const pool = getPgPool();
   if (pool) {
@@ -398,12 +405,12 @@ export function syncBetterAuthUser(
       pool
         .query(
           'INSERT INTO "user"(id,name,email,"emailVerified","createdAt","updatedAt",username,"displayUsername",role,banned) VALUES ($1,$2,$3,true,$4,$4,$5,$5,$6,false) ON CONFLICT(id) DO UPDATE SET name=EXCLUDED.name,email=EXCLUDED.email,"updatedAt"=EXCLUDED."updatedAt",username=EXCLUDED.username,"displayUsername"=EXCLUDED."displayUsername",role=EXCLUDED.role',
-          [id, name, email, now, username, role]
+          [targetId, name, email, now, username, role]
         )
         .then(() =>
           pool.query(
             'INSERT INTO account(id,"accountId","providerId","userId",password,"createdAt","updatedAt") VALUES ($1,$2,\'credential\',$2,$3,$4,$4) ON CONFLICT(id) DO UPDATE SET password=EXCLUDED.password,"updatedAt"=EXCLUDED."updatedAt"',
-            [randomUUID(), id, password, now]
+            [randomUUID(), targetId, password, now]
           )
         )
     );

@@ -391,11 +391,25 @@ export function sameOrigin(request: Request) {
   }
 }
 export function errorResponse(error: unknown) {
-  if (error instanceof AppError)
-    return Response.json({ error: error.message }, { status: error.status });
-  console.error('Aula:', error instanceof Error ? error.message : 'Error interno');
+  if (
+    error instanceof AppError ||
+    (typeof error === 'object' &&
+      error !== null &&
+      'status' in error &&
+      typeof (error as { status: unknown }).status === 'number' &&
+      'message' in error)
+  ) {
+    const appErr = error as { message: string; status: number };
+    return Response.json({ error: appErr.message }, { status: appErr.status });
+  }
+  console.error('Aula:', error instanceof Error ? error.stack || error.message : 'Error interno');
   return Response.json(
-    { error: 'No se pudo completar la operación. Revisa los datos e inténtalo de nuevo.' },
+    {
+      error:
+        error instanceof Error && error.message
+          ? error.message
+          : 'No se pudo completar la operación. Revisa los datos e inténtalo de nuevo.',
+    },
     { status: 500 }
   );
 }

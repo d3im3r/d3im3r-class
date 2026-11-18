@@ -5,12 +5,13 @@ import {
   AppError,
 } from '@/features/auth/server/auth';
 import { previewRoster, importRoster } from '@/features/administration/server/student-roster';
-import { flushPg } from '@/features/administration/server/database';
+import { flushPg, syncFromPostgres } from '@/features/administration/server/database';
 export const runtime = 'nodejs';
 export const maxDuration = 120;
 export async function POST(request: Request) {
   try {
     sameOrigin(request);
+    await syncFromPostgres();
     const user = await requirePermission({ campus: ['students'] });
     if (Number(request.headers.get('content-length') ?? 0) > 2300000)
       throw new AppError('Selecciona un .xlsx de hasta 2 MB.');
