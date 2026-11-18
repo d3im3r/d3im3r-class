@@ -60,7 +60,7 @@ function Figure({ block }: { block: Block }) {
     setZoom(1);
   }, [block.asset]);
   const isDiagram = block.type === 'diagram';
-  const inspect = (
+  const inspect = canTest ? (
     <details className="diagram-source">
       <summary>
         <Workflow size={13} />
@@ -76,20 +76,18 @@ function Figure({ block }: { block: Block }) {
           justifyContent: 'center',
         }}
       >
-        {canTest && (
-          <button
-            type="button"
-            className="resource-inspect"
-            onClick={(event) => {
-              event.currentTarget.closest('dialog')?.close();
-              window.dispatchEvent(
-                new CustomEvent('aula:inspect-resource', { detail: block.content })
-              );
-            }}
-          >
-            Abrir en herramientas
-          </button>
-        )}
+        <button
+          type="button"
+          className="resource-inspect"
+          onClick={(event) => {
+            event.currentTarget.closest('dialog')?.close();
+            window.dispatchEvent(
+              new CustomEvent('aula:inspect-resource', { detail: block.content })
+            );
+          }}
+        >
+          Abrir en herramientas
+        </button>
         {isDiagram && (
           <a
             href="https://tikz.dev/"
@@ -103,7 +101,7 @@ function Figure({ block }: { block: Block }) {
         )}
       </div>
     </details>
-  );
+  ) : null;
   const alt = isDiagram
     ? 'Diagrama de la clase'
     : (block.content

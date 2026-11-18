@@ -23,7 +23,7 @@ function MathInline({ source }: { source: string }) {
 export function InlineText({ text }: { text: string }) {
   const nodes: ReactNode[] = [];
   const token =
-    /\\(textbf|texttt|textit|emph|alert|underline|text|url|href|textcolor)\s*\{|(?<!\\)\$|\\\(|\\\\(?:\[[^\]]*\])?|\\(?:ok|fail|fa[A-Za-z]+)\b|\*\*\s*([^\n*]+?)\s*\*\*|`([^`]+)`|(?<!\*)\*\s*([^\n*]+?)\s*\*(?!\*)/g;
+    /\\(textbf|texttt|textit|emph|alert|underline|text|url|href|textcolor)\s*\{|(?<!\\)\$|\\\(|\\\\(?:\[[^\]]*\])?|\\(?:ok|fail|fa[A-Za-z]+)\b|\*\*([^*]+?)\*\*|`([^`]+)`|(?<!\*)\*([^*]+?)\*(?!\*)/g;
   const literal = (s: string) =>
     s
       .replace(/\\([_%&#${}])/g, '$1')

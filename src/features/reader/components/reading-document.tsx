@@ -10,6 +10,7 @@ import {
   FileText,
   MonitorPlay,
   ListTree,
+  Wrench,
   X,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -30,6 +31,9 @@ export interface ReadingDocumentProps {
   onStartPresentation: () => void;
   onFrameChange: (index: number) => void;
   frameIndex: number;
+  toolsEnabled?: boolean;
+  onToggleTools?: () => void;
+  canPresent?: boolean;
 }
 
 export function ReadingDocument({
@@ -42,6 +46,9 @@ export function ReadingDocument({
   onStartPresentation,
   onFrameChange,
   frameIndex,
+  toolsEnabled = true,
+  onToggleTools,
+  canPresent = false,
 }: ReadingDocumentProps) {
   const canInspect = useContext(ResourceToolsContext);
   const [indexOpen, setIndexOpen] = useState(false);
@@ -156,10 +163,12 @@ export function ReadingDocument({
               </a>
             </Button>
           )}
-          <Button onClick={onStartPresentation}>
-            <MonitorPlay size={16} />
-            Presentar clase
-          </Button>
+          {canPresent && (
+            <Button onClick={onStartPresentation}>
+              <MonitorPlay size={16} />
+              Presentar clase
+            </Button>
+          )}
         </div>
       </div>
 
@@ -246,8 +255,21 @@ export function ReadingDocument({
         </div>
       </div>
 
-      {/* Botón flotante para abrir/cerrar índice */}
+      {/* Botón flotante para abrir/cerrar índice y selector de herramientas */}
       <div className="reader-floating-actions">
+        {onToggleTools && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onToggleTools}
+            className={`tools-toggle-btn ${toolsEnabled ? 'is-active' : 'is-inactive'}`}
+            title={toolsEnabled ? 'Desactivar herramientas interactivas de esta clase' : 'Activar herramientas interactivas de esta clase'}
+            aria-label="Conmutar herramientas interactivas"
+          >
+            <Wrench size={15} style={{ color: toolsEnabled ? '#10b981' : '#94a3b8' }} />
+            <span>Herramientas: {toolsEnabled ? 'ON' : 'OFF'}</span>
+          </Button>
+        )}
         <Button
           ref={indexToggle}
           variant="outline"
@@ -258,10 +280,12 @@ export function ReadingDocument({
           <ListTree size={16} />
           <span>Índice</span>
         </Button>
-        <Button size="sm" onClick={onStartPresentation}>
-          <MonitorPlay size={16} />
-          <span>Presentar</span>
-        </Button>
+        {canPresent && (
+          <Button size="sm" onClick={onStartPresentation}>
+            <MonitorPlay size={16} />
+            <span>Presentar</span>
+          </Button>
+        )}
       </div>
 
       {/* Diálogo modal de índice interactivo */}

@@ -10,6 +10,7 @@ import {
   List,
   BookOpen,
   Sparkles,
+  Wrench,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { BrandSignature } from '@/features/theme/brand-signature';
@@ -28,6 +29,8 @@ export interface SlideDeckProps {
   onClose: () => void;
   fullscreen: boolean;
   onToggleFullscreen: () => void;
+  toolsEnabled?: boolean;
+  onToggleTools?: () => void;
 }
 
 /**
@@ -66,6 +69,8 @@ export function SlideDeck({
   onClose,
   fullscreen,
   onToggleFullscreen,
+  toolsEnabled = true,
+  onToggleTools,
 }: SlideDeckProps) {
   const [indexOpen, setIndexOpen] = useState(false);
   const [activeSlide, setActiveSlide] = useState(current);
@@ -233,6 +238,18 @@ export function SlideDeck({
           <span>{subject.name}</span>
         </div>
         <div className="presentation-actions-right">
+          {onToggleTools && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onToggleTools}
+              className={`presentation-tools-toggle ${toolsEnabled ? 'is-active' : ''}`}
+              title={toolsEnabled ? 'Desactivar herramientas en esta clase' : 'Activar herramientas en esta clase'}
+            >
+              <Wrench size={16} style={{ color: toolsEnabled ? '#10b981' : '#94a3b8' }} />
+              <span>Herramientas: {toolsEnabled ? 'ON' : 'OFF'}</span>
+            </Button>
+          )}
           <Button
             variant="ghost"
             onClick={() => setIndexOpen((open) => !open)}

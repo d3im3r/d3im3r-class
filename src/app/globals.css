@@ -1744,3 +1744,102 @@
   flex-shrink: 0 !important;
   opacity: 0.8 !important;
 }
+
+/* ==========================================================================
+   Seguridad y Protección de Contenido: Bloqueo de Impresión y Descarga
+   ========================================================================== */
+@media print {
+  html, body {
+    background: #ffffff !important;
+    color: #000000 !important;
+    height: 100vh !important;
+    overflow: hidden !important;
+  }
+  body * {
+    display: none !important;
+    visibility: hidden !important;
+  }
+  body::before {
+    content: "Material de clase protegido por d3im3r-class. La impresión, guardado y copia no autorizada están restringidos. Solo visualización en campus.";
+    display: block !important;
+    visibility: visible !important;
+    margin: 15% auto !important;
+    padding: 32px 48px !important;
+    max-width: 650px !important;
+    text-align: center !important;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+    font-size: 20px !important;
+    font-weight: 700 !important;
+    line-height: 1.6 !important;
+    color: #0f172a !important;
+    border: 3px dashed #cbd5e1 !important;
+    border-radius: 16px !important;
+    background: #f8fafc !important;
+  }
+}
+
+/* Bloqueo de arrastre de imágenes y diagramas */
+.reading-body img,
+.reading-body svg,
+.slide-deck-container img,
+.slide-deck-container svg,
+.lesson-figure img,
+.lesson-figure svg,
+.diagram-render svg {
+  -webkit-user-drag: none;
+  -khtml-user-drag: none;
+  -moz-user-drag: none;
+  -o-user-drag: none;
+  user-drag: none;
+}
+
+/* Estilos de botones de activación/desactivación de herramientas */
+.code-content pre,
+.code-content code,
+.code-content .shiki,
+.code-content .shiki code,
+.code-content .shiki span {
+  font-size: inherit !important;
+  line-height: 1.6 !important;
+}
+
+.code-font-controls .code-zoom-btn:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+[data-theme="dark"] .code-font-controls .code-zoom-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.tools-toggle-btn {
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  transition: all 0.2s ease !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+}
+
+.tools-toggle-btn.is-active {
+  border-color: rgba(16, 185, 129, 0.4) !important;
+  background: rgba(16, 185, 129, 0.08) !important;
+  color: #10b981 !important;
+}
+
+.tools-toggle-btn.is-inactive {
+  opacity: 0.75 !important;
+}
+
+.presentation-tools-toggle {
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  transition: all 0.2s ease !important;
+}
+
+.presentation-tools-toggle.is-active {
+  color: #10b981 !important;
+}
+

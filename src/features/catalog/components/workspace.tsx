@@ -692,6 +692,7 @@ export function Workspace({
                   setView('course');
                 }
               }}
+              canPresent={user.role === 'admin' || user.role === 'teacher'}
             />
           ) : view === 'admin' && canManageCampus ? (
             <AdminPanel

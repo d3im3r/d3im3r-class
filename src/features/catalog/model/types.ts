@@ -23,6 +23,7 @@ export type Lesson = {
   frames: Frame[];
   diagnostics: string[];
   status?: 'draft' | 'published';
+  toolsEnabled?: boolean;
 };
 export type Institution = {
   id: string;
