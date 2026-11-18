@@ -25,9 +25,21 @@ def inline_to_text(inlines: list[dict]) -> str:
             val = inline_to_text(node.get('children', [])) if 'children' in node else node.get('value', '')
             res.append(f'`{val}`')
         elif ntype == 'strong':
-            res.append(f"**{inline_to_text(node.get('children', []))}**")
+            inner = inline_to_text(node.get('children', []))
+            core_text = inner.strip()
+            if not core_text:
+                continue
+            lead = inner[:len(inner) - len(inner.lstrip())]
+            trail = inner[len(inner.rstrip()):]
+            res.append(f"{lead}**{core_text}**{trail}")
         elif ntype == 'emphasis':
-            res.append(f"*{inline_to_text(node.get('children', []))}*")
+            inner = inline_to_text(node.get('children', []))
+            core_text = inner.strip()
+            if not core_text:
+                continue
+            lead = inner[:len(inner) - len(inner.lstrip())]
+            trail = inner[len(inner.rstrip()):]
+            res.append(f"{lead}*{core_text}*{trail}")
         elif ntype == 'math_inline':
             res.append(f"${node.get('latex', '')}$")
         elif ntype == 'line_break':

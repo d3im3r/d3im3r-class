@@ -1449,8 +1449,14 @@ export function AdminPanel({
                                     if (node.type === 'text') return node.value || '';
                                     if (node.type === 'code_inline')
                                       return `\`${node.children ? inlineToText(node.children) : node.value || ''}\``;
-                                    if (node.type === 'strong') return `**${inlineToText(node.children || [])}**`;
-                                    if (node.type === 'emphasis') return `*${inlineToText(node.children || [])}*`;
+                                    if (node.type === 'strong') {
+                                      const inner = inlineToText(node.children || []).trim();
+                                      return inner ? `**${inner}**` : '';
+                                    }
+                                    if (node.type === 'emphasis') {
+                                      const inner = inlineToText(node.children || []).trim();
+                                      return inner ? `*${inner}*` : '';
+                                    }
                                     if (node.type === 'math_inline') return `$${node.latex || ''}$`;
                                     if (node.type === 'line_break') return '\n';
                                     return node.value || '';

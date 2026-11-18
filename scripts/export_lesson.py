@@ -163,6 +163,24 @@ def strip_comments(text: str) -> str:
         begin=re.search(r'\\begin\{([\w*]+)\}',line)
         if begin and begin.group(1) in raw_envs:
             start_idx=begin.start(); prefix=line[:start_idx]
+            has_comment=False
+            for ci,ch in enumerate(prefix):
+                if ch=='%':
+                    ck=ci-1
+                    while ck>=0 and prefix[ck]=='\\': ck-=1
+                    if (ci-ck-1)%2==0:
+                        has_comment=True; break
+            if has_comment:
+                acc=[]; i=0
+                while i<len(line):
+                    if line[i]=='%':
+                        k=i-1
+                        while k>=0 and line[k]=='\\': k-=1
+                        if (i-k-1)%2==0:
+                            if line.endswith('\n'): acc.append('\n')
+                            break
+                    acc.append(line[i]); i+=1
+                out.append(''.join(acc)); continue
             # allow normal comments in material before the code environment
             line_prefix=re.sub(r'(?<!\\)%[^\n]*$', '', prefix)
             out.append(line_prefix + line[start_idx:])
@@ -1211,9 +1229,21 @@ def inline_to_text(inlines: list[dict]) -> str:
             val = inline_to_text(node.get('children', [])) if 'children' in node else node.get('value', '')
             res.append(f'`{val}`')
         elif ntype == 'strong':
-            res.append(f"**{inline_to_text(node.get('children', []))}**")
+            inner = inline_to_text(node.get('children', []))
+            core_text = inner.strip()
+            if not core_text:
+                continue
+            lead = inner[:len(inner) - len(inner.lstrip())]
+            trail = inner[len(inner.rstrip()):]
+            res.append(f"{lead}**{core_text}**{trail}")
         elif ntype == 'emphasis':
-            res.append(f"*{inline_to_text(node.get('children', []))}*")
+            inner = inline_to_text(node.get('children', []))
+            core_text = inner.strip()
+            if not core_text:
+                continue
+            lead = inner[:len(inner) - len(inner.lstrip())]
+            trail = inner[len(inner.rstrip()):]
+            res.append(f"{lead}*{core_text}*{trail}")
         elif ntype == 'math_inline':
             res.append(f"${node.get('latex', '')}$")
         elif ntype == 'line_break':
