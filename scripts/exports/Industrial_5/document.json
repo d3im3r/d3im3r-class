@@ -1,0 +1,3280 @@
+{
+  "schemaVersion": "1.0.0",
+  "id": "industrial-5",
+  "type": "lesson",
+  "title": "Clase 6: Composición de rotaciones en 3D",
+  "metadata": {
+    "courseName": "Robótica Industrial",
+    "courseCode": "ING 01339 / SOL-ING 220",
+    "faculty": "Facultad de Ingeniería",
+    "institution": "Politécnico Colombiano Jaime Isaza Cadavid",
+    "instructor": "Deimer Andrés Miranda Montoya, MSc.(c).",
+    "email": "deimer_miranda91162@elpoli.edu.co",
+    "originalTitle": "Robótica Industrial",
+    "subtitle": "Clase 6: Composición de rotaciones en 3D",
+    "academicPeriod": "2026-2",
+    "lessonTitle": "Clase 6: Composición de rotaciones en 3D"
+  },
+  "source": {
+    "file": "Industrial_5.tex",
+    "template": "beamer"
+  },
+  "structure": [
+    {
+      "id": "sec-3edf5ccdac0e",
+      "type": "section",
+      "title": "Contenido",
+      "implicit": true,
+      "children": [
+        {
+          "id": "frame-clase-6-proposito-e048dbf",
+          "type": "frame",
+          "title": "Clase 6: propósito",
+          "sourceLine": 59,
+          "blocks": [
+            {
+              "type": "academic_block",
+              "variant": "idea",
+              "title": "Propósito",
+              "children": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "Comprender cómo se combinan varias rotaciones en el espacio tridimensional y por qué el orden de multiplicación cambia el resultado final."
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Al finalizar la clase, el estudiante debe poder:"
+                }
+              ]
+            },
+            {
+              "type": "list",
+              "variant": "itemize",
+              "items": [
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "interpretar una rotación compuesta como una secuencia;"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "reconocer qué rotación actúa primero en un producto matricial;"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "verificar la no conmutatividad de las rotaciones 3D;"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "distinguir rotaciones respecto a ejes fijos y ejes móviles;"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "construir una matriz de orientación final;"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "validar resultados mediante Python."
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "figure",
+              "assetId": "asset-4c1dfb5e4cf8"
+            },
+            {
+              "type": "academic_block",
+              "variant": "result",
+              "title": "Idea central",
+              "children": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "En 3D, cambiar el orden de las rotaciones puede cambiar la orientación final."
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "sec-e6e17c54f6f4",
+      "type": "section",
+      "title": "Punto de partida",
+      "implicit": false,
+      "children": [
+        {
+          "id": "frame-lo-que-ya-sabemos-3143480",
+          "type": "frame",
+          "title": "Lo que ya sabemos",
+          "sourceLine": 105,
+          "blocks": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "En la clase anterior construimos las rotaciones elementales:"
+                }
+              ]
+            },
+            {
+              "type": "math",
+              "latex": "R_x(\\theta)=\n    \\begin{bmatrix}\n        1&0&0\\\\\n        0&\\cos\\theta&-\\sin\\theta\\\\\n        0&\\sin\\theta&\\cos\\theta\n    \\end{bmatrix}",
+              "display": true
+            },
+            {
+              "type": "math",
+              "latex": "R_y(\\theta)=\n    \\begin{bmatrix}\n        \\cos\\theta&0&\\sin\\theta\\\\\n        0&1&0\\\\\n        -\\sin\\theta&0&\\cos\\theta\n    \\end{bmatrix},\n    \\quad\n    R_z(\\theta)=\n    \\begin{bmatrix}\n        \\cos\\theta&-\\sin\\theta&0\\\\\n        \\sin\\theta&\\cos\\theta&0\\\\\n        0&0&1\n    \\end{bmatrix}.",
+              "display": true
+            },
+            {
+              "type": "academic_block",
+              "variant": "result",
+              "title": "Propiedad común",
+              "children": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "Cada matriz representa una rotación rígida: conserva longitudes y ángulos, y cumple "
+                    },
+                    {
+                      "type": "math_inline",
+                      "latex": "R^TR=I"
+                    },
+                    {
+                      "type": "text",
+                      "value": " y "
+                    },
+                    {
+                      "type": "math_inline",
+                      "latex": "\\det(R)=1"
+                    },
+                    {
+                      "type": "text",
+                      "value": "."
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "frame-la-nueva-pregunta-b9f5637",
+          "type": "frame",
+          "title": "La nueva pregunta",
+          "sourceLine": 140,
+          "blocks": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "En un robot real rara vez aparece una sola rotación aislada."
+                }
+              ]
+            },
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Una orientación puede resultar de varias acciones consecutivas:"
+                }
+              ]
+            },
+            {
+              "type": "math",
+              "latex": "\\text{girar alrededor de }x\n    \\quad\\rightarrow\\quad\n    \\text{girar alrededor de }y\n    \\quad\\rightarrow\\quad\n    \\text{girar alrededor de }z.",
+              "display": true
+            },
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Esto conduce a productos matriciales como:"
+                }
+              ]
+            },
+            {
+              "type": "math",
+              "latex": "R=R_z(\\gamma)R_y(\\beta)R_x(\\alpha).",
+              "display": true
+            },
+            {
+              "type": "academic_block",
+              "variant": "warning",
+              "title": "Pregunta clave",
+              "children": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "¿El resultado sería el mismo si escribimos "
+                    },
+                    {
+                      "type": "math_inline",
+                      "latex": "R_x(\\alpha)R_y(\\beta)R_z(\\gamma)"
+                    },
+                    {
+                      "type": "text",
+                      "value": "?"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "frame-composicion-una-accion-despues-de-otra-6a65a5c",
+          "type": "frame",
+          "title": "Composición: una acción después de otra",
+          "sourceLine": 172,
+          "blocks": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Si primero se aplica una rotación "
+                },
+                {
+                  "type": "math_inline",
+                  "latex": "R_1"
+                },
+                {
+                  "type": "text",
+                  "value": " a un vector "
+                },
+                {
+                  "type": "math_inline",
+                  "latex": "\\boldsymbol{p}"
+                },
+                {
+                  "type": "text",
+                  "value": ", se obtiene:"
+                }
+              ]
+            },
+            {
+              "type": "math",
+              "latex": "\\boldsymbol{p}_1=R_1\\boldsymbol{p}.",
+              "display": true
+            },
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Si después se aplica una segunda rotación "
+                },
+                {
+                  "type": "math_inline",
+                  "latex": "R_2"
+                },
+                {
+                  "type": "text",
+                  "value": ":"
+                }
+              ]
+            },
+            {
+              "type": "math",
+              "latex": "\\boldsymbol{p}_2=R_2\\boldsymbol{p}_1.",
+              "display": true
+            },
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Sustituyendo:"
+                }
+              ]
+            },
+            {
+              "type": "math",
+              "latex": "\\boxed{\n    \\boldsymbol{p}_2=R_2R_1\\boldsymbol{p}}",
+              "display": true
+            },
+            {
+              "type": "academic_block",
+              "variant": "result",
+              "title": "Lectura algebraica",
+              "children": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "La matriz más cercana al vector actúa primero."
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "academic_block",
+              "variant": "warning",
+              "title": "No leer de izquierda a derecha",
+              "children": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "En "
+                    },
+                    {
+                      "type": "math_inline",
+                      "latex": "R_2R_1\\boldsymbol{p}"
+                    },
+                    {
+                      "type": "text",
+                      "value": ", primero actúa "
+                    },
+                    {
+                      "type": "math_inline",
+                      "latex": "R_1"
+                    },
+                    {
+                      "type": "text",
+                      "value": " y luego "
+                    },
+                    {
+                      "type": "math_inline",
+                      "latex": "R_2"
+                    },
+                    {
+                      "type": "text",
+                      "value": "."
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "frame-diagrama-de-composicion-sobre-un-vector-0613be9",
+          "type": "frame",
+          "title": "Diagrama de composición sobre un vector",
+          "sourceLine": 208,
+          "blocks": [
+            {
+              "type": "figure",
+              "assetId": "asset-0ebdf21a9128"
+            },
+            {
+              "type": "math",
+              "latex": "\\boldsymbol{p}\n    \\xrightarrow{R_1}\n    \\boldsymbol{p}_1\n    \\xrightarrow{R_2}\n    \\boldsymbol{p}_2",
+              "display": true
+            },
+            {
+              "type": "math",
+              "latex": "\\boxed{\\boldsymbol{p}_2=R_2R_1\\boldsymbol{p}}",
+              "display": true
+            },
+            {
+              "type": "academic_block",
+              "variant": "idea",
+              "title": "Lectura correcta",
+              "children": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "El producto matricial acumula transformaciones, pero la operación sobre el vector se evalúa desde la derecha hacia la izquierda."
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "introTitle": "Punto de partida",
+      "introSubtitle": "De rotaciones elementales a rotaciones compuestas"
+    },
+    {
+      "id": "sec-a0691f5fe4a1",
+      "type": "section",
+      "title": "El orden importa",
+      "implicit": false,
+      "children": [
+        {
+          "id": "frame-que-significa-no-conmutatividad-2140c72",
+          "type": "frame",
+          "title": "¿Qué significa no conmutatividad?",
+          "sourceLine": 252,
+          "blocks": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Para números reales:"
+                }
+              ]
+            },
+            {
+              "type": "math",
+              "latex": "2\\cdot3=3\\cdot2.",
+              "display": true
+            },
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Pero para matrices, en general:"
+                }
+              ]
+            },
+            {
+              "type": "math",
+              "latex": "AB\\neq BA.",
+              "display": true
+            },
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "En rotaciones 3D esto no es solamente una propiedad algebraica: tiene significado físico."
+                }
+              ]
+            },
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Dos secuencias diferentes pueden producir orientaciones finales diferentes:"
+                }
+              ]
+            },
+            {
+              "type": "math",
+              "latex": "R_y(90^\\circ)R_x(90^\\circ)\n    \\neq\n    R_x(90^\\circ)R_y(90^\\circ).",
+              "display": true
+            },
+            {
+              "type": "academic_block",
+              "variant": "warning",
+              "title": "Idea central",
+              "children": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "En 3D, girar primero alrededor de "
+                    },
+                    {
+                      "type": "math_inline",
+                      "latex": "x"
+                    },
+                    {
+                      "type": "text",
+                      "value": " y luego alrededor de "
+                    },
+                    {
+                      "type": "math_inline",
+                      "latex": "y"
+                    },
+                    {
+                      "type": "text",
+                      "value": " no necesariamente equivale a girar primero alrededor de "
+                    },
+                    {
+                      "type": "math_inline",
+                      "latex": "y"
+                    },
+                    {
+                      "type": "text",
+                      "value": " y luego alrededor de "
+                    },
+                    {
+                      "type": "math_inline",
+                      "latex": "x"
+                    },
+                    {
+                      "type": "text",
+                      "value": "."
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "frame-experimento-conceptual-fa260c1",
+          "type": "frame",
+          "title": "Experimento conceptual",
+          "sourceLine": 283,
+          "blocks": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Tomemos el vector:"
+                }
+              ]
+            },
+            {
+              "type": "math",
+              "latex": "\\boldsymbol{p}=\\begin{bmatrix}0\\\\0\\\\1\\end{bmatrix}.",
+              "display": true
+            },
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Compararemos dos secuencias:"
+                }
+              ]
+            },
+            {
+              "type": "academic_block",
+              "variant": "definition",
+              "title": "Secuencia A",
+              "children": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "Primero "
+                    },
+                    {
+                      "type": "math_inline",
+                      "latex": "R_x(90^\\circ)"
+                    },
+                    {
+                      "type": "text",
+                      "value": " y luego "
+                    },
+                    {
+                      "type": "math_inline",
+                      "latex": "R_y(90^\\circ)"
+                    },
+                    {
+                      "type": "text",
+                      "value": ":"
+                    }
+                  ]
+                },
+                {
+                  "type": "math",
+                  "latex": "\\boldsymbol{p}_A=R_y(90^\\circ)R_x(90^\\circ)\\boldsymbol{p}.",
+                  "display": true
+                }
+              ]
+            },
+            {
+              "type": "academic_block",
+              "variant": "definition",
+              "title": "Secuencia B",
+              "children": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "Primero "
+                    },
+                    {
+                      "type": "math_inline",
+                      "latex": "R_y(90^\\circ)"
+                    },
+                    {
+                      "type": "text",
+                      "value": " y luego "
+                    },
+                    {
+                      "type": "math_inline",
+                      "latex": "R_x(90^\\circ)"
+                    },
+                    {
+                      "type": "text",
+                      "value": ":"
+                    }
+                  ]
+                },
+                {
+                  "type": "math",
+                  "latex": "\\boldsymbol{p}_B=R_x(90^\\circ)R_y(90^\\circ)\\boldsymbol{p}.",
+                  "display": true
+                }
+              ]
+            },
+            {
+              "type": "academic_block",
+              "variant": "practice",
+              "title": "Antes de resolver",
+              "children": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "Dibuje la dirección inicial del vector "
+                    },
+                    {
+                      "type": "math_inline",
+                      "latex": "\\boldsymbol{p}"
+                    },
+                    {
+                      "type": "text",
+                      "value": " y prediga si "
+                    },
+                    {
+                      "type": "math_inline",
+                      "latex": "\\boldsymbol{p}_A"
+                    },
+                    {
+                      "type": "text",
+                      "value": " y "
+                    },
+                    {
+                      "type": "math_inline",
+                      "latex": "\\boldsymbol{p}_B"
+                    },
+                    {
+                      "type": "text",
+                      "value": " deberían coincidir."
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "frame-secuencia-a-primero-r-x-luego-r-y-b059005",
+          "type": "frame",
+          "title": "Secuencia A: primero $R_x$, luego $R_y$",
+          "sourceLine": 320,
+          "blocks": [
+            {
+              "type": "math",
+              "latex": "\\boldsymbol{p}=\\begin{bmatrix}0\\\\0\\\\1\\end{bmatrix}",
+              "display": true
+            },
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Primero:"
+                }
+              ]
+            },
+            {
+              "type": "math",
+              "latex": "R_x(90^\\circ)\\boldsymbol{p}\n    = \\pause\n    \\begin{bmatrix}\n        1&0&0\\\\\n        0&0&-1\\\\\n        0&1&0\n    \\end{bmatrix}\n    \\begin{bmatrix}0\\\\0\\\\1\\end{bmatrix}\n    =\n    \\begin{bmatrix}0\\\\-1\\\\0\\end{bmatrix}.",
+              "display": true
+            },
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Luego:"
+                }
+              ]
+            },
+            {
+              "type": "math",
+              "latex": "R_y(90^\\circ)\n    \\begin{bmatrix}0\\\\-1\\\\0\\end{bmatrix}\n    = \\pause\n    \\begin{bmatrix}0\\\\-1\\\\0\\end{bmatrix}.",
+              "display": true
+            },
+            {
+              "type": "math",
+              "latex": "\\boxed{\\boldsymbol{p}_A=\\begin{bmatrix}0\\\\-1\\\\0\\end{bmatrix}}",
+              "display": true
+            },
+            {
+              "type": "academic_block",
+              "variant": "result",
+              "title": "Interpretación",
+              "children": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "Después de la primera rotación el vector queda sobre el eje "
+                    },
+                    {
+                      "type": "math_inline",
+                      "latex": "-y"
+                    },
+                    {
+                      "type": "text",
+                      "value": ". Una rotación alrededor de "
+                    },
+                    {
+                      "type": "math_inline",
+                      "latex": "y"
+                    },
+                    {
+                      "type": "text",
+                      "value": " no lo cambia."
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "frame-secuencia-b-primero-r-y-luego-r-x-ba4e916",
+          "type": "frame",
+          "title": "Secuencia B: primero $R_y$, luego $R_x$",
+          "sourceLine": 361,
+          "blocks": [
+            {
+              "type": "math",
+              "latex": "\\boldsymbol{p}=\\begin{bmatrix}0\\\\0\\\\1\\end{bmatrix}",
+              "display": true
+            },
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Primero:"
+                }
+              ]
+            },
+            {
+              "type": "math",
+              "latex": "R_y(90^\\circ)\\boldsymbol{p}\n    =\\pause\n    \\begin{bmatrix}\n        0&0&1\\\\\n        0&1&0\\\\\n        -1&0&0\n    \\end{bmatrix}\n    \\begin{bmatrix}0\\\\0\\\\1\\end{bmatrix}\n    =\n    \\begin{bmatrix}1\\\\0\\\\0\\end{bmatrix}.",
+              "display": true
+            },
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Luego:"
+                }
+              ]
+            },
+            {
+              "type": "math",
+              "latex": "R_x(90^\\circ)\n    \\begin{bmatrix}1\\\\0\\\\0\\end{bmatrix}\n    =\\pause\n    \\begin{bmatrix}1\\\\0\\\\0\\end{bmatrix}.",
+              "display": true
+            },
+            {
+              "type": "math",
+              "latex": "\\boxed{\\boldsymbol{p}_B=\\begin{bmatrix}1\\\\0\\\\0\\end{bmatrix}}",
+              "display": true
+            },
+            {
+              "type": "academic_block",
+              "variant": "result",
+              "title": "Interpretación",
+              "children": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "Después de la primera rotación el vector queda sobre el eje "
+                    },
+                    {
+                      "type": "math_inline",
+                      "latex": "+x"
+                    },
+                    {
+                      "type": "text",
+                      "value": ". Una rotación alrededor de "
+                    },
+                    {
+                      "type": "math_inline",
+                      "latex": "x"
+                    },
+                    {
+                      "type": "text",
+                      "value": " no lo cambia."
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "frame-resultado-del-experimento-2ab58e7",
+          "type": "frame",
+          "title": "Resultado del experimento",
+          "sourceLine": 402,
+          "blocks": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Obtuvimos:"
+                }
+              ]
+            },
+            {
+              "type": "math",
+              "latex": "\\boldsymbol{p}_A=\\begin{bmatrix}0\\\\-1\\\\0\\end{bmatrix},\n    \\qquad\n    \\boldsymbol{p}_B=\\begin{bmatrix}1\\\\0\\\\0\\end{bmatrix}.",
+              "display": true
+            },
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Por tanto:"
+                }
+              ]
+            },
+            {
+              "type": "math",
+              "latex": "\\boxed{\\boldsymbol{p}_A\\neq\\boldsymbol{p}_B}",
+              "display": true
+            },
+            {
+              "type": "figure",
+              "assetId": "asset-fac4d5d653ba"
+            },
+            {
+              "type": "academic_block",
+              "variant": "warning",
+              "title": "Conclusión",
+              "children": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "Las rotaciones 3D no conmutan: el orden de aplicación forma parte del significado físico de la orientación final."
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "introTitle": "El orden importa",
+      "introSubtitle": "La no conmutatividad de las rotaciones 3D"
+    },
+    {
+      "id": "sec-78e1ff787abf",
+      "type": "section",
+      "title": "Cómo leer productos de rotaciones",
+      "implicit": false,
+      "children": [
+        {
+          "id": "frame-producto-de-dos-rotaciones-a261e29",
+          "type": "frame",
+          "title": "Producto de dos rotaciones",
+          "sourceLine": 441,
+          "blocks": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Si definimos:"
+                }
+              ]
+            },
+            {
+              "type": "math",
+              "latex": "R=R_y(\\beta)R_x(\\alpha),",
+              "display": true
+            },
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "entonces para un vector:"
+                }
+              ]
+            },
+            {
+              "type": "math",
+              "latex": "\\boldsymbol{p}'=R\\boldsymbol{p}=R_y(\\beta)R_x(\\alpha)\\boldsymbol{p}.",
+              "display": true
+            },
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "La secuencia real es:"
+                }
+              ]
+            },
+            {
+              "type": "math",
+              "latex": "\\boldsymbol{p}\n    \\xrightarrow{R_x(\\alpha)}\n    \\boldsymbol{p}_1\n    \\xrightarrow{R_y(\\beta)}\n    \\boldsymbol{p}'.",
+              "display": true
+            },
+            {
+              "type": "figure",
+              "assetId": "asset-034ee0166351"
+            },
+            {
+              "type": "academic_block",
+              "variant": "result",
+              "title": "Regla operativa",
+              "children": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "En una expresión como "
+                    },
+                    {
+                      "type": "math_inline",
+                      "latex": "R_3R_2R_1\\boldsymbol{p}"
+                    },
+                    {
+                      "type": "text",
+                      "value": ", el vector primero recibe "
+                    },
+                    {
+                      "type": "math_inline",
+                      "latex": "R_1"
+                    },
+                    {
+                      "type": "text",
+                      "value": ", luego "
+                    },
+                    {
+                      "type": "math_inline",
+                      "latex": "R_2"
+                    },
+                    {
+                      "type": "text",
+                      "value": " y finalmente "
+                    },
+                    {
+                      "type": "math_inline",
+                      "latex": "R_3"
+                    },
+                    {
+                      "type": "text",
+                      "value": "."
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "frame-producto-de-matrices-como-orientacion-final-0fade56",
+          "type": "frame",
+          "title": "Producto de matrices como orientación final",
+          "sourceLine": 485,
+          "blocks": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Si dos matrices son rotaciones válidas:"
+                }
+              ]
+            },
+            {
+              "type": "math",
+              "latex": "R_1\\in SO(3),\n    \\qquad\n    R_2\\in SO(3),",
+              "display": true
+            },
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "entonces su producto también es una rotación válida:"
+                }
+              ]
+            },
+            {
+              "type": "math",
+              "latex": "R=R_2R_1\\in SO(3).",
+              "display": true
+            },
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Esto significa que:"
+                }
+              ]
+            },
+            {
+              "type": "math",
+              "latex": "R^TR=I,\n    \\qquad\n    \\det(R)=1.",
+              "display": true
+            },
+            {
+              "type": "academic_block",
+              "variant": "idea",
+              "title": "Interpretación",
+              "children": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "Componer rotaciones no destruye la naturaleza rígida del movimiento. El resultado sigue siendo una orientación válida."
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "frame-demostracion-breve-de-ortogonalidad-74d8bd5",
+          "type": "frame",
+          "title": "Demostración breve de ortogonalidad",
+          "sourceLine": 520,
+          "blocks": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Sea:"
+                }
+              ]
+            },
+            {
+              "type": "math",
+              "latex": "R=R_2R_1.",
+              "display": true
+            },
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Entonces:"
+                }
+              ]
+            },
+            {
+              "type": "math",
+              "latex": "R^TR\n    =\n    (R_2R_1)^T(R_2R_1).",
+              "display": true
+            },
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Usando:"
+                }
+              ]
+            },
+            {
+              "type": "math",
+              "latex": "(AB)^T=B^TA^T,",
+              "display": true
+            },
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "se obtiene:"
+                }
+              ]
+            },
+            {
+              "type": "math",
+              "latex": "R^TR\n    =\n    R_1^TR_2^TR_2R_1.",
+              "display": true
+            },
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Como "
+                },
+                {
+                  "type": "math_inline",
+                  "latex": "R_2^TR_2=I"
+                },
+                {
+                  "type": "text",
+                  "value": ":"
+                }
+              ]
+            },
+            {
+              "type": "math",
+              "latex": "R^TR=R_1^TIR_1=R_1^TR_1=I.",
+              "display": true
+            },
+            {
+              "type": "academic_block",
+              "variant": "result",
+              "title": "Conclusión",
+              "children": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "El producto de rotaciones conserva la ortogonalidad de la matriz resultante."
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "introTitle": "Cómo leer productos de rotaciones",
+      "introSubtitle": "Primero actúa la matriz más cercana al vector"
+    },
+    {
+      "id": "sec-4ea60e44d131",
+      "type": "section",
+      "title": "Ejes fijos y ejes móviles",
+      "implicit": false,
+      "children": [
+        {
+          "id": "frame-la-dificultad-conceptual-ff306fd",
+          "type": "frame",
+          "title": "La dificultad conceptual",
+          "sourceLine": 566,
+          "blocks": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "En 3D hay que distinguir entre dos situaciones:"
+                }
+              ]
+            },
+            {
+              "type": "academic_block",
+              "variant": "definition",
+              "title": "Rotaciones respecto a ejes fijos",
+              "children": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "Cada rotación se interpreta alrededor de los ejes del sistema original o global."
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "academic_block",
+              "variant": "definition",
+              "title": "Rotaciones respecto a ejes móviles",
+              "children": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "Cada nueva rotación se interpreta alrededor de los ejes del sistema que ya fue rotado."
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "academic_block",
+              "variant": "warning",
+              "title": "Atención",
+              "children": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "Esta diferencia no es un detalle de notación. Cambia la interpretación física de la secuencia de movimientos."
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "academic_block",
+              "variant": "idea",
+              "title": "Puente robótico",
+              "children": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "En un manipulador, muchas rotaciones se entienden naturalmente respecto a marcos que se van moviendo con cada eslabón."
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "frame-rotaciones-respecto-a-ejes-fijos-4c458c2",
+          "type": "frame",
+          "title": "Rotaciones respecto a ejes fijos",
+          "sourceLine": 595,
+          "blocks": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "En una secuencia de rotaciones respecto a ejes fijos, cada nueva rotación se realiza alrededor de un eje del sistema base "
+                },
+                {
+                  "type": "math_inline",
+                  "latex": "\\{0\\}"
+                },
+                {
+                  "type": "text",
+                  "value": ", aunque el sistema móvil ya haya cambiado de orientación"
+                }
+              ]
+            },
+            {
+              "type": "figure",
+              "assetId": "asset-5cba39c2a07d"
+            },
+            {
+              "type": "academic_block",
+              "variant": "result",
+              "title": "Ejes fijos",
+              "children": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "Los ejes "
+                    },
+                    {
+                      "type": "math_inline",
+                      "latex": "x_0,y_0,z_0"
+                    },
+                    {
+                      "type": "text",
+                      "value": " pertenecen al sistema base y no cambian después de la rotación."
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "academic_block",
+              "variant": "result",
+              "title": "Sistema rotado",
+              "children": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "Al aplicar "
+                    },
+                    {
+                      "type": "math_inline",
+                      "latex": "R_{z_0}(\\theta)"
+                    },
+                    {
+                      "type": "text",
+                      "value": ", los ejes "
+                    },
+                    {
+                      "type": "math_inline",
+                      "latex": "x_1"
+                    },
+                    {
+                      "type": "text",
+                      "value": " y "
+                    },
+                    {
+                      "type": "math_inline",
+                      "latex": "y_1"
+                    },
+                    {
+                      "type": "text",
+                      "value": " cambian de orientación, mientras "
+                    },
+                    {
+                      "type": "math_inline",
+                      "latex": "z_1=z_0"
+                    },
+                    {
+                      "type": "text",
+                      "value": "."
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "frame-rotaciones-respecto-a-ejes-moviles-721b28d",
+          "type": "frame",
+          "title": "Rotaciones respecto a ejes móviles",
+          "sourceLine": 723,
+          "blocks": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "En una secuencia de rotaciones respecto a ejes móviles, cada nueva rotación se realiza alrededor de un eje del sistema que ya fue rotado."
+                }
+              ]
+            },
+            {
+              "type": "figure",
+              "assetId": "asset-2b2e0c19b64d"
+            },
+            {
+              "type": "academic_block",
+              "variant": "result",
+              "title": "Primer giro",
+              "children": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "Al aplicar "
+                    },
+                    {
+                      "type": "math_inline",
+                      "latex": "R_{z_0}(\\alpha)"
+                    },
+                    {
+                      "type": "text",
+                      "value": ", "
+                    },
+                    {
+                      "type": "math_inline",
+                      "latex": "z_1=z_0"
+                    },
+                    {
+                      "type": "text",
+                      "value": ". Solamente cambian las direcciones de "
+                    },
+                    {
+                      "type": "math_inline",
+                      "latex": "x"
+                    },
+                    {
+                      "type": "text",
+                      "value": " y "
+                    },
+                    {
+                      "type": "math_inline",
+                      "latex": "y"
+                    },
+                    {
+                      "type": "text",
+                      "value": "."
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "academic_block",
+              "variant": "result",
+              "title": "Segundo giro",
+              "children": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "La segunda rotación se realiza alrededor de "
+                    },
+                    {
+                      "type": "math_inline",
+                      "latex": "x_1"
+                    },
+                    {
+                      "type": "text",
+                      "value": ". Por tanto, "
+                    },
+                    {
+                      "type": "math_inline",
+                      "latex": "x_2=x_1"
+                    },
+                    {
+                      "type": "text",
+                      "value": ", mientras "
+                    },
+                    {
+                      "type": "math_inline",
+                      "latex": "y_1"
+                    },
+                    {
+                      "type": "text",
+                      "value": " y "
+                    },
+                    {
+                      "type": "math_inline",
+                      "latex": "z_1"
+                    },
+                    {
+                      "type": "text",
+                      "value": " cambian de dirección."
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "frame-pre-multiplicar-y-post-multiplicar-d39b13f",
+          "type": "frame",
+          "title": "Pre-multiplicar y post-multiplicar",
+          "sourceLine": 882,
+          "blocks": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Una forma práctica de recordar la diferencia es:"
+                }
+              ]
+            },
+            {
+              "type": "academic_block",
+              "variant": "definition",
+              "title": "Pre-multiplicación",
+              "children": [
+                {
+                  "type": "math",
+                  "latex": "R_{nuevo}=R_{adicional}R_{actual}",
+                  "display": true
+                },
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "La rotación adicional se interpreta respecto a ejes fijos o globales."
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "academic_block",
+              "variant": "definition",
+              "title": "Post-multiplicación",
+              "children": [
+                {
+                  "type": "math",
+                  "latex": "R_{nuevo}=R_{actual}R_{adicional}",
+                  "display": true
+                },
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "La rotación adicional se interpreta respecto a ejes móviles o locales."
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "academic_block",
+              "variant": "warning",
+              "title": "Convención",
+              "children": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "Esta regla depende de la convención de vectores columna que estamos utilizando. Por eso es indispensable mantener una notación consistente."
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "frame-ejemplo-conceptual-eje-global-frente-a-eje-local-39d52e6",
+          "type": "frame",
+          "title": "Ejemplo conceptual: eje global frente a eje local",
+          "sourceLine": 912,
+          "blocks": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Suponga que un marco primero gira "
+                },
+                {
+                  "type": "math_inline",
+                  "latex": "90^\\circ"
+                },
+                {
+                  "type": "text",
+                  "value": " alrededor de "
+                },
+                {
+                  "type": "math_inline",
+                  "latex": "z_0"
+                },
+                {
+                  "type": "text",
+                  "value": "."
+                }
+              ]
+            },
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Después se solicita una rotación alrededor de "
+                },
+                {
+                  "type": "math_inline",
+                  "latex": "x"
+                },
+                {
+                  "type": "text",
+                  "value": "."
+                }
+              ]
+            },
+            {
+              "type": "academic_block",
+              "variant": "definition",
+              "title": "Si el eje es fijo",
+              "children": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "La rotación se hace alrededor de "
+                    },
+                    {
+                      "type": "math_inline",
+                      "latex": "x_0"
+                    },
+                    {
+                      "type": "text",
+                      "value": ", aunque el marco ya esté rotado."
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "academic_block",
+              "variant": "definition",
+              "title": "Si el eje es móvil",
+              "children": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "La rotación se hace alrededor de "
+                    },
+                    {
+                      "type": "math_inline",
+                      "latex": "x_1"
+                    },
+                    {
+                      "type": "text",
+                      "value": ", que ya no coincide necesariamente con "
+                    },
+                    {
+                      "type": "math_inline",
+                      "latex": "x_0"
+                    },
+                    {
+                      "type": "text",
+                      "value": "."
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "academic_block",
+              "variant": "practice",
+              "title": "Discusión",
+              "children": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "Dibuje "
+                    },
+                    {
+                      "type": "math_inline",
+                      "latex": "x_0"
+                    },
+                    {
+                      "type": "text",
+                      "value": " y "
+                    },
+                    {
+                      "type": "math_inline",
+                      "latex": "x_1"
+                    },
+                    {
+                      "type": "text",
+                      "value": " después de una rotación de "
+                    },
+                    {
+                      "type": "math_inline",
+                      "latex": "90^\\circ"
+                    },
+                    {
+                      "type": "text",
+                      "value": " alrededor de "
+                    },
+                    {
+                      "type": "math_inline",
+                      "latex": "z_0"
+                    },
+                    {
+                      "type": "text",
+                      "value": ". ¿Son el mismo eje?"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "introTitle": "Ejes fijos y ejes móviles",
+      "introSubtitle": "La misma multiplicación con interpretaciones distintas"
+    },
+    {
+      "id": "sec-68d5ebeab9c2",
+      "type": "section",
+      "title": "Ejemplos resueltos",
+      "implicit": false,
+      "children": [
+        {
+          "id": "frame-ejemplo-1-producto-de-dos-rotaciones-2125899",
+          "type": "frame",
+          "title": "Ejemplo 1: producto de dos rotaciones",
+          "sourceLine": 943,
+          "blocks": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Construyamos:"
+                }
+              ]
+            },
+            {
+              "type": "math",
+              "latex": "R=R_y(90^\\circ)R_x(90^\\circ).",
+              "display": true
+            },
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Sabemos que:"
+                }
+              ]
+            },
+            {
+              "type": "math",
+              "latex": "R_x(90^\\circ)=\n    \\begin{bmatrix}\n        1&0&0\\\\\n        0&0&-1\\\\\n        0&1&0\n    \\end{bmatrix}",
+              "display": true
+            },
+            {
+              "type": "math",
+              "latex": "R_y(90^\\circ)=\n    \\begin{bmatrix}\n        0&0&1\\\\\n        0&1&0\\\\\n        -1&0&0\n    \\end{bmatrix}.",
+              "display": true
+            },
+            {
+              "type": "academic_block",
+              "variant": "practice",
+              "title": "Antes de multiplicar",
+              "children": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "¿Cuál matriz actúa primero sobre un vector si escribimos "
+                    },
+                    {
+                      "type": "math_inline",
+                      "latex": "R_yR_x\\boldsymbol{p}"
+                    },
+                    {
+                      "type": "text",
+                      "value": "?"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "frame-ejemplo-1-resultado-418159d",
+          "type": "frame",
+          "title": "Ejemplo 1: resultado",
+          "sourceLine": 977,
+          "blocks": [
+            {
+              "type": "math",
+              "latex": "R=R_y(90^\\circ)R_x(90^\\circ)\n    =\n    \\begin{bmatrix}\n        0&1&0\\\\\n        0&0&-1\\\\\n        -1&0&0\n    \\end{bmatrix}.",
+              "display": true
+            },
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Leamos las columnas:"
+                }
+              ]
+            },
+            {
+              "type": "math",
+              "latex": "\\boldsymbol{r}_1=\\begin{bmatrix}0\\\\0\\\\-1\\end{bmatrix},\n    \\qquad\n    \\boldsymbol{r}_2=\\begin{bmatrix}1\\\\0\\\\0\\end{bmatrix},\n    \\qquad\n    \\boldsymbol{r}_3=\\begin{bmatrix}0\\\\-1\\\\0\\end{bmatrix}.",
+              "display": true
+            },
+            {
+              "type": "academic_block",
+              "variant": "result",
+              "title": "Interpretación",
+              "children": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "El eje "
+                    },
+                    {
+                      "type": "math_inline",
+                      "latex": "x"
+                    },
+                    {
+                      "type": "text",
+                      "value": " del marco final apunta hacia "
+                    },
+                    {
+                      "type": "math_inline",
+                      "latex": "-z"
+                    },
+                    {
+                      "type": "text",
+                      "value": ", el eje "
+                    },
+                    {
+                      "type": "math_inline",
+                      "latex": "y"
+                    },
+                    {
+                      "type": "text",
+                      "value": " apunta hacia "
+                    },
+                    {
+                      "type": "math_inline",
+                      "latex": "+x"
+                    },
+                    {
+                      "type": "text",
+                      "value": " y el eje "
+                    },
+                    {
+                      "type": "math_inline",
+                      "latex": "z"
+                    },
+                    {
+                      "type": "text",
+                      "value": " apunta hacia "
+                    },
+                    {
+                      "type": "math_inline",
+                      "latex": "-y"
+                    },
+                    {
+                      "type": "text",
+                      "value": "."
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "frame-ejemplo-2-invertir-el-orden-705cd4d",
+          "type": "frame",
+          "title": "Ejemplo 2: invertir el orden",
+          "sourceLine": 1005,
+          "blocks": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Ahora calculemos:"
+                }
+              ]
+            },
+            {
+              "type": "math",
+              "latex": "\\tilde{R}=R_x(90^\\circ)R_y(90^\\circ).",
+              "display": true
+            },
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "El resultado es:"
+                }
+              ]
+            },
+            {
+              "type": "math",
+              "latex": "\\tilde{R}=\n    \\begin{bmatrix}\n        0&0&1\\\\\n        1&0&0\\\\\n        0&1&0\n    \\end{bmatrix}.",
+              "display": true
+            },
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Comparando:"
+                }
+              ]
+            },
+            {
+              "type": "math",
+              "latex": "R_y(90^\\circ)R_x(90^\\circ)\n    =\n    \\begin{bmatrix}\n        0&1&0\\\\\n        0&0&-1\\\\\n        -1&0&0\n    \\end{bmatrix}",
+              "display": true
+            },
+            {
+              "type": "math",
+              "latex": "R_x(90^\\circ)R_y(90^\\circ)\n    =\n    \\begin{bmatrix}\n        0&0&1\\\\\n        1&0&0\\\\\n        0&1&0\n    \\end{bmatrix}.",
+              "display": true
+            },
+            {
+              "type": "academic_block",
+              "variant": "warning",
+              "title": "Conclusión",
+              "children": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "Las matrices son diferentes. La orientación final también es diferente."
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "frame-ejemplo-3-aplicar-la-rotacion-compuesta-965e3a5",
+          "type": "frame",
+          "title": "Ejemplo 3: aplicar la rotación compuesta",
+          "sourceLine": 1052,
+          "blocks": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Sea:"
+                }
+              ]
+            },
+            {
+              "type": "math",
+              "latex": "\\boldsymbol{p}=\\begin{bmatrix}1\\\\2\\\\3\\end{bmatrix}",
+              "display": true
+            },
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "y"
+                }
+              ]
+            },
+            {
+              "type": "math",
+              "latex": "R=R_y(90^\\circ)R_x(90^\\circ)\n    =\\pause\n    \\begin{bmatrix}\n        0&1&0\\\\\n        0&0&-1\\\\\n        -1&0&0\n    \\end{bmatrix}.",
+              "display": true
+            },
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Entonces:"
+                }
+              ]
+            },
+            {
+              "type": "math",
+              "latex": "\\boldsymbol{p}'=R\\boldsymbol{p}\n    =\\pause\n    \\begin{bmatrix}\n        2\\\\-3\\\\-1\n    \\end{bmatrix}.",
+              "display": true
+            },
+            {
+              "type": "academic_block",
+              "variant": "practice",
+              "title": "Verifique",
+              "children": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "Compruebe que "
+                    },
+                    {
+                      "type": "math_inline",
+                      "latex": "\\|\\boldsymbol{p}'\\|=\\|\\boldsymbol{p}\\|=\\sqrt{14}"
+                    },
+                    {
+                      "type": "text",
+                      "value": "."
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "frame-ejemplo-4-regresar-usando-la-transpuesta-74c9c25",
+          "type": "frame",
+          "title": "Ejemplo 4: regresar usando la transpuesta",
+          "sourceLine": 1088,
+          "blocks": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Si:"
+                }
+              ]
+            },
+            {
+              "type": "math",
+              "latex": "\\boldsymbol{p}'=R\\boldsymbol{p},",
+              "display": true
+            },
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "entonces podemos recuperar el vector original usando:"
+                }
+              ]
+            },
+            {
+              "type": "math",
+              "latex": "\\boldsymbol{p}=R^T\\boldsymbol{p}'.",
+              "display": true
+            },
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Para el ejemplo anterior:"
+                }
+              ]
+            },
+            {
+              "type": "math",
+              "latex": "R^T=\n    \\begin{bmatrix}\n        0&0&-1\\\\\n        1&0&0\\\\\n        0&-1&0\n    \\end{bmatrix}",
+              "display": true
+            },
+            {
+              "type": "math",
+              "latex": "\\boldsymbol{p}=\n        \\begin{bmatrix}\n        0&0&-1\\\\\n        1&0&0\\\\\n        0&-1&0\n    \\end{bmatrix}\n    *\n    \\begin{bmatrix}\n        2\\\\-3\\\\-1\n    \\end{bmatrix}\n    =\\pause\n    \\begin{bmatrix}\n        1\\\\2\\\\3\n    \\end{bmatrix}.",
+              "display": true
+            },
+            {
+              "type": "academic_block",
+              "variant": "result",
+              "title": "Interpretación",
+              "children": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "La transpuesta deshace la orientación compuesta porque "
+                    },
+                    {
+                      "type": "math_inline",
+                      "latex": "R^{-1}=R^T"
+                    },
+                    {
+                      "type": "text",
+                      "value": "."
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "introTitle": "Ejemplos resueltos",
+      "introSubtitle": "Calcular, interpretar y comprobar"
+    },
+    {
+      "id": "sec-e8a8c9959266",
+      "type": "section",
+      "title": "Problemas para clase",
+      "implicit": false,
+      "children": [
+        {
+          "id": "frame-problema-1-orden-de-aplicacion-0c3cef8",
+          "type": "frame",
+          "title": "Problema 1: orden de aplicación",
+          "sourceLine": 1140,
+          "blocks": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Dada la expresión:"
+                }
+              ]
+            },
+            {
+              "type": "math",
+              "latex": "\\boldsymbol{p}'=R_z(30^\\circ)R_y(45^\\circ)R_x(60^\\circ)\\boldsymbol{p},",
+              "display": true
+            },
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "responda:"
+                }
+              ]
+            },
+            {
+              "type": "list",
+              "variant": "enumerate",
+              "items": [
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "¿Cuál rotación actúa primero sobre "
+                        },
+                        {
+                          "type": "math_inline",
+                          "latex": "\\boldsymbol{p}"
+                        },
+                        {
+                          "type": "text",
+                          "value": "?"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "¿Cuál actúa de segunda?"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "¿Cuál actúa al final?"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "¿Cómo escribiría el proceso paso a paso usando "
+                        },
+                        {
+                          "type": "math_inline",
+                          "latex": "\\boldsymbol{p}_1"
+                        },
+                        {
+                          "type": "text",
+                          "value": ", "
+                        },
+                        {
+                          "type": "math_inline",
+                          "latex": "\\boldsymbol{p}_2"
+                        },
+                        {
+                          "type": "text",
+                          "value": " y "
+                        },
+                        {
+                          "type": "math_inline",
+                          "latex": "\\boldsymbol{p}_3"
+                        },
+                        {
+                          "type": "text",
+                          "value": "?"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "frame-problema-2-no-conmutatividad-b5d03a0",
+          "type": "frame",
+          "title": "Problema 2: no conmutatividad",
+          "sourceLine": 1163,
+          "blocks": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Calcule y compare:"
+                }
+              ]
+            },
+            {
+              "type": "math",
+              "latex": "A=R_z(90^\\circ)R_x(90^\\circ)",
+              "display": true
+            },
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "y"
+                }
+              ]
+            },
+            {
+              "type": "math",
+              "latex": "B=R_x(90^\\circ)R_z(90^\\circ).",
+              "display": true
+            },
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Luego aplique ambas matrices al vector:"
+                }
+              ]
+            },
+            {
+              "type": "math",
+              "latex": "\\boldsymbol{p}=\\begin{bmatrix}1\\\\0\\\\0\\end{bmatrix}.",
+              "display": true
+            },
+            {
+              "type": "academic_block",
+              "variant": "practice",
+              "title": "Pregunta",
+              "children": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "¿Los resultados representan la misma dirección final?"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "frame-problema-3-lectura-de-columnas-cb27f03",
+          "type": "frame",
+          "title": "Problema 3: lectura de columnas",
+          "sourceLine": 1193,
+          "blocks": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Sea:"
+                }
+              ]
+            },
+            {
+              "type": "math",
+              "latex": "R=\n    \\begin{bmatrix}\n        0&0&1\\\\\n        1&0&0\\\\\n        0&1&0\n    \\end{bmatrix}.",
+              "display": true
+            },
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Sin multiplicar por ningún vector:"
+                }
+              ]
+            },
+            {
+              "type": "list",
+              "variant": "enumerate",
+              "items": [
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "¿hacia dónde apunta el eje "
+                        },
+                        {
+                          "type": "math_inline",
+                          "latex": "x"
+                        },
+                        {
+                          "type": "text",
+                          "value": " del marco final?"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "¿hacia dónde apunta el eje "
+                        },
+                        {
+                          "type": "math_inline",
+                          "latex": "y"
+                        },
+                        {
+                          "type": "text",
+                          "value": " del marco final?"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "¿hacia dónde apunta el eje "
+                        },
+                        {
+                          "type": "math_inline",
+                          "latex": "z"
+                        },
+                        {
+                          "type": "text",
+                          "value": " del marco final?"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "¿la matriz puede representar una rotación propia?"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "frame-problema-4-ejes-fijos-o-moviles-b2349d4",
+          "type": "frame",
+          "title": "Problema 4: ejes fijos o móviles",
+          "sourceLine": 1221,
+          "blocks": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Un marco se encuentra inicialmente alineado con el sistema base."
+                }
+              ]
+            },
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Se realizan dos acciones:"
+                }
+              ]
+            },
+            {
+              "type": "list",
+              "variant": "enumerate",
+              "items": [
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "girar "
+                        },
+                        {
+                          "type": "math_inline",
+                          "latex": "90^\\circ"
+                        },
+                        {
+                          "type": "text",
+                          "value": " alrededor de "
+                        },
+                        {
+                          "type": "math_inline",
+                          "latex": "z"
+                        },
+                        {
+                          "type": "text",
+                          "value": ";"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "girar "
+                        },
+                        {
+                          "type": "math_inline",
+                          "latex": "90^\\circ"
+                        },
+                        {
+                          "type": "text",
+                          "value": " alrededor del nuevo eje "
+                        },
+                        {
+                          "type": "math_inline",
+                          "latex": "x"
+                        },
+                        {
+                          "type": "text",
+                          "value": " del marco ya rotado."
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "academic_block",
+              "variant": "practice",
+              "title": "Interpretación",
+              "children": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "¿La segunda rotación se realiza alrededor de un eje fijo o de un eje móvil?"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "academic_block",
+              "variant": "result",
+              "title": "Idea",
+              "children": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "Como el segundo eje pertenece al marco ya rotado, la secuencia corresponde a una interpretación de ejes móviles."
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "introTitle": "Problemas para clase",
+      "introSubtitle": "Razonar antes de usar Python"
+    },
+    {
+      "id": "sec-445fed53e835",
+      "type": "section",
+      "title": "Validación computacional",
+      "implicit": false,
+      "children": [
+        {
+          "id": "frame-python-matrices-elementales-e4cb02b",
+          "type": "frame",
+          "title": "Python: matrices elementales",
+          "sourceLine": 1248,
+          "blocks": [
+            {
+              "type": "code",
+              "language": "python",
+              "value": "import numpy as np\n\ndef Rx(theta_deg):\n    t = np.deg2rad(theta_deg)\n    c = np.cos(t)\n    s = np.sin(t)\n    return np.array([\n        [1, 0, 0],\n        [0, c, -s],\n        [0, s,  c] ])\n\ndef Ry(theta_deg):\n    t = np.deg2rad(theta_deg)\n    c = np.cos(t)\n    s = np.sin(t)\n    return np.array([\n        [ c, 0, s],\n        [ 0, 1, 0],\n        [-s, 0, c] ])"
+            }
+          ]
+        },
+        {
+          "id": "frame-python-matrices-elementales-00d299f",
+          "type": "frame",
+          "title": "Python: matrices elementales",
+          "sourceLine": 1273,
+          "blocks": [
+            {
+              "type": "code",
+              "language": "python",
+              "value": "def Rz(theta_deg):\n    t = np.deg2rad(theta_deg)\n    c = np.cos(t)\n    s = np.sin(t)\n    return np.array([\n        [c, -s, 0],\n        [s,  c, 0],\n        [0,  0, 1]\n    ])"
+            }
+          ]
+        },
+        {
+          "id": "frame-python-demostrar-no-conmutatividad-a78d5f0",
+          "type": "frame",
+          "title": "Python: demostrar no conmutatividad",
+          "sourceLine": 1290,
+          "blocks": [
+            {
+              "type": "code",
+              "language": "python",
+              "value": "p = np.array([0.0, 0.0, 1.0])\n\nRA = Ry(90) @ Rx(90)\nRB = Rx(90) @ Ry(90)\n\npA = RA @ p\npB = RB @ p\n\nprint(\"RA =\\n\", RA)\nprint(\"RB =\\n\", RB)\nprint(\"pA =\", pA)\nprint(\"pB =\", pB)\nprint(\"RA == RB?\", np.allclose(RA, RB))\nprint(\"pA == pB?\", np.allclose(pA, pB))"
+            },
+            {
+              "type": "academic_block",
+              "variant": "result",
+              "title": "Lectura esperada",
+              "children": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "Las matrices y los vectores resultantes no coinciden. La diferencia confirma que el orden de rotación importa."
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "frame-python-verificar-que-el-producto-sigue-siendo-rotacion-7894042",
+          "type": "frame",
+          "title": "Python: verificar que el producto sigue siendo rotación",
+          "sourceLine": 1315,
+          "blocks": [
+            {
+              "type": "code",
+              "language": "python",
+              "value": "R = Rz(30) @ Ry(45) @ Rx(60)\n\nprint(\"R.T @ R =\\n\", R.T @ R)\nprint(\"det(R) =\", np.linalg.det(R))\n\np = np.array([1.0, 2.0, 3.0])\np_rot = R @ p\n\nprint(\"norma inicial =\", np.linalg.norm(p))\nprint(\"norma final =\", np.linalg.norm(p_rot))"
+            },
+            {
+              "type": "academic_block",
+              "variant": "practice",
+              "title": "Verificación",
+              "children": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "Compruebe que "
+                    },
+                    {
+                      "type": "math_inline",
+                      "latex": "R^TR"
+                    },
+                    {
+                      "type": "text",
+                      "value": " es aproximadamente la identidad, que "
+                    },
+                    {
+                      "type": "math_inline",
+                      "latex": "\\det(R)"
+                    },
+                    {
+                      "type": "text",
+                      "value": " es aproximadamente 1 y que la norma del vector se conserva."
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "frame-python-visualizacion-3d-basica-04f8653",
+          "type": "frame",
+          "title": "Python: visualización 3D básica",
+          "sourceLine": 1336,
+          "blocks": [
+            {
+              "type": "code",
+              "language": "python",
+              "value": "import matplotlib.pyplot as plt\n\nfig = plt.figure()\nax = fig.add_subplot(111, projection=\"3d\")\np = np.array([1.0, 0.0, 0.0])\np1 = Rx(90) @ p\np2 = Ry(90) @ p1\n\nax.quiver(0, 0, 0, p[0],  p[1],  p[2],  label=\"p\")\nax.quiver(0, 0, 0, p1[0], p1[1], p1[2], label=\"p1\")\nax.quiver(0, 0, 0, p2[0], p2[1], p2[2], label=\"p2\")\n\nax.set_xlim([-1, 1])\nax.set_ylim([-1, 1])\nax.set_zlim([-1, 1])\nax.set_xlabel(\"x\")\nax.set_ylabel(\"y\")\nax.set_zlabel(\"z\")\nax.legend()\nplt.show()"
+            }
+          ]
+        }
+      ],
+      "introTitle": "Validación computacional",
+      "introSubtitle": "Python como herramienta de verificación"
+    },
+    {
+      "id": "sec-46651802b3b6",
+      "type": "section",
+      "title": "Actividad de consolidación",
+      "implicit": false,
+      "children": [
+        {
+          "id": "frame-actividad-1-secuencia-completa-e2028ac",
+          "type": "frame",
+          "title": "Actividad 1: secuencia completa",
+          "sourceLine": 1367,
+          "blocks": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Sea:"
+                }
+              ]
+            },
+            {
+              "type": "math",
+              "latex": "\\boldsymbol{p}=\\begin{bmatrix}1\\\\1\\\\0\\end{bmatrix}.",
+              "display": true
+            },
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Calcule manualmente:"
+                }
+              ]
+            },
+            {
+              "type": "math",
+              "latex": "\\boldsymbol{p}'=R_z(90^\\circ)R_x(90^\\circ)\\boldsymbol{p}.",
+              "display": true
+            },
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Luego calcule:"
+                }
+              ]
+            },
+            {
+              "type": "math",
+              "latex": "\\boldsymbol{q}'=R_x(90^\\circ)R_z(90^\\circ)\\boldsymbol{p}.",
+              "display": true
+            },
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Compare resultados."
+                }
+              ]
+            },
+            {
+              "type": "academic_block",
+              "variant": "practice",
+              "title": "Entrega",
+              "children": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "Debe mostrar el cálculo paso a paso, no solamente la respuesta final."
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "frame-actividad-2-matriz-de-orientacion-final-7d0fb5f",
+          "type": "frame",
+          "title": "Actividad 2: matriz de orientación final",
+          "sourceLine": 1395,
+          "blocks": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Construya la matriz:"
+                }
+              ]
+            },
+            {
+              "type": "math",
+              "latex": "R=R_z(30^\\circ)R_y(45^\\circ)R_x(60^\\circ).",
+              "display": true
+            },
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Después:"
+                }
+              ]
+            },
+            {
+              "type": "list",
+              "variant": "enumerate",
+              "items": [
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "verifique que "
+                        },
+                        {
+                          "type": "math_inline",
+                          "latex": "R^TR=I"
+                        },
+                        {
+                          "type": "text",
+                          "value": ";"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "verifique que "
+                        },
+                        {
+                          "type": "math_inline",
+                          "latex": "\\det(R)=1"
+                        },
+                        {
+                          "type": "text",
+                          "value": ";"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "lea sus columnas como ejes del marco final;"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "explique qué rotación actúa primero en la expresión."
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "academic_block",
+              "variant": "warning",
+              "title": "Importante",
+              "children": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "No interprete la matriz final únicamente como números. Debe leerla como una orientación."
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "frame-actividad-3-ejes-moviles-3378a6c",
+          "type": "frame",
+          "title": "Actividad 3: ejes móviles",
+          "sourceLine": 1418,
+          "blocks": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Un marco "
+                },
+                {
+                  "type": "math_inline",
+                  "latex": "\\{B\\}"
+                },
+                {
+                  "type": "text",
+                  "value": " parte alineado con "
+                },
+                {
+                  "type": "math_inline",
+                  "latex": "\\{A\\}"
+                },
+                {
+                  "type": "text",
+                  "value": "."
+                }
+              ]
+            },
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Realice conceptualmente:"
+                }
+              ]
+            },
+            {
+              "type": "list",
+              "variant": "enumerate",
+              "items": [
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "una rotación de "
+                        },
+                        {
+                          "type": "math_inline",
+                          "latex": "90^\\circ"
+                        },
+                        {
+                          "type": "text",
+                          "value": " alrededor de "
+                        },
+                        {
+                          "type": "math_inline",
+                          "latex": "z_B"
+                        },
+                        {
+                          "type": "text",
+                          "value": ";"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "luego una rotación de "
+                        },
+                        {
+                          "type": "math_inline",
+                          "latex": "90^\\circ"
+                        },
+                        {
+                          "type": "text",
+                          "value": " alrededor del nuevo "
+                        },
+                        {
+                          "type": "math_inline",
+                          "latex": "x_B"
+                        },
+                        {
+                          "type": "text",
+                          "value": "."
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "academic_block",
+              "variant": "practice",
+              "title": "Discusión",
+              "children": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "Dibuje los ejes antes y después de cada rotación."
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "academic_block",
+              "variant": "practice",
+              "title": "Verificación",
+              "children": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "Compare la orientación con la obtenida si ambos giros se hacen respecto a ejes fijos."
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "introTitle": "Actividad de consolidación",
+      "introSubtitle": "Construir una orientación compuesta"
+    },
+    {
+      "id": "sec-8ebb75d2bae2",
+      "type": "section",
+      "title": "Cierre",
+      "implicit": false,
+      "children": [
+        {
+          "id": "frame-sintesis-5461bf6",
+          "type": "frame",
+          "title": "Síntesis",
+          "sourceLine": 1450,
+          "blocks": [
+            {
+              "type": "list",
+              "variant": "itemize",
+              "items": [
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "Una rotación compuesta representa una secuencia de giros."
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "En "
+                        },
+                        {
+                          "type": "math_inline",
+                          "latex": "R_2R_1\\boldsymbol{p}"
+                        },
+                        {
+                          "type": "text",
+                          "value": ", primero actúa "
+                        },
+                        {
+                          "type": "math_inline",
+                          "latex": "R_1"
+                        },
+                        {
+                          "type": "text",
+                          "value": " y luego "
+                        },
+                        {
+                          "type": "math_inline",
+                          "latex": "R_2"
+                        },
+                        {
+                          "type": "text",
+                          "value": "."
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "Las rotaciones 3D no conmutan en general."
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "El producto de rotaciones válidas sigue siendo una rotación válida."
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "Una matriz compuesta también cumple "
+                        },
+                        {
+                          "type": "math_inline",
+                          "latex": "R^TR=I"
+                        },
+                        {
+                          "type": "text",
+                          "value": ", "
+                        },
+                        {
+                          "type": "math_inline",
+                          "latex": "R^{-1}=R^T"
+                        },
+                        {
+                          "type": "text",
+                          "value": " y "
+                        },
+                        {
+                          "type": "math_inline",
+                          "latex": "\\det(R)=1"
+                        },
+                        {
+                          "type": "text",
+                          "value": "."
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "Pre-multiplicar y post-multiplicar cambia la interpretación de ejes fijos o móviles."
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "Las columnas de la matriz final siguen representando los ejes del marco final expresados en el sistema de referencia original."
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "frame-puente-hacia-la-siguiente-clase-ca84ec1",
+          "type": "frame",
+          "title": "Puente hacia la siguiente clase",
+          "sourceLine": 1464,
+          "blocks": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Hasta ahora hemos estudiado orientación."
+                }
+              ]
+            },
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Pero un robot no sólo cambia orientación. También cambia posición."
+                }
+              ]
+            },
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Por eso, el siguiente paso será incorporar traslación:"
+                }
+              ]
+            },
+            {
+              "type": "math",
+              "latex": "\\text{rotación}\n    \\quad+\n    \\text{traslación}\n    \\quad\\rightarrow\\quad\n    \\text{transformación rígida}",
+              "display": true
+            },
+            {
+              "type": "math",
+              "latex": "\\boxed{\n    {}^A\\boldsymbol{p}= {}^AR_B\\,{}^B\\boldsymbol{p}+{}^A\\boldsymbol{p}_{B}}",
+              "display": true
+            },
+            {
+              "type": "academic_block",
+              "variant": "idea",
+              "title": "Próxima clase",
+              "children": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "Este será el puente natural hacia transformaciones homogéneas y, posteriormente, cinemática directa de manipuladores."
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "introTitle": "Cierre",
+      "introSubtitle": "Qué debe quedar claro antes de avanzar"
+    }
+  ]
+}

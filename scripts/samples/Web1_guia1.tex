@@ -1,0 +1,1183 @@
+\documentclass[11pt]{article}
+
+% Plantilla maestra para guías del instructor
+\input{~/Dropbox/Latex/TemplateGuide/template-guide.tex}
+
+\makeatletter
+\renewcommand*\l@subsection{\@dottedtocline{2}{1.5em}{3.8em}}
+\makeatother
+
+\renewcommand{\CourseName}{Diseño Web 1}
+\renewcommand{\CourseCode}{ADSO-CTMA}
+\renewcommand{\Faculty}{Análisis y Desarrollo de Software}
+\renewcommand{\Institution}{Servicio Nacional de Aprendizaje SENA}
+\renewcommand{\Instructor}{Deimer Miranda Montoya, MSc.(c).}
+\renewcommand{\Email}{damiranda@sena.edu.co}
+\renewcommand{\GuideTitle}{Guía 2: HTML aplicado y fundamentos de CSS}
+\renewcommand{\ClassName}{Tablas, formularios y CSS básico}
+\renewcommand{\AcademicPeriod}{2026-3T}
+\renewcommand{\InstitutionLogo}{Template/LogoSena.png}
+
+\begin{document}
+\thispagestyle{firstpage}
+\GuideHeader
+\GuideInfo{Clases 3 a 5}{Presencial con explicación, práctica guiada y trabajo autónomo}{Página con información tabular, formulario y estilos básicos}
+
+\section{Presentación}
+Esta guía comienza donde termina la Guía 1. Primero amplía HTML con tablas y formularios; después introduce CSS hasta el modelo de caja y la propiedad \texttt{display}. El propósito es aprender a estructurar información y controlar su presentación sin adelantarse todavía a posicionamiento, Flexbox o Grid.
+
+\section*{Resultados de aprendizaje de la guía}
+Al finalizar, el aprendiz podrá:
+\begin{itemize}
+    \item construir tablas semánticamente organizadas;
+    \item crear formularios básicos con etiquetas, controles y validaciones HTML;
+    \item vincular correctamente una hoja de estilos externa;
+    \item utilizar selectores de etiqueta, clase e identificador;
+    \item interpretar cascada, especificidad y herencia en casos sencillos;
+    \item aplicar colores, tipografía, unidades y dimensiones;
+    \item explicar y modificar el modelo de caja;
+    \item diferenciar \texttt{block}, \texttt{inline} e \texttt{inline-block}.
+\end{itemize}
+
+\section*{Conocimientos previos}
+Se espera que el aprendiz pueda crear un documento HTML, utilizar rutas relativas, imágenes, listas y estructura semántica.
+
+\Warning[Alcance de esta guía]{
+No se utilizan todavía \texttt{position}, Flexbox, Grid ni media queries como solución de distribución. Los ejercicios deben resolverse con HTML, propiedades CSS básicas y el modelo de caja.
+}
+
+\tableofcontents
+\newpage
+\section{Tablas}
+% =========================================================
+
+\subsection{Cuándo utilizar una tabla}
+
+Una tabla se utiliza cuando existe una relación clara entre filas y columnas: horarios, precios, inventarios,
+resultados, planes, comparaciones o registros.
+
+\Warning{
+    Las tablas no deben utilizarse para construir la distribución visual completa de una página. Para eso se utilizará CSS.
+}
+
+\subsection{Sintaxis mínima}
+
+\begin{htmlcodedark}
+    <table>
+    <tr>
+    <th>Curso</th>
+    <th>Duración</th>
+    </tr>
+
+    <tr>
+    <td>Diseño Web</td>
+    <td>40 horas</td>
+    </tr>
+    </table>
+\end{htmlcodedark}
+
+\begin{description}
+    \item[\texttt{table}:] contenedor principal.
+    \item[\texttt{tr}:] fila.
+    \item[\texttt{th}:] celda de encabezado.
+    \item[\texttt{td}:] celda de datos.
+\end{description}
+
+\subsection{caption, thead, tbody y tfoot}
+
+\begin{htmlcodedark}
+    <table>
+    <caption>Cursos disponibles</caption>
+
+    <thead>
+    <tr>
+    <th scope="col">Curso</th>
+    <th scope="col">Duración</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    <tr>
+    <td>Diseño Web</td>
+    <td>40 horas</td>
+    </tr>
+    </tbody>
+
+    <tfoot>
+    <tr>
+    <td colspan="2">Oferta sujeta a disponibilidad</td>
+    </tr>
+    </tfoot>
+    </table>
+\end{htmlcodedark}
+
+\begin{description}
+    \item[\texttt{caption}:] título o descripción breve de la tabla.
+    \item[\texttt{thead}:] agrupa filas de encabezado.
+    \item[\texttt{tbody}:] agrupa los datos principales.
+    \item[\texttt{tfoot}:] agrupa totales, resúmenes o información final.
+    \item[\texttt{scope}:] ayuda a indicar si un encabezado corresponde a una columna o fila.
+\end{description}
+
+\subsection{colspan y rowspan}
+
+\texttt{colspan} permite ocupar varias columnas:
+
+\begin{htmlcodedark}
+    <tr>
+    <td colspan="3">Información general</td>
+    </tr>
+\end{htmlcodedark}
+
+\texttt{rowspan} permite ocupar varias filas:
+
+\begin{htmlcodedark}
+    <tr>
+    <td rowspan="2">Programación</td>
+    <td>Python</td>
+    </tr>
+    <tr>
+    <td>JavaScript</td>
+    </tr>
+\end{htmlcodedark}
+
+\Warning{
+    Utilice \texttt{colspan} y \texttt{rowspan} únicamente cuando mejoren la comprensión de los datos.
+}
+
+% =========================================================
+\section{Formularios}
+% =========================================================
+
+\subsection{Propósito}
+
+Un formulario permite capturar información ingresada o seleccionada por el usuario: contacto, inscripción,
+búsqueda, reserva, registro o encuesta.
+
+\subsection{Sintaxis general}
+
+\begin{htmlcodedark}
+    <form action="/registro" method="post">
+    <label for="nombre">Nombre:</label>
+
+    <input
+    type="text"
+    id="nombre"
+    name="nombre">
+
+    <button type="submit">Enviar</button>
+    </form>
+\end{htmlcodedark}
+
+\subsection{Atributos de form}
+
+\begin{description}
+    \item[\texttt{action}:] destino al que se enviarían los datos.
+    \item[\texttt{method}:] método utilizado para enviarlos.
+\end{description}
+
+Los valores iniciales estudiados para \texttt{method} son:
+
+\begin{description}
+    \item[\texttt{get}:] envía la información como parte de la URL; es común en búsquedas y filtros.
+    \item[\texttt{post}:] envía la información dentro de la solicitud; es común en formularios de registro o contacto.
+\end{description}
+
+\Idea{
+    En estas clases se trabaja la estructura HTML. El procesamiento real de la información requiere un servidor
+    o una tecnología de backend y se estudiará en otro momento.
+}
+
+\subsection{label}
+
+\texttt{label} identifica el propósito de un campo:
+
+\begin{htmlcodedark}
+    <label for="correo">Correo electrónico:</label>
+
+    <input
+    type="email"
+    id="correo"
+    name="correo">
+\end{htmlcodedark}
+
+El valor de \texttt{for} debe coincidir con el \texttt{id} del campo asociado.
+
+\subsection{input}
+
+\texttt{input} es un elemento vacío cuyo comportamiento depende principalmente del atributo \texttt{type}.
+
+\begin{htmlcodedark}
+    <input
+    type="text"
+    id="nombre"
+    name="nombre"
+    placeholder="Escriba su nombre"
+    required>
+\end{htmlcodedark}
+
+Atributos frecuentes:
+
+\begin{center}
+    \begin{tabularx}{0.95\textwidth}{>{\ttfamily}p{2.6cm}X}
+        \toprule
+        \textnormal{Atributo} & \textnormal{Uso} \\
+        \midrule
+        type & Tipo de entrada. \\
+        id & Identificador único utilizado, entre otros fines, para asociar un label. \\
+        name & Nombre con el que se identifica el dato al enviarse. \\
+        value & Valor inicial o valor asociado a una opción. \\
+        placeholder & Texto de ayuda temporal. \\
+        required & Hace obligatorio el campo. \\
+        min / max & Límites para campos numéricos o de fecha. \\
+        disabled & Deshabilita el control. \\
+        checked & Marca inicialmente checkbox o radio. \\
+        \bottomrule
+    \end{tabularx}
+\end{center}
+
+\subsection{Tipos frecuentes de input}
+
+\begin{htmlcodedark}
+    <input type="text">
+    <input type="email">
+    <input type="tel">
+    <input type="number">
+    <input type="date">
+    <input type="password">
+    <input type="checkbox">
+    <input type="radio">
+\end{htmlcodedark}
+
+\begin{description}
+    \item[\texttt{text}:] texto corto.
+    \item[\texttt{email}:] correo electrónico.
+    \item[\texttt{tel}:] teléfono.
+    \item[\texttt{number}:] valor numérico.
+    \item[\texttt{date}:] fecha.
+    \item[\texttt{password}:] oculta visualmente los caracteres.
+    \item[\texttt{checkbox}:] selección independiente o múltiple.
+    \item[\texttt{radio}:] selección exclusiva dentro de un grupo.
+\end{description}
+
+\subsection{Validaciones básicas}
+
+\begin{htmlcodedark}
+    <input
+    type="number"
+    id="edad"
+    name="edad"
+    min="14"
+    max="100"
+    required>
+\end{htmlcodedark}
+
+Estas validaciones son realizadas inicialmente por el navegador, pero no sustituyen las validaciones del servidor.
+
+\subsection{Checkbox}
+
+\begin{htmlcodedark}
+    <input
+    type="checkbox"
+    id="acepto"
+    name="acepto"
+    required>
+
+    <label for="acepto">
+    Acepto los términos
+    </label>
+\end{htmlcodedark}
+
+\subsection{Radio}
+
+Las opciones de un mismo grupo deben compartir \texttt{name}:
+
+\begin{htmlcodedark}
+    <input
+    type="radio"
+    id="presencial"
+    name="modalidad"
+    value="presencial">
+
+    <label for="presencial">Presencial</label>
+
+    <input
+    type="radio"
+    id="virtual"
+    name="modalidad"
+    value="virtual">
+
+    <label for="virtual">Virtual</label>
+\end{htmlcodedark}
+
+\subsection{textarea}
+
+\begin{htmlcodedark}
+    <label for="mensaje">Mensaje:</label>
+
+    <textarea
+    id="mensaje"
+    name="mensaje"
+    rows="5"
+    placeholder="Escriba su mensaje">
+    </textarea>
+\end{htmlcodedark}
+
+\texttt{rows} controla la cantidad inicial de líneas visibles. También existe \texttt{cols}, aunque su tamaño
+visual se controlará posteriormente con CSS.
+
+\subsection{select y option}
+
+\begin{htmlcodedark}
+    <label for="curso">Curso:</label>
+
+    <select id="curso" name="curso" required>
+    <option value="" selected disabled>
+    Seleccione una opción
+    </option>
+    <option value="web">Diseño Web</option>
+    <option value="python">Python</option>
+    </select>
+\end{htmlcodedark}
+
+\begin{description}
+    \item[\texttt{select}:] contiene la lista desplegable.
+    \item[\texttt{option}:] representa cada opción.
+    \item[\texttt{value}:] valor asociado a la opción.
+    \item[\texttt{selected}:] establece la opción seleccionada inicialmente.
+    \item[\texttt{disabled}:] impide seleccionar una opción.
+\end{description}
+
+\subsection{button}
+
+\begin{htmlcodedark}
+    <button type="submit">Enviar</button>
+    <button type="reset">Limpiar</button>
+    <button type="button">Mostrar ayuda</button>
+\end{htmlcodedark}
+
+\begin{description}
+    \item[\texttt{submit}:] intenta enviar el formulario.
+    \item[\texttt{reset}:] restablece los campos.
+    \item[\texttt{button}:] botón sin una acción automática asociada.
+\end{description}
+
+% =========================================================
+    \section{Introducción a CSS}
+    % =========================================================
+
+    \subsection{¿Qué es CSS?}
+
+    CSS significa \textit{Cascading Style Sheets} o \textbf{Hojas de Estilo en Cascada}. Es el lenguaje utilizado para controlar la presentación visual de los documentos HTML.
+
+    \begin{center}
+        \begin{tabularx}{0.92\textwidth}{>{\bfseries}p{3cm}X}
+            \toprule
+            HTML & Define la estructura y el significado del contenido. \\
+            CSS & Define colores, tamaños, tipografías, espacios, bordes, distribución y otros aspectos visuales. \\
+            JavaScript & Permite programar comportamientos y lógica interactiva. \\
+            \bottomrule
+        \end{tabularx}
+    \end{center}
+
+    \Idea{
+        HTML y CSS trabajan juntos, pero cumplen responsabilidades diferentes. Cambiar el estilo de un encabezado con CSS no cambia el hecho de que siga siendo un encabezado HTML.
+    }
+
+    \subsection{Sintaxis de una regla CSS}
+
+    La estructura básica de una regla CSS es:
+
+    \begin{csscodedark}
+        selector {
+            propiedad: valor;
+        }
+    \end{csscodedark}
+
+    Cada parte cumple una función:
+
+    \begin{description}
+        \item[Selector:] determina qué elemento o elementos recibirán el estilo.
+        \item[Propiedad:] indica qué característica se desea modificar.
+        \item[Valor:] establece cómo se configurará esa propiedad.
+        \item[Llaves:] contienen las declaraciones asociadas al selector.
+        \item[Dos puntos:] separan la propiedad de su valor.
+        \item[Punto y coma:] finaliza una declaración.
+    \end{description}
+
+    Por ejemplo:
+
+    \begin{csscodedark}
+        p {
+            color: red;
+            font-size: 18px;
+        }
+    \end{csscodedark}
+
+    La regla puede leerse como: ``seleccione todos los párrafos, muestre su texto en rojo y utilice un tamaño de 18 píxeles''.
+
+    \Warning[Error frecuente]{
+        No escriba \texttt{color red} ni omita las llaves. La sintaxis correcta es \texttt{propiedad: valor;} dentro de una regla.
+    }
+
+    % =========================================================
+    \section{Estructura de un proyecto con CSS}
+    % =========================================================
+
+
+\begin{center}
+\begin{tikzpicture}[
+    node distance=1.3cm,
+    caja/.style={draw=BrandBlue, rounded corners, very thick, fill=IdeaBody,
+        minimum width=3.2cm, minimum height=0.9cm, align=center},
+    flecha/.style={-{Latex[length=3mm]}, thick, BrandBlue}
+]
+    \node[caja] (html) {\texttt{index.html}\\estructura};
+    \node[caja, right=of html] (link) {\texttt{<link>}\\conexión};
+    \node[caja, right=of link] (css) {\texttt{styles.css}\\presentación};
+    \draw[flecha] (html) -- (link);
+    \draw[flecha] (link) -- (css);
+\end{tikzpicture}
+\end{center}
+
+    \subsection{Dos páginas HTML y una hoja de estilos}
+
+    Un sitio puede tener varias páginas HTML que compartan una misma hoja de estilos. Una estructura sencilla es:
+
+    \begin{bashcodedark}
+        mi-sitio-web/
+        ├── index.html
+        ├── contacto.html
+        └── css/
+            └── styles.css
+    \end{bashcodedark}
+
+    \begin{description}
+        \item[\texttt{index.html}:] página principal.
+        \item[\texttt{contacto.html}:] segunda página del sitio.
+        \item[\texttt{styles.css}:] archivo CSS compartido por ambas páginas.
+    \end{description}
+
+    En los dos documentos HTML se utiliza la misma referencia dentro de \texttt{head}:
+
+    \begin{htmlcodedark}
+        <link rel="stylesheet" href="css/styles.css">
+    \end{htmlcodedark}
+
+    \subsection{La etiqueta link}
+
+    \begin{description}
+        \item[\texttt{link}:] relaciona el documento HTML con un recurso externo.
+        \item[\texttt{rel="stylesheet"}:] indica que el recurso relacionado es una hoja de estilos.
+        \item[\texttt{href}:] contiene la ruta hacia el archivo CSS.
+    \end{description}
+
+    Desde \texttt{index.html} y \texttt{contacto.html}, la ruta \texttt{css/styles.css} significa: entrar a la carpeta \texttt{css} y localizar el archivo \texttt{styles.css}.
+
+    \Idea{
+        Si ambas páginas cargan el mismo archivo CSS, una modificación en \texttt{styles.css} puede reflejarse en las dos sin repetir reglas.
+    }
+
+    \subsection{Formas de aplicar CSS}
+
+    Existen tres formas comunes:
+
+    \begin{center}
+        \begin{tabularx}{0.94\textwidth}{>{\bfseries}p{2.8cm}p{4.4cm}X}
+            \toprule
+            Forma & Ubicación & Uso inicial \\
+            \midrule
+            Externo & Archivo \texttt{.css} & Forma principal recomendada en el curso. \\
+            Interno & Elemento \texttt{style} dentro de \texttt{head} & Útil para ejemplos pequeños o pruebas. \\
+            En línea & Atributo \texttt{style} en un elemento & Debe evitarse como práctica habitual porque mezcla estructura y presentación. \\
+            \bottomrule
+        \end{tabularx}
+    \end{center}
+
+    % =========================================================
+    \section{Selectores CSS}
+    % =========================================================
+
+    \subsection{Selector de etiqueta}
+
+    Selecciona todos los elementos HTML de un mismo tipo.
+
+    \begin{htmlcodedark}
+        <p>Primer párrafo</p>
+        <p>Segundo párrafo</p>
+    \end{htmlcodedark}
+
+    \begin{csscodedark}
+        p {
+            color: blue;
+        }
+    \end{csscodedark}
+
+    Los dos párrafos reciben el estilo porque ambos coinciden con el selector \texttt{p}.
+
+    \subsection{Clases}
+
+    El atributo HTML \texttt{class} permite agrupar elementos que compartirán uno o varios estilos.
+
+    \begin{htmlcodedark}
+        <p class="destacado">Información importante</p>
+        <p class="destacado">Segunda información importante</p>
+    \end{htmlcodedark}
+
+    En CSS, una clase se selecciona anteponiendo un punto:
+
+    \begin{csscodedark}
+        .destacado {
+            color: red;
+            font-weight: bold;
+        }
+    \end{csscodedark}
+
+    Una clase puede reutilizarse en muchos elementos e incluso en etiquetas diferentes:
+
+    \begin{htmlcodedark}
+        <h2 class="destacado">Aviso</h2>
+        <p class="destacado">Contenido del aviso.</p>
+    \end{htmlcodedark}
+
+    \subsection{Varias clases en un mismo elemento}
+
+    Un elemento puede pertenecer a más de una clase. Los nombres se separan mediante espacios:
+
+    \begin{htmlcodedark}
+        <p class="destacado centrado">
+            Información importante
+        </p>
+    \end{htmlcodedark}
+
+    \begin{csscodedark}
+        .destacado {
+            color: red;
+        }
+
+        .centrado {
+            text-align: center;
+        }
+    \end{csscodedark}
+
+    El párrafo recibe los estilos de ambas clases.
+
+    \subsection{Identificadores}
+
+    El atributo \texttt{id} identifica un elemento particular del documento. Su valor debe ser único dentro de la página.
+
+    \begin{htmlcodedark}
+        <section id="contacto">
+            <h2>Contacto</h2>
+        </section>
+    \end{htmlcodedark}
+
+    En CSS se utiliza el símbolo \texttt{\#}:
+
+    \begin{csscodedark}
+        #contacto {
+            background-color: lightgray;
+        }
+    \end{csscodedark}
+
+    \subsection{Etiqueta, clase e ID}
+
+    \begin{center}
+        \begin{tabularx}{0.95\textwidth}{>{\bfseries}p{2.0cm}p{2.5cm}p{6.0cm}X}
+            \toprule
+            Selector & Sintaxis CSS & Alcance & Uso típico \\
+            \midrule
+            Etiqueta & \texttt{p} & Todos los elementos de ese tipo & Estilo general. \\
+            Clase & \texttt{.destacado} & Uno o muchos elementos & Estilo reutilizable. \\
+            ID & \texttt{\#contacto} & Un elemento específico & Identificación particular. \\
+            \bottomrule
+        \end{tabularx}
+    \end{center}
+
+    \Warning{
+        No utilice un ID repetido para varios elementos. Cuando el estilo deba reutilizarse, use una clase.
+    }
+
+    \subsection{Introducción a la cascada}
+
+    Un elemento puede coincidir con varias reglas:
+
+    \begin{htmlcodedark}
+        <p class="destacado">Mensaje importante</p>
+    \end{htmlcodedark}
+
+    \begin{csscodedark}
+        p {
+            color: black;
+        }
+
+        .destacado {
+            color: red;
+        }
+    \end{csscodedark}
+
+    El navegador debe resolver qué declaración tiene prioridad. Este comportamiento
+    forma parte de la \textbf{cascada}. Para interpretar el resultado conviene seguir
+    un orden: comprobar si la regla coincide, revisar su importancia, comparar la
+    especificidad y, cuando existe empate, observar cuál aparece después.
+
+    \subsection{Especificidad}
+
+    La especificidad es una forma de comparar selectores. Para los casos trabajados
+    en clase puede entenderse mediante tres niveles: los identificadores tienen más
+    peso que las clases y pseudoclases; estas, a su vez, tienen más peso que las
+    etiquetas. El estilo en línea posee una prioridad superior dentro de esta
+    comparación, aunque no se recomienda como forma principal de trabajo.
+
+    \begin{center}
+        \begin{tikzpicture}[
+            nivel/.style={draw=BrandBlue, thick, rounded corners, fill=IdeaBody,
+                minimum height=0.75cm, align=center}
+            ]
+            \node[nivel, minimum width=8.5cm] at (0,2.7)
+            {estilo en línea: \texttt{style="..."}};
+            \node[nivel, minimum width=7cm] at (0,1.8)
+            {identificador: \texttt{\#menu}};
+            \node[nivel, minimum width=5.5cm] at (0,0.9)
+            {clase o estado: \texttt{.destacado:hover}};
+            \node[nivel, minimum width=4cm] at (0,0)
+            {etiqueta: \texttt{p}};
+            \node[right=0.4cm] at (4.5,2.7) {mayor peso};
+        \end{tikzpicture}
+    \end{center}
+
+    \begin{csscodedark}
+        p { color: black; }
+        .destacado { color: red; }
+        #aviso { color: darkgreen; }
+    \end{csscodedark}
+
+    Si el mismo párrafo coincide con las tres reglas, el selector
+    \texttt{\#aviso} gana por especificidad. Si dos reglas poseen la misma
+    especificidad, normalmente prevalece la última declaración válida.
+
+    \subsection{Herencia y valor calculado}
+
+    Algunas propiedades, especialmente las relacionadas con texto, pueden heredarse
+    desde un ancestro. Por ejemplo, establecer \texttt{color} y
+    \texttt{font-family} en \texttt{body} permite que muchos descendientes utilicen
+    esos valores. Propiedades como \texttt{margin}, \texttt{padding},
+    \texttt{border} o \texttt{width} no se heredan de la misma forma.
+
+    \begin{csscodedark}
+        body {
+            color: #333333;
+            font-family: Arial, sans-serif;
+        }
+    \end{csscodedark}
+
+    El valor que finalmente utiliza el navegador se denomina \textbf{valor
+        calculado}. Puede consultarse en la pestaña de estilos calculados de las
+    herramientas de desarrollo.
+
+    \Warning[No resolver con \texttt{!important}]{
+        Antes de añadir \texttt{!important}, compruebe el selector, el orden, la
+        especificidad y la herencia. Utilizarlo sin diagnóstico oculta el origen del
+        conflicto y dificulta el mantenimiento.
+    }
+
+    % =========================================================
+    \section{Colores y texto en CSS}
+    % =========================================================
+
+    \subsection{Propiedad color}
+
+    \texttt{color} controla el color del texto:
+
+    \begin{csscodedark}
+        p {
+            color: red;
+        }
+    \end{csscodedark}
+
+    \subsection{Formas de representar colores}
+
+    CSS admite diferentes representaciones.
+
+    \begin{center}
+        \begin{tabularx}{0.92\textwidth}{>{\bfseries}p{3cm}p{4cm}X}
+            \toprule
+            Forma & Ejemplo & Descripción \\
+            \midrule
+            Nombre & \texttt{red} & Nombre reconocido por CSS. \\
+            Hexadecimal & \texttt{\#FF0000} & Componentes rojo, verde y azul en base hexadecimal. \\
+            RGB & \texttt{rgb(255, 0, 0)} & Componentes entre 0 y 255. \\
+            RGBA & \texttt{rgba(255,0,0,0.5)} & RGB más componente de transparencia. \\
+            \bottomrule
+        \end{tabularx}
+    \end{center}
+
+    En hexadecimal se utiliza la estructura:
+
+    \begin{center}
+        \texttt{\#RRGGBB}
+    \end{center}
+
+    \begin{center}
+        \begin{tabular}{lll}
+            \toprule
+            Color & Hexadecimal & RGB \\
+            \midrule
+            Negro & \texttt{\#000000} & \texttt{rgb(0,0,0)} \\
+            Blanco & \texttt{\#FFFFFF} & \texttt{rgb(255,255,255)} \\
+            Rojo & \texttt{\#FF0000} & \texttt{rgb(255,0,0)} \\
+            Verde & \texttt{\#00FF00} & \texttt{rgb(0,255,0)} \\
+            Azul & \texttt{\#0000FF} & \texttt{rgb(0,0,255)} \\
+            \bottomrule
+        \end{tabular}
+    \end{center}
+
+    \subsection{Color de fondo}
+
+    \begin{csscodedark}
+        section {
+            background-color: lightgray;
+        }
+    \end{csscodedark}
+
+    \texttt{color} modifica principalmente el color del texto; \texttt{background-color} modifica el fondo del elemento.
+
+    \subsection{Tipografía}
+
+    \begin{csscodedark}
+        body {
+            font-family: Arial, sans-serif;
+        }
+    \end{csscodedark}
+
+    La lista indica alternativas: si Arial no está disponible, el navegador utilizará una fuente genérica \texttt{sans-serif}.
+
+    Otras propiedades iniciales:
+
+    \begin{csscodedark}
+        h1 {
+            font-size: 36px;
+            font-weight: bold;
+            text-align: center;
+        }
+    \end{csscodedark}
+
+    \begin{description}
+        \item[\texttt{font-size}:] tamaño del texto.
+        \item[\texttt{font-weight}:] grosor del texto; valores iniciales comunes: \texttt{normal} y \texttt{bold}.
+        \item[\texttt{text-align}:] alineación; valores frecuentes: \texttt{left}, \texttt{center}, \texttt{right} y \texttt{justify}.
+    \end{description}
+
+    % =========================================================
+    \section{Unidades y dimensiones}
+    % =========================================================
+
+    \subsection{Píxeles CSS}
+
+    \texttt{px} expresa una longitud definida en píxeles CSS.
+
+    \begin{csscodedark}
+        p {
+            font-size: 18px;
+        }
+
+        img {
+            width: 300px;
+        }
+    \end{csscodedark}
+
+    \subsection{Porcentajes}
+
+    El porcentaje representa un valor relativo cuyo referente depende de la propiedad. Para \texttt{width}, normalmente se calcula respecto al ancho disponible del bloque contenedor.
+
+    \begin{csscodedark}
+        img {
+            width: 50%;
+        }
+    \end{csscodedark}
+
+    \begin{center}
+        \begin{tabularx}{0.9\textwidth}{>{\bfseries}p{2.5cm}p{3cm}X}
+            \toprule
+            Unidad & Ejemplo & Idea inicial \\
+            \midrule
+            \texttt{px} & \texttt{300px} & Longitud definida. \\
+            \texttt{\%} & \texttt{50\%} & Valor relativo al contexto de la propiedad. \\
+            \texttt{rem} & \texttt{1rem} & Relativo al tamaño de fuente del elemento raíz; se profundizará posteriormente. \\
+            \bottomrule
+        \end{tabularx}
+    \end{center}
+
+    \subsection{width y height}
+
+    \texttt{width} controla el ancho y \texttt{height} el alto:
+
+    \begin{csscodedark}
+        section {
+            width: 500px;
+            height: 200px;
+        }
+    \end{csscodedark}
+
+    No siempre conviene fijar \texttt{height}; en muchos casos el contenido debe determinar automáticamente la altura.
+
+    También existen límites:
+
+    \begin{csscodedark}
+        img {
+            width: 100%;
+            max-width: 600px;
+        }
+    \end{csscodedark}
+
+    Propiedades relacionadas: \texttt{min-width}, \texttt{max-width}, \texttt{min-height} y \texttt{max-height}.
+
+    % =========================================================
+    \section{Estados visuales y pseudoclases}
+    % =========================================================
+
+    \subsection{¿Qué es una pseudoclase?}
+
+    Una pseudoclase aplica estilos cuando un elemento se encuentra en un estado determinado. Su sintaxis utiliza dos puntos:
+
+    \begin{center}
+        \texttt{selector:pseudoclase}
+    \end{center}
+
+    Para un botón:
+
+    \begin{csscodedark}
+        button {
+            background-color: blue;
+            color: white;
+        }
+
+        button:hover {
+            background-color: darkblue;
+        }
+
+        button:active {
+            background-color: navy;
+        }
+
+        button:focus {
+            outline: 3px solid orange;
+        }
+    \end{csscodedark}
+
+    \begin{description}
+        \item[\texttt{:hover}:] el puntero está sobre el elemento.
+        \item[\texttt{:active}:] el elemento está siendo activado.
+        \item[\texttt{:focus}:] el elemento tiene el foco, por ejemplo durante navegación con teclado.
+    \end{description}
+
+    \Idea{
+        CSS puede responder visualmente a estados, pero no sustituye la lógica de JavaScript. CSS puede cambiar cómo se ve un botón; JavaScript puede decidir qué acción ejecutar al activarlo.
+    }
+
+    % =========================================================
+    \section{Modelo de caja}
+    % =========================================================
+
+    Todo elemento representado por el navegador puede analizarse como una caja rectangular formada, de adentro hacia afuera, por:
+
+    \begin{center}
+        \textbf{Contenido $\rightarrow$ Padding $\rightarrow$ Border $\rightarrow$ Margin}
+    \end{center}
+
+    \begin{center}
+        \begin{tikzpicture}[every node/.style={font=\small}]
+            \fill[WarnBody] (-5,-2.35) rectangle (5,2.35);
+            \fill[BrandYellow!32] (-4.2,-1.75) rectangle (4.2,1.75);
+            \fill[PracticeBody] (-3.35,-1.15) rectangle (3.35,1.15);
+            \fill[IdeaBody] (-2.35,-0.58) rectangle (2.35,0.58);
+            \draw[WarnTitle,thick] (-5,-2.35) rectangle (5,2.35);
+            \draw[orange!80!black,thick] (-4.2,-1.75) rectangle (4.2,1.75);
+            \draw[PracticeTitle,thick] (-3.35,-1.15) rectangle (3.35,1.15);
+            \draw[IdeaTitle,thick] (-2.35,-0.58) rectangle (2.35,0.58);
+            \node at (0,0) {contenido};
+            \node at (0,0.86) {\texttt{padding}};
+            \node at (0,1.48) {\texttt{border}};
+            \node at (0,2.05) {\texttt{margin}};
+        \end{tikzpicture}
+    \end{center}
+
+    \begin{description}
+        \item[Contenido:] texto, imagen u otros elementos internos.
+        \item[Padding:] espacio interior entre el contenido y el borde.
+        \item[Border:] línea que rodea contenido y padding.
+        \item[Margin:] espacio exterior que separa la caja de otras cajas.
+    \end{description}
+
+    \subsection{Padding}
+
+    \begin{csscodedark}
+        section {
+            padding: 20px;
+        }
+    \end{csscodedark}
+
+    Aplica 20px en los cuatro lados. Para modificar un lado específico existen
+    \texttt{padding-top}, \texttt{padding-right}, \texttt{padding-bottom} y
+    \texttt{padding-left}.
+
+    La forma abreviada sigue el orden arriba, derecha, abajo, izquierda:
+
+    \begin{csscodedark}
+        section {
+            padding: 10px 20px 30px 40px;
+        }
+    \end{csscodedark}
+
+    Con dos valores:
+
+    \begin{csscodedark}
+        section {
+            padding: 10px 20px;
+        }
+    \end{csscodedark}
+
+    El primero corresponde a arriba/abajo y el segundo a izquierda/derecha.
+
+    \subsection{Border}
+
+    \begin{csscodedark}
+        section {
+            border: 2px solid black;
+        }
+    \end{csscodedark}
+
+    La forma abreviada incluye grosor, estilo y color. Estilos frecuentes: \texttt{solid}, \texttt{dashed}, \texttt{dotted}, \texttt{double} y \texttt{none}.
+
+    También puede escribirse por componentes:
+
+    \begin{csscodedark}
+        section {
+            border-width: 2px;
+            border-style: solid;
+            border-color: black;
+        }
+    \end{csscodedark}
+
+    \subsection{Margin}
+
+    \begin{csscodedark}
+        section {
+            margin: 20px;
+        }
+    \end{csscodedark}
+
+    \texttt{margin} genera espacio exterior. Sus formas abreviadas siguen la misma lógica de \texttt{padding}.
+
+    Un caso común:
+
+    \begin{csscodedark}
+        section {
+            width: 600px;
+            margin: 0 auto;
+        }
+    \end{csscodedark}
+
+    Con un ancho definido, \texttt{auto} puede repartir el espacio horizontal disponible y centrar el bloque.
+
+    \subsection{Padding frente a margin}
+
+    \begin{center}
+        \begin{tabularx}{0.9\textwidth}{>{\bfseries}p{7cm}X X}
+            \toprule
+            Aspecto & Padding & Margin \\
+            \midrule
+            Ubicación & Interior & Exterior \\
+            Separa & Contenido del borde & Una caja de otras \\
+            Forma parte del fondo visible & Sí & No \\
+            Puede usar \texttt{auto} como margen horizontal & No & Sí \\
+            \bottomrule
+        \end{tabularx}
+    \end{center}
+
+    % =========================================================
+    \section{Tamaño real de la caja y box-sizing}
+    % =========================================================
+
+    Con el modelo tradicional \texttt{content-box}, \texttt{width} representa el ancho del contenido. El padding y el borde se agregan al tamaño final.
+
+    \begin{csscodedark}
+        .caja {
+            width: 300px;
+            padding: 20px;
+            border: 5px solid black;
+        }
+    \end{csscodedark}
+
+    El ancho visible, sin contar margin, es:
+
+    \[
+    300 + 20 + 20 + 5 + 5 = 350\text{px}
+    \]
+
+    \subsection{content-box}
+
+    \begin{csscodedark}
+        .caja {
+            box-sizing: content-box;
+        }
+    \end{csscodedark}
+
+    El valor de \texttt{width} corresponde al contenido.
+
+    \subsection{border-box}
+
+    \begin{csscodedark}
+        .caja {
+            width: 300px;
+            padding: 20px;
+            border: 5px solid black;
+            box-sizing: border-box;
+        }
+    \end{csscodedark}
+
+    Ahora los 300px incluyen contenido, padding y border.
+
+    Es frecuente utilizar:
+
+    \begin{csscodedark}
+        * {
+            box-sizing: border-box;
+        }
+    \end{csscodedark}
+
+    El selector \texttt{*} es el \textbf{selector universal}: selecciona todos los elementos.
+
+    % =========================================================
+    \section{Propiedad display}
+    % =========================================================
+
+    \texttt{display} determina cómo participa un elemento en el flujo de la página.
+
+    \subsection{block}
+
+    Un elemento de bloque suele iniciar en una nueva línea, puede ocupar el ancho disponible y admite dimensiones explícitas.
+
+    \begin{csscodedark}
+        div {
+            display: block;
+            width: 300px;
+        }
+    \end{csscodedark}
+
+    Elementos como \texttt{div}, \texttt{p}, \texttt{section}, \texttt{article}, \texttt{header} y \texttt{footer} suelen tener comportamiento de bloque por defecto.
+
+    \subsection{inline}
+
+    Un elemento inline participa dentro de la misma línea del texto y ocupa principalmente el espacio de su contenido.
+
+    Elementos comunes: \texttt{span}, \texttt{a}, \texttt{strong} y \texttt{em}.
+
+    \begin{csscodedark}
+        span {
+            display: inline;
+        }
+    \end{csscodedark}
+
+    En un elemento inline, \texttt{width} y \texttt{height} no se comportan como en un bloque.
+
+    \subsection{inline-block}
+
+    Combina participación en línea con posibilidad de controlar dimensiones:
+
+    \begin{csscodedark}
+        .boton {
+            display: inline-block;
+            width: 120px;
+            padding: 10px;
+        }
+    \end{csscodedark}
+
+    \begin{center}
+        \begin{tabularx}{0.92\textwidth}{>{\bfseries}p{6cm}p{4cm} X X}
+            \toprule
+            Característica & block & inline & inline-block \\
+            \midrule
+            Nueva línea normalmente & Sí & No & No \\
+            Control de width/height & Sí & Limitado & Sí \\
+            Puede permanecer en línea & No normalmente & Sí & Sí \\
+            \bottomrule
+        \end{tabularx}
+    \end{center}
+
+    % =========================================================
+
+\section{Práctica guiada: inscripción a un taller}
+
+\Practice[Objetivo]{
+Construya una página para publicar el cronograma de un taller y recibir una inscripción. La página debe demostrar que HTML organiza los datos y que CSS controla la presentación sin modificar su significado.
+}
+
+\subsection{Requisitos HTML}
+\begin{enumerate}
+    \item Una tabla con \texttt{caption}, \texttt{thead} y \texttt{tbody} para el cronograma.
+    \item Un formulario con nombre, correo, jornada, aceptación de condiciones y botón de envío.
+    \item Todos los controles deben tener un \texttt{label} asociado cuando corresponda.
+    \item Los campos obligatorios deben utilizar validaciones HTML apropiadas.
+\end{enumerate}
+
+\subsection{Requisitos CSS}
+\begin{enumerate}
+    \item Hoja externa en \texttt{css/styles.css}.
+    \item Uso consciente de selectores de etiqueta y clase.
+    \item Tipografía, color de texto y color de fondo.
+    \item Aplicación de \texttt{padding}, \texttt{border} y \texttt{margin}.
+    \item Uso de \texttt{box-sizing: border-box}.
+    \item Al menos un estado \texttt{:hover} o \texttt{:focus} que mejore la retroalimentación visual.
+\end{enumerate}
+
+\begin{center}
+\begin{tikzpicture}[
+    caja/.style={draw=BrandBlue, very thick, rounded corners, minimum width=4.2cm,
+        minimum height=1.0cm, align=center},
+    flecha/.style={-{Latex[length=3mm]}, thick}
+]
+    \node[caja, fill=IdeaBody] (estructura) {HTML\\contenido y significado};
+    \node[caja, fill=PracticeBody, right=2cm of estructura] (estilo) {CSS\\presentación visual};
+    \draw[flecha] (estructura) -- node[above]{\texttt{class} / selectores} (estilo);
+\end{tikzpicture}
+\end{center}
+
+\section{Ejercicio autónomo}
+Diseñe una página para registrar asistentes a un evento académico. Debe incluir una tabla de agenda y un formulario de registro, pero la estructura y los textos no pueden copiar el ejemplo guiado.
+
+\section{Errores frecuentes y diagnóstico}
+\begin{itemize}
+    \item usar tablas para diseñar la distribución general de la página;
+    \item escribir un \texttt{input} sin un \texttt{label} reconocible;
+    \item repetir un mismo \texttt{id} en varios elementos;
+    \item aplicar estilos en línea cuando ya existe una hoja externa;
+    \item confundir \texttt{margin} con \texttt{padding};
+    \item asignar \texttt{width} y agregar rellenos sin comprender el tamaño real de la caja;
+    \item utilizar \texttt{!important} para evitar comprender la cascada.
+\end{itemize}
+
+\section{Consulta rápida}
+\begin{center}
+\begin{tabularx}{0.95\linewidth}{>{\ttfamily}p{3.7cm}X}
+\toprule
+\textnormal{Concepto} & \textnormal{Uso}\\
+\midrule
+table / tr / th / td & Información tabular.\\
+form / label / input & Captura de datos.\\
+.class & Selecciona elementos que comparten una clase.\\
+\#id & Selecciona un identificador único.\\
+padding & Espacio interior entre contenido y borde.\\
+border & Límite visible de la caja.\\
+margin & Espacio exterior entre cajas.\\
+box-sizing & Define cómo se calcula el tamaño declarado.\\
+display & Determina el comportamiento básico de la caja.\\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\section{Cierre de la guía}
+\Result[Cierre]{
+El propósito de esta guía es que el aprendiz pueda regresar a ella durante la práctica sin encontrar todavía la solución de los temas de la guía siguiente. Antes de avanzar, debe ser capaz de explicar con sus propias palabras los conceptos centrales y construir una solución funcional sin copiar el ejemplo completo.
+}
+\end{document}

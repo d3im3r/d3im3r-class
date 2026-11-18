@@ -1,0 +1,66 @@
+{
+  "schemaVersion": "1.1.0",
+  "documentId": "industrial-5",
+  "assets": [
+    {
+      "id": "asset-4c1dfb5e4cf8",
+      "origin": "tikz",
+      "source": "\\begin{tikzpicture}[scale=0.95,>=Latex,every node/.style={font=\\scriptsize}]\n                \\coordinate (O) at (0,0);\n                \\draw[->,very thick,BrandBlue] (O) -- (2.6,0) node[right] {$x$};\n                \\draw[->,very thick,BrandGreen] (O) -- (-1.0,-0.9) node[left] {$y$};\n                \\draw[->,very thick,BrandYellow!80!black] (O) -- (0,2.4) node[above] {$z$};\n                \\draw[->,thick,gray] (0.7,0) arc[start angle=0,end angle=55,radius=0.7];\n                \\draw[->,thick,gray] (-0.25,0.9) arc[start angle=125,end angle=45,radius=0.8];\n                \\node[gray] at (0.9,0.42) {$R_1$};\n                \\node[gray] at (0.55,1.25) {$R_2$};\n                \\fill (O) circle (1.4pt);\n            \\end{tikzpicture}",
+      "status": "pending",
+      "src": null,
+      "background": "white",
+      "format": "svg",
+      "error": "Compilación de figuras omitida por configuración"
+    },
+    {
+      "id": "asset-0ebdf21a9128",
+      "origin": "tikz",
+      "source": "\\begin{tikzpicture}[\n        node distance=0.75cm,\n        >=Latex,\n        box/.style={draw,rounded corners,thick,minimum width=2.6cm,minimum height=0.85cm,align=center,font=\\scriptsize}\n    ]\n        \\node[box,draw=BrandBlue,fill=IdeaBody] (p) {$\\boldsymbol{p}$\\\\vector inicial};\n        \\node[box,draw=BrandGreen,fill=PracticeBody,right=of p] (r1) {$R_1$\\\\primera rotación};\n        \\node[box,draw=BrandBlue,fill=IdeaBody,right=of r1] (p1) {$\\boldsymbol{p}_1$\\\\resultado intermedio};\n        \\node[box,draw=BrandGreen,fill=PracticeBody,right=of p1] (r2) {$R_2$\\\\segunda rotación};\n        \\node[box,draw=BrandYellow!80!black,fill=BrandYellow!15,right=of r2] (p2) {$\\boldsymbol{p}_2$\\\\resultado final};\n\n        \\draw[->,thick] (p) -- (r1);\n        \\draw[->,thick] (r1) -- (p1);\n        \\draw[->,thick] (p1) -- (r2);\n        \\draw[->,thick] (r2) -- (p2);\n    \\end{tikzpicture}",
+      "status": "pending",
+      "src": null,
+      "background": "white",
+      "format": "svg",
+      "error": "Compilación de figuras omitida por configuración"
+    },
+    {
+      "id": "asset-fac4d5d653ba",
+      "origin": "tikz",
+      "source": "\\begin{tikzpicture}[scale=0.65,>=Latex,every node/.style={font=\\scriptsize}]\n        \\coordinate (O) at (0,0);\n        \\draw[->,thick] (O) -- (3.0,0) node[right] {$x$};\n        \\draw[->,thick] (O) -- (-1.2,-1.0) node[left] {$y$};\n        \\draw[->,thick] (O) -- (0,2.5) node[above] {$z$};\n        \\draw[->,very thick,BrandBlue] (O) -- (0,2.0) node[above left] {$\\boldsymbol p$};\n        \\draw[->,very thick,BrandGreen] (O) -- (2.3,0) node[below right] {$\\boldsymbol p_B$};\n        \\draw[->,very thick,BrandYellow!80!black] (O) -- (1.0,0.85) node[above right] {$\\boldsymbol{p_A}$};\n        \\node[align=center] at (1.0,-1.45) {Secuencias distintas\\\\producen direcciones distintas};\n    \\end{tikzpicture}",
+      "status": "pending",
+      "src": null,
+      "background": "white",
+      "format": "svg",
+      "error": "Compilación de figuras omitida por configuración"
+    },
+    {
+      "id": "asset-034ee0166351",
+      "origin": "tikz",
+      "source": "\\begin{tikzpicture}[scale=0.9,>=Latex,every node/.style={font=\\scriptsize}]\n        \\node[draw,rounded corners,thick,fill=IdeaBody,minimum width=2.4cm,minimum height=0.75cm] (p) {$\\boldsymbol p$};\n        \\node[draw,rounded corners,thick,fill=PracticeBody,right=0.6cm of p,minimum width=2.4cm,minimum height=0.75cm] (rx) {$R_x(\\alpha)$};\n        \\node[draw,rounded corners,thick,fill=IdeaBody,right=0.6cm of rx,minimum width=2.4cm,minimum height=0.75cm] (p1) {$\\boldsymbol p_1$};\n        \\node[draw,rounded corners,thick,fill=PracticeBody,right=0.6cm of p1,minimum width=2.4cm,minimum height=0.75cm] (ry) {$R_y(\\beta)$};\n        \\node[draw,rounded corners,thick,fill=BrandYellow!15,draw=BrandYellow!80!black,right=0.6cm of ry,minimum width=2.4cm,minimum height=0.75cm] (pf) {$\\boldsymbol p'$};\n        \\draw[->,thick] (p) -- (rx);\n        \\draw[->,thick] (rx) -- (p1);\n        \\draw[->,thick] (p1) -- (ry);\n        \\draw[->,thick] (ry) -- (pf);\n    \\end{tikzpicture}",
+      "status": "pending",
+      "src": null,
+      "background": "white",
+      "format": "svg",
+      "error": "Compilación de figuras omitida por configuración"
+    },
+    {
+      "id": "asset-5cba39c2a07d",
+      "origin": "tikz",
+      "source": "\\begin{tikzpicture}[\n    scale=0.95,\n    >=Latex,\n    every node/.style={font=\\scriptsize}\n    ]\n\n    \n    \n    \n    \\coordinate (O) at (0,0);\n\n    \n    \\draw[->,very thick,BrandBlue]\n    (O) -- (3.0,0)\n    node[right] {$x_0$};\n\n    \\draw[->,very thick,BrandGreen]\n    (O) -- (-1.1,-1.0)\n    node[left] {$y_0$};\n\n    \\draw[->,very thick,BrandYellow!80!black]\n    (O) -- (0,2.6)\n    node[above] {$z_0$};\n\n    \\node[below right] at (O) {$\\{0\\}$};\n\n    \n    \\draw[->,very thick,gray]\n    (3.3,1.2) -- (4.3,1.2);\n\n    \\node[gray,above]\n    at (3.8,1.2)\n    {$R_{z_0}(\\theta)$};\n\n    \n    \n    \n    \\begin{scope}[shift={(6.0,0)}]\n\n        \\coordinate (P) at (0,0);\n\n        \n        \n        \n        \\draw[->,thick,BrandBlue!45]\n        (P) -- (3.0,0)\n        node[right] {$x_0$};\n\n        \\draw[->,thick,BrandGreen!45]\n        (P) -- (-1.1,-1.0)\n        node[left] {$y_0$};\n\n        \\draw[->,thick,BrandYellow!55!black]\n        (P) -- (0,2.6)\n        node[above] {$z_0$};\n\n        \n        \n        \n        \n        \\begin{scope}[rotate=40]\n\n            \\draw[->,very thick,BrandBlue]\n            (P) -- (2.7,0)\n            node[right] {$x_1$};\n\n            \\draw[->,very thick,BrandGreen]\n            (P) -- (-1.0,-0.9)\n            node[left] {$y_1$};\n\n        \\end{scope}\n\n        \n        \\draw[->,very thick,BrandYellow!80!black]\n        (P) -- (0,2.6);\n\n        \\node[right,BrandYellow!80!black]\n        at (0.08,2.15)\n        {$z_1=z_0$};\n\n        \n        \\draw[->,thick,gray]\n        (0.8,0)\n        arc[\n        start angle=0,\n        end angle=40,\n        radius=0.8\n        ];\n\n        \\node[gray]\n        at (1.02,0.32)\n        {$\\theta$};\n\n        \\node[below right]\n        at (P)\n        {$\\{1\\}$};\n\n    \\end{scope}\n\n\\end{tikzpicture}",
+      "status": "pending",
+      "src": null,
+      "background": "white",
+      "format": "svg",
+      "error": "Compilación de figuras omitida por configuración"
+    },
+    {
+      "id": "asset-2b2e0c19b64d",
+      "origin": "tikz",
+      "source": "\\begin{tikzpicture}[\n            scale=0.88,\n            >=Latex,\n            every node/.style={font=\\scriptsize}\n            ]\n\n            \n            \n            \n            \\coordinate (O0) at (0,0);\n\n            \\draw[->,very thick,BrandBlue]\n            (O0) -- (2.4,0)\n            node[right] {$x_0$};\n\n            \\draw[->,very thick,BrandGreen]\n            (O0) -- (-0.9,-0.8)\n            node[left] {$y_0$};\n\n            \\draw[->,very thick,BrandYellow!80!black]\n            (O0) -- (0,2.2)\n            node[above] {$z_0$};\n\n            \\node[below right] at (O0) {$\\{0\\}$};\n\n            \n            \n            \n            \\draw[->,very thick,gray]\n            (2.8,1.25) -- (3.8,1.25);\n\n            \\node[gray,above] at (3.3,1.25)\n            {$R_{z_0}(\\alpha)$};\n\n\n            \n            \n            \n            \n            \\coordinate (O1) at (5.2,0);\n\n            \n            \\draw[->,very thick,BrandBlue]\n            (O1) -- ++(2.15,1.05)\n            node[right] {$x_1$};\n\n            \n            \\draw[->,very thick,BrandGreen]\n            (O1) -- ++(0.45,-1.15)\n            node[below] {$y_1$};\n\n            \n            \\draw[->,very thick,BrandYellow!80!black]\n            (O1) -- ++(0,2.2)\n            node[above] {$z_1=z_0$};\n\n            \\node[below right] at (O1) {$\\{1\\}$};\n\n            \n            \\draw[->,thick,gray]\n            ($(O1)+(0.75,0)$)\n            arc[start angle=0,end angle=26,radius=0.75];\n\n            \\node[gray] at ($(O1)+(0.95,0.25)$) {$\\alpha$};\n\n\n            \n            \n            \n            \\draw[->,very thick,gray]\n            (7.9,1.25) -- (8.9,1.25);\n\n            \\node[gray,above] at (8.4,1.25)\n            {$R_{x_1}(\\beta)$};\n\n\n            \n            \n            \n            \n            \\coordinate (O2) at (10.3,0);\n\n            \n            \n            \n            \\draw[->,thick,dashed,BrandBlue!45]\n            (O2) -- ++(2.15,1.05)\n            node[right] {$x_1$};\n\n            \\draw[->,thick,dashed,BrandGreen!45]\n            (O2) -- ++(-0.45,-1.15)\n            node[left] {$y_1$};\n\n            \\draw[->,thick,dashed,BrandYellow!50!black]\n            (O2) -- ++(0,2.2)\n            node[above] {$z_1$};\n\n            \n            \n            \n            \\draw[->,very thick,BrandBlue]\n            (O2) -- ++(2.15,1.05)\n            node[above right] {$x_2=x_1$};\n\n            \n            \n            \n            \n            \\draw[->,very thick,BrandGreen]\n            (O2) -- ++(0.10,-1.30)\n            node[below] {$y_2$};\n\n            \\draw[->,very thick,BrandYellow!80!black]\n            (O2) -- ++(-0.75,1.95)\n            node[above left] {$z_2$};\n\n            \\node[below right] at (O2) {$\\{2\\}$};\n\n            \n            \\draw[->,thick,gray]\n            ($(O2)+(0.55,0.28)$)\n            arc[start angle=25,end angle=105,\n            x radius=0.52,y radius=0.30];\n\n            \\node[gray] at ($(O2)+(0.35,0.78)$) {$\\beta$};\n\n        \\end{tikzpicture}",
+      "status": "pending",
+      "src": null,
+      "background": "white",
+      "format": "svg",
+      "error": "Compilación de figuras omitida por configuración"
+    }
+  ]
+}

@@ -1,0 +1,1492 @@
+\documentclass[aspectratio=169,10pt]{beamer}
+
+% Clase 6 - Robótica Industrial
+% Compilar con XeLaTeX o LuaLaTeX.
+% Si se usan bloques minted, compilar con -shell-escape.
+
+\input{~/Dropbox/Latex/TemplateSlides/template-slide.tex}
+
+% =========================================================
+% CONFIGURACIÓN DEL CURSO
+% =========================================================
+\renewcommand{\CourseName}{Robótica Industrial}
+\renewcommand{\CourseCode}{ING 01339 / SOL-ING 220}
+\renewcommand{\Faculty}{Facultad de Ingeniería}
+\renewcommand{\Institution}{Politécnico Colombiano Jaime Isaza Cadavid}
+\renewcommand{\Instructor}{Deimer Andrés Miranda Montoya, MSc.(c).}
+\renewcommand{\Email}{deimer\_miranda91162@elpoli.edu.co}
+\renewcommand{\UseImages}{1}
+
+% =========================================================
+% PIE DE PÁGINA
+% =========================================================
+\setbeamertemplate{footline}{%
+    \leavevmode
+    \hbox to \paperwidth{%
+        \hspace{0.35cm}%
+        \makebox[0.22\paperwidth][l]{%
+            {\tiny
+                \Acrobatmenu{PrevPage}{\textcolor{black}{$\triangleleft$}}%
+                \hspace{0.22cm}%
+                \insertpagenumber/\insertpresentationendpage%
+                \hspace{0.22cm}%
+                \Acrobatmenu{NextPage}{\textcolor{black}{$\triangleright$}}%
+            }%
+        }%
+        \hfill%
+        \makebox[0.70\paperwidth][r]{%
+            {\tiny\Instructor}%
+            \hspace{0.18cm}%
+            \raisebox{-0.10cm}{\smartlogo[0.34cm]{Template/LogoPoli.png}}%
+        }%
+        \hspace{0.35cm}%
+    }%
+    \vspace{0.08cm}
+}
+
+\title{Robótica Industrial}
+\subtitle{Clase 6: Composición de rotaciones en 3D}
+\author{\Instructor}
+\institute{\Institution}
+\date{2026-2}
+
+\begin{document}
+
+% =========================================================
+\TitleSlide
+
+% =========================================================
+\begin{frame}{Clase 6: propósito}
+    \small
+    \begin{columns}[T]
+        \begin{column}{0.55\textwidth}
+            \Idea[Propósito]{
+                Comprender cómo se combinan varias rotaciones en el espacio tridimensional y por qué el orden de multiplicación cambia el resultado final.
+            }
+
+            \vspace{0.15cm}
+            Al finalizar la clase, el estudiante debe poder:
+            \begin{itemize}
+                \item interpretar una rotación compuesta como una secuencia;
+                \item reconocer qué rotación actúa primero en un producto matricial;
+                \item verificar la no conmutatividad de las rotaciones 3D;
+                \item distinguir rotaciones respecto a ejes fijos y ejes móviles;
+                \item construir una matriz de orientación final;
+                \item validar resultados mediante Python.
+            \end{itemize}
+        \end{column}
+
+        \begin{column}{0.40\textwidth}
+            \centering
+            \begin{tikzpicture}[scale=0.95,>=Latex,every node/.style={font=\scriptsize}]
+                \coordinate (O) at (0,0);
+                \draw[->,very thick,BrandBlue] (O) -- (2.6,0) node[right] {$x$};
+                \draw[->,very thick,BrandGreen] (O) -- (-1.0,-0.9) node[left] {$y$};
+                \draw[->,very thick,BrandYellow!80!black] (O) -- (0,2.4) node[above] {$z$};
+                \draw[->,thick,gray] (0.7,0) arc[start angle=0,end angle=55,radius=0.7];
+                \draw[->,thick,gray] (-0.25,0.9) arc[start angle=125,end angle=45,radius=0.8];
+                \node[gray] at (0.9,0.42) {$R_1$};
+                \node[gray] at (0.55,1.25) {$R_2$};
+                \fill (O) circle (1.4pt);
+            \end{tikzpicture}
+
+            \Result[Idea central]{
+                En 3D, cambiar el orden de las rotaciones puede cambiar la orientación final.
+            }
+        \end{column}
+    \end{columns}
+\end{frame}
+
+% =========================================================
+\section{Punto de partida}
+\SectionSlide{Punto de partida}{De rotaciones elementales a rotaciones compuestas}
+
+% =========================================================
+\begin{frame}{Lo que ya sabemos}
+    \small
+    En la clase anterior construimos las rotaciones elementales:
+
+    \[
+    R_x(\theta)=
+    \begin{bmatrix}
+        1&0&0\\
+        0&\cos\theta&-\sin\theta\\
+        0&\sin\theta&\cos\theta
+    \end{bmatrix}
+    \]
+\vspace{0.3cm}
+    \[
+    R_y(\theta)=
+    \begin{bmatrix}
+        \cos\theta&0&\sin\theta\\
+        0&1&0\\
+        -\sin\theta&0&\cos\theta
+    \end{bmatrix},
+    \quad
+    R_z(\theta)=
+    \begin{bmatrix}
+        \cos\theta&-\sin\theta&0\\
+        \sin\theta&\cos\theta&0\\
+        0&0&1
+    \end{bmatrix}.
+    \]
+
+    \Result[Propiedad común]{
+        Cada matriz representa una rotación rígida: conserva longitudes y ángulos, y cumple $R^TR=I$ y $\det(R)=1$.
+    }
+\end{frame}
+
+% =========================================================
+\begin{frame}{La nueva pregunta}
+    \small
+    En un robot real rara vez aparece una sola rotación aislada.
+
+    \vspace{0.15cm}
+    Una orientación puede resultar de varias acciones consecutivas:
+
+    \[
+    \text{girar alrededor de }x
+    \quad\rightarrow\quad
+    \text{girar alrededor de }y
+    \quad\rightarrow\quad
+    \text{girar alrededor de }z.
+    \]
+
+    \vspace{0.15cm}
+    Esto conduce a productos matriciales como:
+
+    \[
+    R=R_z(\gamma)R_y(\beta)R_x(\alpha).
+    \]
+
+    \Warning[Pregunta clave]{
+        ¿El resultado sería el mismo si escribimos $R_x(\alpha)R_y(\beta)R_z(\gamma)$?
+    }
+
+%    \Practice[Predicción]{
+%        Antes de calcular, discuta si el orden de las rotaciones debería importar físicamente.
+%    }
+\end{frame}
+
+% =========================================================
+\begin{frame}{Composición: una acción después de otra}
+    \small
+    Si primero se aplica una rotación $R_1$ a un vector $\boldsymbol{p}$, se obtiene:
+
+    \[
+    \boldsymbol{p}_1=R_1\boldsymbol{p}.
+    \]
+
+    Si después se aplica una segunda rotación $R_2$:
+
+    \[
+    \boldsymbol{p}_2=R_2\boldsymbol{p}_1.
+    \]
+
+    Sustituyendo:
+
+    \[
+    \boxed{
+    \boldsymbol{p}_2=R_2R_1\boldsymbol{p}}
+    \]
+
+    \begin{columns}[T]
+        \begin{column}{0.48\textwidth}
+            \Result[Lectura algebraica]{
+                La matriz más cercana al vector actúa primero.
+            }
+        \end{column}
+        \begin{column}{0.48\textwidth}
+            \Warning[No leer de izquierda a derecha]{
+                En $R_2R_1\boldsymbol{p}$, primero actúa $R_1$ y luego $R_2$.
+            }
+        \end{column}
+    \end{columns}
+\end{frame}
+
+% =========================================================
+\begin{frame}{Diagrama de composición sobre un vector}
+    \small
+    \begin{center}
+        \resizebox{0.99\textwidth}{!}{%
+    \begin{tikzpicture}[
+        node distance=0.75cm,
+        >=Latex,
+        box/.style={draw,rounded corners,thick,minimum width=2.6cm,minimum height=0.85cm,align=center,font=\scriptsize}
+    ]
+        \node[box,draw=BrandBlue,fill=IdeaBody] (p) {$\boldsymbol{p}$\\vector inicial};
+        \node[box,draw=BrandGreen,fill=PracticeBody,right=of p] (r1) {$R_1$\\primera rotación};
+        \node[box,draw=BrandBlue,fill=IdeaBody,right=of r1] (p1) {$\boldsymbol{p}_1$\\resultado intermedio};
+        \node[box,draw=BrandGreen,fill=PracticeBody,right=of p1] (r2) {$R_2$\\segunda rotación};
+        \node[box,draw=BrandYellow!80!black,fill=BrandYellow!15,right=of r2] (p2) {$\boldsymbol{p}_2$\\resultado final};
+
+        \draw[->,thick] (p) -- (r1);
+        \draw[->,thick] (r1) -- (p1);
+        \draw[->,thick] (p1) -- (r2);
+        \draw[->,thick] (r2) -- (p2);
+    \end{tikzpicture}}
+    \end{center}
+
+    \[
+    \boldsymbol{p}
+    \xrightarrow{R_1}
+    \boldsymbol{p}_1
+    \xrightarrow{R_2}
+    \boldsymbol{p}_2
+    \]
+
+    \[
+    \boxed{\boldsymbol{p}_2=R_2R_1\boldsymbol{p}}
+    \]
+
+    \Idea[Lectura correcta]{
+        El producto matricial acumula transformaciones, pero la operación sobre el vector se evalúa desde la derecha hacia la izquierda.
+    }
+\end{frame}
+
+% =========================================================
+\section{El orden importa}
+\SectionSlide{El orden importa}{La no conmutatividad de las rotaciones 3D}
+
+% =========================================================
+\begin{frame}{¿Qué significa no conmutatividad?}
+    \small
+    Para números reales:
+
+    \[
+    2\cdot3=3\cdot2.
+    \]
+
+    Pero para matrices, en general:
+
+    \[
+    AB\neq BA.
+    \]
+
+    En rotaciones 3D esto no es solamente una propiedad algebraica: tiene significado físico.
+
+    \vspace{0.15cm}
+    Dos secuencias diferentes pueden producir orientaciones finales diferentes:
+
+    \[
+    R_y(90^\circ)R_x(90^\circ)
+    \neq
+    R_x(90^\circ)R_y(90^\circ).
+    \]
+
+    \Warning[Idea central]{
+        En 3D, girar primero alrededor de $x$ y luego alrededor de $y$ no necesariamente equivale a girar primero alrededor de $y$ y luego alrededor de $x$.
+    }
+\end{frame}
+
+% =========================================================
+\begin{frame}{Experimento conceptual}
+    \small
+    Tomemos el vector:
+
+    \[
+    \boldsymbol{p}=\begin{bmatrix}0\\0\\1\end{bmatrix}.
+    \]
+
+    Compararemos dos secuencias:
+
+    \vspace{0.10cm}
+
+    \begin{columns}[T]
+        \begin{column}{0.48\textwidth}
+            \DefBlock[Secuencia A]{
+                Primero $R_x(90^\circ)$ y luego $R_y(90^\circ)$:
+                \[
+                \boldsymbol{p}_A=R_y(90^\circ)R_x(90^\circ)\boldsymbol{p}.
+                \]
+            }
+        \end{column}
+        \begin{column}{0.48\textwidth}
+            \DefBlock[Secuencia B]{
+                Primero $R_y(90^\circ)$ y luego $R_x(90^\circ)$:
+                \[
+                \boldsymbol{p}_B=R_x(90^\circ)R_y(90^\circ)\boldsymbol{p}.
+                \]
+            }
+        \end{column}
+    \end{columns}
+
+    \Practice[Antes de resolver]{
+        Dibuje la dirección inicial del vector $\boldsymbol{p}$ y prediga si $\boldsymbol{p}_A$ y $\boldsymbol{p}_B$ deberían coincidir.
+    }
+\end{frame}
+
+% =========================================================
+\begin{frame}{Secuencia A: primero $R_x$, luego $R_y$}
+    \small
+    \[
+    \boldsymbol{p}=\begin{bmatrix}0\\0\\1\end{bmatrix}
+    \]
+
+    Primero:
+
+    \[
+    R_x(90^\circ)\boldsymbol{p}
+    = \pause
+    \begin{bmatrix}
+        1&0&0\\
+        0&0&-1\\
+        0&1&0
+    \end{bmatrix}
+    \begin{bmatrix}0\\0\\1\end{bmatrix}
+    =
+    \begin{bmatrix}0\\-1\\0\end{bmatrix}.
+    \]
+
+    Luego:
+
+    \[
+    R_y(90^\circ)
+    \begin{bmatrix}0\\-1\\0\end{bmatrix}
+    = \pause
+    \begin{bmatrix}0\\-1\\0\end{bmatrix}.
+    \]
+\vspace{0.2cm}
+    \[
+    \boxed{\boldsymbol{p}_A=\begin{bmatrix}0\\-1\\0\end{bmatrix}}
+    \]
+\vspace{-0.2cm}
+\pause
+    \Result[Interpretación]{
+        Después de la primera rotación el vector queda sobre el eje $-y$. Una rotación alrededor de $y$ no lo cambia.
+    }
+\end{frame}
+
+% =========================================================
+\begin{frame}{Secuencia B: primero $R_y$, luego $R_x$}
+    \small
+    \[
+    \boldsymbol{p}=\begin{bmatrix}0\\0\\1\end{bmatrix}
+    \]
+
+    Primero:
+
+    \[
+    R_y(90^\circ)\boldsymbol{p}
+    =\pause
+    \begin{bmatrix}
+        0&0&1\\
+        0&1&0\\
+        -1&0&0
+    \end{bmatrix}
+    \begin{bmatrix}0\\0\\1\end{bmatrix}
+    =
+    \begin{bmatrix}1\\0\\0\end{bmatrix}.
+    \]
+
+    Luego:
+
+    \[
+    R_x(90^\circ)
+    \begin{bmatrix}1\\0\\0\end{bmatrix}
+    =\pause
+    \begin{bmatrix}1\\0\\0\end{bmatrix}.
+    \]
+\vspace{0.2cm}
+    \[
+    \boxed{\boldsymbol{p}_B=\begin{bmatrix}1\\0\\0\end{bmatrix}}
+    \]
+\vspace{-0.2cm}
+\pause
+    \Result[Interpretación]{
+        Después de la primera rotación el vector queda sobre el eje $+x$. Una rotación alrededor de $x$ no lo cambia.
+    }
+\end{frame}
+
+% =========================================================
+\begin{frame}{Resultado del experimento}
+    \small
+    Obtuvimos:
+
+    \[
+    \boldsymbol{p}_A=\begin{bmatrix}0\\-1\\0\end{bmatrix},
+    \qquad
+    \boldsymbol{p}_B=\begin{bmatrix}1\\0\\0\end{bmatrix}.
+    \]
+
+    Por tanto:
+
+    \[
+    \boxed{\boldsymbol{p}_A\neq\boldsymbol{p}_B}
+    \]
+
+    \begin{center}
+    \begin{tikzpicture}[scale=0.65,>=Latex,every node/.style={font=\scriptsize}]
+        \coordinate (O) at (0,0);
+        \draw[->,thick] (O) -- (3.0,0) node[right] {$x$};
+        \draw[->,thick] (O) -- (-1.2,-1.0) node[left] {$y$};
+        \draw[->,thick] (O) -- (0,2.5) node[above] {$z$};
+        \draw[->,very thick,BrandBlue] (O) -- (0,2.0) node[above left] {$\boldsymbol p$};
+        \draw[->,very thick,BrandGreen] (O) -- (2.3,0) node[below right] {$\boldsymbol p_B$};
+        \draw[->,very thick,BrandYellow!80!black] (O) -- (1.0,0.85) node[above right] {$\boldsymbol{p_A}$};
+        \node[align=center] at (1.0,-1.45) {Secuencias distintas\\producen direcciones distintas};
+    \end{tikzpicture}
+    \end{center}
+ \vspace{-0.2cm}
+    \Warning[Conclusión]{
+        Las rotaciones 3D no conmutan: el orden de aplicación forma parte del significado físico de la orientación final.
+    }
+\end{frame}
+
+% =========================================================
+\section{Cómo leer productos de rotaciones}
+\SectionSlide{Cómo leer productos de rotaciones}{Primero actúa la matriz más cercana al vector}
+
+% =========================================================
+\begin{frame}{Producto de dos rotaciones}
+    \small
+    Si definimos:
+
+    \[
+    R=R_y(\beta)R_x(\alpha),
+    \]
+
+    entonces para un vector:
+
+    \[
+    \boldsymbol{p}'=R\boldsymbol{p}=R_y(\beta)R_x(\alpha)\boldsymbol{p}.
+    \]
+
+    La secuencia real es:
+\pause
+    \[
+    \boldsymbol{p}
+    \xrightarrow{R_x(\alpha)}
+    \boldsymbol{p}_1
+    \xrightarrow{R_y(\beta)}
+    \boldsymbol{p}'.
+    \]
+
+    \begin{center}
+    \begin{tikzpicture}[scale=0.9,>=Latex,every node/.style={font=\scriptsize}]
+        \node[draw,rounded corners,thick,fill=IdeaBody,minimum width=2.4cm,minimum height=0.75cm] (p) {$\boldsymbol p$};
+        \node[draw,rounded corners,thick,fill=PracticeBody,right=0.6cm of p,minimum width=2.4cm,minimum height=0.75cm] (rx) {$R_x(\alpha)$};
+        \node[draw,rounded corners,thick,fill=IdeaBody,right=0.6cm of rx,minimum width=2.4cm,minimum height=0.75cm] (p1) {$\boldsymbol p_1$};
+        \node[draw,rounded corners,thick,fill=PracticeBody,right=0.6cm of p1,minimum width=2.4cm,minimum height=0.75cm] (ry) {$R_y(\beta)$};
+        \node[draw,rounded corners,thick,fill=BrandYellow!15,draw=BrandYellow!80!black,right=0.6cm of ry,minimum width=2.4cm,minimum height=0.75cm] (pf) {$\boldsymbol p'$};
+        \draw[->,thick] (p) -- (rx);
+        \draw[->,thick] (rx) -- (p1);
+        \draw[->,thick] (p1) -- (ry);
+        \draw[->,thick] (ry) -- (pf);
+    \end{tikzpicture}
+    \end{center}
+
+    \Result[Regla operativa]{
+        En una expresión como $R_3R_2R_1\boldsymbol{p}$, el vector primero recibe $R_1$, luego $R_2$ y finalmente $R_3$.
+    }
+\end{frame}
+
+% =========================================================
+\begin{frame}{Producto de matrices como orientación final}
+    \small
+    Si dos matrices son rotaciones válidas:
+
+    \[
+    R_1\in SO(3),
+    \qquad
+    R_2\in SO(3),
+    \]
+
+    entonces su producto también es una rotación válida:
+
+    \[
+    R=R_2R_1\in SO(3).
+    \]
+
+    \vspace{0.15cm}
+    Esto significa que:
+
+    \[
+    R^TR=I,
+    \qquad
+    \det(R)=1.
+    \]
+
+    \Idea[Interpretación]{
+        Componer rotaciones no destruye la naturaleza rígida del movimiento. El resultado sigue siendo una orientación válida.
+    }
+
+%    \Practice[Compruebe]{
+%        Use las propiedades del determinante para justificar por qué $\det(R_2R_1)=1$ si $\det(R_1)=\det(R_2)=1$.
+%    }
+\end{frame}
+
+% =========================================================
+\begin{frame}{Demostración breve de ortogonalidad}
+    \small
+    Sea:
+
+    \[
+    R=R_2R_1.
+    \]
+
+    Entonces:
+
+    \[
+    R^TR
+    =
+    (R_2R_1)^T(R_2R_1).
+    \]
+
+    Usando:
+
+    \[
+    (AB)^T=B^TA^T,
+    \]
+\pause
+    se obtiene:
+
+    \[
+    R^TR
+    =
+    R_1^TR_2^TR_2R_1.
+    \]
+
+    Como $R_2^TR_2=I$:
+
+    \[
+    R^TR=R_1^TIR_1=R_1^TR_1=I.
+    \]
+
+    \Result[Conclusión]{
+        El producto de rotaciones conserva la ortogonalidad de la matriz resultante.
+    }
+\end{frame}
+
+% =========================================================
+\section{Ejes fijos y ejes móviles}
+\SectionSlide{Ejes fijos y ejes móviles}{La misma multiplicación con interpretaciones distintas}
+
+% =========================================================
+\begin{frame}{La dificultad conceptual}
+    \small
+    En 3D hay que distinguir entre dos situaciones:
+
+    \begin{columns}[T]
+        \begin{column}{0.45\textwidth}
+            \DefBlock[Rotaciones respecto a ejes fijos]{
+                Cada rotación se interpreta alrededor de los ejes del sistema original o global.
+            }
+        \end{column}
+        \begin{column}{0.50\textwidth}
+            \DefBlock[Rotaciones respecto a ejes móviles]{
+                Cada nueva rotación se interpreta alrededor de los ejes del sistema que ya fue rotado.
+            }
+        \end{column}
+    \end{columns}
+
+    \vspace{0.15cm}
+
+    \Warning[Atención]{
+        Esta diferencia no es un detalle de notación. Cambia la interpretación física de la secuencia de movimientos.
+    }
+
+    \Idea[Puente robótico]{
+        En un manipulador, muchas rotaciones se entienden naturalmente respecto a marcos que se van moviendo con cada eslabón.
+    }
+\end{frame}
+
+% =========================================================
+\begin{frame}{Rotaciones respecto a ejes fijos}
+    \small
+    En una secuencia de rotaciones respecto a ejes fijos, cada nueva rotación se realiza alrededor de un eje del sistema base \(\{0\}\), aunque el sistema móvil ya haya cambiado de orientación
+
+    \begin{center}
+\begin{tikzpicture}[
+    scale=0.95,
+    >=Latex,
+    every node/.style={font=\scriptsize}
+    ]
+
+    % =========================================================
+    % ESTADO INICIAL
+    % =========================================================
+    \coordinate (O) at (0,0);
+
+    % Sistema base {0}
+    \draw[->,very thick,BrandBlue]
+    (O) -- (3.0,0)
+    node[right] {$x_0$};
+
+    \draw[->,very thick,BrandGreen]
+    (O) -- (-1.1,-1.0)
+    node[left] {$y_0$};
+
+    \draw[->,very thick,BrandYellow!80!black]
+    (O) -- (0,2.6)
+    node[above] {$z_0$};
+
+    \node[below right] at (O) {$\{0\}$};
+
+    % Flecha de transición
+    \draw[->,very thick,gray]
+    (3.3,1.2) -- (4.3,1.2);
+
+    \node[gray,above]
+    at (3.8,1.2)
+    {$R_{z_0}(\theta)$};
+
+    % =========================================================
+    % DESPUÉS DE LA ROTACIÓN
+    % =========================================================
+    \begin{scope}[shift={(6.0,0)}]
+
+        \coordinate (P) at (0,0);
+
+        % -----------------------------------------------------
+        % Sistema base: permanece fijo
+        % -----------------------------------------------------
+        \draw[->,thick,BrandBlue!45]
+        (P) -- (3.0,0)
+        node[right] {$x_0$};
+
+        \draw[->,thick,BrandGreen!45]
+        (P) -- (-1.1,-1.0)
+        node[left] {$y_0$};
+
+        \draw[->,thick,BrandYellow!55!black]
+        (P) -- (0,2.6)
+        node[above] {$z_0$};
+
+        % -----------------------------------------------------
+        % Sistema rotado {1}
+        % Rotación ilustrativa de 40 grados alrededor de z0
+        % -----------------------------------------------------
+        \begin{scope}[rotate=40]
+
+            \draw[->,very thick,BrandBlue]
+            (P) -- (2.7,0)
+            node[right] {$x_1$};
+
+            \draw[->,very thick,BrandGreen]
+            (P) -- (-1.0,-0.9)
+            node[left] {$y_1$};
+
+        \end{scope}
+
+        % z1 coincide con z0
+        \draw[->,very thick,BrandYellow!80!black]
+        (P) -- (0,2.6);
+
+        \node[right,BrandYellow!80!black]
+        at (0.08,2.15)
+        {$z_1=z_0$};
+
+        % Ángulo
+        \draw[->,thick,gray]
+        (0.8,0)
+        arc[
+        start angle=0,
+        end angle=40,
+        radius=0.8
+        ];
+
+        \node[gray]
+        at (1.02,0.32)
+        {$\theta$};
+
+        \node[below right]
+        at (P)
+        {$\{1\}$};
+
+    \end{scope}
+
+\end{tikzpicture}
+    \end{center}
+
+\begin{columns}[T]
+
+    \begin{column}{0.48\textwidth}
+        \Result[Ejes fijos]{
+            Los ejes \(x_0,y_0,z_0\) pertenecen al sistema base
+            y no cambian después de la rotación.
+        }
+    \end{column}
+
+    \begin{column}{0.48\textwidth}
+        \Result[Sistema rotado]{
+            Al aplicar \(R_{z_0}(\theta)\), los ejes
+            \(x_1\) y \(y_1\) cambian de orientación,
+            mientras \(z_1=z_0\).
+        }
+    \end{column}
+
+\end{columns}
+\end{frame}
+
+% =========================================================
+\begin{frame}{Rotaciones respecto a ejes móviles}
+    \small
+
+    En una secuencia de rotaciones respecto a ejes móviles, cada nueva
+    rotación se realiza alrededor de un eje del sistema que ya fue rotado.
+
+    \begin{center}
+        \begin{tikzpicture}[
+            scale=0.88,
+            >=Latex,
+            every node/.style={font=\scriptsize}
+            ]
+
+            % =========================================================
+            % SISTEMA INICIAL {0}
+            % =========================================================
+            \coordinate (O0) at (0,0);
+
+            \draw[->,very thick,BrandBlue]
+            (O0) -- (2.4,0)
+            node[right] {$x_0$};
+
+            \draw[->,very thick,BrandGreen]
+            (O0) -- (-0.9,-0.8)
+            node[left] {$y_0$};
+
+            \draw[->,very thick,BrandYellow!80!black]
+            (O0) -- (0,2.2)
+            node[above] {$z_0$};
+
+            \node[below right] at (O0) {$\{0\}$};
+
+            % ---------------------------------------------------------
+            % Primera transformación
+            % ---------------------------------------------------------
+            \draw[->,very thick,gray]
+            (2.8,1.25) -- (3.8,1.25);
+
+            \node[gray,above] at (3.3,1.25)
+            {$R_{z_0}(\alpha)$};
+
+
+            % =========================================================
+            % SISTEMA {1}
+            % después de rotar alrededor de z0
+            % =========================================================
+            \coordinate (O1) at (5.2,0);
+
+            % x1 rotado
+            \draw[->,very thick,BrandBlue]
+            (O1) -- ++(2.15,1.05)
+            node[right] {$x_1$};
+
+            % y1 rotado
+            \draw[->,very thick,BrandGreen]
+            (O1) -- ++(0.45,-1.15)
+            node[below] {$y_1$};
+
+            % z1 NO cambia
+            \draw[->,very thick,BrandYellow!80!black]
+            (O1) -- ++(0,2.2)
+            node[above] {$z_1=z_0$};
+
+            \node[below right] at (O1) {$\{1\}$};
+
+            % arco alpha alrededor de z0
+            \draw[->,thick,gray]
+            ($(O1)+(0.75,0)$)
+            arc[start angle=0,end angle=26,radius=0.75];
+
+            \node[gray] at ($(O1)+(0.95,0.25)$) {$\alpha$};
+
+
+            % ---------------------------------------------------------
+            % Segunda transformación
+            % ---------------------------------------------------------
+            \draw[->,very thick,gray]
+            (7.9,1.25) -- (8.9,1.25);
+
+            \node[gray,above] at (8.4,1.25)
+            {$R_{x_1}(\beta)$};
+
+
+            % =========================================================
+            % SISTEMA {2}
+            % después de rotar alrededor de x1
+            % =========================================================
+            \coordinate (O2) at (10.3,0);
+
+            % ---------------------------------------------------------
+            % Ejes anteriores como referencia
+            % ---------------------------------------------------------
+            \draw[->,thick,dashed,BrandBlue!45]
+            (O2) -- ++(2.15,1.05)
+            node[right] {$x_1$};
+
+            \draw[->,thick,dashed,BrandGreen!45]
+            (O2) -- ++(-0.45,-1.15)
+            node[left] {$y_1$};
+
+            \draw[->,thick,dashed,BrandYellow!50!black]
+            (O2) -- ++(0,2.2)
+            node[above] {$z_1$};
+
+            % ---------------------------------------------------------
+            % x2 coincide exactamente con x1
+            % ---------------------------------------------------------
+            \draw[->,very thick,BrandBlue]
+            (O2) -- ++(2.15,1.05)
+            node[above right] {$x_2=x_1$};
+
+            % ---------------------------------------------------------
+            % y2 y z2 cambian por la rotación alrededor de x1
+            % Proyección esquemática
+            % ---------------------------------------------------------
+            \draw[->,very thick,BrandGreen]
+            (O2) -- ++(0.10,-1.30)
+            node[below] {$y_2$};
+
+            \draw[->,very thick,BrandYellow!80!black]
+            (O2) -- ++(-0.75,1.95)
+            node[above left] {$z_2$};
+
+            \node[below right] at (O2) {$\{2\}$};
+
+            % indicación del giro alrededor de x1
+            \draw[->,thick,gray]
+            ($(O2)+(0.55,0.28)$)
+            arc[start angle=25,end angle=105,
+            x radius=0.52,y radius=0.30];
+
+            \node[gray] at ($(O2)+(0.35,0.78)$) {$\beta$};
+
+        \end{tikzpicture}
+    \end{center}
+
+    \begin{columns}[T]
+
+        \begin{column}{0.48\textwidth}
+            \Result[Primer giro]{
+                Al aplicar \(R_{z_0}(\alpha)\),
+                \(z_1=z_0\). Solamente cambian
+                las direcciones de \(x\) y \(y\).
+            }
+        \end{column}
+
+        \begin{column}{0.48\textwidth}
+            \Result[Segundo giro]{
+                La segunda rotación se realiza alrededor de \(x_1\).
+                Por tanto, \(x_2=x_1\), mientras \(y_1\) y \(z_1\)
+                cambian de dirección.
+            }
+        \end{column}
+
+    \end{columns}
+
+\end{frame}
+
+% =========================================================
+\begin{frame}{Pre-multiplicar y post-multiplicar}
+    \small
+    Una forma práctica de recordar la diferencia es:
+
+    \begin{columns}[T]
+        \begin{column}{0.48\textwidth}
+            \DefBlock[Pre-multiplicación]{
+                \[
+                R_{nuevo}=R_{adicional}R_{actual}
+                \]
+                La rotación adicional se interpreta respecto a ejes fijos o globales.
+            }
+        \end{column}
+        \begin{column}{0.48\textwidth}
+            \DefBlock[Post-multiplicación]{
+                \[
+                R_{nuevo}=R_{actual}R_{adicional}
+                \]
+                La rotación adicional se interpreta respecto a ejes móviles o locales.
+            }
+        \end{column}
+    \end{columns}
+
+    \vspace{0.15cm}
+    \Warning[Convención]{
+        Esta regla depende de la convención de vectores columna que estamos utilizando. Por eso es indispensable mantener una notación consistente.
+    }
+\end{frame}
+
+% =========================================================
+\begin{frame}{Ejemplo conceptual: eje global frente a eje local}
+    \small
+    Suponga que un marco primero gira $90^\circ$ alrededor de $z_0$.
+
+    \vspace{0.10cm}
+    Después se solicita una rotación alrededor de $x$.
+
+    \begin{columns}[T]
+        \begin{column}{0.48\textwidth}
+            \DefBlock[Si el eje es fijo]{
+                La rotación se hace alrededor de $x_0$, aunque el marco ya esté rotado.
+            }
+        \end{column}
+        \begin{column}{0.48\textwidth}
+            \DefBlock[Si el eje es móvil]{
+                La rotación se hace alrededor de $x_1$, que ya no coincide necesariamente con $x_0$.
+            }
+        \end{column}
+    \end{columns}
+
+    \vspace{0.15cm}
+    \Practice[Discusión]{
+        Dibuje $x_0$ y $x_1$ después de una rotación de $90^\circ$ alrededor de $z_0$. ¿Son el mismo eje?
+    }
+\end{frame}
+
+% =========================================================
+\section{Ejemplos resueltos}
+\SectionSlide{Ejemplos resueltos}{Calcular, interpretar y comprobar}
+
+% =========================================================
+\begin{frame}{Ejemplo 1: producto de dos rotaciones}
+    \small
+    Construyamos:
+
+    \[
+    R=R_y(90^\circ)R_x(90^\circ).
+    \]
+
+    Sabemos que:
+
+    \[
+    R_x(90^\circ)=
+    \begin{bmatrix}
+        1&0&0\\
+        0&0&-1\\
+        0&1&0
+    \end{bmatrix}
+    \]
+\vspace{0.2cm}
+    \[
+    R_y(90^\circ)=
+    \begin{bmatrix}
+        0&0&1\\
+        0&1&0\\
+        -1&0&0
+    \end{bmatrix}.
+    \]
+
+    \Practice[Antes de multiplicar]{
+        ¿Cuál matriz actúa primero sobre un vector si escribimos $R_yR_x\boldsymbol{p}$?
+    }
+\end{frame}
+
+% =========================================================
+\begin{frame}{Ejemplo 1: resultado}
+    \small
+    \[
+    R=R_y(90^\circ)R_x(90^\circ)
+    =
+    \begin{bmatrix}
+        0&1&0\\
+        0&0&-1\\
+        -1&0&0
+    \end{bmatrix}.
+    \]
+
+    Leamos las columnas:
+
+    \[
+    \boldsymbol{r}_1=\begin{bmatrix}0\\0\\-1\end{bmatrix},
+    \qquad
+    \boldsymbol{r}_2=\begin{bmatrix}1\\0\\0\end{bmatrix},
+    \qquad
+    \boldsymbol{r}_3=\begin{bmatrix}0\\-1\\0\end{bmatrix}.
+    \]
+
+    \Result[Interpretación]{
+        \pause El eje $x$ del marco final apunta hacia $-z$, el eje $y$ apunta hacia $+x$ y el eje $z$ apunta hacia $-y$.
+    }
+\end{frame}
+
+% =========================================================
+\begin{frame}{Ejemplo 2: invertir el orden}
+    \small
+    Ahora calculemos:
+
+    \[
+    \tilde{R}=R_x(90^\circ)R_y(90^\circ).
+    \]
+
+    El resultado es:
+
+    \[
+    \tilde{R}=
+    \begin{bmatrix}
+        0&0&1\\
+        1&0&0\\
+        0&1&0
+    \end{bmatrix}.
+    \]
+
+    Comparando:
+
+    \[
+    R_y(90^\circ)R_x(90^\circ)
+    =
+    \begin{bmatrix}
+        0&1&0\\
+        0&0&-1\\
+        -1&0&0
+    \end{bmatrix}
+    \]
+\vspace{0.2cm}
+    \[
+    R_x(90^\circ)R_y(90^\circ)
+    =
+    \begin{bmatrix}
+        0&0&1\\
+        1&0&0\\
+        0&1&0
+    \end{bmatrix}.
+    \]
+
+    \Warning[Conclusión]{\pause
+        Las matrices son diferentes. La orientación final también es diferente.
+    }
+\end{frame}
+
+% =========================================================
+\begin{frame}{Ejemplo 3: aplicar la rotación compuesta}
+    \small
+    Sea:
+
+    \[
+    \boldsymbol{p}=\begin{bmatrix}1\\2\\3\end{bmatrix}
+    \]
+
+    y
+
+    \[
+    R=R_y(90^\circ)R_x(90^\circ)
+    =\pause
+    \begin{bmatrix}
+        0&1&0\\
+        0&0&-1\\
+        -1&0&0
+    \end{bmatrix}.
+    \]
+
+    Entonces:
+
+    \[
+    \boldsymbol{p}'=R\boldsymbol{p}
+    =\pause
+    \begin{bmatrix}
+        2\\-3\\-1
+    \end{bmatrix}.
+    \]
+
+    \Practice[Verifique]{
+        Compruebe que $\|\boldsymbol{p}'\|=\|\boldsymbol{p}\|=\pause\sqrt{14}$.
+    }
+\end{frame}
+
+% =========================================================
+\begin{frame}{Ejemplo 4: regresar usando la transpuesta}
+    \small
+    Si:
+
+    \[
+    \boldsymbol{p}'=R\boldsymbol{p},
+    \]
+
+    entonces podemos recuperar el vector original usando:
+
+    \[
+    \boldsymbol{p}=R^T\boldsymbol{p}'.
+    \]
+
+    Para el ejemplo anterior:
+
+    \[
+    R^T=
+    \begin{bmatrix}
+        0&0&-1\\
+        1&0&0\\
+        0&-1&0
+    \end{bmatrix}
+    \]
+\vspace{0.2cm}
+    \[
+    \boldsymbol{p}=
+        \begin{bmatrix}
+        0&0&-1\\
+        1&0&0\\
+        0&-1&0
+    \end{bmatrix}
+    *
+    \begin{bmatrix}
+        2\\-3\\-1
+    \end{bmatrix}
+    =\pause
+    \begin{bmatrix}
+        1\\2\\3
+    \end{bmatrix}.
+    \]
+
+    \Result[Interpretación]{
+        La transpuesta deshace la orientación compuesta porque $R^{-1}=R^T$.
+    }
+\end{frame}
+
+% =========================================================
+\section{Problemas para clase}
+\SectionSlide{Problemas para clase}{Razonar antes de usar Python}
+
+% =========================================================
+\begin{frame}{Problema 1: orden de aplicación}
+    \small
+    Dada la expresión:
+
+    \[
+    \boldsymbol{p}'=R_z(30^\circ)R_y(45^\circ)R_x(60^\circ)\boldsymbol{p},
+    \]
+
+    responda:
+
+    \begin{enumerate}
+        \item ¿Cuál rotación actúa primero sobre $\boldsymbol{p}$?
+        \item ¿Cuál actúa de segunda?
+        \item ¿Cuál actúa al final?
+        \item ¿Cómo escribiría el proceso paso a paso usando $\boldsymbol{p}_1$, $\boldsymbol{p}_2$ y $\boldsymbol{p}_3$?
+    \end{enumerate}
+
+    % Solución oculta:
+    % Primero Rx(60), luego Ry(45), luego Rz(30).
+    % p1=Rx(60)p, p2=Ry(45)p1, p3=Rz(30)p2.
+\end{frame}
+
+% =========================================================
+\begin{frame}{Problema 2: no conmutatividad}
+    \small
+    Calcule y compare:
+
+    \[
+    A=R_z(90^\circ)R_x(90^\circ)
+    \]
+
+    y
+
+    \[
+    B=R_x(90^\circ)R_z(90^\circ).
+    \]
+
+    Luego aplique ambas matrices al vector:
+
+    \[
+    \boldsymbol{p}=\begin{bmatrix}1\\0\\0\end{bmatrix}.
+    \]
+
+    \Practice[Pregunta]{
+        ¿Los resultados representan la misma dirección final?
+    }
+
+    % Solución oculta:
+    % A p = Rz Rx [1,0,0]^T = Rz [1,0,0]^T = [0,1,0]^T.
+    % B p = Rx Rz [1,0,0]^T = Rx [0,1,0]^T = [0,0,1]^T.
+\end{frame}
+
+% =========================================================
+\begin{frame}{Problema 3: lectura de columnas}
+    \small
+    Sea:
+
+    \[
+    R=
+    \begin{bmatrix}
+        0&0&1\\
+        1&0&0\\
+        0&1&0
+    \end{bmatrix}.
+    \]
+
+    Sin multiplicar por ningún vector:
+
+    \begin{enumerate}
+        \item ¿hacia dónde apunta el eje $x$ del marco final?
+        \item ¿hacia dónde apunta el eje $y$ del marco final?
+        \item ¿hacia dónde apunta el eje $z$ del marco final?
+        \item ¿la matriz puede representar una rotación propia?
+    \end{enumerate}
+
+    % Solución oculta:
+    % x_final apunta a +y; y_final apunta a +z; z_final apunta a +x.
+    % Columnas ortonormales y det=1, sí puede representar rotación propia.
+\end{frame}
+
+% =========================================================
+\begin{frame}{Problema 4: ejes fijos o móviles}
+    \small
+    Un marco se encuentra inicialmente alineado con el sistema base.
+
+    Se realizan dos acciones:
+
+    \begin{enumerate}
+        \item girar $90^\circ$ alrededor de $z$;
+        \item girar $90^\circ$ alrededor del nuevo eje $x$ del marco ya rotado.
+    \end{enumerate}
+
+    \vspace{0.15cm}
+
+    \Practice[Interpretación]{
+        ¿La segunda rotación se realiza alrededor de un eje fijo o de un eje móvil?
+    }
+
+    \Result[Idea]{
+        Como el segundo eje pertenece al marco ya rotado, la secuencia corresponde a una interpretación de ejes móviles.
+    }
+\end{frame}
+
+% =========================================================
+\section{Validación computacional}
+\SectionSlide{Validación computacional}{Python como herramienta de verificación}
+
+% =========================================================
+\begin{frame}[fragile]{Python: matrices elementales}
+    \small
+\begin{pythoncode}
+import numpy as np
+
+def Rx(theta_deg):
+    t = np.deg2rad(theta_deg)
+    c = np.cos(t)
+    s = np.sin(t)
+    return np.array([
+        [1, 0, 0],
+        [0, c, -s],
+        [0, s,  c] ])
+
+def Ry(theta_deg):
+    t = np.deg2rad(theta_deg)
+    c = np.cos(t)
+    s = np.sin(t)
+    return np.array([
+        [ c, 0, s],
+        [ 0, 1, 0],
+        [-s, 0, c] ])
+\end{pythoncode}
+\end{frame}
+
+\begin{frame}[fragile]{Python: matrices elementales}
+    \small
+    \begin{pythoncode}
+
+def Rz(theta_deg):
+    t = np.deg2rad(theta_deg)
+    c = np.cos(t)
+    s = np.sin(t)
+    return np.array([
+        [c, -s, 0],
+        [s,  c, 0],
+        [0,  0, 1]
+    ])
+\end{pythoncode}
+\end{frame}
+
+% =========================================================
+\begin{frame}[fragile]{Python: demostrar no conmutatividad}
+    \small
+\begin{pythoncode}
+p = np.array([0.0, 0.0, 1.0])
+
+RA = Ry(90) @ Rx(90)
+RB = Rx(90) @ Ry(90)
+
+pA = RA @ p
+pB = RB @ p
+
+print("RA =\n", RA)
+print("RB =\n", RB)
+print("pA =", pA)
+print("pB =", pB)
+print("RA == RB?", np.allclose(RA, RB))
+print("pA == pB?", np.allclose(pA, pB))
+\end{pythoncode}
+
+    \Result[Lectura esperada]{
+        Las matrices y los vectores resultantes no coinciden. La diferencia confirma que el orden de rotación importa.
+    }
+\end{frame}
+
+% =========================================================
+\begin{frame}[fragile]{Python: verificar que el producto sigue siendo rotación}
+    \small
+\begin{pythoncode}
+R = Rz(30) @ Ry(45) @ Rx(60)
+
+print("R.T @ R =\n", R.T @ R)
+print("det(R) =", np.linalg.det(R))
+
+p = np.array([1.0, 2.0, 3.0])
+p_rot = R @ p
+
+print("norma inicial =", np.linalg.norm(p))
+print("norma final =", np.linalg.norm(p_rot))
+\end{pythoncode}
+
+    \Practice[Verificación]{
+        Compruebe que $R^TR$ es aproximadamente la identidad, que $\det(R)$ es aproximadamente 1 y que la norma del vector se conserva.
+    }
+\end{frame}
+
+% =========================================================
+\begin{frame}[fragile]{Python: visualización 3D básica}
+    \small
+\begin{pythoncode}
+import matplotlib.pyplot as plt
+
+fig = plt.figure()
+ax = fig.add_subplot(111, projection="3d")
+p = np.array([1.0, 0.0, 0.0])
+p1 = Rx(90) @ p
+p2 = Ry(90) @ p1
+
+ax.quiver(0, 0, 0, p[0],  p[1],  p[2],  label="p")
+ax.quiver(0, 0, 0, p1[0], p1[1], p1[2], label="p1")
+ax.quiver(0, 0, 0, p2[0], p2[1], p2[2], label="p2")
+
+ax.set_xlim([-1, 1])
+ax.set_ylim([-1, 1])
+ax.set_zlim([-1, 1])
+ax.set_xlabel("x")
+ax.set_ylabel("y")
+ax.set_zlabel("z")
+ax.legend()
+plt.show()
+\end{pythoncode}
+\end{frame}
+
+% =========================================================
+\section{Actividad de consolidación}
+\SectionSlide{Actividad de consolidación}{Construir una orientación compuesta}
+
+% =========================================================
+\begin{frame}{Actividad 1: secuencia completa}
+    \small
+    Sea:
+
+    \[
+    \boldsymbol{p}=\begin{bmatrix}1\\1\\0\end{bmatrix}.
+    \]
+
+    Calcule manualmente:
+
+    \[
+    \boldsymbol{p}'=R_z(90^\circ)R_x(90^\circ)\boldsymbol{p}.
+    \]
+
+    Luego calcule:
+
+    \[
+    \boldsymbol{q}'=R_x(90^\circ)R_z(90^\circ)\boldsymbol{p}.
+    \]
+
+    Compare resultados.
+
+    \Practice[Entrega]{
+        Debe mostrar el cálculo paso a paso, no solamente la respuesta final.
+    }
+\end{frame}
+
+% =========================================================
+\begin{frame}{Actividad 2: matriz de orientación final}
+    \small
+    Construya la matriz:
+
+    \[
+    R=R_z(30^\circ)R_y(45^\circ)R_x(60^\circ).
+    \]
+
+    Después:
+
+    \begin{enumerate}
+        \item verifique que $R^TR=I$;
+        \item verifique que $\det(R)=1$;
+        \item lea sus columnas como ejes del marco final;
+        \item explique qué rotación actúa primero en la expresión.
+    \end{enumerate}
+
+    \Warning[Importante]{
+        No interprete la matriz final únicamente como números. Debe leerla como una orientación.
+    }
+\end{frame}
+
+% =========================================================
+\begin{frame}{Actividad 3: ejes móviles}
+    \small
+    Un marco $\{B\}$ parte alineado con $\{A\}$.
+
+    Realice conceptualmente:
+
+    \begin{enumerate}
+        \item una rotación de $90^\circ$ alrededor de $z_B$;
+        \item luego una rotación de $90^\circ$ alrededor del nuevo $x_B$.
+    \end{enumerate}
+
+    \vspace{0.15cm}
+
+    \begin{columns}[T]
+        \begin{column}{0.48\textwidth}
+            \Practice[Discusión]{
+                Dibuje los ejes antes y después de cada rotación.
+            }
+        \end{column}
+        \begin{column}{0.48\textwidth}
+            \Practice[Verificación]{
+                Compare la orientación con la obtenida si ambos giros se hacen respecto a ejes fijos.
+            }
+        \end{column}
+    \end{columns}
+\end{frame}
+
+% =========================================================
+\section{Cierre}
+\SectionSlide{Cierre}{Qué debe quedar claro antes de avanzar}
+
+% =========================================================
+\begin{frame}{Síntesis}
+    \small
+    \begin{itemize}
+        \item Una rotación compuesta representa una secuencia de giros.
+        \item En $R_2R_1\boldsymbol{p}$, primero actúa $R_1$ y luego $R_2$.
+        \item Las rotaciones 3D no conmutan en general.
+        \item El producto de rotaciones válidas sigue siendo una rotación válida.
+        \item Una matriz compuesta también cumple $R^TR=I$, $R^{-1}=R^T$ y $\det(R)=1$.
+        \item Pre-multiplicar y post-multiplicar cambia la interpretación de ejes fijos o móviles.
+        \item Las columnas de la matriz final siguen representando los ejes del marco final expresados en el sistema de referencia original.
+    \end{itemize}
+\end{frame}
+
+% =========================================================
+\begin{frame}{Puente hacia la siguiente clase}
+    \small
+    Hasta ahora hemos estudiado orientación.
+
+    \vspace{0.15cm}
+    Pero un robot no sólo cambia orientación. También cambia posición.
+
+    \vspace{0.15cm}
+    Por eso, el siguiente paso será incorporar traslación:
+
+    \[
+    \text{rotación}
+    \quad+
+    \text{traslación}
+    \quad\rightarrow\quad
+    \text{transformación rígida}
+    \]
+
+    \[
+    \boxed{
+    {}^A\boldsymbol{p}= {}^AR_B\,{}^B\boldsymbol{p}+{}^A\boldsymbol{p}_{B}}
+    \]
+
+    \Idea[Próxima clase]{
+        Este será el puente natural hacia transformaciones homogéneas y, posteriormente, cinemática directa de manipuladores.
+    }
+\end{frame}
+
+\end{document}

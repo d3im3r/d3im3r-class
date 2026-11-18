@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://d3im3r-class.local/schema/assets-1.1.0.json",
+  "title": "d3im3r-class Asset Manifest",
+  "type": "object",
+  "required": ["schemaVersion", "documentId", "assets"],
+  "properties": {
+    "schemaVersion": {"enum": ["1.0.0", "1.1.0"]},
+    "documentId": {"type": "string"},
+    "assets": {"type": "array", "items": {
+      "type": "object",
+      "required": ["id", "origin", "source", "status", "src", "background", "format"],
+      "properties": {
+        "id": {"type": "string"}, "origin": {"type": "string"},
+        "source": {"type": "string"},
+        "status": {"enum": ["resolved", "missing", "failed", "pending"]},
+        "src": {"type": ["string", "null"]},
+        "error": {"type": "string"},
+        "background": {"const": "white"}, "format": {"const": "svg"}
+      },
+      "additionalProperties": false
+    }}
+  },
+  "additionalProperties": false
+}

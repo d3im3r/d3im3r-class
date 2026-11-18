@@ -1,0 +1,395 @@
+\documentclass[10pt]{article}
+
+% =========================================================
+% TEMPLATE
+% =========================================================
+
+\input{~/Dropbox/Latex/TemplateExam/template-exam.tex}
+% Si el template está en la misma carpeta del examen, usar:
+% \input{template-exam.tex}
+
+% =========================================================
+% INFORMACIÓN DEL EXAMEN
+% =========================================================
+
+\renewcommand{\CourseName}{Robótica Industrial}
+\renewcommand{\CourseCode}{ING 01339 / SOL-ING 220}
+\renewcommand{\Institution}{Politécnico Colombiano Jaime Isaza Cadavid}
+\renewcommand{\Faculty}{Facultad de Ingeniería}
+\renewcommand{\Instructor}{Deimer Miranda Montoya, MSc.(c).}
+\renewcommand{\ExamTitle}{Quiz \#1}
+\renewcommand{\ExamTopics}{Fundamentación matemática, rotaciones 2D y marcos rotados}
+\renewcommand{\AcademicPeriod}{2026-2}
+\renewcommand{\ExamDuration}{60 minutos}
+\renewcommand{\ExamValue}{100 puntos}
+\renewcommand{\ExamQuestions}{10}
+\renewcommand{\InstitutionLogo}{Template/LogoPoli.png}
+
+% \ExamCompact
+\ExamStandard
+
+% =========================================================
+\begin{document}
+
+    \pagestyle{empty}
+
+    % =========================================================
+    % ENCABEZADO
+    % =========================================================
+
+    \ExamHeader
+    \StudentInfo
+
+    \ExamInstructions{
+        Seleccione una única respuesta en cada pregunta. El valor de cada pregunta se
+        indica en el enunciado. En las preguntas que involucren cálculo, el procedimiento
+        podrá utilizarse como criterio de revisión. Use grados para los ángulos y conserve
+        formas exactas con radicales cuando sea posible.
+    }
+
+    % =========================================================
+    % PREGUNTAS
+    % =========================================================
+
+    \begin{multicols}{2}
+        \raggedcolumns
+
+        % ---------------------------------------------------------
+        \begin{question}
+            \textbf{[7 puntos]} Sea
+            \[
+            \mathbf{v}=\begin{bmatrix}3\\-4\\12\end{bmatrix}.
+            \]
+            ¿Cuál es su vector unitario asociado?
+
+            \begin{inlineanswers}
+                \answer{$\begin{bmatrix}3/13\\-4/13\\12/13\end{bmatrix}$}
+                \answer{$\begin{bmatrix}3/12\\-4/12\\1\end{bmatrix}$}
+                \answer{$\begin{bmatrix}3/17\\-4/17\\12/17\end{bmatrix}$}
+                \answer{$\begin{bmatrix}-3/13\\4/13\\-12/13\end{bmatrix}$}
+            \end{inlineanswers}
+        \end{question}
+
+        % RESPUESTA DOCENTE: A
+        % Procedimiento:
+        % ||v|| = sqrt(3^2+(-4)^2+12^2)
+        %       = sqrt(9+16+144)
+        %       = sqrt(169)
+        %       = 13.
+        % Por definición, v_hat = v/||v||.
+        % Entonces:
+        % v_hat = [3/13,-4/13,12/13]^T.
+        % Verificación: ||v_hat|| = 1.
+
+        % ---------------------------------------------------------
+        \begin{question}
+            \textbf{[8 puntos]} Sean
+            \[
+            \mathbf{a}=\begin{bmatrix}2\\1\\-1\end{bmatrix},
+            \qquad
+            \mathbf{b}=\begin{bmatrix}1\\-1\\1\end{bmatrix}.
+            \]
+            El ángulo entre ambos vectores es:
+
+            \begin{inlineanswers}
+                \answer{$0^\circ$}
+                \answer{$45^\circ$}
+                \answer{$90^\circ$}
+                \answer{$180^\circ$}
+            \end{inlineanswers}
+        \end{question}
+
+        % RESPUESTA DOCENTE: C
+        % Procedimiento:
+        % a·b = 2(1)+1(-1)+(-1)(1)
+        %     = 2-1-1
+        %     = 0.
+        % Como a y b son no nulos y a·b=0, son ortogonales.
+        % Por tanto, cos(theta)=0 y theta=90°.
+
+        % ---------------------------------------------------------
+        \begin{question}
+            \textbf{[10 puntos]} Considere
+            \[
+            Q=
+            \begin{bmatrix}
+                \frac35 & \frac45\\[1mm]
+                \frac45 & -\frac35
+            \end{bmatrix}.
+            \]
+            ¿Cuál afirmación es correcta?
+
+            \begin{answers}
+                \answer{$Q$ es una rotación propia porque $Q^TQ=I$.}
+                \answer{$Q$ es una reflexión: $Q^TQ=I$ y $\det(Q)=-1$.}
+                \answer{$Q$ no es ortogonal porque $\det(Q)\neq 1$.}
+                \answer{$Q$ es una rotación de $90^\circ$.}
+            \end{answers}
+        \end{question}
+
+        % RESPUESTA DOCENTE: B
+        % Procedimiento:
+        % Las columnas son q1=[3/5,4/5]^T y q2=[4/5,-3/5]^T.
+        % ||q1||=||q2||=1 y q1·q2=12/25-12/25=0.
+        % Por tanto, Q^TQ=I: Q es ortogonal.
+        % Sin embargo:
+        % det(Q)=(3/5)(-3/5)-(4/5)(4/5)
+        %       =-9/25-16/25
+        %       =-1.
+        % Una rotación propia requiere det(Q)=+1.
+        % Por eso Q representa una reflexión, no una rotación propia.
+                \columnbreak
+        % ---------------------------------------------------------
+        \begin{question}
+            \textbf{[10 puntos]} El vector
+            \[
+            \mathbf{p}=\begin{bmatrix}2\\1\end{bmatrix}
+            \]
+            se rota $90^\circ$ en sentido antihorario. El resultado es:
+
+            \begin{inlineanswers}
+                \answer{$\begin{bmatrix}1\\2\end{bmatrix}$}
+                \answer{$\begin{bmatrix}-1\\2\end{bmatrix}$}
+                \answer{$\begin{bmatrix}1\\-2\end{bmatrix}$}
+                \answer{$\begin{bmatrix}-2\\1\end{bmatrix}$}
+            \end{inlineanswers}
+        \end{question}
+
+        % RESPUESTA DOCENTE: B
+        % Procedimiento:
+        % R(90°)=[[0,-1],[1,0]].
+        % p' = R(90°)p
+        %    = [[0,-1],[1,0]][2,1]^T
+        %    = [-1,2]^T.
+        % La norma se conserva: ||p||=sqrt(5)=||p'||.
+
+        % ---------------------------------------------------------
+        \begin{question}
+            \textbf{[10 puntos]} La matriz
+            \[
+            R=
+            \begin{bmatrix}
+                -\frac{\sqrt3}{2} & -\frac12\\[1mm]
+                \frac12 & -\frac{\sqrt3}{2}
+            \end{bmatrix}
+            \]
+            corresponde a una rotación antihoraria de:
+
+            \begin{inlineanswers}
+                \answer{$30^\circ$}
+                \answer{$120^\circ$}
+                \answer{$150^\circ$}
+                \answer{$210^\circ$}
+            \end{inlineanswers}
+        \end{question}
+
+        % RESPUESTA DOCENTE: C
+        % Procedimiento:
+        % Para R(theta), la primera columna es [cos(theta),sin(theta)]^T.
+        % Aquí:
+        % cos(theta)=-sqrt(3)/2,
+        % sin(theta)=1/2.
+        % cos<0 y sin>0 => theta está en el segundo cuadrante.
+        % El ángulo de referencia es 30°.
+        % Entonces theta=180°-30°=150°.
+
+
+
+        % ---------------------------------------------------------
+        \begin{question}
+            \textbf{[10 puntos]} Si
+            \[
+            R=R(30^\circ),
+            \]
+            ¿cuál expresión corresponde a $R^{-1}$?
+
+            \begin{answers}
+                \answer{$R^{-1}=R(30^\circ)$}
+                \answer{$R^{-1}=R^T=R(-30^\circ)$}
+                \answer{$R^{-1}=-R(30^\circ)$}
+                \answer{$R^{-1}=I-R(30^\circ)$}
+            \end{answers}
+        \end{question}
+
+        % RESPUESTA DOCENTE: B
+        % Procedimiento:
+        % Toda matriz de rotación propia cumple R^TR=I.
+        % Multiplicando por R^{-1}, se obtiene R^{-1}=R^T.
+        % En 2D, transponer R(theta) cambia el signo de los términos seno:
+        % R(theta)^T = R(-theta).
+        % Por tanto:
+        % R(30°)^-1 = R(30°)^T = R(-30°).
+                \columnbreak
+        % ---------------------------------------------------------
+        \begin{question}
+            \textbf{[10 puntos]} Un vector inicialmente coincide con el eje $x$ positivo.
+            Primero se rota $40^\circ$ en sentido antihorario y luego $100^\circ$ en
+            sentido horario. La rotación equivalente y el vector final son:
+
+            \begin{center}
+                \begin{tikzpicture}[scale=0.78,>=Latex,every node/.style={font=\scriptsize}]
+                    \draw[->,thick] (-0.2,0) -- (2.5,0) node[right] {$x$};
+                    \draw[->,thick] (0,-2.1) -- (0,1.8) node[above] {$y$};
+
+                    \draw[->,very thick,BrandBlue]
+                    (0,0) -- (1.7,0)
+                    node[above right] {$\mathbf{e}_x$};
+
+                    \draw[->,very thick,BrandGreen]
+                    (0,0) -- ({1.7*cos(-60)},{1.7*sin(-60)})
+                    node[below right] {$\mathbf{p}_f$};
+
+                    \draw[->,gray,thick]
+                    (0.75,0) arc[start angle=0,end angle=-60,radius=0.75];
+                    \node[gray] at (1.2,-0.38) {$-60^\circ$};
+                \end{tikzpicture}
+            \end{center}
+
+            \begin{answers}
+                \answer{$R(60^\circ)$ y $\begin{bmatrix}\frac12\\ \frac{\sqrt3}{2}\end{bmatrix}$}
+                \answer{$R(-60^\circ)$ y $\begin{bmatrix}\frac12\\ -\frac{\sqrt3}{2}\end{bmatrix}$}
+                \answer{$R(-140^\circ)$ y $\begin{bmatrix}-\frac{\sqrt3}{2}\\ \frac12\end{bmatrix}$}
+                \answer{$R(140^\circ)$ y $\begin{bmatrix}-\frac12\\ \frac{\sqrt3}{2}\end{bmatrix}$}
+            \end{answers}
+        \end{question}
+
+        % RESPUESTA DOCENTE: B
+        % Procedimiento:
+        % Primer giro: +40°.
+        % Segundo giro: -100°.
+        % En 2D las rotaciones sucesivas suman sus ángulos:
+        % theta_eq = 40° + (-100°) = -60°.
+        % Como el vector inicial es e_x=[1,0]^T:
+        % p_f=R(-60°)e_x
+        %    =[cos(-60°), sin(-60°)]^T
+        %    =[1/2,-sqrt(3)/2]^T.
+
+        % ---------------------------------------------------------
+        \begin{question}
+            \textbf{[12 puntos]} Los marcos $\{A\}$ y $\{B\}$ comparten origen. El marco
+            $\{B\}$ está rotado $30^\circ$ en sentido antihorario respecto a $\{A\}$ y
+            \[
+            {}^B\mathbf{p}=\begin{bmatrix}2\\1\end{bmatrix}.
+            \]
+            ¿Cuáles son las coordenadas del mismo punto expresadas en $\{A\}$?
+
+            \begin{answers}
+                \answer{$\begin{bmatrix}\sqrt3-\frac12\\[1mm]1+\frac{\sqrt3}{2}\end{bmatrix}$}
+                \answer{$\begin{bmatrix}\sqrt3+\frac12\\[1mm]-1+\frac{\sqrt3}{2}\end{bmatrix}$}
+                \answer{$\begin{bmatrix}2\sqrt3-1\\[1mm]2+\sqrt3\end{bmatrix}$}
+                \answer{$\begin{bmatrix}2\\1\end{bmatrix}$}
+            \end{answers}
+        \end{question}
+
+        % RESPUESTA DOCENTE: A
+        % Procedimiento:
+        % La notación A_R_B describe la orientación de B vista desde A.
+        % Como B está rotado +30° respecto a A:
+        % A_R_B=R(30°).
+        % Para pasar coordenadas de B hacia A:
+        % p_A = A_R_B p_B.
+        % Entonces:
+        % p_A = [[cos30,-sin30],[sin30,cos30]][2,1]^T
+        %     = [2cos30-sin30, 2sin30+cos30]^T
+        %     = [sqrt(3)-1/2, 1+sqrt(3)/2]^T.
+        % La opción C es exactamente el doble del resultado y es un distractor.
+
+        % ---------------------------------------------------------
+        \begin{question}
+            \textbf{[12 puntos]} El marco $\{B\}$ está rotado $45^\circ$ en sentido
+            antihorario respecto a $\{A\}$. Si
+            \[
+            {}^A\mathbf{q}=\begin{bmatrix}0\\2\end{bmatrix},
+            \]
+            ¿cuáles son las coordenadas de ese punto expresadas en $\{B\}$?
+
+            \begin{inlineanswers}
+                \answer{$\begin{bmatrix}\sqrt2\\\sqrt2\end{bmatrix}$}
+                \answer{$\begin{bmatrix}-\sqrt2\\\sqrt2\end{bmatrix}$}
+                \answer{$\begin{bmatrix}\sqrt2\\-\sqrt2\end{bmatrix}$}
+                \answer{$\begin{bmatrix}0\\2\end{bmatrix}$}
+            \end{inlineanswers}
+        \end{question}
+
+        % RESPUESTA DOCENTE: A
+        % Procedimiento:
+        % Se conoce A_R_B=R(45°).
+        % Para pasar de coordenadas en A hacia coordenadas en B se utiliza la inversa:
+        % p_B = (A_R_B)^-1 p_A.
+        % Como la matriz es de rotación:
+        % (A_R_B)^-1=(A_R_B)^T=R(-45°).
+        % Entonces:
+        % q_B = R(-45°)[0,2]^T
+        %     = [sqrt(2),sqrt(2)]^T.
+
+        % ---------------------------------------------------------
+        \begin{question}
+            \textbf{[11 puntos]} Observe los marcos $\{A\}$ y $\{B\}$:
+
+            \begin{center}
+                \begin{tikzpicture}[scale=0.78,>=Latex,every node/.style={font=\scriptsize}]
+                    \coordinate (O) at (0,0);
+
+                    \draw[->,very thick,BrandBlue]
+                    (O) -- (2.5,0) node[right] {$x_A$};
+                    \draw[->,very thick,BrandBlue]
+                    (O) -- (0,2.5) node[above] {$y_A$};
+
+                    \draw[->,very thick,BrandGreen]
+                    (O) -- (0,2.0) node[right] {$x_B$};
+                    \draw[->,very thick,BrandGreen]
+                    (O) -- (-2.0,0) node[above] {$y_B$};
+
+                    \draw[->,gray,thick]
+                    (0.65,0) arc[start angle=0,end angle=90,radius=0.65];
+                    \node[gray] at (1.0,0.5) {$90^\circ$};
+                \end{tikzpicture}
+            \end{center}
+
+            Para esta configuración,
+            \[
+            {}^A R_B=
+            \begin{bmatrix}
+                0 & -1\\
+                1 & 0
+            \end{bmatrix}.
+            \]
+            ¿Cuál interpretación es correcta?
+
+            \begin{answers}
+                \answer{La primera columna indica que $x_B$ coincide con $-y_A$.}
+                \answer{La segunda columna indica que $y_B$ coincide con $+x_A$.}
+                \answer{$x_B$ coincide con $+y_A$, $y_B$ con $-x_A$ y para pasar de $A$ a $B$ se usa $({}^A R_B)^T$.}
+                \answer{El punto físico debe rotarse $90^\circ$ cada vez que cambia de marco.}
+            \end{answers}
+        \end{question}
+
+        % RESPUESTA DOCENTE: C
+        % Procedimiento:
+        % Las columnas de A_R_B son los ejes de B expresados desde A.
+        % Primera columna [0,1]^T:
+        % x_B coincide con +y_A.
+        % Segunda columna [-1,0]^T:
+        % y_B coincide con -x_A.
+        % Además, para convertir coordenadas de A hacia B:
+        % p_B = (A_R_B)^-1 p_A.
+        % Como A_R_B es una rotación propia:
+        % (A_R_B)^-1 = (A_R_B)^T.
+        % El punto físico no gira por cambiar de sistema de referencia; sólo cambia su
+        % representación numérica.
+
+    \end{multicols}
+
+    % =========================================================
+    % HOJA DE RESPUESTAS Y CALIFICACIÓN
+    % =========================================================
+
+    \AnswerSheet{10}
+
+    \vspace{2mm}
+    {\color{ExamGreen}\hrule height 0.6pt}
+    \vspace{2mm}
+
+    \ExamScore
+
+\end{document}

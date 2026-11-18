@@ -1,12 +1,6 @@
 'use client';
 
-import {
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-  useContext,
-} from 'react';
+import { useCallback, useEffect, useRef, useState, useContext } from 'react';
 import {
   ArrowUpRight,
   BookOpen,
@@ -24,6 +18,7 @@ import { ResourceToolsContext } from '@/shared/context/resource-tools-context';
 import { ContentBlock } from './content-block';
 import { InlineText } from './rich-text';
 import { institutionLogo } from '@/features/catalog/model/institution-logo';
+import { ThemeControls } from '@/features/theme/theme-toggle';
 
 export interface ReadingDocumentProps {
   lesson: Lesson;
@@ -151,6 +146,7 @@ export function ReadingDocument({
           <p>{lesson.subtitle}</p>
         </div>
         <div className="reader-actions">
+          <ThemeControls />
           {canInspect && lesson.pdf && (
             <Button variant="outline" asChild>
               <a href={lesson.pdf} target="_blank" rel="noreferrer">
@@ -295,7 +291,9 @@ export function ReadingDocument({
             <div>
               <span>ÍNDICE DE LA CLASE</span>
               <h3>{lesson.title}</h3>
-              <small>{lesson.frames.length} bloques · {sections.length} secciones</small>
+              <small>
+                {lesson.frames.length} bloques · {sections.length} secciones
+              </small>
             </div>
             <button
               type="button"
@@ -327,8 +325,7 @@ export function ReadingDocument({
                         <span className="outline-item-title">
                           {f.title.replace(/\$([^\$]+)\$/g, '$1')}
                         </span>
-                        {isCurrent && <span className="outline-current-badge">Actual</span>}
-                        {completed.includes(f.id) && !isCurrent && (
+                        {completed.includes(f.id) && (
                           <Check size={14} className="outline-check-icon text-emerald-500" />
                         )}
                       </button>

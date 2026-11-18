@@ -1,0 +1,799 @@
+% =========================================================
+% TEMPLATE MAESTRO PARA EXÁMENES
+% template-exam.tex
+% =========================================================
+
+% =========================================================
+% PAQUETES
+% =========================================================
+
+\usepackage{fontspec}
+\usepackage{geometry}
+\usepackage{xcolor}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{mathtools}
+\usepackage{array}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{multicol}
+\usepackage[inline]{enumitem}
+\usepackage{changepage}
+\usepackage{tikz}
+\usepackage{etoolbox}
+\usepackage{lastpage}
+
+\usetikzlibrary{
+    arrows.meta,
+    positioning,
+    calc,
+    shapes.geometric
+}
+
+% =========================================================
+% COLORES
+% =========================================================
+
+\definecolor{ExamGreen}{HTML}{1B6B45}
+\definecolor{ExamGreenLight}{HTML}{EAF4EE}
+\definecolor{ExamGray}{HTML}{5F6368}
+\definecolor{ExamLightGray}{HTML}{F4F5F5}
+\definecolor{ExamLine}{HTML}{CED4D1}
+\definecolor{ExamBlack}{HTML}{202124}
+
+% Alias para reutilizar diagramas de otras clases
+\providecolor{BrandBlue}{HTML}{2864A5}
+\providecolor{BrandGreen}{HTML}{1B6B45}
+\providecolor{BrandYellow}{HTML}{D9A514}
+
+% =========================================================
+% INFORMACIÓN INSTITUCIONAL
+% =========================================================
+
+\providecommand{\CourseName}{Nombre de la asignatura}
+\providecommand{\CourseCode}{Código}
+\providecommand{\Faculty}{Facultad}
+\providecommand{\Institution}{Institución}
+\providecommand{\Instructor}{Nombre del docente}
+\providecommand{\Email}{correo@institucion.edu.co}
+
+\providecommand{\ExamTitle}{Examen}
+\providecommand{\ExamTopics}{Temas evaluados}
+\providecommand{\AcademicPeriod}{Periodo académico}
+\providecommand{\ExamDuration}{60 minutos}
+\providecommand{\ExamValue}{100 puntos}
+\providecommand{\ExamQuestions}{20}
+
+% Dejar únicamente el nombre del archivo.
+% Ejemplo:
+% \renewcommand{\InstitutionLogo}{LogoPoli.png}
+\providecommand{\InstitutionLogo}{}
+
+% =========================================================
+% CONFIGURACIÓN GENERAL
+% =========================================================
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0pt}
+
+\setlist[itemize]{
+    leftmargin=5mm,
+    itemsep=0.5mm,
+    topsep=1mm,
+    parsep=0pt,
+    partopsep=0pt
+}
+
+\setlist[enumerate]{
+    itemsep=0.5mm,
+    topsep=1mm,
+    parsep=0pt,
+    partopsep=0pt
+}
+
+% =========================================================
+% IMÁGENES
+% =========================================================
+
+% LaTeX buscará imágenes en estas carpetas
+\graphicspath{
+    {./}
+    {Template/}
+    {Images/}
+}
+
+% ---------------------------------------------------------
+% MINI LOGO
+% ---------------------------------------------------------
+% Uso:
+%
+% \renewcommand{\InstitutionLogo}{LogoPoli.png}
+%
+% El archivo puede estar en:
+% ./LogoPoli.png
+% Template/LogoPoli.png
+% Images/LogoPoli.png
+% ---------------------------------------------------------
+
+% ---------------------------------------------------------
+% MINI LOGO
+% ---------------------------------------------------------
+
+\newcommand{\MiniLogo}{
+    \ifx\InstitutionLogo\empty
+    \fbox{
+        \parbox[c][0.9cm][c]{1.8cm}{
+            \centering
+            \scriptsize
+            \color{ExamGray}
+            Sin logo
+        }
+    }
+    \else
+    \IfFileExists{\InstitutionLogo}{
+        \includegraphics[
+        height=1.5cm,
+        keepaspectratio
+        ]{\InstitutionLogo}
+    }{
+        \fbox{
+            \parbox[c][0.9cm][c]{1.8cm}{
+                \centering
+                \scriptsize
+                \color{ExamGray}
+                Logo no\\
+                encontrado
+            }
+        }
+    }
+    \fi
+}
+
+% ---------------------------------------------------------
+% IMAGEN PARA PREGUNTAS
+% ---------------------------------------------------------
+% Uso:
+%
+% \ExamImage{robot.png}
+%
+% o
+%
+% \ExamImage[4cm]{robot.png}
+% ---------------------------------------------------------
+
+% ---------------------------------------------------------
+% IMAGEN PARA PREGUNTAS
+% ---------------------------------------------------------
+% Uso:
+%
+% \ExamImage{robot.png}
+%
+% o
+%
+% \ExamImage[4cm]{robot.png}
+% ---------------------------------------------------------
+
+\newcommand{\ExamImage}[2][5cm]{
+    \begin{center}
+        \IfFileExists{#2}{
+            \includegraphics[
+            width=#1,
+            keepaspectratio
+            ]{#2}
+        }{
+            \fbox{
+                \parbox[c][1.5cm][c]{0.75\linewidth}{
+                    \centering
+                    \scriptsize
+                    \color{ExamGray}
+                    Imagen no encontrada\\[1mm]
+                    \texttt{\detokenize{#2}}
+                }
+            }
+        }
+    \end{center}
+}
+
+% =========================================================
+% ESPACIADOS CONFIGURABLES
+% =========================================================
+
+\newlength{\QuestionBefore}
+\newlength{\QuestionAfter}
+\newlength{\AnswerItemSep}
+\newlength{\AnswerTopSep}
+\newlength{\AnswerIndent}
+\newlength{\InlineAnswerSep}
+\newlength{\GridAnswerSep}
+
+% Valores por defecto
+\setlength{\QuestionBefore}{1mm}
+\setlength{\QuestionAfter}{0.7mm}
+\setlength{\AnswerItemSep}{0.5mm}
+\setlength{\AnswerTopSep}{0.8mm}
+\setlength{\AnswerIndent}{0.45cm}
+\setlength{\InlineAnswerSep}{0.7cm}
+\setlength{\GridAnswerSep}{2mm}
+
+% =========================================================
+% MODO COMPACTO
+% =========================================================
+
+\newcommand{\ExamCompact}{
+    \geometry{
+        letterpaper,
+        left=1.15cm,
+        right=1.15cm,
+        top=0.8cm,
+        bottom=0.8cm
+    }
+
+    \setlength{\parindent}{0pt}
+    \setlength{\parskip}{0pt}
+    \setlength{\columnsep}{0.45cm}
+
+    \setlength{\abovedisplayskip}{1.5pt}
+    \setlength{\belowdisplayskip}{1.5pt}
+    \setlength{\abovedisplayshortskip}{1pt}
+    \setlength{\belowdisplayshortskip}{1pt}
+
+    \setlength{\QuestionBefore}{0.4mm}
+    \setlength{\QuestionAfter}{0.25mm}
+
+    \setlength{\AnswerItemSep}{0pt}
+    \setlength{\AnswerTopSep}{0.4mm}
+    \setlength{\AnswerIndent}{0.4cm}
+    \setlength{\InlineAnswerSep}{0.55cm}
+
+    % Separación vertical entre opciones del formato 2x2
+    \setlength{\GridAnswerSep}{2mm}
+}
+
+% =========================================================
+% MODO ESTÁNDAR
+% =========================================================
+
+\newcommand{\ExamStandard}{
+    \geometry{
+        letterpaper,
+        left=1.8cm,
+        right=1.8cm,
+        top=1.5cm,
+        bottom=1.5cm
+    }
+
+    \setlength{\parindent}{0pt}
+    \setlength{\parskip}{1.5pt}
+    \setlength{\columnsep}{0.8cm}
+
+    \setlength{\abovedisplayskip}{6pt}
+    \setlength{\belowdisplayskip}{6pt}
+    \setlength{\abovedisplayshortskip}{4pt}
+    \setlength{\belowdisplayshortskip}{4pt}
+
+    \setlength{\QuestionBefore}{2.5mm}
+    \setlength{\QuestionAfter}{1.8mm}
+
+    \setlength{\AnswerItemSep}{1.2mm}
+    \setlength{\AnswerTopSep}{1.5mm}
+    \setlength{\AnswerIndent}{0.55cm}
+    \setlength{\InlineAnswerSep}{1cm}
+
+    % Separación vertical entre opciones del formato 2x2
+    \setlength{\GridAnswerSep}{5mm}
+}
+
+% =========================================================
+% ENCABEZADO DEL EXAMEN
+% =========================================================
+
+% =========================================================
+% ENCABEZADO DEL EXAMEN
+% Estilo cercano al de las guías, pero compacto
+% =========================================================
+
+\newcommand{\ExamHeader}{
+    \noindent
+    \begin{minipage}[c]{0.65\textwidth}
+        {\bfseries\large \ExamTitle}
+
+        \vspace{0.5mm}
+
+        {\bfseries \CourseName
+            \hspace{1mm} \textbullet \hspace{1mm}
+            \CourseCode}
+
+        \vspace{0.5mm}
+
+        {\small\color{ExamGray} \ExamTopics}
+
+        \vspace{0.8mm}
+
+        {\footnotesize
+            Docente: \Instructor
+            \hfill
+            Periodo: \AcademicPeriod}
+
+    \end{minipage}
+    \hfill
+    \begin{minipage}[c]{0.3\textwidth}
+        \centering
+        \MiniLogo
+    \end{minipage}
+
+    \vspace{1.5mm}
+
+    {\color{ExamGreen}\hrule height 0.8pt}
+
+    \vspace{1.3mm}
+
+    \noindent
+    {\footnotesize
+        \textbf{Duración:} \ExamDuration
+        \hfill
+        \textbf{Valor:} \ExamValue
+        \hfill
+        \textbf{Preguntas:} \ExamQuestions
+    }
+
+    \vspace{2mm}
+}
+
+% =========================================================
+% INFORMACIÓN DEL ESTUDIANTE
+% =========================================================
+
+\newcommand{\StudentInfo}{
+    \noindent
+    \textbf{Nombre:}
+    \rule{7.4cm}{0.3pt}
+    \hfill
+    \textbf{Grupo:}
+    \rule{3.0cm}{0.3pt}
+
+    \vspace{2mm}
+
+    \noindent
+    \textbf{Documento:}
+    \rule{7.0cm}{0.3pt}
+    \hfill
+    \textbf{Fecha:}
+    \rule{3.0cm}{0.3pt}
+
+    \vspace{2mm}
+}
+
+% =========================================================
+% INSTRUCCIONES
+% =========================================================
+
+\newcommand{\ExamInstructions}[1]{
+    \begin{adjustwidth}{0.2cm}{0.2cm}
+        \small
+        \color{ExamBlack}
+
+        \textbf{Indicaciones.}
+        #1
+    \end{adjustwidth}
+
+    \vspace{1.5mm}
+}
+
+% =========================================================
+% CONTADOR DE PREGUNTAS
+% =========================================================
+
+\newcounter{examquestion}
+
+\newenvironment{question}{
+    \refstepcounter{examquestion}
+
+    \par
+    \vspace{\QuestionBefore}
+
+    \noindent
+    \textbf{\theexamquestion.}\,
+    \ignorespaces
+}{
+    \par
+    \vspace{\QuestionAfter}
+}
+% =========================================================
+% RESPUESTAS VERTICALES
+% =========================================================
+
+\newenvironment{answers}{
+    \begin{adjustwidth}{\AnswerIndent}{0cm}
+        \begin{enumerate}[
+            label=\textbf{\Alph*.},
+            leftmargin=5mm,
+            labelsep=1.5mm,
+            itemsep=\AnswerItemSep,
+            topsep=\AnswerTopSep,
+            parsep=0pt,
+            partopsep=0pt
+            ]
+        }{
+        \end{enumerate}
+    \end{adjustwidth}
+}
+
+% =========================================================
+% RESPUESTAS EN UNA LÍNEA
+% =========================================================
+
+\newenvironment{inlineanswers}{
+    \begin{adjustwidth}{\AnswerIndent}{0cm}
+        \begin{enumerate*}[
+            label=\textbf{\Alph*.},
+            itemjoin=\hspace{\InlineAnswerSep},
+            itemjoin*=\hspace{\InlineAnswerSep},
+            itemsep=0pt
+            ]
+        }{
+        \end{enumerate*}
+    \end{adjustwidth}
+}
+
+
+% =========================================================
+% RESPUESTAS EN CUADRÍCULA 2 x 2
+% =========================================================
+
+\newenvironment{gridanswers}{
+    \begin{adjustwidth}{\AnswerIndent}{0cm}
+        \begin{multicols}{2}
+            \begin{enumerate}[
+                label=\textbf{\Alph*.},
+                leftmargin=5mm,
+                labelsep=1.5mm,
+                itemsep=\GridAnswerSep,
+                topsep=\AnswerTopSep,
+                parsep=0pt,
+                partopsep=0pt
+                ]
+            }{
+            \end{enumerate}
+        \end{multicols}
+    \end{adjustwidth}
+}
+
+% =========================================================
+% COMANDO GENÉRICO PARA RESPUESTA
+% =========================================================
+
+\newcommand{\answer}{\item}
+
+% =========================================================
+% ESPACIO PARA PROCEDIMIENTO
+% =========================================================
+
+\newcommand{\ProcedureSpace}[1]{
+    \vspace{\QuestionAfter}
+
+    {\footnotesize\itshape
+        Espacio para procedimiento:}
+
+    \par
+    \vspace{#1}
+}
+
+% =========================================================
+% NOTA BREVE
+% =========================================================
+
+\newcommand{\ExamNote}[1]{
+    \begin{adjustwidth}{0.3cm}{0.3cm}
+        \small
+        \color{ExamGray}
+        \textit{#1}
+    \end{adjustwidth}
+}
+
+% =========================================================
+% SEPARADOR
+% =========================================================
+
+\newcommand{\ExamSeparator}{
+    \vspace{1mm}
+    {\color{ExamLine}\hrule}
+    \vspace{1mm}
+}
+
+% =========================================================
+% HOJA DE RESPUESTAS
+% =========================================================
+%
+% Uso:
+%
+% \AnswerSheet{5}
+% \AnswerSheet{10}
+% \AnswerSheet{15}
+% \AnswerSheet{20}
+%
+% Si no se necesita hoja de respuestas,
+% simplemente no utilizar este comando.
+% =========================================================
+
+\newcommand{\AnswerSheet}[1]{
+
+    \vspace{2mm}
+
+    \begin{center}
+        {\bfseries\color{ExamGreen}
+            HOJA DE RESPUESTAS}
+    \end{center}
+
+    \vspace{-1mm}
+
+    \begin{center}
+
+        \renewcommand{\arraystretch}{1.25}
+        \setlength{\tabcolsep}{4.5pt}
+
+        % =================================================
+        % 5 PREGUNTAS
+        % =================================================
+
+        \ifnum#1=5
+
+        \begin{tabular}{c|cccc}
+            \toprule
+            \# & A & B & C & D \\
+            \midrule
+
+            1 & $\square$ & $\square$ & $\square$ & $\square$ \\
+            2 & $\square$ & $\square$ & $\square$ & $\square$ \\
+            3 & $\square$ & $\square$ & $\square$ & $\square$ \\
+            4 & $\square$ & $\square$ & $\square$ & $\square$ \\
+            5 & $\square$ & $\square$ & $\square$ & $\square$ \\
+
+            \bottomrule
+        \end{tabular}
+
+        % =================================================
+        % 10 PREGUNTAS
+        % =================================================
+
+        \else\ifnum#1=10
+
+        \begin{tabular}{
+                c|cccc
+                @{\qquad\qquad}
+                c|cccc
+            }
+
+            \toprule
+
+            \# & A & B & C & D &
+            \# & A & B & C & D \\
+
+            \midrule
+
+            1 & $\square$ & $\square$ & $\square$ & $\square$ &
+            6 & $\square$ & $\square$ & $\square$ & $\square$ \\
+
+            2 & $\square$ & $\square$ & $\square$ & $\square$ &
+            7 & $\square$ & $\square$ & $\square$ & $\square$ \\
+
+            3 & $\square$ & $\square$ & $\square$ & $\square$ &
+            8 & $\square$ & $\square$ & $\square$ & $\square$ \\
+
+            4 & $\square$ & $\square$ & $\square$ & $\square$ &
+            9 & $\square$ & $\square$ & $\square$ & $\square$ \\
+
+            5 & $\square$ & $\square$ & $\square$ & $\square$ &
+            10 & $\square$ & $\square$ & $\square$ & $\square$ \\
+
+            \bottomrule
+        \end{tabular}
+
+        % =================================================
+        % 15 PREGUNTAS
+        % =================================================
+
+        \else\ifnum#1=15
+
+        \begin{tabular}{
+                c|cccc
+                @{\qquad\qquad}
+                c|cccc
+            }
+
+            \toprule
+
+            \# & A & B & C & D &
+            \# & A & B & C & D \\
+
+            \midrule
+
+            1 & $\square$ & $\square$ & $\square$ & $\square$ &
+            9 & $\square$ & $\square$ & $\square$ & $\square$ \\
+
+            2 & $\square$ & $\square$ & $\square$ & $\square$ &
+            10 & $\square$ & $\square$ & $\square$ & $\square$ \\
+
+            3 & $\square$ & $\square$ & $\square$ & $\square$ &
+            11 & $\square$ & $\square$ & $\square$ & $\square$ \\
+
+            4 & $\square$ & $\square$ & $\square$ & $\square$ &
+            12 & $\square$ & $\square$ & $\square$ & $\square$ \\
+
+            5 & $\square$ & $\square$ & $\square$ & $\square$ &
+            13 & $\square$ & $\square$ & $\square$ & $\square$ \\
+
+            6 & $\square$ & $\square$ & $\square$ & $\square$ &
+            14 & $\square$ & $\square$ & $\square$ & $\square$ \\
+
+            7 & $\square$ & $\square$ & $\square$ & $\square$ &
+            15 & $\square$ & $\square$ & $\square$ & $\square$ \\
+
+            8 & $\square$ & $\square$ & $\square$ & $\square$ &
+            &           &           &           &           \\
+
+            \bottomrule
+        \end{tabular}
+
+        % =================================================
+        % 20 PREGUNTAS
+        % =================================================
+
+        \else\ifnum#1=20
+
+        \begin{tabular}{
+                c|cccc
+                @{\qquad\qquad}
+                c|cccc
+            }
+
+            \toprule
+
+            \# & A & B & C & D &
+            \# & A & B & C & D \\
+
+            \midrule
+
+            1  & $\square$ & $\square$ & $\square$ & $\square$ &
+            11 & $\square$ & $\square$ & $\square$ & $\square$ \\
+
+            2  & $\square$ & $\square$ & $\square$ & $\square$ &
+            12 & $\square$ & $\square$ & $\square$ & $\square$ \\
+
+            3  & $\square$ & $\square$ & $\square$ & $\square$ &
+            13 & $\square$ & $\square$ & $\square$ & $\square$ \\
+
+            4  & $\square$ & $\square$ & $\square$ & $\square$ &
+            14 & $\square$ & $\square$ & $\square$ & $\square$ \\
+
+            5  & $\square$ & $\square$ & $\square$ & $\square$ &
+            15 & $\square$ & $\square$ & $\square$ & $\square$ \\
+
+            6  & $\square$ & $\square$ & $\square$ & $\square$ &
+            16 & $\square$ & $\square$ & $\square$ & $\square$ \\
+
+            7  & $\square$ & $\square$ & $\square$ & $\square$ &
+            17 & $\square$ & $\square$ & $\square$ & $\square$ \\
+
+            8  & $\square$ & $\square$ & $\square$ & $\square$ &
+            18 & $\square$ & $\square$ & $\square$ & $\square$ \\
+
+            9  & $\square$ & $\square$ & $\square$ & $\square$ &
+            19 & $\square$ & $\square$ & $\square$ & $\square$ \\
+
+            10 & $\square$ & $\square$ & $\square$ & $\square$ &
+            20 & $\square$ & $\square$ & $\square$ & $\square$ \\
+
+            \bottomrule
+        \end{tabular}
+
+        % =================================================
+        % VALOR NO CONFIGURADO
+        % =================================================
+
+        \else
+
+        \fbox{
+            \begin{minipage}{0.75\textwidth}
+                \centering
+                \small
+                Hoja de respuestas no configurada para
+                #1 preguntas.
+            \end{minipage}
+        }
+
+        \fi
+        \fi
+        \fi
+        \fi
+
+    \end{center}
+}
+
+% =========================================================
+% CALIFICACIÓN
+% =========================================================
+\newcommand{\ObservationLines}{%
+    \par\vspace{3mm}
+    \rule{\linewidth}{0.3pt}
+    \par\vspace{3mm}
+    \rule{\linewidth}{0.3pt}
+}
+
+\newcommand{\ExamScore}{
+    \vspace{2mm}
+
+    {\color{ExamLine}\hrule}
+
+    \vspace{2mm}
+
+    \noindent
+    \textbf{Puntaje:}
+    \rule{1.4cm}{0.3pt}
+    /\ExamValue
+    \hfill
+    \textbf{Nota:}
+    \rule{1.4cm}{0.3pt}
+}
+
+% =========================================================
+% PÁGINA DE PROCEDIMIENTOS
+% =========================================================
+
+\newcommand{\ProcedurePage}{
+    \newpage
+
+    \begin{center}
+        {\large\bfseries
+            Procedimientos}
+    \end{center}
+
+    \vspace{1mm}
+
+    \StudentInfo
+
+    {\color{ExamGreen}\hrule height 0.6pt}
+
+    \vspace{2mm}
+
+    {\small
+        Utilice este espacio para desarrollar los cálculos
+        correspondientes a las preguntas que lo requieran.
+    }
+
+    \vfill
+
+    \ExamScore
+}
+
+% =========================================================
+% ESTILOS TIKZ PARA EXÁMENES DE ROS
+% =========================================================
+
+\tikzset{
+    rosnode/.style={
+        ellipse,
+        draw=BrandBlue,
+        thick,
+        minimum width=2.5cm,
+        minimum height=0.8cm,
+        align=center
+    },
+    rostopic/.style={
+        rectangle,
+        draw=BrandYellow,
+        thick,
+        minimum width=2.8cm,
+        minimum height=0.75cm,
+        align=center
+    },
+    rosarrow/.style={
+        -{Latex[length=2.5mm]},
+        thick,
+        BrandBlue
+    }
+}
+
+% =========================================================
+% FIN DEL TEMPLATE
+% =========================================================

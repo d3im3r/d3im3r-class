@@ -1,0 +1,446 @@
+{
+  "schemaVersion": "1.1.0",
+  "documentId": "industrial-8",
+  "assets": [
+    {
+      "id": "asset-66c7398c90df",
+      "origin": "tikz",
+      "source": "\\begin{tikzpicture}[scale=0.82,>=Latex]\n  \\draw[fill=gray!20,thick] (-0.6,-0.20) rectangle (0.6,0.23);\n  \\draw[brazoA] (0,0)--(0,1.8);\n  \\draw[brazoB] (0,1.75)--(2.9,1.75);\n  \\draw[ejeZ] (0,0)--(0,3.1) node[above] {$z_{i-1}$};\n  \\draw[coordenada] (0.75,0.60)\n     arc[start angle=0,end angle=300,x radius=0.75,y radius=0.28];\n  \\node[red!75!black] at (1.15,0.72) {$q_i$};\n \\end{tikzpicture}",
+      "status": "pending",
+      "src": null,
+      "background": "white",
+      "format": "svg",
+      "error": "Compilación de figuras omitida por configuración"
+    },
+    {
+      "id": "asset-0b0477a98322",
+      "origin": "tikz",
+      "source": "\\begin{tikzpicture}[scale=0.9,>=Latex]\n  \\draw[line width=11pt,gray!55] (0,0)--(4.2,0);\n  \\draw[fill=white,thick] (2.30,-0.35) rectangle (3.13,0.35);\n  \\draw[ejeZ] (0.3,0)--(1.65,0) node[below] {$z_{i-1}$};\n  \\draw[coordenada] (1.35,0.72)--(3.00,0.72)\n     node[midway,above] {$q_i>0$};\n \\end{tikzpicture}",
+      "status": "pending",
+      "src": null,
+      "background": "white",
+      "format": "svg",
+      "error": "Compilación de figuras omitida por configuración"
+    },
+    {
+      "id": "asset-5fb1f0249f29",
+      "origin": "tikz",
+      "source": "\\begin{tikzpicture}[scale=0.82,>=Latex]\n  \\draw[ejeZ] (0,0)--(0,3.2) node[above] {$z_{i-1}$};\n  \\draw[ejeZ] (3.5,0)--(3.5,3.2) node[above] {$z_i$};\n  \\draw[ejeX] (0,1.75)--(3.5,1.75)\n    node[midway,above] {normal común};\n  \\draw[<->,thick,red!75!black] (0,1.05)--(3.5,1.05)\n    node[midway,below] {$a_i$};\n  \\node[below right] at (3.5,1.75) {$O_i$};\n \\end{tikzpicture}",
+      "status": "pending",
+      "src": null,
+      "background": "white",
+      "format": "svg",
+      "error": "Compilación de figuras omitida por configuración"
+    },
+    {
+      "id": "asset-44a9086336a5",
+      "origin": "tikz_macro",
+      "source": "\\RobotDosR{0}",
+      "status": "pending",
+      "src": null,
+      "background": "white",
+      "format": "svg",
+      "error": "Compilación de figuras omitida por configuración"
+    },
+    {
+      "id": "asset-3a82f7a26105",
+      "origin": "tikz_macro",
+      "source": "\\RobotDosR{1}",
+      "status": "pending",
+      "src": null,
+      "background": "white",
+      "format": "svg",
+      "error": "Compilación de figuras omitida por configuración"
+    },
+    {
+      "id": "asset-67b13e7f289d",
+      "origin": "tikz_macro",
+      "source": "\\RobotDosR{2}",
+      "status": "pending",
+      "src": null,
+      "background": "white",
+      "format": "svg",
+      "error": "Compilación de figuras omitida por configuración"
+    },
+    {
+      "id": "asset-d066c730e0d9",
+      "origin": "tikz_macro",
+      "source": "\\RobotDosR{3}",
+      "status": "pending",
+      "src": null,
+      "background": "white",
+      "format": "svg",
+      "error": "Compilación de figuras omitida por configuración"
+    },
+    {
+      "id": "asset-d136c2d7cb85",
+      "origin": "tikz_macro",
+      "source": "\\RobotDosR{4}",
+      "status": "pending",
+      "src": null,
+      "background": "white",
+      "format": "svg",
+      "error": "Compilación de figuras omitida por configuración"
+    },
+    {
+      "id": "asset-026908892c05",
+      "origin": "tikz_macro",
+      "source": "\\RobotDosR{5}",
+      "status": "pending",
+      "src": null,
+      "background": "white",
+      "format": "svg",
+      "error": "Compilación de figuras omitida por configuración"
+    },
+    {
+      "id": "asset-c5880b1cf408",
+      "origin": "tikz_macro",
+      "source": "\\RobotDosR{6}",
+      "status": "pending",
+      "src": null,
+      "background": "white",
+      "format": "svg",
+      "error": "Compilación de figuras omitida por configuración"
+    },
+    {
+      "id": "asset-40bcea5b6cfd",
+      "origin": "tikz_macro",
+      "source": "\\RobotDosR{7}",
+      "status": "pending",
+      "src": null,
+      "background": "white",
+      "format": "svg",
+      "error": "Compilación de figuras omitida por configuración"
+    },
+    {
+      "id": "asset-2a9cadc2d796",
+      "origin": "tikz_macro",
+      "source": "\\RobotDosR{8}",
+      "status": "pending",
+      "src": null,
+      "background": "white",
+      "format": "svg",
+      "error": "Compilación de figuras omitida por configuración"
+    },
+    {
+      "id": "asset-66fe4d839ee7",
+      "origin": "tikz_macro",
+      "source": "\\RobotDosP{0}",
+      "status": "pending",
+      "src": null,
+      "background": "white",
+      "format": "svg",
+      "error": "Compilación de figuras omitida por configuración"
+    },
+    {
+      "id": "asset-c5bc9f726f46",
+      "origin": "tikz_macro",
+      "source": "\\RobotDosP{1}",
+      "status": "pending",
+      "src": null,
+      "background": "white",
+      "format": "svg",
+      "error": "Compilación de figuras omitida por configuración"
+    },
+    {
+      "id": "asset-246704149004",
+      "origin": "tikz_macro",
+      "source": "\\RobotDosP{2}",
+      "status": "pending",
+      "src": null,
+      "background": "white",
+      "format": "svg",
+      "error": "Compilación de figuras omitida por configuración"
+    },
+    {
+      "id": "asset-2647d3bacc59",
+      "origin": "tikz_macro",
+      "source": "\\RobotDosP{3}",
+      "status": "pending",
+      "src": null,
+      "background": "white",
+      "format": "svg",
+      "error": "Compilación de figuras omitida por configuración"
+    },
+    {
+      "id": "asset-34fb0ef01176",
+      "origin": "tikz_macro",
+      "source": "\\RobotDosP{5}",
+      "status": "pending",
+      "src": null,
+      "background": "white",
+      "format": "svg",
+      "error": "Compilación de figuras omitida por configuración"
+    },
+    {
+      "id": "asset-3a7ff464ace1",
+      "origin": "tikz_macro",
+      "source": "\\RobotDosP{6}",
+      "status": "pending",
+      "src": null,
+      "background": "white",
+      "format": "svg",
+      "error": "Compilación de figuras omitida por configuración"
+    },
+    {
+      "id": "asset-ab74950301b6",
+      "origin": "tikz_macro",
+      "source": "\\RobotDosP{7}",
+      "status": "pending",
+      "src": null,
+      "background": "white",
+      "format": "svg",
+      "error": "Compilación de figuras omitida por configuración"
+    },
+    {
+      "id": "asset-3a4638cf730b",
+      "origin": "tikz_macro",
+      "source": "\\RobotRP{0}",
+      "status": "pending",
+      "src": null,
+      "background": "white",
+      "format": "svg",
+      "error": "Compilación de figuras omitida por configuración"
+    },
+    {
+      "id": "asset-68a04e62e7ff",
+      "origin": "tikz_macro",
+      "source": "\\RobotRP{1}",
+      "status": "pending",
+      "src": null,
+      "background": "white",
+      "format": "svg",
+      "error": "Compilación de figuras omitida por configuración"
+    },
+    {
+      "id": "asset-115ae81e92cc",
+      "origin": "tikz_macro",
+      "source": "\\RobotRP{2}",
+      "status": "pending",
+      "src": null,
+      "background": "white",
+      "format": "svg",
+      "error": "Compilación de figuras omitida por configuración"
+    },
+    {
+      "id": "asset-7b3337100ffe",
+      "origin": "tikz_macro",
+      "source": "\\RobotRP{3}",
+      "status": "pending",
+      "src": null,
+      "background": "white",
+      "format": "svg",
+      "error": "Compilación de figuras omitida por configuración"
+    },
+    {
+      "id": "asset-483d4f8ed52c",
+      "origin": "tikz_macro",
+      "source": "\\RobotRP{4}",
+      "status": "pending",
+      "src": null,
+      "background": "white",
+      "format": "svg",
+      "error": "Compilación de figuras omitida por configuración"
+    },
+    {
+      "id": "asset-2087f824350a",
+      "origin": "tikz_macro",
+      "source": "\\RobotRP{5}",
+      "status": "pending",
+      "src": null,
+      "background": "white",
+      "format": "svg",
+      "error": "Compilación de figuras omitida por configuración"
+    },
+    {
+      "id": "asset-38e8d16d83c0",
+      "origin": "tikz_macro",
+      "source": "\\RobotRP{7}",
+      "status": "pending",
+      "src": null,
+      "background": "white",
+      "format": "svg",
+      "error": "Compilación de figuras omitida por configuración"
+    },
+    {
+      "id": "asset-81eef3934327",
+      "origin": "tikz_macro",
+      "source": "\\RobotRP{8}",
+      "status": "pending",
+      "src": null,
+      "background": "white",
+      "format": "svg",
+      "error": "Compilación de figuras omitida por configuración"
+    },
+    {
+      "id": "asset-e9686817442d",
+      "origin": "tikz_macro",
+      "source": "\\RobotPR{0}",
+      "status": "pending",
+      "src": null,
+      "background": "white",
+      "format": "svg",
+      "error": "Compilación de figuras omitida por configuración"
+    },
+    {
+      "id": "asset-a3047abb2452",
+      "origin": "tikz_macro",
+      "source": "\\RobotPRPerfil",
+      "status": "pending",
+      "src": null,
+      "background": "white",
+      "format": "svg",
+      "error": "Compilación de figuras omitida por configuración"
+    },
+    {
+      "id": "asset-40d6828efaae",
+      "origin": "tikz_macro",
+      "source": "\\RobotPR{1}",
+      "status": "pending",
+      "src": null,
+      "background": "white",
+      "format": "svg",
+      "error": "Compilación de figuras omitida por configuración"
+    },
+    {
+      "id": "asset-0bae7a33b037",
+      "origin": "tikz_macro",
+      "source": "\\RobotPR{4}",
+      "status": "pending",
+      "src": null,
+      "background": "white",
+      "format": "svg",
+      "error": "Compilación de figuras omitida por configuración"
+    },
+    {
+      "id": "asset-7a17b7a51689",
+      "origin": "tikz_macro",
+      "source": "\\RobotPR{3}",
+      "status": "pending",
+      "src": null,
+      "background": "white",
+      "format": "svg",
+      "error": "Compilación de figuras omitida por configuración"
+    },
+    {
+      "id": "asset-645de1d6fd23",
+      "origin": "tikz_macro",
+      "source": "\\RobotPR{7}",
+      "status": "pending",
+      "src": null,
+      "background": "white",
+      "format": "svg",
+      "error": "Compilación de figuras omitida por configuración"
+    },
+    {
+      "id": "asset-8ece89b1bea2",
+      "origin": "tikz_macro",
+      "source": "\\SCARAPlanta{0}",
+      "status": "pending",
+      "src": null,
+      "background": "white",
+      "format": "svg",
+      "error": "Compilación de figuras omitida por configuración"
+    },
+    {
+      "id": "asset-23d100d7994f",
+      "origin": "tikz_macro",
+      "source": "\\SCARAPlanta{1}",
+      "status": "pending",
+      "src": null,
+      "background": "white",
+      "format": "svg",
+      "error": "Compilación de figuras omitida por configuración"
+    },
+    {
+      "id": "asset-2b1a364b5421",
+      "origin": "tikz_macro",
+      "source": "\\SCARAPlanta{2}",
+      "status": "pending",
+      "src": null,
+      "background": "white",
+      "format": "svg",
+      "error": "Compilación de figuras omitida por configuración"
+    },
+    {
+      "id": "asset-634511337242",
+      "origin": "tikz_macro",
+      "source": "\\SCARAPlanta{3}",
+      "status": "pending",
+      "src": null,
+      "background": "white",
+      "format": "svg",
+      "error": "Compilación de figuras omitida por configuración"
+    },
+    {
+      "id": "asset-7849f2741ec3",
+      "origin": "tikz_macro",
+      "source": "\\SCARAPlanta{4}",
+      "status": "pending",
+      "src": null,
+      "background": "white",
+      "format": "svg",
+      "error": "Compilación de figuras omitida por configuración"
+    },
+    {
+      "id": "asset-ffaa96b96647",
+      "origin": "tikz_macro",
+      "source": "\\SCARAPlanta{5}",
+      "status": "pending",
+      "src": null,
+      "background": "white",
+      "format": "svg",
+      "error": "Compilación de figuras omitida por configuración"
+    },
+    {
+      "id": "asset-a4fc8f6f62e0",
+      "origin": "tikz_macro",
+      "source": "\\SCARAPlanta{6}",
+      "status": "pending",
+      "src": null,
+      "background": "white",
+      "format": "svg",
+      "error": "Compilación de figuras omitida por configuración"
+    },
+    {
+      "id": "asset-29f9714ada06",
+      "origin": "tikz_macro",
+      "source": "\\SCARAPlanta{7}",
+      "status": "pending",
+      "src": null,
+      "background": "white",
+      "format": "svg",
+      "error": "Compilación de figuras omitida por configuración"
+    },
+    {
+      "id": "asset-965d3a4f38f5",
+      "origin": "tikz_macro",
+      "source": "\\SCARAPlanta{8}",
+      "status": "pending",
+      "src": null,
+      "background": "white",
+      "format": "svg",
+      "error": "Compilación de figuras omitida por configuración"
+    },
+    {
+      "id": "asset-bdb4bb8bdd13",
+      "origin": "tikz_macro",
+      "source": "\\SCARALateral",
+      "status": "pending",
+      "src": null,
+      "background": "white",
+      "format": "svg",
+      "error": "Compilación de figuras omitida por configuración"
+    },
+    {
+      "id": "asset-7418d880c097",
+      "origin": "external",
+      "source": "Template/gracias.png",
+      "status": "missing",
+      "src": null,
+      "background": "white",
+      "format": "svg",
+      "error": "SOURCE_NOT_FOUND"
+    }
+  ]
+}

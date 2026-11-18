@@ -1,0 +1,124 @@
+{
+  "schemaVersion": "1.1.0",
+  "documentId": "web1-guia2",
+  "assets": [
+    {
+      "id": "asset-fcfc5900d0cd",
+      "origin": "tikz",
+      "source": "\\begin{tikzpicture}[\n        node distance=1.5cm and 1.8cm,\n        caja/.style={\n            draw=BrandBlue,\n            thick,\n            rounded corners=3pt,\n            fill=IdeaBody,\n            minimum width=3.6cm,\n            minimum height=1.0cm,\n            align=center\n        },\n        subcaja/.style={\n            draw=PracticeTitle,\n            thick,\n            rounded corners=3pt,\n            fill=PracticeBody,\n            minimum width=3.6cm,\n            minimum height=1.0cm,\n            align=center\n        },\n        flecha/.style={\n            -{Latex[length=3mm]},\n            thick,\n            BrandBlue\n        },\n        nota/.style={\n            font=\\small,\n            align=center,\n            text width=3.8cm\n        }\n        ]\n\n        \n        \\node[caja] (flujo)\n        {Flujo normal\\\\\\small comportamiento base};\n\n        \n        \\node[subcaja, below left=1.6cm and 3.2cm of flujo] (position)\n        {Position\\\\\\small altera o ancla elementos};\n\n        \\node[subcaja, below=1.6cm of flujo] (flex)\n        {Flexbox\\\\\\small un eje dominante};\n\n        \\node[subcaja, below right=1.6cm and 3.2cm of flujo] (grid)\n        {Grid\\\\\\small filas y columnas};\n\n        \n        \\draw[flecha] (flujo) -- (position);\n        \\draw[flecha] (flujo) -- (flex);\n        \\draw[flecha] (flujo) -- (grid);\n\n        \n        \\node[nota, below=0.45cm of position]\n        {Útil para superposición, desplazamiento y elementos anclados.};\n\n        \\node[nota, below=0.45cm of flex]\n        {Adecuado cuando la distribución se entiende principalmente como fila o columna.};\n\n        \\node[nota, below=0.45cm of grid]\n        {Adecuado cuando deben controlarse filas y columnas simultáneamente.};\n\n    \\end{tikzpicture}",
+      "status": "resolved",
+      "src": "assets/asset-fcfc5900d0cd.svg",
+      "background": "white",
+      "format": "svg"
+    },
+    {
+      "id": "asset-9fd39da7f0f8",
+      "origin": "tikz",
+      "source": "\\begin{tikzpicture}[\n        container/.style={\n            draw=BrandBlue,\n            very thick,\n            rounded corners=3pt\n        },\n        item/.style={\n            draw=PracticeTitle,\n            thick,\n            fill=PracticeBody,\n            rounded corners=2pt,\n            minimum width=2.2cm,\n            minimum height=1cm,\n            align=center\n        },\n        flecha/.style={\n            -{Latex[length=3mm]},\n            thick,\n            BrandBlue\n        }\n        ]\n\n        \n        \\draw[container] (0,0) rectangle (10.5,3.4);\n\n        \\node[\n        font=\\small\\bfseries\n        ] at (5.25,3.05)\n        {\n            Contenedor Flex: \\texttt{.contenedor}\n        };\n\n        \n        \\node[item] (e1) at (1.8,1.65) {Elemento 1};\n        \\node[item] (e2) at (5.25,1.65) {Elemento 2};\n        \\node[item] (e3) at (8.7,1.65) {Elemento 3};\n\n        \n        \\draw[flecha] (1.1,0.65) -- (9.4,0.65);\n\n        \\node[\n        font=\\small,\n        text=BrandBlue\n        ] at (5.25,0.35)\n        {\n            eje principal\n        };\n\n    \\end{tikzpicture}",
+      "status": "resolved",
+      "src": "assets/asset-9fd39da7f0f8.svg",
+      "background": "white",
+      "format": "svg"
+    },
+    {
+      "id": "asset-6b8147f3e454",
+      "origin": "tikz",
+      "source": "\\begin{tikzpicture}[\n        item/.style={\n            draw=PracticeTitle,\n            thick,\n            fill=PracticeBody,\n            rounded corners=2pt,\n            minimum width=1.5cm,\n            minimum height=0.9cm,\n            align=center\n        },\n        axis/.style={\n            -{Latex[length=3mm]},\n            thick,\n            BrandBlue\n        },\n        label/.style={\n            font=\\small,\n            text=BrandBlue\n        }\n        ]\n\n        \n        \\draw[\n        BrandBlue,\n        very thick,\n        rounded corners=3pt\n        ] (0,0) rectangle (10,4.2);\n\n        \n        \\node[\n        font=\\small\\bfseries\n        ] at (5,3.85)\n        {\n            \\texttt{flex-direction: row}\n        };\n\n        \n        \\node[item] at (2.1,2.2) {1};\n        \\node[item] at (4.4,2.2) {2};\n        \\node[item] at (6.7,2.2) {3};\n\n        \n        \n        \n\n        \\draw[axis] (1.25,0.85) -- (8.55,0.85);\n\n        \\node[label] at (4.9,0.48)\n        {\n            eje principal\n        };\n\n        \\node[\n        font=\\scriptsize,\n        anchor=north west\n        ] at (1.25,0.78)\n        {\n            inicio\n        };\n\n        \\node[\n        font=\\scriptsize,\n        anchor=north east\n        ] at (8.55,0.78)\n        {\n            fin\n        };\n\n        \n        \n        \n\n        \\draw[axis] (9.0,0.8) -- (9.0,3.25);\n\n        \\node[\n        label,\n        rotate=90\n        ] at (9.45,2.0)\n        {\n            eje transversal\n        };\n\n        \\node[\n        font=\\scriptsize,\n        rotate=90\n        ] at (8.73,1.05)\n        {\n            inicio\n        };\n\n        \\node[\n        font=\\scriptsize,\n        rotate=90\n        ] at (8.73,3.05)\n        {\n            fin\n        };\n\n    \\end{tikzpicture}",
+      "status": "resolved",
+      "src": "assets/asset-6b8147f3e454.svg",
+      "background": "white",
+      "format": "svg"
+    },
+    {
+      "id": "asset-490edba5f32c",
+      "origin": "tikz",
+      "source": "\\begin{tikzpicture}[\n        item/.style={\n            draw=PracticeTitle,\n            fill=PracticeBody,\n            thick,\n            minimum width=1.5cm,\n            minimum height=0.75cm\n        },\n        container/.style={\n            draw=BrandBlue,\n            very thick,\n            rounded corners=2pt\n        },\n        axis/.style={\n            -{Latex[length=3mm]},\n            thick,\n            BrandBlue\n        },\n        secondary/.style={\n            -{Latex[length=2.5mm]},\n            thick,\n            dashed,\n            PracticeTitle\n        }\n        ]\n\n        \n        \n        \n\n        \\node[font=\\bfseries] at (2.8,4.0)\n        {Flexbox: un eje dominante};\n\n        \\draw[container] (0.2,2.0) rectangle (5.4,3.25);\n\n        \\node[item] at (1.15,2.62) {};\n        \\node[item] at (2.8,2.62) {};\n        \\node[item] at (4.45,2.62) {};\n\n        \n        \\draw[axis] (0.75,1.45) -- (4.85,1.45);\n\n        \\node[\n        font=\\small,\n        text=BrandBlue\n        ] at (2.8,1.08)\n        {eje principal};\n\n        \n        \\draw[secondary] (5.8,2.05) -- (5.8,3.2);\n\n        \\node[\n        font=\\scriptsize,\n        rotate=90,\n        text=PracticeTitle\n        ] at (6.15,2.62)\n        {eje transversal};\n\n        \n        \n        \n\n        \\node[font=\\bfseries] at (10.0,4.0)\n        {Grid: distribución bidimensional};\n\n        \\draw[container] (7.2,1.75) rectangle (12.8,3.4);\n\n        \n        \\draw[PracticeTitle, thick] (9.05,1.75) -- (9.05,3.4);\n        \\draw[PracticeTitle, thick] (10.9,1.75) -- (10.9,3.4);\n\n        \n        \\draw[PracticeTitle, thick] (7.2,2.575) -- (12.8,2.575);\n\n        \n        \\draw[axis] (7.6,1.25) -- (12.35,1.25);\n\n        \\node[\n        font=\\small,\n        text=BrandBlue\n        ] at (9.95,0.88)\n        {columnas};\n\n        \\draw[axis] (13.25,1.9) -- (13.25,3.25);\n\n        \\node[\n        font=\\small,\n        rotate=90,\n        text=BrandBlue\n        ] at (13.65,2.58)\n        {filas};\n\n    \\end{tikzpicture}",
+      "status": "resolved",
+      "src": "assets/asset-490edba5f32c.svg",
+      "background": "white",
+      "format": "svg"
+    },
+    {
+      "id": "asset-1f35bdd5fa69",
+      "origin": "tikz",
+      "source": "\\begin{tikzpicture}[\n        gridline/.style={\n            draw=PracticeTitle,\n            thick\n        },\n        mainborder/.style={\n            draw=BrandBlue,\n            very thick\n        },\n        area/.style={\n            draw=WarnTitle,\n            very thick,\n            rounded corners=4pt,\n            fill=WarnBody\n        },\n        axis/.style={\n            <->,\n            >=Latex,\n            thick,\n            BrandBlue\n        },\n        label/.style={\n            font=\\small\n        }\n        ]\n\n        \n        \n        \n\n        \n        \\draw[mainborder] (0,0) rectangle (9,4.5);\n\n        \n        \\draw[gridline] (2.5,0) -- (2.5,4.5);\n        \\draw[gridline] (5.8,0) -- (5.8,4.5);\n\n        \n        \\draw[gridline] (0,1.5) -- (9,1.5);\n        \\draw[gridline] (0,3.0) -- (9,3.0);\n\n        \n        \n        \n\n        \\node[label, above] at (0,4.5) {línea 1};\n        \\node[label, above] at (2.5,4.5) {línea 2};\n        \\node[label, above] at (5.8,4.5) {línea 3};\n        \\node[label, above] at (9,4.5) {línea 4};\n\n        \n        \n        \n\n        \\node[label] at (1.25,3.75) {celda};\n        \\node[label] at (4.15,3.75) {celda};\n        \\node[label] at (7.4,3.75) {celda};\n\n        \n        \n        \n\n        \\draw[area]\n        (2.7,1.68) rectangle (8.8,2.82);\n\n        \\node[\n        font=\\small\\bfseries\n        ] at (5.75,2.25)\n        {\n            área\n        };\n\n        \n        \n        \n\n        \\draw[axis]\n        (0,-0.45) -- (2.5,-0.45);\n\n        \\node[\n        label,\n        below\n        ] at (1.25,-0.45)\n        {\n            track de columna\n        };\n\n        \n        \n        \n\n        \\draw[axis]\n        (9.5,0) -- (9.5,1.5);\n\n        \\node[\n        label,\n        right,\n        align=left\n        ] at (9.5,0.75)\n        {\n            track\\\\\n            de fila\n        };\n\n    \\end{tikzpicture}",
+      "status": "resolved",
+      "src": "assets/asset-1f35bdd5fa69.svg",
+      "background": "white",
+      "format": "svg"
+    },
+    {
+      "id": "asset-cbd70d662e6f",
+      "origin": "tikz",
+      "source": "\\begin{tikzpicture}[\n        item/.style={\n            draw=PracticeTitle,\n            thick,\n            fill=PracticeBody,\n            minimum width=2.1cm,\n            minimum height=0.85cm,\n            align=center\n        },\n        imp/.style={\n            draw=WarnTitle,\n            thick,\n            dashed,\n            fill=WarnBody,\n            minimum width=2.1cm,\n            minimum height=0.85cm,\n            align=center\n        },\n        label/.style={\n            font=\\small\\bfseries\n        }\n        ]\n\n        \n        \n        \n\n        \\node[font=\\bfseries] at (4.1,4.1)\n        {Cuadrícula explícita};\n\n        \\node[\n        font=\\small,\n        text=BrandBlue\n        ] at (4.1,3.55)\n        {\\texttt{grid-template-columns} + \\texttt{grid-template-rows}};\n\n        \\foreach \\x in {1.2,4.1,7}{\n            \\node[item] at (\\x,2.75) {item};\n        }\n\n        \n        \n        \n\n        \\draw[\n        WarnTitle,\n        dashed,\n        very thick,\n        rounded corners=2pt\n        ] (0,0.65) rectangle (8.2,2.0);\n\n        \\foreach \\x in {1.2,4.1,7}{\n            \\node[imp] at (\\x,1.35) {item};\n        }\n\n        \\node[\n        font=\\small\\bfseries,\n        text=WarnTitle\n        ] at (4.1,0.28)\n        {Fila implícita};\n\n        \\node[\n        font=\\small,\n        align=center,\n        text width=8cm\n        ] at (4.1,-0.75)\n        {\n            Grid crea esta fila automáticamente porque existen\n            más elementos de los que caben en la cuadrícula explícita.\n        };\n\n    \\end{tikzpicture}",
+      "status": "resolved",
+      "src": "assets/asset-cbd70d662e6f.svg",
+      "background": "white",
+      "format": "svg"
+    },
+    {
+      "id": "asset-4a6b343040bd",
+      "origin": "tikz",
+      "source": "\\begin{tikzpicture}[\n    item/.style={draw=PracticeTitle, thick, fill=PracticeBody, align=center},\n    principal/.style={draw=WarnTitle, very thick, fill=WarnBody, align=center}\n]\n    \\draw[BrandBlue, very thick] (0,0) rectangle (10,4);\n    \\draw[BrandBlue] (3.3,0)--(3.3,4);\n    \\draw[BrandBlue] (6.6,0)--(6.6,4);\n    \\draw[BrandBlue] (0,2)--(10,2);\n\n    \\foreach \\x/\\n in {0/1,3.3/2,6.6/3,10/4}{\n        \\node[above] at (\\x,4) {\\n};\n    }\n\n    \\node[principal, minimum width=6.2cm, minimum height=1.55cm] at (3.3,3)\n        {\\texttt{grid-column: 1 / 3}};\n    \\node[item, minimum width=2.8cm, minimum height=1.55cm] at (8.3,3) {item};\n    \\node[item, minimum width=2.8cm, minimum height=1.55cm] at (1.65,1) {item};\n    \\node[item, minimum width=2.8cm, minimum height=1.55cm] at (4.95,1) {item};\n    \\node[item, minimum width=2.8cm, minimum height=1.55cm] at (8.3,1) {item};\n\\end{tikzpicture}",
+      "status": "resolved",
+      "src": "assets/asset-4a6b343040bd.svg",
+      "background": "white",
+      "format": "svg"
+    },
+    {
+      "id": "asset-4083aa570663",
+      "origin": "tikz",
+      "source": "\\begin{tikzpicture}[\n    area/.style={draw=BrandBlue, thick, rounded corners,\n        minimum height=0.9cm, align=center}\n]\n    \\node[area, fill=IdeaBody, minimum width=9cm] at (4.5,4) {cabecera};\n    \\node[area, fill=PracticeBody, minimum width=2.6cm, minimum height=2.1cm]\n        at (1.3,2.4) {lateral};\n    \\node[area, fill=white, minimum width=6cm, minimum height=2.1cm]\n        at (6,2.4) {contenido};\n    \\node[area, fill=IdeaBody, minimum width=9cm] at (4.5,0.8) {pie};\n\\end{tikzpicture}",
+      "status": "resolved",
+      "src": "assets/asset-4083aa570663.svg",
+      "background": "white",
+      "format": "svg"
+    },
+    {
+      "id": "asset-edc0d000c103",
+      "origin": "tikz",
+      "source": "\\begin{tikzpicture}[\n        container/.style={\n            draw=BrandBlue,\n            very thick\n        },\n        cell/.style={\n            draw=PracticeTitle,\n            dashed,\n            thin\n        },\n        item/.style={\n            draw=PracticeTitle,\n            fill=PracticeBody,\n            thick,\n            minimum width=0.9cm,\n            minimum height=0.6cm\n        },\n        gridbox/.style={\n            draw=PracticeTitle,\n            fill=IdeaBody,\n            thick\n        },\n        label/.style={\n            font=\\small\\bfseries,\n            align=center\n        }\n        ]\n\n        \n        \n        \n\n        \\node[label] at (2.3,3.9)\n        {Alineación de los items};\n\n        \\draw[container] (0,1.2) rectangle (4.6,3.4);\n\n        \n        \\draw[cell] (0.25,1.45) rectangle (2.15,3.15);\n        \\draw[cell] (2.45,1.45) rectangle (4.35,3.15);\n\n        \n        \\node[item, anchor=north west] at (0.45,2.95) {};\n        \\node[item, anchor=south east] at (4.15,1.65) {};\n\n        \\node[\n        font=\\ttfamily\\small,\n        align=center\n        ] at (2.3,0.5)\n        {\n            justify-items \\\\ align-items\n        };\n\n        \\node[\n        font=\\small,\n        align=center,\n        text width=4.4cm\n        ] at (2.3,-0.5)\n        {\n            Cada item se mueve dentro de su propia celda\n        };\n\n        \n        \n        \n\n        \\node[label] at (8.1,3.9)\n        {Alineación de la cuadrícula};\n\n        \\draw[container] (5.7,1.2) rectangle (10.5,3.4);\n\n        \n        \\draw[gridbox] (6.8,1.75) rectangle (9.4,2.85);\n\n        \n        \\draw[PracticeTitle] (8.1,1.75) -- (8.1,2.85);\n        \\draw[PracticeTitle] (6.8,2.3) -- (9.4,2.3);\n\n        \\node[\n        font=\\ttfamily\\small,\n        align=center\n        ] at (8.1,0.5)\n        {\n            justify-content \\\\ align-content\n        };\n\n        \\node[\n        font=\\small,\n        align=center,\n        text width=4.6cm\n        ] at (8.1,-0.5)\n        {\n            Se mueve la cuadrícula completa dentro del contenedor\n        };\n\n    \\end{tikzpicture}",
+      "status": "resolved",
+      "src": "assets/asset-edc0d000c103.svg",
+      "background": "white",
+      "format": "svg"
+    },
+    {
+      "id": "asset-515fcd1d196e",
+      "origin": "tikz",
+      "source": "\\begin{tikzpicture}[\n        card/.style={\n            draw=PracticeTitle,\n            fill=PracticeBody,\n            thick,\n            rounded corners=2pt,\n            minimum width=2.05cm,\n            minimum height=1.05cm,\n            align=center,\n            font=\\small\\bfseries\n        },\n        container/.style={\n            draw=BrandBlue,\n            very thick,\n            rounded corners=3pt\n        },\n        note/.style={\n            font=\\small,\n            text=BrandBlue\n        }\n        ]\n\n        \n        \n        \n        \\node[font=\\bfseries] at (5.2,5.25) {Contenedor amplio};\n\n        \n        \\draw[container] (0,3.45) rectangle (10.4,4.85);\n\n        \n        \\node[card] at (1.35,4.15) {1};\n        \\node[card] at (3.90,4.15) {2};\n        \\node[card] at (6.45,4.15) {3};\n        \\node[card] at (9.00,4.15) {4};\n\n        \\node[note] at (5.2,3.12)\n        {Hay espacio suficiente para cuatro columnas};\n\n        \n        \n        \n        \\node[font=\\bfseries] at (3.75,2.45) {Contenedor más estrecho};\n\n        \n        \\draw[container] (0,0) rectangle (7.5,2.05);\n\n        \n        \\node[card] at (1.35,1.42) {1};\n        \\node[card] at (3.75,1.42) {2};\n        \\node[card] at (6.15,1.42) {3};\n\n        \n        \\node[card] at (1.35,0.60) {4};\n\n        \\node[note, anchor=west,align=center] at (7.8,1.05)\n        {La siguiente tarjeta\\\\pasa a una nueva fila};\n\n        \n        \n        \n        \\node[\n        draw=BrandBlue,\n        rounded corners=3pt,\n        fill=IdeaBody,\n        inner xsep=10pt,\n        inner ysep=5pt,\n        font=\\ttfamily\\small\n        ] at (5.2,-0.65)\n        {\n            repeat(auto-fit, minmax(240px, 1fr))\n        };\n\n    \\end{tikzpicture}",
+      "status": "resolved",
+      "src": "assets/asset-515fcd1d196e.svg",
+      "background": "white",
+      "format": "svg"
+    },
+    {
+      "id": "asset-8f41c19b47a8",
+      "origin": "tikz",
+      "source": "\\begin{tikzpicture}\n    \\filldraw[fill=PracticeBody, draw=PracticeTitle, thick]\n        (0,0) rectangle (8,3.5);\n    \\node at (4,2.4) {imagen / fondo};\n    \\filldraw[fill=IdeaBody, draw=BrandBlue, very thick, rounded corners]\n        (1,0.45) rectangle (7,1.65);\n    \\node at (4,1.05) {contenido superpuesto};\n\\end{tikzpicture}",
+      "status": "resolved",
+      "src": "assets/asset-8f41c19b47a8.svg",
+      "background": "white",
+      "format": "svg"
+    },
+    {
+      "id": "asset-46cda7fab9d1",
+      "origin": "tikz",
+      "source": "\\begin{tikzpicture}[\n        zona/.style={\n            draw=BrandBlue,\n            thick,\n            rounded corners=3pt,\n            align=center,\n            font=\\small\n        },\n        principal/.style={\n            draw=WarnTitle,\n            thick,\n            rounded corners=3pt,\n            fill=WarnBody,\n            align=center,\n            font=\\small\\bfseries\n        }\n        ]\n\n        \n        \n        \n\n        \\node[\n        zona,\n        fill=IdeaBody,\n        minimum width=10cm,\n        minimum height=0.75cm\n        ] at (5,4.8) {cabecera};\n\n        \n        \n        \n\n        \\node[\n        zona,\n        fill=PracticeBody,\n        minimum width=2.0cm,\n        minimum height=3.0cm\n        ] at (1,2.85) {lateral};\n\n        \n        \n        \n        \n\n        \n        \\node[\n        principal,\n        minimum width=4.45cm,\n        minimum height=1.15cm\n        ] at (4.55,3.65) {destacada};\n\n        \n        \\node[\n        zona,\n        fill=white,\n        minimum width=2.05cm,\n        minimum height=1.15cm\n        ] at (8.05,3.65) {tarjeta};\n\n        \n        \\node[\n        zona,\n        fill=white,\n        minimum width=2.05cm,\n        minimum height=1.15cm\n        ] at (3.35,2.15) {tarjeta};\n\n        \n        \\node[\n        zona,\n        fill=white,\n        minimum width=2.05cm,\n        minimum height=1.15cm\n        ] at (5.75,2.15) {tarjeta};\n\n        \n        \n        \n\n        \n        \n        \n\n        \\node[\n        zona,\n        fill=IdeaBody,\n        minimum width=10cm,\n        minimum height=0.75cm\n        ] at (5,0.65) {pie};\n\n        \n        \n        \n\n        \\node[\n        font=\\scriptsize,\n        text=BrandBlue,\n        align=center\n        ] at (8.1,2.1)\n        {\n            celda disponible\\\\\n            sin contenido\n        };\n\n    \\end{tikzpicture}",
+      "status": "resolved",
+      "src": "assets/asset-46cda7fab9d1.svg",
+      "background": "white",
+      "format": "svg"
+    },
+    {
+      "id": "asset-47e258b49483",
+      "origin": "external",
+      "source": "Template/LogoSena.png",
+      "status": "missing",
+      "src": null,
+      "background": "white",
+      "format": "svg",
+      "error": "SOURCE_NOT_FOUND"
+    }
+  ]
+}

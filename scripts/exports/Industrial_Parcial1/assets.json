@@ -1,0 +1,16 @@
+{
+  "schemaVersion": "1.1.0",
+  "documentId": "industrial-parcial1",
+  "assets": [
+    {
+      "id": "asset-1461476e1ba3",
+      "origin": "external",
+      "source": "Template/LogoPoli.png",
+      "status": "missing",
+      "src": null,
+      "background": "white",
+      "format": "svg",
+      "error": "SOURCE_NOT_FOUND"
+    }
+  ]
+}

@@ -1,13 +1,14 @@
 /* Adapter for Aula surfaces. Semantic teaching colors and original artwork stay independent. */
 :root[data-palette][data-theme]{--code-bg:var(--card);--code-fg:var(--card-foreground);--code-gutter:color-mix(in srgb,var(--muted) 70%,var(--card));--code-muted:var(--muted-foreground);--code-active:var(--accent);--code-selection:color-mix(in srgb,var(--primary) 25%,var(--card));--brand-yellow:var(--primary);--brand-blue:var(--secondary)}
-:root[data-palette][data-theme] body{font-family:var(--font-sans,Arial,sans-serif);background:var(--background);color:var(--foreground);letter-spacing:var(--tracking-normal,0)}
-:root[data-palette][data-theme] :is(.stats-grid,.subject-card,.institution-card,.progress-lessons article,.topic-section,.search-box,.semester-badge,.reading-document,.lesson-paper,.admin-card,.login-card,.reading-index-dialog,.reader-floating-actions,.presentation-slide){background:var(--card);color:var(--card-foreground);border-color:var(--border);box-shadow:var(--shadow)}
+:root[data-palette][data-theme] :is(body,.presentation-stage){font-family:var(--font-sans,Arial,sans-serif);background:var(--background);color:var(--foreground);letter-spacing:var(--tracking-normal,0)}
+:root[data-palette][data-theme] :is(.stats-grid,.subject-card,.institution-card,.progress-lessons article,.topic-section,.search-box,.semester-badge,.reading-document,.lesson-paper,.admin-card,.login-card,.reading-index-dialog,.reader-floating-actions,.presentation-slide,.presentation-document-header,.presentation-reading-frame){background:var(--card);color:var(--card-foreground);border-color:var(--border);box-shadow:var(--shadow)}
 :root[data-palette][data-theme] .topbar{background:var(--card);color:var(--card-foreground);border-color:var(--border);box-shadow:var(--shadow-xs)}
-:root[data-palette][data-theme] :is(h1,.section-title h2,.card-body h3,.institution-card h3,.progress-lessons h3,.reader-heading h1,.reading-section-heading h2,.reading-frame h3,.lesson-paper h2,.slide-heading h2,.admin-card h2,.admin-lesson-heading h3,.login-card h2,.stats-grid strong,.semester-badge strong,.document-cover strong,.document-end h3,.topbar strong){color:var(--foreground);font-family:var(--font-sans,Inter,Arial,sans-serif)}
+:root[data-palette][data-theme] :is(h1,.section-title h2,.card-body h3,.institution-card h3,.progress-lessons h3,.reader-heading h1,.reading-section-heading h2,.reading-frame h3,.lesson-paper h2,.slide-heading h2,.admin-card h2,.admin-lesson-heading h3,.login-card h2,.stats-grid strong,.semester-badge strong,.document-cover strong,.document-end h3,.topbar strong,.presentation-header-title,.presentation-frame-title){color:var(--foreground);font-family:var(--font-sans,Inter,Arial,sans-serif)}
 :root[data-palette="clean-slate"][data-theme] :is(h1,.learning-banner h3,.lesson-paper h2){font-family:var(--font-serif,Georgia,serif)}
-:root[data-palette][data-theme] :is(.welcome-row p,.section-title p,.card-body>p,.card-meta,.card-meta svg,.card-progress>div:first-child,.stats-grid div>div>span,.semester-badge,.filter-row>span,.reader-heading p,.reading-mode-bar,.document-cover>div>span,.document-cover p,.document-end p,.import-details,.admin-heading p,.admin-help,.admin-list p,.admin-card small,.admin-steps>span,.admin-lesson-heading p,.login-card>p,.login-note,footer,.topbar>div,.topbar-right){color:var(--muted-foreground)}
-:root[data-palette][data-theme] :is(.eyebrow,.welcome-eyebrow,.reading-mode-bar>span:first-child,.back-link,.import-details a,.card-progress strong){color:var(--ring)}
-:root[data-palette][data-theme] :is(.card-progress,.reading-mode-bar,.document-cover,.reading-section-heading,.document-end,.admin-tabs,.admin-list>div,.publication-actions,.slide-footer,footer){border-color:var(--border)}
+:root[data-palette][data-theme] :is(.welcome-row p,.section-title p,.card-body>p,.card-meta,.card-meta svg,.card-progress>div:first-child,.stats-grid div>div>span,.semester-badge,.filter-row>span,.reader-heading p,.reading-mode-bar,.document-cover>div>span,.document-cover p,.document-end p,.import-details,.admin-heading p,.admin-help,.admin-list p,.admin-card small,.admin-steps>span,.admin-lesson-heading p,.login-card>p,.login-note,footer,.topbar>div,.topbar-right,.presentation-frame-badge,.institution-tag-name){color:var(--muted-foreground)}
+:root[data-palette][data-theme] :is(.eyebrow,.welcome-eyebrow,.reading-mode-bar>span:first-child,.back-link,.import-details a,.card-progress strong,.subject-tag-name){color:var(--ring)}
+:root[data-palette][data-theme="dark"] :is(.eyebrow,.welcome-eyebrow,.reading-mode-bar>span:first-child,.back-link,.import-details a,.card-progress strong,.subject-tag-name){color:var(--primary)}
+:root[data-palette][data-theme] :is(.card-progress,.reading-mode-bar,.document-cover,.reading-section-heading,.document-end,.admin-tabs,.admin-list>div,.publication-actions,.slide-footer,footer,.presentation-frame-header){border-color:var(--border)}
 :root[data-palette][data-theme] .sidebar{background:var(--sidebar);color:var(--sidebar-foreground);border-color:var(--sidebar-border)}
 :root[data-palette][data-theme] :is(.aula-wordmark,.sidebar .profile strong,.sidebar .profile small,.sidebar .profile svg,.sidebar .workspace-label,.sidebar .brand-credit,.sidebar .sidebar-dismiss,.sidebar .logout-button){color:var(--sidebar-foreground)}
 :root[data-palette][data-theme] .aula-wordmark>span{color:var(--sidebar-primary)}
@@ -37,12 +38,22 @@
 :root[data-palette][data-theme] :is(.learning-banner h3,.learning-banner .eyebrow,.learning-banner p,.topic-title h3,.code-toolbar>span,.code-toolbar button,.slide-heading span,.reading-index-aside h2,.reading-index-aside header p){color:var(--foreground)}
 :root[data-palette][data-theme] .banner-icon{background:var(--primary);color:var(--primary-foreground);border-color:var(--border)}
 :root[data-palette][data-theme] .banner-decoration{color:color-mix(in srgb,var(--primary) 25%,var(--card))}
-:root[data-palette][data-theme] .lesson-text,:root[data-palette][data-theme] .lesson-list{color:var(--card-foreground)}
-:root[data-palette][data-theme] .lesson-text strong{color:var(--card-foreground)}
+:root[data-palette][data-theme] :is(.lesson-text,.lesson-list,.presentation-frame-content .lesson-text){color:var(--card-foreground)}
+:root[data-palette][data-theme] :is(.lesson-text strong,.presentation-frame-content .lesson-text strong){color:var(--card-foreground)}
 :root[data-palette][data-theme] :is(.lesson-text code,.lesson-list code,.lesson-table code){background:var(--muted);color:var(--foreground);border-color:var(--border)}
-:root[data-palette][data-theme] :is(.lesson-text a,.math-block,.read-marker,.diagram-source){color:var(--foreground)}
-:root[data-palette][data-theme] .read-marker.is-read{color:var(--chart-4)}
-:root[data-palette][data-theme] .reading-section-heading>span{background:var(--accent);color:var(--accent-foreground)}
+:root[data-palette][data-theme] :is(.lesson-text a,.math-block,.read-marker,.diagram-source,.presentation-frame-content .math-block){color:var(--foreground)}
+:root[data-palette][data-theme] .teaching-block{background:color-mix(in srgb,var(--callout) 10%,var(--card));border-color:color-mix(in srgb,var(--callout) 28%,var(--border))}
+:root[data-palette][data-theme] .teaching-title{background:color-mix(in srgb,var(--callout) 15%,var(--card));color:var(--callout);border-color:color-mix(in srgb,var(--callout) 28%,var(--border))}
+:root[data-palette][data-theme] .teaching-body .lesson-text{color:var(--card-foreground)}
+:root[data-palette][data-theme] :is(.read-marker,.presentation-frame-badge){background:var(--muted);color:var(--muted-foreground);border:1px solid var(--border)}
+:root[data-palette][data-theme] .read-marker:hover{background:var(--accent);color:var(--accent-foreground)}
+:root[data-palette][data-theme] :is(.read-marker.is-read,.document-end>svg){color:var(--primary)}
+:root[data-palette][data-theme] .read-marker.is-read{background:color-mix(in srgb,var(--primary) 14%,var(--card));border-color:color-mix(in srgb,var(--primary) 32%,var(--border))}
+:root[data-palette][data-theme] :is(.reading-section-heading>span,.presentation-frame-section,.presentation-header-badges .meta-badge){background:color-mix(in srgb,var(--primary) 14%,var(--card));color:var(--primary);border:1px solid color-mix(in srgb,var(--primary) 28%,var(--border))}
+:root[data-palette][data-theme] .presentation-header-logo-badge{background:var(--card);border-color:var(--border)}
+:root[data-palette][data-theme] .presentation-reading-frame.is-reflection-frame{background:color-mix(in srgb,var(--primary) 8%,var(--card));border-color:color-mix(in srgb,var(--primary) 28%,var(--border));border-left:5px solid var(--primary)}
+:root[data-palette][data-theme] .reading-frame.is-reflection-frame .lesson-text{background:color-mix(in srgb,var(--primary) 7%,var(--card));border-color:color-mix(in srgb,var(--primary) 28%,var(--border));color:var(--card-foreground)}
+:root[data-palette][data-theme] :is(.reading-tools,.reader-floating-actions){background:var(--card);border:1px solid var(--border);color:var(--foreground);box-shadow:var(--shadow)}
 :root[data-palette][data-theme] .lesson-list li::marker{color:var(--ring)}
 :root[data-palette][data-theme] :is(.lesson-table th,.diagram-source pre){background:var(--muted);color:var(--foreground)}
 :root[data-palette][data-theme] :is(.lesson-table td,.lesson-table th){border-color:var(--border)}

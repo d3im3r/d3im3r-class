@@ -1,0 +1,116 @@
+{
+  "schemaVersion": "1.1.0",
+  "documentId": "web1-9",
+  "assets": [
+    {
+      "id": "asset-07ba2a99c5f6",
+      "origin": "tikz",
+      "source": "\\begin{tikzpicture}[\n                pantalla/.style={draw=BrandBlue, very thick, rounded corners},\n                bloque/.style={draw=PracticeTitle, fill=PracticeBody, thick,\n                    rounded corners=2pt}\n                ]\n                \\draw[pantalla] (0,0) rectangle (6.7,3.6);\n                \\node[font=\\bfseries] at (3.35,3.95) {Pantalla amplia};\n                \\draw[bloque] (0.35,2.65) rectangle (6.35,3.25);\n                \\draw[bloque] (0.35,0.45) rectangle (2.1,2.35);\n                \\draw[bloque] (2.35,0.45) rectangle (6.35,2.35);\n\n                \\draw[pantalla] (8.5,0) rectangle (10.7,3.6);\n                \\node[font=\\bfseries] at (9.6,3.95) {Pantalla estrecha};\n                \\draw[bloque] (8.8,2.65) rectangle (14.8,3.25);\n                \\draw[bloque] (8.8,0.45) rectangle (10.55,2.35);\n                \\draw[bloque] (10.8,0.45) rectangle (14.8,2.35);\n                \\draw[->, very thick, WarnTitle] (10.9,1.3) -- (12.1,1.3)\n                node[right] {desbordamiento};\n            \\end{tikzpicture}",
+      "status": "pending",
+      "src": null,
+      "background": "white",
+      "format": "svg",
+      "error": "Compilación de figuras omitida por configuración"
+    },
+    {
+      "id": "asset-386a2e8b2b3f",
+      "origin": "tikz",
+      "source": "\\begin{tikzpicture}[\n                base/.style={draw=BrandBlue, thick, rounded corners,\n                    minimum width=3.2cm, minimum height=1.2cm, align=center}\n                ]\n                \\node[base, fill=IdeaBody] at (1.8,2) {Distribución\\\\flexible};\n                \\node[base, fill=PracticeBody] at (6,2) {Imágenes y medios\\\\adaptables};\n                \\node[base, fill=ResultBody] at (10.2,2) {Reglas según\\\\el espacio};\n                \\draw[->, >=Latex, thick] (3.45,2) -- (4.35,2);\n                \\draw[->, >=Latex, thick] (7.65,2) -- (8.55,2);\n            \\end{tikzpicture}",
+      "status": "pending",
+      "src": null,
+      "background": "white",
+      "format": "svg",
+      "error": "Compilación de figuras omitida por configuración"
+    },
+    {
+      "id": "asset-3b9ea4e027ad",
+      "origin": "tikz",
+      "source": "\\begin{tikzpicture}[\n                marco/.style={draw=BrandBlue, very thick, rounded corners=8pt},\n                pagina/.style={draw=PracticeTitle, thick, fill=PracticeBody}\n                ]\n                \\draw[marco] (0,0) rectangle (4.2,5.4);\n                \\draw[pagina] (0.35,0.55) rectangle (3.85,4.85);\n                \\node at (2.1,4.45) {contenido visible};\n                \\draw[<->, >=Latex, thick] (0.35,0.25) -- (3.85,0.25)\n               node[midway, below=5mm] {ancho del viewport};\n\n                \\node[align=left, text width=6.1cm] at (8.2,3.2) {\n                    El \\textit{viewport} es la región del navegador donde\n                    se representa la página.\\\\[0.4cm]\n                    CSS toma decisiones a partir de ese espacio disponible,\n                    no del tamaño físico total del dispositivo.\n                };\n            \\end{tikzpicture}",
+      "status": "pending",
+      "src": null,
+      "background": "white",
+      "format": "svg",
+      "error": "Compilación de figuras omitida por configuración"
+    },
+    {
+      "id": "asset-06f18177cb3a",
+      "origin": "tikz",
+      "source": "\\begin{tikzpicture}[\n                foto/.style={draw=BrandBlue, thick, fill=IdeaBody},\n                flecha/.style={->, >=Latex, thick}\n                ]\n                \\draw[foto] (0,0.6) rectangle (4,3.1);\n                \\node at (2,1.85) {imagen original};\n                \\draw[flecha] (4.4,1.85) -- (5.5,1.85);\n                \\draw[foto] (5.9,1.05) rectangle (9.1,3.05);\n                \\node at (7.5,2.05) {proporción};\n                \\draw[flecha, WarnTitle] (9.5,1.85) -- (10.6,1.85);\n                \\draw[draw=WarnTitle, thick, fill=WarnBody]\n                (11,0.3) rectangle (12.8,3.4);\n                \\node[rotate=90] at (11.9,1.85) {deformada};\n            \\end{tikzpicture}",
+      "status": "pending",
+      "src": null,
+      "background": "white",
+      "format": "svg",
+      "error": "Compilación de figuras omitida por configuración"
+    },
+    {
+      "id": "asset-0f31d92176ea",
+      "origin": "tikz",
+      "source": "\\begin{tikzpicture}[\n    marco/.style={\n        draw=BrandBlue,\n        very thick,\n        fill=gray!5\n    },\n    imagen/.style={\n        draw=PracticeTitle,\n        thick,\n        fill=PracticeBody\n    }\n    ]\n\n    \n    \n    \n\n    \\node[font=\\bfseries] at (2.6,3.7) {cover};\n\n    \n    \\draw[imagen]\n    (0,0.7) rectangle (5.2,3.2);\n\n    \n    \\draw[\n    PracticeTitle,\n    thick,\n    dashed\n    ]\n    (-0.65,0.7) rectangle (5.85,3.2);\n\n    \n    \\draw[marco, fill=none]\n    (0,0.7) rectangle (5.2,3.2);\n\n    \\node[align=center] at (2.6,1.95)\n    {cubre todo el espacio\\\\y recorta los extremos};\n\n    \\node[\n    font=\\scriptsize,\n    text=WarnTitle\n    ] at (2.6,0.3)\n    {parte de la imagen queda fuera};\n\n   \n   \n   \n\n   \\begin{scope}[xshift=0.5cm]\n\n       \\node[font=\\bfseries] at (8.5,3.7) {contain};\n\n       \n       \\draw[marco]\n       (5.9,0.7) rectangle (11.1,3.2);\n\n       \n       \\draw[imagen]\n       (6.7,0.7) rectangle (10.3,3.2);\n\n       \\node[align=center] at (8.5,1.95)\n       {muestra toda la imagen\\\\\n           y deja espacio libre};\n\n   \\end{scope}\n\n\\end{tikzpicture}",
+      "status": "pending",
+      "src": null,
+      "background": "white",
+      "format": "svg",
+      "error": "Compilación de figuras omitida por configuración"
+    },
+    {
+      "id": "asset-ca5fcd149e55",
+      "origin": "tikz",
+      "source": "\\begin{tikzpicture}[x=0.012cm]\n                \\draw[very thick, ->, >=Latex] (320,0) -- (1200,0);\n                \\foreach \\x/\\t in {360/360,700/700,1000/1000}{\n                    \\draw[thick] (\\x,-0.18) -- (\\x,0.18);\n                    \\node[below] at (\\x,-0.22) {\\t px};\n                }\n                \\draw[very thick, PracticeTitle] (700,0.45) -- (1180,0.45);\n                \\node[above, PracticeTitle] at (940,0.45)\n                {se aplican las reglas de \\texttt{min-width: 700px}};\n            \\end{tikzpicture}",
+      "status": "pending",
+      "src": null,
+      "background": "white",
+      "format": "svg",
+      "error": "Compilación de figuras omitida por configuración"
+    },
+    {
+      "id": "asset-2fb31c853136",
+      "origin": "tikz",
+      "source": "\\begin{tikzpicture}[\n                regla/.style={draw=BrandBlue, thick, rounded corners,\n                    minimum width=3.6cm, minimum height=0.85cm}\n                ]\n                \\node[regla, fill=IdeaBody] (base) at (2.2,2.4) {regla base};\n                \\node[regla, fill=PracticeBody] (media) at (8.2,2.4) {regla en media query};\n                \\draw[->, >=Latex, very thick] (4.1,2.4) -- (6.0,2.4)\n                node[midway, above] {después};\n                \\node[align=center] at (4.7,0.9)\n                {si la condición se cumple,\\\\la segunda puede sobrescribir la primera};\n            \\end{tikzpicture}",
+      "status": "pending",
+      "src": null,
+      "background": "white",
+      "format": "svg",
+      "error": "Compilación de figuras omitida por configuración"
+    },
+    {
+      "id": "asset-224e227f6a84",
+      "origin": "tikz",
+      "source": "\\begin{tikzpicture}[\n               node distance=0.8cm,\n               etapa/.style={\n                   draw=BrandBlue,\n                   thick,\n                   rounded corners,\n                   text width=3.2cm,\n                   minimum height=1.1cm,\n                   inner sep=4pt,\n                   align=center,\n                   font=\\small\n               },\n               flecha/.style={\n                   ->,\n                   >=Latex,\n                   very thick\n               }\n               ]\n\n               \\node[\n               etapa,\n               fill=IdeaBody\n               ] (m) {\n                   Reglas base\\\\\n                   una columna\n               };\n\n               \\node[\n               etapa,\n               fill=PracticeBody,\n               right=of m\n               ] (t) {\n                   \\texttt{min-width: 700px}\\\\\n                   dos columnas\n               };\n\n               \\node[\n               etapa,\n               fill=ResultBody,\n               right=of t\n               ] (d) {\n                   \\texttt{min-width: 1000px}\\\\\n                   composición amplia\n               };\n\n               \\draw[flecha] (m) -- (t);\n               \\draw[flecha] (t) -- (d);\n\n           \\end{tikzpicture}",
+      "status": "pending",
+      "src": null,
+      "background": "white",
+      "format": "svg",
+      "error": "Compilación de figuras omitida por configuración"
+    },
+    {
+      "id": "asset-c45e4cbd0306",
+      "origin": "tikz",
+      "source": "\\begin{tikzpicture}[\n                bloque/.style={draw=PracticeTitle, thick, fill=PracticeBody,\n                    minimum height=1.3cm}\n                ]\n                \\node[bloque, minimum width=5cm] at (3.2,1.2) {imagen};\n                \\node[bloque, minimum width=4cm] at (8,1.2) {texto};\n            \\end{tikzpicture}",
+      "status": "pending",
+      "src": null,
+      "background": "white",
+      "format": "svg",
+      "error": "Compilación de figuras omitida por configuración"
+    },
+    {
+      "id": "asset-fdad00447678",
+      "origin": "tikz",
+      "source": "\\begin{tikzpicture}[\n                scale=0.8,\n                transform shape,\n                marco/.style={draw=BrandBlue, very thick, rounded corners=5pt},\n                bloque/.style={draw=PracticeTitle, fill=PracticeBody, thick,\n                    rounded corners=2pt}\n                ]\n                \\node[font=\\bfseries] at (2,5.4) {Vista estrecha};\n                \\draw[marco] (0,0) rectangle (4,5);\n                \\draw[bloque] (0.3,4.2) rectangle (3.7,4.7);\n                \\draw[bloque] (0.3,3.35) rectangle (3.7,3.95);\n                \\draw[bloque] (0.3,2.05) rectangle (3.7,3.1);\n                \\draw[bloque] (0.3,1.1) rectangle (3.7,1.8);\n                \\draw[bloque] (0.3,0.25) rectangle (3.7,0.95);\n\n                \\node[font=\\bfseries] at (9.4,5.4) {Vista amplia};\n                \\draw[marco] (5.1,0) rectangle (13.7,5);\n                \\draw[bloque] (5.4,4.2) rectangle (13.4,4.7);\n                \\draw[bloque] (5.4,3.5) rectangle (13.4,4);\n                \\draw[bloque] (5.4,1.9) rectangle (10,3.25);\n                \\draw[bloque] (10.2,1.9) rectangle (13.4,3.25);\n                \\draw[bloque] (5.4,0.35) rectangle (9.2,1.6);\n                \\draw[bloque] (9.6,0.35) rectangle (13.4,1.6);\n            \\end{tikzpicture}",
+      "status": "pending",
+      "src": null,
+      "background": "white",
+      "format": "svg",
+      "error": "Compilación de figuras omitida por configuración"
+    },
+    {
+      "id": "asset-d023fd98103d",
+      "origin": "tikz",
+      "source": "\\begin{tikzpicture}[\n                scale=0.88,\n                transform shape,\n                nodo/.style={draw=BrandBlue, thick, rounded corners,\n                    minimum width=3.4cm, minimum height=0.85cm, align=center},\n                flecha/.style={->, >=Latex, thick}\n                ]\n                \\node[nodo, fill=IdeaBody] (p) at (5.5,5.3) {¿El contenido se desborda?};\n                \\node[nodo, fill=PracticeBody] (f) at (2.2,2.6) {Use medidas flexibles\\\\e imágenes adaptables};\n                \\node[nodo, fill=PracticeBody] (c) at (8.8,2.6) {¿La composición deja\\\\de ser clara?};\n                \\node[nodo, fill=ResultBody] (m) at (8.8,0.8) {Agregue una media query};\n                \\draw[flecha] (p) -- (f) node[midway, above left] {sí};\n                \\draw[flecha] (p) -- (c) node[midway, above right] {no};\n                \\draw[flecha] (c) -- (m) node[midway, right] {sí};\n            \\end{tikzpicture}",
+      "status": "pending",
+      "src": null,
+      "background": "white",
+      "format": "svg",
+      "error": "Compilación de figuras omitida por configuración"
+    }
+  ]
+}

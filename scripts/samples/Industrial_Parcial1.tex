@@ -1,0 +1,806 @@
+\documentclass[10pt]{article}
+
+% =========================================================
+% TEMPLATE
+% =========================================================
+
+\input{~/Dropbox/Latex/TemplateExam/template-exam.tex}
+
+% =========================================================
+% INFORMACIÓN DEL EXAMEN
+% =========================================================
+
+\renewcommand{\CourseName}{Robótica Industrial}
+\renewcommand{\CourseCode}{ING 01339 / SOL-ING 220}
+\renewcommand{\Institution}{Politécnico Colombiano Jaime Isaza Cadavid}
+\renewcommand{\Faculty}{Facultad de Ingeniería}
+\renewcommand{\Instructor}{Deimer Miranda Montoya, MSc.(c).}
+
+\renewcommand{\ExamTitle}{Parcial \#1}
+\renewcommand{\ExamTopics}{
+    Rotaciones 2D y 3D, composición de orientaciones y ejes fijos/móviles
+}
+\renewcommand{\AcademicPeriod}{2026-2}
+\renewcommand{\ExamDuration}{120 minutos}
+\renewcommand{\ExamValue}{100 puntos}
+\renewcommand{\ExamQuestions}{10}
+\renewcommand{\InstitutionLogo}{Template/LogoPoli.png}
+
+%\ExamStandard
+\ExamCompact
+
+% =========================================================
+\begin{document}
+
+    \pagestyle{empty}
+
+    % =========================================================
+    % ENCABEZADO
+    % =========================================================
+
+    \ExamHeader
+    \StudentInfo
+
+    \ExamInstructions{
+        Se permite el uso de una hoja de fórmulas.
+        Seleccione una única respuesta en cada pregunta.
+        El valor de cada pregunta se indica en el enunciado.
+        En las preguntas que involucren cálculo, el procedimiento podrá utilizarse
+        como criterio de revisión. Utilice la regla de la mano derecha para establecer
+        el sentido positivo de las rotaciones y tenga especial cuidado con el orden
+        de multiplicación en las composiciones.
+    }
+
+    % =========================================================
+    % PREGUNTAS
+    % =========================================================
+
+    \begin{multicols}{2}
+        \raggedcolumns
+
+        % ---------------------------------------------------------
+        % PREGUNTA 1
+        % ---------------------------------------------------------
+
+        \begin{question}
+            \textbf{[8 puntos]}
+
+            Un vector inicialmente coincide con el eje \(x\) positivo.
+            Primero se rota \(35^\circ\) en sentido antihorario y posteriormente
+            \(95^\circ\) en sentido horario, ambas rotaciones alrededor del
+            mismo origen.
+
+            La rotación equivalente y el vector final son:
+
+            \begin{inlineanswers}
+                \answer{
+                    \(R(60^\circ)\) y
+                    \(\begin{bmatrix}
+                        \frac12\\[1mm]
+                        \frac{\sqrt3}{2}
+                    \end{bmatrix}\)
+                }
+
+                \answer{
+                    \(R(-60^\circ)\) y
+                    \(\begin{bmatrix}
+                        \frac12\\[1mm]
+                        -\frac{\sqrt3}{2}
+                    \end{bmatrix}\)
+                }
+
+                \answer{
+                    \(R(-130^\circ)\) y
+                    \(\begin{bmatrix}
+                        -\frac{\sqrt3}{2}\\[1mm]
+                        -\frac12
+                    \end{bmatrix}\)
+                }
+
+                \answer{
+                    \(R(130^\circ)\) y
+                    \(\begin{bmatrix}
+                        -\frac12\\[1mm]
+                        \frac{\sqrt3}{2}
+                    \end{bmatrix}\)
+                }
+            \end{inlineanswers}
+        \end{question}
+
+        % RESPUESTA DOCENTE: B
+        % Procedimiento:
+        % theta_eq = 35° - 95° = -60°.
+        %
+        % Como p = e_x:
+        % p_f = R(-60°) e_x
+        %     = [cos(-60°), sin(-60°)]^T
+        %     = [1/2, -sqrt(3)/2]^T.
+
+
+        % ---------------------------------------------------------
+        % PREGUNTA 2
+        % ---------------------------------------------------------
+
+        \begin{question}
+            \textbf{[9 puntos]}
+
+            Considere la matriz:
+
+            \[
+            R=
+            \begin{bmatrix}
+                1 & 0 & 0\\
+                0 & 0 & -1\\
+                0 & 1 & 0
+            \end{bmatrix}.
+            \]
+
+            ¿Cuál interpretación es correcta?
+
+            \begin{answers}
+                \answer{
+                    Es una rotación de \(+90^\circ\) alrededor del eje \(x\);
+                    la coordenada \(x\) permanece invariante.
+                }
+
+                \answer{
+                    Es una rotación de \(-90^\circ\) alrededor del eje \(x\);
+                    la coordenada \(z\) permanece invariante.
+                }
+
+                \answer{
+                    Es una rotación de \(+90^\circ\) alrededor del eje \(y\);
+                    la coordenada \(y\) permanece invariante.
+                }
+
+                \answer{
+                    Es una rotación de \(+90^\circ\) alrededor del eje \(z\);
+                    la coordenada \(z\) permanece invariante.
+                }
+            \end{answers}
+        \end{question}
+
+        % RESPUESTA DOCENTE: A
+        % La matriz coincide con:
+        %
+        % Rx(90°) =
+        % [1  0  0
+        %  0  0 -1
+        %  0  1  0].
+        %
+        % El eje x permanece invariante y la rotación ocurre en el plano yz.
+
+
+        % ---------------------------------------------------------
+        % PREGUNTA 3
+        % ---------------------------------------------------------
+
+        \begin{question}
+            \textbf{[10 puntos]}
+
+            El punto
+
+            \[
+            \mathbf{p}
+            =
+            \begin{bmatrix}
+                2\\
+                1\\
+                3
+            \end{bmatrix}
+            \]
+
+            se rota \(-90^\circ\) alrededor del eje \(y\).
+
+            El vector resultante es:
+
+            \begin{inlineanswers}
+                \answer{
+                    \(\begin{bmatrix}
+                        -3\\
+                        1\\
+                        2
+                    \end{bmatrix}\)
+                }
+
+                \answer{
+                    \(\begin{bmatrix}
+                        3\\
+                        1\\
+                        -2
+                    \end{bmatrix}\)
+                }
+
+                \answer{
+                    \(\begin{bmatrix}
+                        2\\
+                        -3\\
+                        1
+                    \end{bmatrix}\)
+                }
+
+                \answer{
+                    \(\begin{bmatrix}
+                        -3\\
+                        -1\\
+                        2
+                    \end{bmatrix}\)
+                }
+            \end{inlineanswers}
+        \end{question}
+
+        % RESPUESTA DOCENTE: A
+        %
+        % Ry(theta) =
+        % [ cos(theta)  0  sin(theta)
+        %       0       1      0
+        %  -sin(theta)  0  cos(theta)]
+        %
+        % Para theta=-90°:
+        %
+        % Ry(-90°) =
+        % [0 0 -1
+        %  0 1  0
+        %  1 0  0]
+        %
+        % Entonces:
+        % p' = [-3,1,2]^T.
+        %
+        % La componente y permanece invariante.
+
+
+        % ---------------------------------------------------------
+        % PREGUNTA 4
+        % ---------------------------------------------------------
+
+        \begin{question}
+            \textbf{[10 puntos]}
+
+            Un estudiante propone:
+
+            \[
+            M=
+            \begin{bmatrix}
+                1 & 0 & 0\\
+                0 & 1 & 0\\
+                0 & 0 & -1
+            \end{bmatrix}
+            \]
+
+            como matriz de rotación.
+            \columnbreak
+            ¿Cuál afirmación es correcta?
+
+            \begin{answers}
+                \answer{
+                    \(M\in SO(3)\), porque \(M^TM=I\).
+                }
+
+                \answer{
+                    \(M\notin SO(3)\), porque no es una matriz ortogonal.
+                }
+
+                \answer{
+                    \(M\notin SO(3)\): aunque \(M^TM=I\),
+                    se cumple \(\det(M)=-1\).
+                }
+
+                \answer{
+                    \(M\in SO(3)\), porque su inversa coincide con su transpuesta.
+                }
+            \end{answers}
+        \end{question}
+
+        % RESPUESTA DOCENTE: C
+        %
+        % M^T M = I, por tanto M es ortogonal.
+        %
+        % Sin embargo:
+        % det(M) = -1.
+        %
+        % Para pertenecer a SO(3) se requiere simultáneamente:
+        % R^T R = I
+        % det(R) = +1.
+        %
+        % M representa una reflexión, no una rotación propia.
+
+
+        % ---------------------------------------------------------
+        % PREGUNTA 5
+        % ---------------------------------------------------------
+
+        \begin{question}
+            \textbf{[10 puntos]}
+
+            La orientación del marco \(\{B\}\) respecto al marco \(\{A\}\) es:
+
+            \[
+            {}^A R_B=
+            \begin{bmatrix}
+                0 & -1 & 0\\
+                1 &  0 & 0\\
+                0 &  0 & 1
+            \end{bmatrix}.
+            \]
+
+            ¿Cuál interpretación de sus columnas es correcta?
+
+            \begin{answers}
+                \answer{
+                    \(x_B=-y_A,\;
+                    y_B=x_A,\;
+                    z_B=z_A\).
+                }
+
+                \answer{
+                    \(x_B=y_A,\;
+                    y_B=-x_A,\;
+                    z_B=z_A\).
+                }
+
+                \answer{
+                    \(x_B=x_A,\;
+                    y_B=z_A,\;
+                    z_B=-y_A\).
+                }
+
+                \answer{
+                    \(x_B=-x_A,\;
+                    y_B=-y_A,\;
+                    z_B=z_A\).
+                }
+            \end{answers}
+        \end{question}
+
+        % RESPUESTA DOCENTE: B
+        %
+        % Las columnas de A_R_B corresponden a los ejes de B expresados en A.
+        %
+        % Columna 1 = [0,1,0]^T  -> x_B = +y_A
+        % Columna 2 = [-1,0,0]^T -> y_B = -x_A
+        % Columna 3 = [0,0,1]^T  -> z_B = +z_A
+        %
+        % Corresponde a una rotación de +90° alrededor de z.
+
+
+
+
+        % ---------------------------------------------------------
+        % PREGUNTA 6
+        % ---------------------------------------------------------
+
+        \begin{question}
+            \textbf{[10 puntos]}
+
+            Los marcos \(\{A\}\) y \(\{B\}\) comparten el mismo origen.
+            El marco \(\{B\}\) está rotado \(90^\circ\) alrededor de \(z_A\)
+            en sentido positivo respecto a \(\{A\}\).
+
+            Se conoce:
+
+            \[
+            {}^A\mathbf{p}
+            =
+            \begin{bmatrix}
+                2\\
+                1\\
+                3
+            \end{bmatrix}.
+            \]
+
+            Las coordenadas del mismo punto expresadas en \(\{B\}\) son:
+
+            \begin{inlineanswers}
+                \answer{
+                    \(\begin{bmatrix}
+                        -1\\
+                        2\\
+                        3
+                    \end{bmatrix}\)
+                }
+
+                \answer{
+                    \(\begin{bmatrix}
+                        1\\
+                        -2\\
+                        3
+                    \end{bmatrix}\)
+                }
+
+                \answer{
+                    \(\begin{bmatrix}
+                        2\\
+                        1\\
+                        -3
+                    \end{bmatrix}\)
+                }
+
+                \answer{
+                    \(\begin{bmatrix}
+                        -2\\
+                        -1\\
+                        3
+                    \end{bmatrix}\)
+                }
+            \end{inlineanswers}
+        \end{question}
+
+        % RESPUESTA DOCENTE: B
+        %
+        % A_R_B = Rz(90°).
+        %
+        % Para cambiar coordenadas de A hacia B:
+        %
+        % B_p = (A_R_B)^T A_p
+        %     = Rz(-90°) A_p.
+        %
+        % Rz(-90°)[2,1,3]^T
+        % = [1,-2,3]^T.
+        %
+        % El punto físico no se mueve; cambia únicamente su representación.
+
+
+        % ---------------------------------------------------------
+        % PREGUNTA 7
+        % ---------------------------------------------------------
+
+        \begin{question}
+            \textbf{[10 puntos]}
+
+            Un vector
+
+            \[
+            \mathbf{p}
+            =
+            \begin{bmatrix}
+                0\\
+                1\\
+                0
+            \end{bmatrix}
+            \]
+
+            experimenta primero una rotación \(R_x(90^\circ)\) y luego una
+            rotación \(R_z(90^\circ)\).
+            \columnbreak
+            ¿Cuál expresión y resultado son correctos?
+
+            \begin{answers}
+                \answer{
+                    \[
+                    \mathbf{p}'
+                    =
+                    R_x(90^\circ)R_z(90^\circ)\mathbf{p}
+                    =
+                    \begin{bmatrix}
+                        -1\\0\\0
+                    \end{bmatrix}
+                    \]
+                }
+
+                \answer{
+                    \[
+                    \mathbf{p}'
+                    =
+                    R_z(90^\circ)R_x(90^\circ)\mathbf{p}
+                    =
+                    \begin{bmatrix}
+                        0\\0\\1
+                    \end{bmatrix}
+                    \]
+                }
+
+                \answer{
+                    \[
+                    \mathbf{p}'
+                    =
+                    R_z(90^\circ)R_x(90^\circ)\mathbf{p}
+                    =
+                    \begin{bmatrix}
+                        -1\\0\\0
+                    \end{bmatrix}
+                    \]
+                }
+
+                \answer{
+                    \[
+                    \mathbf{p}'
+                    =
+                    R_x(90^\circ)R_z(90^\circ)\mathbf{p}
+                    =
+                    \begin{bmatrix}
+                        0\\0\\1
+                    \end{bmatrix}
+                    \]
+                }
+            \end{answers}
+        \end{question}
+
+        % RESPUESTA DOCENTE: B
+        %
+        % La primera transformación aplicada aparece a la derecha:
+        %
+        % p' = Rz(90°) Rx(90°) p.
+        %
+        % Primero:
+        % Rx(90°)[0,1,0]^T = [0,0,1]^T.
+        %
+        % Luego:
+        % Rz(90°)[0,0,1]^T = [0,0,1]^T.
+        %
+        % Resultado: [0,0,1]^T.
+
+
+        % ---------------------------------------------------------
+        % PREGUNTA 8
+        % ---------------------------------------------------------
+
+        \begin{question}
+            \textbf{[10 puntos]}
+
+            Considere el mismo vector:
+
+            \[
+            \mathbf{p}
+            =
+            \begin{bmatrix}
+                0\\
+                1\\
+                0
+            \end{bmatrix}.
+            \]
+
+            Se comparan:
+
+            \[
+            \mathbf{p}_A
+            =
+            R_z(90^\circ)R_x(90^\circ)\mathbf{p}
+            \]
+
+            y:
+
+            \[
+            \mathbf{p}_B
+            =
+            R_x(90^\circ)R_z(90^\circ)\mathbf{p}.
+            \]
+
+            ¿Cuál resultado es correcto?
+
+            \begin{answers}
+                \answer{
+                    \[
+                    \mathbf{p}_A
+                    =
+                    \mathbf{p}_B
+                    =
+                    \begin{bmatrix}
+                        0\\0\\1
+                    \end{bmatrix}
+                    \]
+                }
+
+                \answer{
+                    \[
+                    \mathbf{p}_A
+                    =
+                    \begin{bmatrix}
+                        0\\0\\1
+                    \end{bmatrix},
+                    \qquad
+                    \mathbf{p}_B
+                    =
+                    \begin{bmatrix}
+                        -1\\0\\0
+                    \end{bmatrix}
+                    \]
+                }
+
+                \answer{
+                    \[
+                    \mathbf{p}_A
+                    =
+                    \begin{bmatrix}
+                        -1\\0\\0
+                    \end{bmatrix},
+                    \qquad
+                    \mathbf{p}_B
+                    =
+                    \begin{bmatrix}
+                        0\\0\\1
+                    \end{bmatrix}
+                    \]
+                }
+
+                \answer{
+                    Ambos resultados tienen que ser iguales porque las matrices
+                    de rotación son ortogonales.
+                }
+            \end{answers}
+        \end{question}
+            \columnbreak
+        % RESPUESTA DOCENTE: B
+        %
+        % Secuencia A:
+        % Rx primero:
+        % [0,1,0] -> [0,0,1]
+        % Rz después:
+        % [0,0,1] -> [0,0,1].
+        %
+        % Secuencia B:
+        % Rz primero:
+        % [0,1,0] -> [-1,0,0]
+        % Rx después:
+        % [-1,0,0] -> [-1,0,0].
+        %
+        % Por tanto:
+        % Rz Rx != Rx Rz.
+        %
+        % Se evidencia la no conmutatividad de las rotaciones 3D.
+
+
+        % ---------------------------------------------------------
+        % PREGUNTA 9
+        % ---------------------------------------------------------
+
+        \begin{question}
+            \textbf{[11 puntos]}
+
+            Un marco parte inicialmente alineado con \(\{0\}\).
+            Se realiza primero:
+
+            \[
+            R_{z_0}(90^\circ)
+            \]
+
+            y posteriormente:
+
+            \[
+            R_{x_0}(90^\circ).
+            \]
+
+            Ambas rotaciones se realizan alrededor de los
+            \textbf{ejes fijos del sistema base}.
+
+            ¿Cuál expresión representa correctamente la orientación final?
+
+            \begin{answers}
+                \answer{
+                    \[
+                    R
+                    =
+                    R_z(90^\circ)R_x(90^\circ)
+                    \]
+                }
+
+                \answer{
+                    \[
+                    R
+                    =
+                    R_x(90^\circ)R_z(90^\circ)
+                    \]
+                }
+
+                \answer{
+                    \[
+                    R
+                    =
+                    R_z(-90^\circ)R_x(90^\circ)
+                    \]
+                }
+
+                \answer{
+                    \[
+                    R
+                    =
+                    R_x(-90^\circ)R_z(-90^\circ)
+                    \]
+                }
+            \end{answers}
+        \end{question}
+
+        % RESPUESTA DOCENTE: B
+        %
+        % Para rotaciones sucesivas alrededor de ejes FIJOS del marco base,
+        % la nueva rotación se premultiplica.
+        %
+        % Estado inicial:
+        % R0 = I.
+        %
+        % Primer giro:
+        % R1 = Rz(90°).
+        %
+        % Segundo giro alrededor de x0:
+        % R2 = Rx(90°) R1
+        %    = Rx(90°) Rz(90°).
+        %
+        % La segunda rotación sigue ocurriendo alrededor de x0,
+        % no alrededor del eje x que fue arrastrado por el primer giro.
+
+
+        % ---------------------------------------------------------
+        % PREGUNTA 10
+        % ---------------------------------------------------------
+
+        \begin{question}
+            \textbf{[12 puntos]}
+
+            Un marco parte inicialmente alineado con \(\{0\}\).
+            Primero se realiza:
+
+            \[
+            R_{z_0}(90^\circ)
+            \]
+
+            y posteriormente una rotación de \(90^\circ\) alrededor del
+            eje móvil \(x_1\):
+
+            \[
+            R_{x_1}(90^\circ).
+            \]
+
+            ¿Cuál afirmación describe correctamente la secuencia?
+
+            \begin{answers}
+                \answer{
+                    La orientación final es
+                    \(R_x(90^\circ)R_z(90^\circ)\)
+                    porque toda nueva rotación se premultiplica.
+                }
+
+                \answer{
+                    La orientación final es
+                    \(R_z(90^\circ)R_x(90^\circ)\);
+                    después del primer giro \(z_1=z_0\) y durante el segundo
+                    giro \(x_2=x_1\).
+                }
+
+                \answer{
+                    La orientación final es
+                    \(R_z(90^\circ)R_x(90^\circ)\),
+                    pero el segundo giro se realiza alrededor de \(x_0\).
+                }
+
+                \answer{
+                    Las rotaciones sobre ejes fijos y móviles producen siempre
+                    la misma orientación si utilizan los mismos ángulos.
+                }
+            \end{answers}
+        \end{question}
+
+        % RESPUESTA DOCENTE: B
+        %
+        % En rotaciones sobre ejes MÓVILES la nueva rotación se posmultiplica:
+        %
+        % R1 = Rz(90°)
+        %
+        % R2 = R1 Rx(90°)
+        %    = Rz(90°) Rx(90°).
+        %
+        % Después del primer giro alrededor de z0:
+        % z1 = z0.
+        %
+        % Durante el segundo giro se rota alrededor del eje x1,
+        % por lo que:
+        % x2 = x1.
+        %
+        % Esta secuencia no es equivalente a la de ejes fijos de la
+        % pregunta anterior.
+
+    \end{multicols}
+
+    % =========================================================
+    % HOJA DE RESPUESTAS Y CALIFICACIÓN
+    % =========================================================
+
+    \AnswerSheet{10}
+
+    \vspace{2mm}
+
+    {\color{ExamGreen}\hrule height 0.6pt}
+
+    \vspace{2mm}
+
+    \ExamScore
+
+\end{document}

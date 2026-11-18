@@ -1,0 +1,5956 @@
+{
+  "schemaVersion": "1.0.0",
+  "id": "web1-9",
+  "type": "lesson",
+  "title": "Diseño web responsivo",
+  "metadata": {
+    "courseName": "Diseño Web 1",
+    "courseCode": "ADSO-CTMA",
+    "faculty": "Análisis y Desarrollo de Software",
+    "institution": "Servicio Nacional de Aprendizaje SENA",
+    "instructor": "Deimer Miranda Montoya, MSc.(c).",
+    "email": "damiranda@sena.edu.co",
+    "institutionLogo": "Template/LogoSena.png",
+    "lessonTitle": "Diseño web responsivo"
+  },
+  "source": {
+    "file": "Web1_9.tex",
+    "template": "beamer"
+  },
+  "structure": [
+    {
+      "id": "sec-1d0576053171",
+      "type": "section",
+      "title": "Punto de partida",
+      "implicit": false,
+      "children": [
+        {
+          "id": "frame-que-aprenderemos-6024ce9",
+          "type": "frame",
+          "title": "¿Qué aprenderemos?",
+          "sourceLine": 33,
+          "blocks": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Al finalizar la clase podrá:"
+                }
+              ]
+            },
+            {
+              "type": "list",
+              "variant": "itemize",
+              "items": [
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "Explicar por qué una página debe adaptarse a distintos anchos."
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "Configurar correctamente el "
+                        },
+                        {
+                          "type": "emphasis",
+                          "children": [
+                            {
+                              "type": "text",
+                              "value": "viewport"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "text",
+                          "value": "."
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "Construir distribuciones fluidas."
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "Adaptar imágenes y contenido multimedia."
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "Crear media queries a partir del contenido."
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "Aplicar un enfoque "
+                        },
+                        {
+                          "type": "emphasis",
+                          "children": [
+                            {
+                              "type": "text",
+                              "value": "mobile first"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "text",
+                          "value": "."
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "Combinar diseño responsivo con Flexbox y Grid."
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "Verificar el resultado mediante las herramientas del navegador."
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "frame-una-pagina-no-tiene-un-unico-tamano-d8f45f0",
+          "type": "frame",
+          "title": "Una página no tiene un único tamaño",
+          "sourceLine": 48,
+          "blocks": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "El mismo sitio puede visitarse desde:"
+                }
+              ]
+            },
+            {
+              "type": "list",
+              "variant": "itemize",
+              "items": [
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "un teléfono sostenido verticalmente;"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "una tableta;"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "un computador portátil;"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "una pantalla de escritorio amplia;"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "una ventana que ocupa solo una parte del monitor."
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "academic_block",
+              "variant": "idea",
+              "title": null,
+              "children": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "No diseñamos para una lista cerrada de dispositivos. Diseñamos para el espacio disponible."
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "frame-el-problema-de-un-diseno-rigido-5355244",
+          "type": "frame",
+          "title": "El problema de un diseño rígido",
+          "sourceLine": 65,
+          "blocks": [
+            {
+              "type": "figure",
+              "assetId": "asset-07ba2a99c5f6"
+            },
+            {
+              "type": "academic_block",
+              "variant": "warning",
+              "title": null,
+              "children": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "Si todos los tamaños son fijos, el contenido puede salir de la pantalla y obligar al usuario a desplazarse horizontalmente."
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "frame-que-significa-responsivo-5612a4b",
+          "type": "frame",
+          "title": "¿Qué significa responsivo?",
+          "sourceLine": 94,
+          "blocks": [
+            {
+              "type": "academic_block",
+              "variant": "definition",
+              "title": "Diseño web responsivo",
+              "children": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "Es una estrategia de diseño y desarrollo que permite que una interfaz reorganice, redimensione o simplifique su contenido según el espacio disponible."
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "No consiste únicamente en “hacer todo más pequeño”."
+                }
+              ]
+            },
+            {
+              "type": "list",
+              "variant": "itemize",
+              "items": [
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "El contenido conserva su legibilidad."
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "La estructura puede cambiar."
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "Los controles siguen siendo utilizables."
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "La información importante mantiene su prioridad."
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "frame-tres-bases-del-diseno-responsivo-f09584a",
+          "type": "frame",
+          "title": "Tres bases del diseño responsivo",
+          "sourceLine": 110,
+          "blocks": [
+            {
+              "type": "figure",
+              "assetId": "asset-386a2e8b2b3f"
+            },
+            {
+              "type": "academic_block",
+              "variant": "result",
+              "title": null,
+              "children": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "Las medidas relativas aportan fluidez; las media queries permiten cambiar la composición cuando esa fluidez deja de ser suficiente."
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "sec-2e21f540ef3c",
+      "type": "section",
+      "title": "Proyecto de prueba",
+      "implicit": false,
+      "children": [
+        {
+          "id": "frame-estructura-inicial-7d25351",
+          "type": "frame",
+          "title": "Estructura inicial",
+          "sourceLine": 138,
+          "blocks": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Cree la siguiente estructura:"
+                }
+              ]
+            },
+            {
+              "type": "code",
+              "language": "bash",
+              "value": "reserva-andina/\n├── index.html\n├── css/\n│   └── styles.css\n└── img/\n    ├── portada.jpg\n    ├── sendero.jpg\n    └── aves.jpg\n        "
+            },
+            {
+              "type": "academic_block",
+              "variant": "practice",
+              "title": null,
+              "children": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "Utilice imágenes propias o libres. Los nombres pueden cambiar, siempre que las rutas del HTML también se actualicen."
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "frame-html-basico-encabezado-4af0291",
+          "type": "frame",
+          "title": "HTML básico: encabezado",
+          "sourceLine": 158,
+          "blocks": [
+            {
+              "type": "code",
+              "language": "html",
+              "value": "<!DOCTYPE html>\n<html lang=\"es\">\n    <head>\n        <meta charset=\"UTF-8\">\n        <meta name=\"viewport\"\n        content=\"width=device-width, initial-scale=1.0\">\n        <title>Reserva Andina</title>\n        <link rel=\"stylesheet\" href=\"css/styles.css\">\n    </head>\n    <body>\n        <header class=\"encabezado\">\n            <h1>Reserva Andina</h1>\n            <p>Naturaleza, senderos y conservación</p>\n        </header>\n"
+            }
+          ]
+        },
+        {
+          "id": "frame-html-basico-navegacion-y-portada-fbaf04a",
+          "type": "frame",
+          "title": "HTML básico: navegación y portada",
+          "sourceLine": 177,
+          "blocks": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Continúe dentro de "
+                },
+                {
+                  "type": "code_inline",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "body"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "value": ":"
+                }
+              ]
+            },
+            {
+              "type": "code",
+              "language": "html",
+              "value": "<nav class=\"navegacion\">\n    <a href=\"#inicio\">Inicio</a>\n    <a href=\"#rutas\">Rutas</a>\n    <a href=\"#visita\">Visita</a>\n</nav>\n\n<main id=\"inicio\">\n    <section class=\"portada\">\n        <img src=\"img/portada.jpg\"\n            alt=\"Montañas de la reserva\">\n        <div>\n            <h2>Explore el bosque altoandino</h2>\n            <p>Planee una visita responsable.</p>\n        </div>\n    </section>\n        "
+            }
+          ]
+        },
+        {
+          "id": "frame-html-basico-tarjetas-d08ddec",
+          "type": "frame",
+          "title": "HTML básico: tarjetas",
+          "sourceLine": 199,
+          "blocks": [
+            {
+              "type": "code",
+              "language": "html",
+              "value": "        <section id=\"rutas\" class=\"rutas\">\n            <article class=\"tarjeta\">\n                <img src=\"img/sendero.jpg\" alt=\"Sendero del agua\">\n                <h3>Sendero del agua</h3>\n                <p>Recorrido de dificultad baja.</p>\n            </article>\n\n            <article class=\"tarjeta\">\n                <img src=\"img/aves.jpg\" alt=\"Ave sobre una rama\">\n                <h3>Ruta de las aves</h3>\n                <p>Observación guiada al amanecer.</p>\n            </article>\n        </section>\n    </main>\n    </body>\n</html>\n    "
+            }
+          ]
+        },
+        {
+          "id": "frame-css-inicial-5d3b7fa",
+          "type": "frame",
+          "title": "CSS inicial",
+          "sourceLine": 220,
+          "blocks": [
+            {
+              "type": "code",
+              "language": "css",
+              "value": "* {\n    box-sizing: border-box;\n}\n\nbody {\n    margin: 0;\n    font-family: Arial, sans-serif;\n    color: #18332b;\n    background-color: #f4f7f5;\n}\n\nimg {\n    display: block;\n}\n        "
+            },
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Primero construiremos una versión funcional para espacios pequeños."
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "introTitle": "Proyecto de prueba",
+      "introSubtitle": "Una reserva natural que crecerá paso a paso"
+    },
+    {
+      "id": "sec-7ab1189e28f6",
+      "type": "section",
+      "title": "Viewport",
+      "implicit": false,
+      "children": [
+        {
+          "id": "frame-la-pantalla-y-el-viewport-no-son-lo-mismo-14e49a1",
+          "type": "frame",
+          "title": "La pantalla y el viewport no son lo mismo",
+          "sourceLine": 249,
+          "blocks": [
+            {
+              "type": "figure",
+              "assetId": "asset-3b9ea4e027ad"
+            }
+          ]
+        },
+        {
+          "id": "frame-configurar-el-viewport-173e889",
+          "type": "frame",
+          "title": "Configurar el viewport",
+          "sourceLine": 271,
+          "blocks": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Esta etiqueta debe estar dentro de "
+                },
+                {
+                  "type": "code_inline",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "head"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "value": ":"
+                }
+              ]
+            },
+            {
+              "type": "code",
+              "language": "html",
+              "value": "<meta name=\"viewport\"\ncontent=\"width=device-width, initial-scale=1.0\">\n        "
+            },
+            {
+              "type": "list",
+              "variant": "description",
+              "items": [
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "relaciona el ancho del documento con el viewport del dispositivo."
+                        }
+                      ]
+                    }
+                  ],
+                  "label": "width=device-width:"
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "establece la escala inicial normal."
+                        }
+                      ]
+                    }
+                  ],
+                  "label": "initial-scale=1.0:"
+                }
+              ]
+            },
+            {
+              "type": "academic_block",
+              "variant": "warning",
+              "title": null,
+              "children": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "Sin esta configuración, un teléfono puede simular un viewport amplio y reducir visualmente toda la página."
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "frame-no-bloquee-el-zoom-46cccd1",
+          "type": "frame",
+          "title": "No bloquee el zoom",
+          "sourceLine": 293,
+          "blocks": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Evite configuraciones como:"
+                }
+              ]
+            },
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "code_inline",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "user-scalable=no"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "También conviene evitar límites innecesarios sobre la escala máxima."
+                }
+              ]
+            },
+            {
+              "type": "academic_block",
+              "variant": "idea",
+              "title": null,
+              "children": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "Algunas personas necesitan ampliar la interfaz para leerla. Impedir el zoom crea una barrera de accesibilidad."
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "introTitle": "Viewport",
+      "introSubtitle": "El área visible de la página"
+    },
+    {
+      "id": "sec-e99824610c97",
+      "type": "section",
+      "title": "Distribuciones fluidas",
+      "implicit": false,
+      "children": [
+        {
+          "id": "frame-tamano-fijo-frente-a-tamano-flexible-81d618e",
+          "type": "frame",
+          "title": "Tamaño fijo frente a tamaño flexible",
+          "sourceLine": 316,
+          "blocks": [
+            {
+              "type": "table",
+              "columnSpec": "p{4.3cm}p{5.3cm}",
+              "rows": [
+                [
+                  {
+                    "colspan": 1,
+                    "rowspan": 1,
+                    "children": [
+                      {
+                        "type": "paragraph",
+                        "children": [
+                          {
+                            "type": "strong",
+                            "children": [
+                              {
+                                "type": "text",
+                                "value": "Tamaño fijo"
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "colspan": 1,
+                    "rowspan": 1,
+                    "children": [
+                      {
+                        "type": "paragraph",
+                        "children": [
+                          {
+                            "type": "strong",
+                            "children": [
+                              {
+                                "type": "text",
+                                "value": "Tamaño flexible"
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ],
+                [
+                  {
+                    "colspan": 1,
+                    "rowspan": 1,
+                    "children": [
+                      {
+                        "type": "paragraph",
+                        "children": [
+                          {
+                            "type": "code_inline",
+                            "children": [
+                              {
+                                "type": "text",
+                                "value": "width: 1000px"
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "colspan": 1,
+                    "rowspan": 1,
+                    "children": [
+                      {
+                        "type": "paragraph",
+                        "children": [
+                          {
+                            "type": "code_inline",
+                            "children": [
+                              {
+                                "type": "text",
+                                "value": "width: 90%"
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ],
+                [
+                  {
+                    "colspan": 1,
+                    "rowspan": 1,
+                    "children": [
+                      {
+                        "type": "paragraph",
+                        "children": [
+                          {
+                            "type": "text",
+                            "value": "Conserva el mismo ancho"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "colspan": 1,
+                    "rowspan": 1,
+                    "children": [
+                      {
+                        "type": "paragraph",
+                        "children": [
+                          {
+                            "type": "text",
+                            "value": "Depende del contenedor"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ],
+                [
+                  {
+                    "colspan": 1,
+                    "rowspan": 1,
+                    "children": [
+                      {
+                        "type": "paragraph",
+                        "children": [
+                          {
+                            "type": "text",
+                            "value": "Puede desbordarse"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "colspan": 1,
+                    "rowspan": 1,
+                    "children": [
+                      {
+                        "type": "paragraph",
+                        "children": [
+                          {
+                            "type": "text",
+                            "value": "Puede crecer o reducirse"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ],
+                [
+                  {
+                    "colspan": 1,
+                    "rowspan": 1,
+                    "children": [
+                      {
+                        "type": "paragraph",
+                        "children": [
+                          {
+                            "type": "text",
+                            "value": "Útil en casos concretos"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "colspan": 1,
+                    "rowspan": 1,
+                    "children": [
+                      {
+                        "type": "paragraph",
+                        "children": [
+                          {
+                            "type": "text",
+                            "value": "Útil para la estructura general"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              ]
+            },
+            {
+              "type": "academic_block",
+              "variant": "comparison",
+              "title": null,
+              "children": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "Las medidas fijas no son incorrectas. El problema aparece cuando se aplican sin considerar el espacio realmente disponible."
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "frame-un-contenedor-flexible-con-limite-6c0aa3e",
+          "type": "frame",
+          "title": "Un contenedor flexible con límite",
+          "sourceLine": 337,
+          "blocks": [
+            {
+              "type": "code",
+              "language": "css",
+              "value": "main {\n    width: min(92%, 1100px);\n    margin-inline: auto;\n}\n        "
+            },
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Esta declaración combina dos necesidades:"
+                }
+              ]
+            },
+            {
+              "type": "list",
+              "variant": "itemize",
+              "items": [
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "en pantallas estrechas utiliza aproximadamente el 92%;"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "en pantallas amplias no supera los 1100px;"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "los márgenes automáticos centran el contenido."
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "academic_block",
+              "variant": "result",
+              "title": null,
+              "children": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "El contenido puede adaptarse sin formar líneas de texto excesivamente largas."
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "frame-alternativa-con-width-y-max-width-e1e28ac",
+          "type": "frame",
+          "title": "Alternativa con width y max-width",
+          "sourceLine": 358,
+          "blocks": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "La misma idea puede expresarse de forma más tradicional:"
+                }
+              ]
+            },
+            {
+              "type": "code",
+              "language": "css",
+              "value": "main {\n    width: 92%;\n    max-width: 1100px;\n    margin-left: auto;\n    margin-right: auto;\n}\n        "
+            },
+            {
+              "type": "academic_block",
+              "variant": "idea",
+              "title": null,
+              "children": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "code_inline",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "max-width"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "value": " establece un límite, pero permite que el elemento sea más estrecho cuando el contenedor no ofrece suficiente espacio."
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "frame-unidades-que-conviene-reconocer-8381a32",
+          "type": "frame",
+          "title": "Unidades que conviene reconocer",
+          "sourceLine": 376,
+          "blocks": [
+            {
+              "type": "table",
+              "columnSpec": "p{2.2cm}p{3.8cm}p{7cm}",
+              "rows": [
+                [
+                  {
+                    "colspan": 1,
+                    "rowspan": 1,
+                    "children": [
+                      {
+                        "type": "paragraph",
+                        "children": [
+                          {
+                            "type": "strong",
+                            "children": [
+                              {
+                                "type": "text",
+                                "value": "Unidad"
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "colspan": 1,
+                    "rowspan": 1,
+                    "children": [
+                      {
+                        "type": "paragraph",
+                        "children": [
+                          {
+                            "type": "strong",
+                            "children": [
+                              {
+                                "type": "text",
+                                "value": "Referencia"
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "colspan": 1,
+                    "rowspan": 1,
+                    "children": [
+                      {
+                        "type": "paragraph",
+                        "children": [
+                          {
+                            "type": "strong",
+                            "children": [
+                              {
+                                "type": "text",
+                                "value": "Uso habitual"
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ],
+                [
+                  {
+                    "colspan": 1,
+                    "rowspan": 1,
+                    "children": [
+                      {
+                        "type": "paragraph",
+                        "children": [
+                          {
+                            "type": "code_inline",
+                            "children": [
+                              {
+                                "type": "text",
+                                "value": "px"
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "colspan": 1,
+                    "rowspan": 1,
+                    "children": [
+                      {
+                        "type": "paragraph",
+                        "children": [
+                          {
+                            "type": "text",
+                            "value": "unidad CSS"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "colspan": 1,
+                    "rowspan": 1,
+                    "children": [
+                      {
+                        "type": "paragraph",
+                        "children": [
+                          {
+                            "type": "text",
+                            "value": "bordes y medidas controladas"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ],
+                [
+                  {
+                    "colspan": 1,
+                    "rowspan": 1,
+                    "children": [
+                      {
+                        "type": "paragraph",
+                        "children": [
+                          {
+                            "type": "code_inline",
+                            "children": [
+                              {
+                                "type": "text",
+                                "value": "%"
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "colspan": 1,
+                    "rowspan": 1,
+                    "children": [
+                      {
+                        "type": "paragraph",
+                        "children": [
+                          {
+                            "type": "text",
+                            "value": "contenedor"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "colspan": 1,
+                    "rowspan": 1,
+                    "children": [
+                      {
+                        "type": "paragraph",
+                        "children": [
+                          {
+                            "type": "text",
+                            "value": "anchos fluidos"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ],
+                [
+                  {
+                    "colspan": 1,
+                    "rowspan": 1,
+                    "children": [
+                      {
+                        "type": "paragraph",
+                        "children": [
+                          {
+                            "type": "code_inline",
+                            "children": [
+                              {
+                                "type": "text",
+                                "value": "rem"
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "colspan": 1,
+                    "rowspan": 1,
+                    "children": [
+                      {
+                        "type": "paragraph",
+                        "children": [
+                          {
+                            "type": "text",
+                            "value": "tamaño raíz"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "colspan": 1,
+                    "rowspan": 1,
+                    "children": [
+                      {
+                        "type": "paragraph",
+                        "children": [
+                          {
+                            "type": "text",
+                            "value": "texto y espacios consistentes"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ],
+                [
+                  {
+                    "colspan": 1,
+                    "rowspan": 1,
+                    "children": [
+                      {
+                        "type": "paragraph",
+                        "children": [
+                          {
+                            "type": "code_inline",
+                            "children": [
+                              {
+                                "type": "text",
+                                "value": "vw"
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "colspan": 1,
+                    "rowspan": 1,
+                    "children": [
+                      {
+                        "type": "paragraph",
+                        "children": [
+                          {
+                            "type": "text",
+                            "value": "ancho del viewport"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "colspan": 1,
+                    "rowspan": 1,
+                    "children": [
+                      {
+                        "type": "paragraph",
+                        "children": [
+                          {
+                            "type": "text",
+                            "value": "tamaños ligados a la ventana"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ],
+                [
+                  {
+                    "colspan": 1,
+                    "rowspan": 1,
+                    "children": [
+                      {
+                        "type": "paragraph",
+                        "children": [
+                          {
+                            "type": "code_inline",
+                            "children": [
+                              {
+                                "type": "text",
+                                "value": "vh"
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "colspan": 1,
+                    "rowspan": 1,
+                    "children": [
+                      {
+                        "type": "paragraph",
+                        "children": [
+                          {
+                            "type": "text",
+                            "value": "alto del viewport"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "colspan": 1,
+                    "rowspan": 1,
+                    "children": [
+                      {
+                        "type": "paragraph",
+                        "children": [
+                          {
+                            "type": "text",
+                            "value": "secciones relacionadas con la altura"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ],
+                [
+                  {
+                    "colspan": 1,
+                    "rowspan": 1,
+                    "children": [
+                      {
+                        "type": "paragraph",
+                        "children": [
+                          {
+                            "type": "code_inline",
+                            "children": [
+                              {
+                                "type": "text",
+                                "value": "fr"
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "colspan": 1,
+                    "rowspan": 1,
+                    "children": [
+                      {
+                        "type": "paragraph",
+                        "children": [
+                          {
+                            "type": "text",
+                            "value": "espacio de Grid"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "colspan": 1,
+                    "rowspan": 1,
+                    "children": [
+                      {
+                        "type": "paragraph",
+                        "children": [
+                          {
+                            "type": "text",
+                            "value": "distribución de columnas y filas"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              ]
+            }
+          ]
+        },
+        {
+          "id": "frame-espaciado-relativo-68d1fed",
+          "type": "frame",
+          "title": "Espaciado relativo",
+          "sourceLine": 394,
+          "blocks": [
+            {
+              "type": "code",
+              "language": "css",
+              "value": ".encabezado,\n.navegacion,\n.portada,\n.rutas {\n    padding: 1rem;\n}\n\n.rutas {\n    display: grid;\n    gap: 1rem;\n}\n        "
+            },
+            {
+              "type": "academic_block",
+              "variant": "definition",
+              "title": "La unidad rem",
+              "children": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "code_inline",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "1rem"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "value": " corresponde al tamaño de fuente del elemento raíz. Normalmente equivale a 16px si el usuario no ha cambiado la configuración."
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "frame-cuidado-con-100vw-fa3e68c",
+          "type": "frame",
+          "title": "Cuidado con 100vw",
+          "sourceLine": 415,
+          "blocks": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "code_inline",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "width: 100vw"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "value": " representa todo el ancho del viewport."
+                }
+              ]
+            },
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "En algunos navegadores puede incluir el espacio de la barra de desplazamiento, lo que genera un pequeño desbordamiento horizontal."
+                }
+              ]
+            },
+            {
+              "type": "academic_block",
+              "variant": "warning",
+              "title": null,
+              "children": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "Para un bloque normal que debe ocupar el ancho de su contenedor, generalmente es más seguro utilizar "
+                    },
+                    {
+                      "type": "code_inline",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "width: 100%"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "value": "."
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "introTitle": "Distribuciones fluidas",
+      "introSubtitle": "Tamaños que aprovechan el espacio sin desbordarse"
+    },
+    {
+      "id": "sec-dc99c0531ec4",
+      "type": "section",
+      "title": "Imágenes adaptables",
+      "implicit": false,
+      "children": [
+        {
+          "id": "frame-la-regla-base-para-las-imagenes-9063a6f",
+          "type": "frame",
+          "title": "La regla base para las imágenes",
+          "sourceLine": 435,
+          "blocks": [
+            {
+              "type": "code",
+              "language": "css",
+              "value": "img {\n    display: block;\n    max-width: 100%;\n    height: auto;\n}\n        "
+            },
+            {
+              "type": "list",
+              "variant": "description",
+              "items": [
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "impide que la imagen supere el ancho de su contenedor."
+                        }
+                      ]
+                    }
+                  ],
+                  "label": "max-width: 100%:"
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "conserva la proporción original."
+                        }
+                      ]
+                    }
+                  ],
+                  "label": "height: auto:"
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "elimina el espacio inferior propio de las imágenes en línea."
+                        }
+                      ]
+                    }
+                  ],
+                  "label": "display: block:"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "frame-conservar-la-proporcion-evita-deformaciones-8d3c924",
+          "type": "frame",
+          "title": "Conservar la proporción evita deformaciones",
+          "sourceLine": 456,
+          "blocks": [
+            {
+              "type": "figure",
+              "assetId": "asset-06f18177cb3a"
+            },
+            {
+              "type": "academic_block",
+              "variant": "idea",
+              "title": null,
+              "children": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "Si se fija el ancho, permita que el navegador calcule el alto; si se fija el alto, controle el recorte conscientemente."
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "frame-imagenes-uniformes-en-tarjetas-00ba303",
+          "type": "frame",
+          "title": "Imágenes uniformes en tarjetas",
+          "sourceLine": 480,
+          "blocks": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Cuando todas las tarjetas deben conservar la misma altura visual:"
+                }
+              ]
+            },
+            {
+              "type": "code",
+              "language": "css",
+              "value": ".tarjeta img {\n    width: 100%;\n    height: 220px;\n    object-fit: cover;\n}\n        "
+            },
+            {
+              "type": "academic_block",
+              "variant": "definition",
+              "title": "object-fit: cover",
+              "children": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "La imagen cubre el área asignada sin deformarse. Si las proporciones no coinciden, una parte de la imagen puede recortarse."
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Use un texto alternativo que describa el contenido importante de la imagen."
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "frame-cover-frente-a-contain-a8a0227",
+          "type": "frame",
+          "title": "cover frente a contain",
+          "sourceLine": 499,
+          "blocks": [
+            {
+              "type": "figure",
+              "assetId": "asset-0f31d92176ea"
+            }
+          ]
+        }
+      ],
+      "introTitle": "Imágenes adaptables",
+      "introSubtitle": "Evitar desbordamientos y recortes accidentales"
+    },
+    {
+      "id": "sec-265654bd7d75",
+      "type": "section",
+      "title": "Media queries",
+      "implicit": false,
+      "children": [
+        {
+          "id": "frame-cuando-necesitamos-una-media-query-f3b8c74",
+          "type": "frame",
+          "title": "¿Cuándo necesitamos una media query?",
+          "sourceLine": 579,
+          "blocks": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Primero permita que el diseño sea flexible."
+                }
+              ]
+            },
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Después reduzca o amplíe la ventana y observe:"
+                }
+              ]
+            },
+            {
+              "type": "list",
+              "variant": "itemize",
+              "items": [
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "¿el texto deja de ser legible?;"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "¿las tarjetas quedan demasiado estrechas?;"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "¿la navegación ya no cabe?;"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "¿se desperdicia demasiado espacio?;"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "¿el orden visual sigue siendo claro?"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "academic_block",
+              "variant": "idea",
+              "title": null,
+              "children": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "Una media query se justifica cuando el contenido necesita una nueva composición."
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "frame-estructura-de-una-media-query-6ec04d5",
+          "type": "frame",
+          "title": "Estructura de una media query",
+          "sourceLine": 597,
+          "blocks": [
+            {
+              "type": "code",
+              "language": "css",
+              "value": "@media (min-width: 700px) {\n    .rutas {\n        grid-template-columns: repeat(2, 1fr);\n    }\n}\n        "
+            },
+            {
+              "type": "list",
+              "variant": "description",
+              "items": [
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "inicia la consulta."
+                        }
+                      ]
+                    }
+                  ],
+                  "label": "@media:"
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "expresa la condición."
+                        }
+                      ]
+                    }
+                  ],
+                  "label": "min-width: 700px:"
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "contienen las reglas condicionadas."
+                        }
+                      ]
+                    }
+                  ],
+                  "label": "Las llaves externas:"
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "solo se aplica cuando se cumple la condición."
+                        }
+                      ]
+                    }
+                  ],
+                  "label": "La regla interna:"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "frame-leer-min-width-correctamente-263a5ca",
+          "type": "frame",
+          "title": "Leer min-width correctamente",
+          "sourceLine": 614,
+          "blocks": [
+            {
+              "type": "figure",
+              "assetId": "asset-ca5fcd149e55"
+            },
+            {
+              "type": "academic_block",
+              "variant": "result",
+              "title": null,
+              "children": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "La condición se cumple desde 700px en adelante, incluyendo exactamente 700px."
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "frame-leer-max-width-correctamente-4e5f555",
+          "type": "frame",
+          "title": "Leer max-width correctamente",
+          "sourceLine": 633,
+          "blocks": [
+            {
+              "type": "code",
+              "language": "css",
+              "value": "@media (max-width: 699px) {\n    .navegacion {\n        flex-direction: column;\n    }\n}\n        "
+            },
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "La regla se aplica cuando el viewport mide 699px o menos."
+                }
+              ]
+            },
+            {
+              "type": "academic_block",
+              "variant": "comparison",
+              "title": null,
+              "children": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "code_inline",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "min-width"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "value": " construye hacia espacios mayores. "
+                    },
+                    {
+                      "type": "code_inline",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "max-width"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "value": " introduce cambios hacia espacios menores."
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "frame-los-breakpoints-no-son-modelos-de-telefono-358bcfc",
+          "type": "frame",
+          "title": "Los breakpoints no son modelos de teléfono",
+          "sourceLine": 650,
+          "blocks": [
+            {
+              "type": "academic_block",
+              "variant": "definition",
+              "title": "Breakpoint",
+              "children": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "Es el punto a partir del cual el contenido requiere un cambio de composición."
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Evite pensar únicamente en:"
+                }
+              ]
+            },
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "móvil "
+                },
+                {
+                  "type": "math_inline",
+                  "latex": "\\rightarrow"
+                },
+                {
+                  "type": "text",
+                  "value": " tableta "
+                },
+                {
+                  "type": "math_inline",
+                  "latex": "\\rightarrow"
+                },
+                {
+                  "type": "text",
+                  "value": " computador"
+                }
+              ]
+            },
+            {
+              "type": "academic_block",
+              "variant": "idea",
+              "title": null,
+              "children": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "Pruebe el diseño con diferentes anchos y establezca el breakpoint donde el contenido comienza a fallar, no donde empieza un dispositivo famoso."
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "frame-combinar-condiciones-7db368f",
+          "type": "frame",
+          "title": "Combinar condiciones",
+          "sourceLine": 667,
+          "blocks": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Puede establecer un intervalo:"
+                }
+              ]
+            },
+            {
+              "type": "code",
+              "language": "css",
+              "value": "@media (min-width: 700px) and (max-width: 999px) {\n    .portada {\n        grid-template-columns: 1fr 1fr;\n    }\n}\n        "
+            },
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "También existen consultas por orientación:"
+                }
+              ]
+            },
+            {
+              "type": "code",
+              "language": "css",
+              "value": "@media (orientation: landscape) {\n    /* Reglas para una vista más ancha que alta */\n}\n        "
+            },
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Use condiciones adicionales solo cuando resuelvan una necesidad real."
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "frame-el-orden-de-las-reglas-importa-229e27a",
+          "type": "frame",
+          "title": "El orden de las reglas importa",
+          "sourceLine": 689,
+          "blocks": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Cuando dos reglas tienen la misma especificidad y ambas se cumplen, normalmente gana la que aparece después."
+                }
+              ]
+            },
+            {
+              "type": "figure",
+              "assetId": "asset-2fb31c853136"
+            }
+          ]
+        }
+      ],
+      "introTitle": "Media queries",
+      "introSubtitle": "Aplicar reglas cuando cambia el espacio disponible"
+    },
+    {
+      "id": "sec-92636b57af70",
+      "type": "section",
+      "title": "Mobile first",
+      "implicit": false,
+      "children": [
+        {
+          "id": "frame-que-significa-mobile-first-541b624",
+          "type": "frame",
+          "title": "¿Qué significa mobile first?",
+          "sourceLine": 716,
+          "blocks": [
+            {
+              "type": "academic_block",
+              "variant": "definition",
+              "title": "Enfoque mobile first",
+              "children": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "Las reglas base resuelven primero los espacios estrechos. Después se agregan mejoras para anchos mayores mediante "
+                    },
+                    {
+                      "type": "code_inline",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "min-width"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "value": "."
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "No significa que el escritorio sea menos importante."
+                }
+              ]
+            },
+            {
+              "type": "list",
+              "variant": "itemize",
+              "items": [
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "Obliga a priorizar el contenido."
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "Reduce la cantidad de sobrescrituras."
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "Produce una progresión CSS fácil de seguir."
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "frame-la-progresion-mobile-first-16fde30",
+          "type": "frame",
+          "title": "La progresión mobile first",
+          "sourceLine": 731,
+          "blocks": [
+            {
+              "type": "figure",
+              "assetId": "asset-224e227f6a84"
+            },
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Las reglas se acumulan: la vista amplia conserva la base y añade cambios."
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "frame-paso-1-navegacion-para-poco-espacio-14a9027",
+          "type": "frame",
+          "title": "Paso 1: navegación para poco espacio",
+          "sourceLine": 787,
+          "blocks": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "La regla base organiza los enlaces verticalmente:"
+                }
+              ]
+            },
+            {
+              "type": "code",
+              "language": "css",
+              "value": ".navegacion {\n    display: flex;\n    flex-direction: column;\n    gap: 0.5rem;\n    padding: 1rem;\n    background-color: #dcebe3;\n}\n\n.navegacion a {\n    padding: 0.75rem;\n    color: #18332b;\n    text-decoration: none;\n}\n        "
+            }
+          ]
+        },
+        {
+          "id": "frame-paso-2-navegacion-horizontal-a37fc1c",
+          "type": "frame",
+          "title": "Paso 2: navegación horizontal",
+          "sourceLine": 807,
+          "blocks": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Cuando existe suficiente ancho:"
+                }
+              ]
+            },
+            {
+              "type": "code",
+              "language": "css",
+              "value": "@media (min-width: 700px) {\n    .navegacion {\n        flex-direction: row;\n        justify-content: center;\n    }\n}\n        "
+            },
+            {
+              "type": "academic_block",
+              "variant": "result",
+              "title": null,
+              "children": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "No fue necesario repetir colores, espacios ni tipografía. La media query cambia únicamente la dirección y la distribución."
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "frame-paso-3-portada-en-una-columna-9961ed9",
+          "type": "frame",
+          "title": "Paso 3: portada en una columna",
+          "sourceLine": 825,
+          "blocks": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Para el ancho menor:"
+                }
+              ]
+            },
+            {
+              "type": "code",
+              "language": "css",
+              "value": ".portada {\n    display: grid;\n    gap: 1rem;\n    margin-block: 1rem;\n    background-color: white;\n}\n\n.portada > div {\n    padding: 1rem;\n}\n        "
+            },
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "La imagen aparece primero y el texto después, siguiendo el orden del HTML."
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "frame-paso-4-portada-en-dos-columnas-f0b6813",
+          "type": "frame",
+          "title": "Paso 4: portada en dos columnas",
+          "sourceLine": 844,
+          "blocks": [
+            {
+              "type": "code",
+              "language": "css",
+              "value": "@media (min-width: 700px) {\n    .portada {\n        grid-template-columns: 1.2fr 1fr;\n        align-items: center;\n    }\n}\n        "
+            },
+            {
+              "type": "figure",
+              "assetId": "asset-c45e4cbd0306"
+            }
+          ]
+        },
+        {
+          "id": "frame-paso-5-tarjetas-que-cambian-de-columnas-0f2c327",
+          "type": "frame",
+          "title": "Paso 5: tarjetas que cambian de columnas",
+          "sourceLine": 865,
+          "blocks": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Regla base:"
+                }
+              ]
+            },
+            {
+              "type": "code",
+              "language": "css",
+              "value": ".rutas {\n    display: grid;\n    grid-template-columns: 1fr;\n    gap: 1rem;\n}\n        "
+            },
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Para espacios mayores:"
+                }
+              ]
+            },
+            {
+              "type": "code",
+              "language": "css",
+              "value": "@media (min-width: 700px) {\n    .rutas {\n        grid-template-columns: repeat(2, 1fr);\n    }\n}\n        "
+            }
+          ]
+        },
+        {
+          "id": "frame-resultado-conceptual-23600f0",
+          "type": "frame",
+          "title": "Resultado conceptual",
+          "sourceLine": 887,
+          "blocks": [
+            {
+              "type": "figure",
+              "assetId": "asset-fdad00447678"
+            },
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "El contenido no desaparece: cambia su organización."
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "frame-mobile-first-frente-a-desktop-first-35341b3",
+          "type": "frame",
+          "title": "Mobile first frente a desktop first",
+          "sourceLine": 918,
+          "blocks": [
+            {
+              "type": "table",
+              "columnSpec": "p{4.5cm}p{4.5cm}",
+              "rows": [
+                [
+                  {
+                    "colspan": 1,
+                    "rowspan": 1,
+                    "children": [
+                      {
+                        "type": "paragraph",
+                        "children": [
+                          {
+                            "type": "strong",
+                            "children": [
+                              {
+                                "type": "text",
+                                "value": "Mobile first"
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "colspan": 1,
+                    "rowspan": 1,
+                    "children": [
+                      {
+                        "type": "paragraph",
+                        "children": [
+                          {
+                            "type": "strong",
+                            "children": [
+                              {
+                                "type": "text",
+                                "value": "Desktop first"
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ],
+                [
+                  {
+                    "colspan": 1,
+                    "rowspan": 1,
+                    "children": [
+                      {
+                        "type": "paragraph",
+                        "children": [
+                          {
+                            "type": "text",
+                            "value": "Base para poco espacio"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "colspan": 1,
+                    "rowspan": 1,
+                    "children": [
+                      {
+                        "type": "paragraph",
+                        "children": [
+                          {
+                            "type": "text",
+                            "value": "Base para espacio amplio"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ],
+                [
+                  {
+                    "colspan": 1,
+                    "rowspan": 1,
+                    "children": [
+                      {
+                        "type": "paragraph",
+                        "children": [
+                          {
+                            "type": "text",
+                            "value": "Crece con "
+                          },
+                          {
+                            "type": "code_inline",
+                            "children": [
+                              {
+                                "type": "text",
+                                "value": "min-width"
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "colspan": 1,
+                    "rowspan": 1,
+                    "children": [
+                      {
+                        "type": "paragraph",
+                        "children": [
+                          {
+                            "type": "text",
+                            "value": "Reduce con "
+                          },
+                          {
+                            "type": "code_inline",
+                            "children": [
+                              {
+                                "type": "text",
+                                "value": "max-width"
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ],
+                [
+                  {
+                    "colspan": 1,
+                    "rowspan": 1,
+                    "children": [
+                      {
+                        "type": "paragraph",
+                        "children": [
+                          {
+                            "type": "text",
+                            "value": "Prioriza lo esencial desde el inicio"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "colspan": 1,
+                    "rowspan": 1,
+                    "children": [
+                      {
+                        "type": "paragraph",
+                        "children": [
+                          {
+                            "type": "text",
+                            "value": "Puede partir de una composición rica"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ],
+                [
+                  {
+                    "colspan": 1,
+                    "rowspan": 1,
+                    "children": [
+                      {
+                        "type": "paragraph",
+                        "children": [
+                          {
+                            "type": "text",
+                            "value": "Suele requerir menos correcciones"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "colspan": 1,
+                    "rowspan": 1,
+                    "children": [
+                      {
+                        "type": "paragraph",
+                        "children": [
+                          {
+                            "type": "text",
+                            "value": "Puede necesitar más sobrescrituras"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              ]
+            },
+            {
+              "type": "academic_block",
+              "variant": "idea",
+              "title": null,
+              "children": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "Ambos enfoques son válidos. En esta clase utilizamos mobile first porque facilita una progresión acumulativa."
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "introTitle": "Mobile first",
+      "introSubtitle": "Comenzar con lo esencial y ampliar progresivamente"
+    },
+    {
+      "id": "sec-f43c4b659c30",
+      "type": "section",
+      "title": "Patrones responsivos",
+      "implicit": false,
+      "children": [
+        {
+          "id": "frame-patron-grid-sin-breakpoint-explicito-d14ba8c",
+          "type": "frame",
+          "title": "Patrón Grid sin breakpoint explícito",
+          "sourceLine": 947,
+          "blocks": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Algunas cuadrículas pueden adaptarse con una sola regla:"
+                }
+              ]
+            },
+            {
+              "type": "code",
+              "language": "css",
+              "value": ".rutas {\n    display: grid;\n    grid-template-columns:\n    repeat(auto-fit, minmax(min(100%, 260px), 1fr));\n    gap: 1rem;\n}\n        "
+            },
+            {
+              "type": "list",
+              "variant": "itemize",
+              "items": [
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "Cada tarjeta intenta conservar una base de 260px."
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "Nunca supera el ancho disponible."
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "Grid crea tantas columnas como puedan caber."
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "frame-por-que-aparece-min-100-260px-7511b00",
+          "type": "frame",
+          "title": "¿Por qué aparece min(100%, 260px)?",
+          "sourceLine": 966,
+          "blocks": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Si el contenedor mide menos de 260px, un mínimo rígido de 260px podría producir desbordamiento."
+                }
+              ]
+            },
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "code_inline",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "min(100%, 260px)"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "selecciona el valor más pequeño entre:"
+                }
+              ]
+            },
+            {
+              "type": "list",
+              "variant": "itemize",
+              "items": [
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "todo el ancho disponible;"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "la base deseada de 260px."
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "academic_block",
+              "variant": "result",
+              "title": null,
+              "children": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "La tarjeta cabe incluso dentro de un contenedor muy estrecho."
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "frame-patron-flexbox-con-ajuste-de-linea-4ccdafe",
+          "type": "frame",
+          "title": "Patrón Flexbox con ajuste de línea",
+          "sourceLine": 985,
+          "blocks": [
+            {
+              "type": "code",
+              "language": "css",
+              "value": ".lista-datos {\n    display: flex;\n    flex-wrap: wrap;\n    gap: 1rem;\n}\n\n.dato {\n    flex: 1 1 220px;\n}\n        "
+            },
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Cada elemento parte de 220px, puede crecer y también cambiar de línea."
+                }
+              ]
+            },
+            {
+              "type": "academic_block",
+              "variant": "comparison",
+              "title": null,
+              "children": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "Flexbox funciona muy bien cuando domina una dirección. Grid resulta útil cuando las columnas deben permanecer relacionadas."
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "frame-media-query-o-cuadricula-automatica-e2e3403",
+          "type": "frame",
+          "title": "¿Media query o cuadrícula automática?",
+          "sourceLine": 1006,
+          "blocks": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Utilice una cuadrícula automática cuando:"
+                }
+              ]
+            },
+            {
+              "type": "list",
+              "variant": "itemize",
+              "items": [
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "solo cambia la cantidad de columnas;"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "todas las tarjetas siguen el mismo patrón;"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "no es necesario reorganizar otras partes de la página."
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Utilice una media query cuando:"
+                }
+              ]
+            },
+            {
+              "type": "list",
+              "variant": "itemize",
+              "items": [
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "cambia la composición general;"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "la navegación necesita otro comportamiento;"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "se modifican alineación, orden o proporciones;"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "varios elementos deben cambiar de manera coordinada."
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "frame-contenido-que-nunca-debe-desbordarse-7a024d9",
+          "type": "frame",
+          "title": "Contenido que nunca debe desbordarse",
+          "sourceLine": 1025,
+          "blocks": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Palabras extensas, enlaces y fragmentos técnicos pueden romper la composición:"
+                }
+              ]
+            },
+            {
+              "type": "code",
+              "language": "css",
+              "value": ".tarjeta,\n.contenido {\n    min-width: 0;\n}\n\n.contenido p,\n.contenido a {\n    overflow-wrap: anywhere;\n}\n        "
+            },
+            {
+              "type": "academic_block",
+              "variant": "warning",
+              "title": null,
+              "children": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "No oculte el problema indiscriminadamente con "
+                    },
+                    {
+                      "type": "code_inline",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "overflow: hidden"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "value": ". El contenido debe seguir disponible para el usuario."
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "introTitle": "Patrones responsivos",
+      "introSubtitle": "Flexbox y Grid como aliados"
+    },
+    {
+      "id": "sec-76bdff672210",
+      "type": "section",
+      "title": "Tipografía y controles",
+      "implicit": false,
+      "children": [
+        {
+          "id": "frame-tipografia-fluida-con-clamp-b9ede8e",
+          "type": "frame",
+          "title": "Tipografía fluida con clamp",
+          "sourceLine": 1054,
+          "blocks": [
+            {
+              "type": "code",
+              "language": "css",
+              "value": "h1 {\n    font-size: clamp(2rem, 5vw, 4rem);\n}\n        "
+            },
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "code_inline",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "clamp()"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "value": " recibe tres valores:"
+                }
+              ]
+            },
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "code_inline",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "clamp(mínimo, preferido, máximo)"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "list",
+              "variant": "itemize",
+              "items": [
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "Nunca será menor de 2rem."
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "Puede crecer con el viewport."
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "Nunca será mayor de 4rem."
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "frame-no-reduzca-demasiado-el-texto-564c473",
+          "type": "frame",
+          "title": "No reduzca demasiado el texto",
+          "sourceLine": 1074,
+          "blocks": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Un sitio puede caber perfectamente y seguir siendo difícil de utilizar."
+                }
+              ]
+            },
+            {
+              "type": "list",
+              "variant": "itemize",
+              "items": [
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "Mantenga tamaños de lectura cómodos."
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "Evite párrafos demasiado anchos."
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "Use suficiente interlineado."
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "Conserve contraste entre texto y fondo."
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "No dependa únicamente del color para comunicar estados."
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "academic_block",
+              "variant": "idea",
+              "title": null,
+              "children": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "Responsivo también significa conservar la legibilidad y la interacción, no únicamente evitar el desplazamiento horizontal."
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "frame-botones-y-enlaces-faciles-de-utilizar-e93b37f",
+          "type": "frame",
+          "title": "Botones y enlaces fáciles de utilizar",
+          "sourceLine": 1091,
+          "blocks": [
+            {
+              "type": "code",
+              "language": "css",
+              "value": ".accion {\n    display: inline-flex;\n    align-items: center;\n    justify-content: center;\n    min-height: 44px;\n    padding: 0.75rem 1rem;\n}\n        "
+            },
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "En pantallas táctiles, los controles demasiado pequeños o muy cercanos dificultan la selección."
+                }
+              ]
+            },
+            {
+              "type": "academic_block",
+              "variant": "practice",
+              "title": null,
+              "children": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "Revise no solo cómo se ve la página, sino también qué tan fácil resulta pulsar sus enlaces y botones."
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "frame-ocultar-contenido-requiere-una-razon-5cd680b",
+          "type": "frame",
+          "title": "Ocultar contenido requiere una razón",
+          "sourceLine": 1111,
+          "blocks": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Cambiar de tamaño no significa eliminar automáticamente información."
+                }
+              ]
+            },
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Antes de utilizar "
+                },
+                {
+                  "type": "code_inline",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "display: none"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "value": ", pregunte:"
+                }
+              ]
+            },
+            {
+              "type": "list",
+              "variant": "itemize",
+              "items": [
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "¿el contenido sigue siendo necesario?;"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "¿puede reorganizarse?;"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "¿puede resumirse sin perder significado?;"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "¿existe otra manera de acceder a él?"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "academic_block",
+              "variant": "warning",
+              "title": null,
+              "children": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "La versión móvil no debe convertirse en una versión incompleta del sitio."
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "introTitle": "Tipografía y controles",
+      "introSubtitle": "Leer y utilizar la interfaz en cualquier tamaño"
+    },
+    {
+      "id": "sec-da22b0099084",
+      "type": "section",
+      "title": "Preferencias del usuario",
+      "implicit": false,
+      "children": [
+        {
+          "id": "frame-reducir-movimiento-8b12131",
+          "type": "frame",
+          "title": "Reducir movimiento",
+          "sourceLine": 1136,
+          "blocks": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Algunas personas prefieren menos animaciones:"
+                }
+              ]
+            },
+            {
+              "type": "code",
+              "language": "css",
+              "value": "@media (prefers-reduced-motion: reduce) {\n    *,\n    *::before,\n    *::after {\n        scroll-behavior: auto;\n        animation-duration: 0.01ms;\n        animation-iteration-count: 1;\n        transition-duration: 0.01ms;\n    }\n}\n        "
+            },
+            {
+              "type": "academic_block",
+              "variant": "idea",
+              "title": null,
+              "children": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "Las media queries también pueden responder a preferencias de accesibilidad, no solo al ancho de la ventana."
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "frame-esquema-de-color-preferido-721927b",
+          "type": "frame",
+          "title": "Esquema de color preferido",
+          "sourceLine": 1158,
+          "blocks": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Un sitio puede reconocer el modo oscuro del sistema:"
+                }
+              ]
+            },
+            {
+              "type": "code",
+              "language": "css",
+              "value": "@media (prefers-color-scheme: dark) {\n    body {\n        color: #eef7f2;\n        background-color: #10221c;\n    }\n\n    .tarjeta {\n        background-color: #19372d;\n    }\n}\n        "
+            },
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Esto es opcional y requiere verificar cuidadosamente el contraste."
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "introTitle": "Preferencias del usuario",
+      "introSubtitle": "El diseño también responde a necesidades personales"
+    },
+    {
+      "id": "sec-6a12764be958",
+      "type": "section",
+      "title": "Depuración",
+      "implicit": false,
+      "children": [
+        {
+          "id": "frame-probar-solo-tres-tamanos-no-es-suficiente-2376531",
+          "type": "frame",
+          "title": "Probar solo tres tamaños no es suficiente",
+          "sourceLine": 1185,
+          "blocks": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "No revise únicamente una vista móvil, una tableta y un escritorio."
+                }
+              ]
+            },
+            {
+              "type": "list",
+              "variant": "enumerate",
+              "items": [
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "Abra las herramientas de desarrollo."
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "Active la vista adaptable."
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "Cambie el ancho lentamente."
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "Observe cada punto intermedio."
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "Corrija donde el contenido realmente falla."
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "academic_block",
+              "variant": "practice",
+              "title": null,
+              "children": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "También cambie manualmente el tamaño de la ventana del navegador. Una página puede abrirse en una ventana estrecha dentro de un monitor grande."
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "frame-que-debemos-observar-a09baf1",
+          "type": "frame",
+          "title": "Qué debemos observar",
+          "sourceLine": 1202,
+          "blocks": [
+            {
+              "type": "list",
+              "variant": "itemize",
+              "items": [
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "Desplazamiento horizontal inesperado."
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "Texto cortado o demasiado estrecho."
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "Imágenes deformadas."
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "Controles que se superponen."
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "Espacios excesivos o insuficientes."
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "Cambios bruscos cerca de los breakpoints."
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "Orden de lectura incoherente."
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "academic_block",
+              "variant": "question",
+              "title": "Comprobación",
+              "children": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "¿La página sigue siendo comprensible con zoom del navegador al 200%?"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "frame-encontrar-el-elemento-que-desborda-a3ee0a4",
+          "type": "frame",
+          "title": "Encontrar el elemento que desborda",
+          "sourceLine": 1218,
+          "blocks": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Durante la depuración puede aplicar temporalmente:"
+                }
+              ]
+            },
+            {
+              "type": "code",
+              "language": "css",
+              "value": "* {\n    outline: 1px solid red;\n}\n        "
+            },
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Los contornos ayudan a reconocer qué elemento supera el ancho disponible."
+                }
+              ]
+            },
+            {
+              "type": "academic_block",
+              "variant": "warning",
+              "title": null,
+              "children": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "Esta regla es temporal. Retírela cuando termine la revisión. No resuelva el problema ocultando todo el desbordamiento del documento."
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "frame-revise-el-html-antes-de-culpar-al-css-1345978",
+          "type": "frame",
+          "title": "Revise el HTML antes de culpar al CSS",
+          "sourceLine": 1235,
+          "blocks": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Algunos problemas responsivos nacen en la estructura:"
+                }
+              ]
+            },
+            {
+              "type": "list",
+              "variant": "itemize",
+              "items": [
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "imágenes sin contenedor adecuado;"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "navegación sin agrupación semántica;"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "elementos cerrados incorrectamente;"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "contenido importante ubicado en un orden poco lógico;"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "tablas utilizadas para construir la distribución."
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "academic_block",
+              "variant": "idea",
+              "title": null,
+              "children": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "Un HTML ordenado facilita que la interfaz pueda reorganizarse sin perder sentido."
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "introTitle": "Probar y depurar",
+      "introSubtitle": "Encontrar el ancho donde la interfaz deja de funcionar"
+    },
+    {
+      "id": "sec-b21495212991",
+      "type": "section",
+      "title": "Práctica guiada",
+      "implicit": false,
+      "children": [
+        {
+          "id": "frame-situacion-0a3b772",
+          "type": "frame",
+          "title": "Situación",
+          "sourceLine": 1259,
+          "blocks": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Una biblioteca necesita una página para anunciar sus próximas visitas."
+                }
+              ]
+            },
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "La página debe incluir:"
+                }
+              ]
+            },
+            {
+              "type": "list",
+              "variant": "itemize",
+              "items": [
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "encabezado e introducción;"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "navegación interna;"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "próximas paradas en tarjetas;"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "una sección de inscripción;"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "pie de página."
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "academic_block",
+              "variant": "result",
+              "title": null,
+              "children": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "La información aparecerá en una columna cuando el espacio sea estrecho y se reorganizará progresivamente en anchos mayores."
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "frame-estructura-del-proyecto-2ce4068",
+          "type": "frame",
+          "title": "Estructura del proyecto",
+          "sourceLine": 1278,
+          "blocks": [
+            {
+              "type": "code",
+              "language": "bash",
+              "value": "biblioteca-itinerante/\n├── index.html\n├── css/\n│   └── styles.css\n└── img/\n├── biblioteca.jpg\n├── parque.jpg\n└── colegio.jpg\n        "
+            },
+            {
+              "type": "academic_block",
+              "variant": "practice",
+              "title": null,
+              "children": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "Construya primero la estructura y compruebe las rutas antes de aplicar estilos."
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "frame-paso-1-configuracion-inicial-b73008c",
+          "type": "frame",
+          "title": "Paso 1: configuración inicial",
+          "sourceLine": 1295,
+          "blocks": [
+            {
+              "type": "code",
+              "language": "html",
+              "value": "<head>\n    <meta charset=\"UTF-8\">\n    <meta name=\"viewport\"\n        content=\"width=device-width, initial-scale=1.0\">\n    <title>Biblioteca itinerante</title>\n    <link rel=\"stylesheet\" href=\"css/styles.css\">\n</head>\n"
+            },
+            {
+              "type": "code",
+              "language": "css",
+              "value": "* { box-sizing: border-box; }\nbody { margin: 0; font-family: Arial, sans-serif; }\nimg { display: block; max-width: 100%; height: auto; }\n        "
+            }
+          ]
+        },
+        {
+          "id": "frame-paso-2-estructura-principal-82e48a5",
+          "type": "frame",
+          "title": "Paso 2: estructura principal",
+          "sourceLine": 1313,
+          "blocks": [
+            {
+              "type": "code",
+              "language": "html",
+              "value": "<header class=\"cabecera\">\n    <h1>Biblioteca itinerante</h1>\n    <p>Los libros llegan a su comunidad.</p>\n</header>\n\n<nav class=\"menu\">\n    <a href=\"#paradas\">Paradas</a>\n    <a href=\"#inscripcion\">Inscripción</a>\n</nav>\n\n<main class=\"contenido\">\n    <section class=\"presentacion\">\n        <img src=\"img/biblioteca.jpg\" alt=\"Biblioteca móvil\">\n        <div><h2>Una biblioteca en movimiento</h2></div>\n    </section>\n"
+            }
+          ]
+        },
+        {
+          "id": "frame-paso-3-tarjetas-615d574",
+          "type": "frame",
+          "title": "Paso 3: tarjetas",
+          "sourceLine": 1333,
+          "blocks": [
+            {
+              "type": "code",
+              "language": "html",
+              "value": "    <section id=\"paradas\" class=\"paradas\">\n        <article class=\"parada\">\n            <img src=\"img/parque.jpg\" alt=\"Parque del barrio\">\n            <h3>Parque Central</h3>\n            <p>Sábado, 9:00 a. m.</p>\n        </article>\n\n        <article class=\"parada\">\n            <img src=\"img/colegio.jpg\" alt=\"Institución educativa\">\n            <h3>Colegio Horizonte</h3>\n            <p>Miércoles, 2:00 p. m.</p>\n        </article>\n</section>\n</main>\n    "
+            }
+          ]
+        },
+        {
+          "id": "frame-paso-4-version-para-poco-espacio-3ddb197",
+          "type": "frame",
+          "title": "Paso 4: versión para poco espacio",
+          "sourceLine": 1352,
+          "blocks": [
+            {
+              "type": "code",
+              "language": "css",
+              "value": ".contenido {\n    width: min(92%, 1100px);\n    margin-inline: auto;\n}\n\n.menu {\n    display: flex;\n    flex-direction: column;\n    gap: 0.5rem;\n    padding: 1rem;\n}\n\n.presentacion,\n.paradas {\n    display: grid;\n    gap: 1rem;\n}\n        "
+            }
+          ]
+        },
+        {
+          "id": "frame-paso-5-mejorar-las-tarjetas-67b179e",
+          "type": "frame",
+          "title": "Paso 5: mejorar las tarjetas",
+          "sourceLine": 1375,
+          "blocks": [
+            {
+              "type": "code",
+              "language": "css",
+              "value": ".parada {\n    overflow: hidden;\n    border: 1px solid #b8c7bf;\n    border-radius: 0.75rem;\n    background-color: white;\n}\n\n.parada h3,\n.parada p {\n    margin-inline: 1rem;\n}\n\n.parada img {\n    width: 100%;\n    height: 220px;\n    object-fit: cover;\n}\n        "
+            }
+          ]
+        },
+        {
+          "id": "frame-paso-6-primer-breakpoint-71f540d",
+          "type": "frame",
+          "title": "Paso 6: primer breakpoint",
+          "sourceLine": 1398,
+          "blocks": [
+            {
+              "type": "code",
+              "language": "css",
+              "value": "@media (min-width: 700px) {\n    .menu {\n        flex-direction: row;\n        justify-content: center;\n    }\n\n    .presentacion {\n        grid-template-columns: 1.2fr 1fr;\n        align-items: center;\n    }\n\n    .paradas {\n        grid-template-columns: repeat(2, 1fr);\n    }\n}\n        "
+            }
+          ]
+        },
+        {
+          "id": "frame-paso-7-ampliar-el-catalogo-9304f15",
+          "type": "frame",
+          "title": "Paso 7: ampliar el catálogo",
+          "sourceLine": 1418,
+          "blocks": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Si se agregan más paradas, puede utilizar:"
+                }
+              ]
+            },
+            {
+              "type": "code",
+              "language": "css",
+              "value": "@media (min-width: 1000px) {\n    .paradas {\n        grid-template-columns: repeat(3, 1fr);\n    }\n}\n        "
+            },
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "O reemplazar los breakpoints de las tarjetas por:"
+                }
+              ]
+            },
+            {
+              "type": "code",
+              "language": "css",
+              "value": ".paradas {\n    grid-template-columns:\n    repeat(auto-fit, minmax(min(100%, 250px), 1fr));\n}\n        "
+            }
+          ]
+        },
+        {
+          "id": "frame-verificacion-de-la-practica-67afe09",
+          "type": "frame",
+          "title": "Verificación de la práctica",
+          "sourceLine": 1439,
+          "blocks": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Revise la página en los siguientes escenarios:"
+                }
+              ]
+            },
+            {
+              "type": "list",
+              "variant": "itemize",
+              "items": [
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "360px: contenido en una columna y sin desbordamiento."
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "699px: comportamiento inmediatamente antes del breakpoint."
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "700px: aplicación correcta de la nueva composición."
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "999px y 1000px: transición hacia tres columnas, si existe."
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "Ventana libre: arrastre el borde lentamente."
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "Zoom al 200%: el contenido continúa disponible."
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "academic_block",
+              "variant": "question",
+              "title": "Explique",
+              "children": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "¿Qué reglas son base y cuáles solo se aplican cuando existe más espacio?"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "introTitle": "Práctica guiada",
+      "introSubtitle": "Biblioteca itinerante"
+    },
+    {
+      "id": "sec-d786a0ac1cd4",
+      "type": "section",
+      "title": "Ejercicio autónomo",
+      "implicit": false,
+      "children": [
+        {
+          "id": "frame-situacion-propuesta-f86a4f9",
+          "type": "frame",
+          "title": "Situación propuesta",
+          "sourceLine": 1464,
+          "blocks": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Construya una página para presentar mercados y emprendimientos locales."
+                }
+              ]
+            },
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Debe incluir como mínimo:"
+                }
+              ]
+            },
+            {
+              "type": "list",
+              "variant": "itemize",
+              "items": [
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "encabezado y navegación;"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "una presentación principal con imagen;"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "cuatro tarjetas de mercados o emprendimientos;"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "horario, ubicación y descripción breve;"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "un llamado a la acción;"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "pie de página."
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "El ejercicio es individual."
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "frame-requisitos-tecnicos-a85769b",
+          "type": "frame",
+          "title": "Requisitos técnicos",
+          "sourceLine": 1481,
+          "blocks": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Utilice como mínimo:"
+                }
+              ]
+            },
+            {
+              "type": "list",
+              "variant": "itemize",
+              "items": [
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "etiqueta "
+                        },
+                        {
+                          "type": "code_inline",
+                          "children": [
+                            {
+                              "type": "text",
+                              "value": "meta viewport"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "text",
+                          "value": ";"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "imágenes con "
+                        },
+                        {
+                          "type": "code_inline",
+                          "children": [
+                            {
+                              "type": "text",
+                              "value": "max-width: 100%"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "text",
+                          "value": ";"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "un contenedor con ancho flexible y límite máximo;"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "Flexbox o Grid en la navegación;"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "Grid para organizar las tarjetas;"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "enfoque mobile first;"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "al menos dos media queries con "
+                        },
+                        {
+                          "type": "code_inline",
+                          "children": [
+                            {
+                              "type": "text",
+                              "value": "min-width"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "text",
+                          "value": ";"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "textos alternativos en las imágenes."
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "frame-estructura-de-entrega-250585e",
+          "type": "frame",
+          "title": "Estructura de entrega",
+          "sourceLine": 1496,
+          "blocks": [
+            {
+              "type": "code",
+              "language": "bash",
+              "value": "mercados-nombre-apellido/\n├── index.html\n├── css/\n│   └── styles.css\n└── img/\n├── portada.jpg\n├── mercado-1.jpg\n├── mercado-2.jpg\n├── mercado-3.jpg\n└── mercado-4.jpg\n        "
+            },
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Todos los archivos deben abrirse correctamente desde la carpeta entregada."
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "frame-orden-recomendado-de-trabajo-bd2eafa",
+          "type": "frame",
+          "title": "Orden recomendado de trabajo",
+          "sourceLine": 1513,
+          "blocks": [
+            {
+              "type": "list",
+              "variant": "enumerate",
+              "items": [
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "Construya un HTML semántico y ordenado."
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "Conecte la hoja de estilos y compruebe las rutas."
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "Termine primero la versión de menor ancho."
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "Identifique dónde el contenido necesita reorganizarse."
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "Agregue las media queries."
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "Pruebe anchos intermedios y corrija desbordamientos."
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "Añada mejoras visuales únicamente cuando lo básico funcione."
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "academic_block",
+              "variant": "warning",
+              "title": null,
+              "children": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "Los elementos adicionales no reemplazan ninguno de los requisitos mínimos."
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "frame-lista-de-comprobacion-cd655dc",
+          "type": "frame",
+          "title": "Lista de comprobación",
+          "sourceLine": 1529,
+          "blocks": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Antes de entregar, confirme:"
+                }
+              ]
+            },
+            {
+              "type": "list",
+              "variant": "itemize",
+              "items": [
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "No existe desplazamiento horizontal accidental."
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "El contenido se comprende en una sola columna."
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "Las imágenes no se deforman."
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "La navegación cambia correctamente."
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "Las tarjetas aprovechan el espacio disponible."
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "Los breakpoints responden a necesidades del contenido."
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "El texto sigue siendo legible."
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "Puede explicar cada regla utilizada."
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "introTitle": "Ejercicio autónomo",
+      "introSubtitle": "Guía de mercados locales"
+    },
+    {
+      "id": "sec-9918c61f06f0",
+      "type": "section",
+      "title": "Errores frecuentes",
+      "implicit": false,
+      "children": [
+        {
+          "id": "frame-disenar-unicamente-para-tamanos-conocidos-4483f2c",
+          "type": "frame",
+          "title": "Diseñar únicamente para tamaños conocidos",
+          "sourceLine": 1552,
+          "blocks": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Una interfaz puede verse bien a 375px y 1024px, pero fallar a 620px."
+                }
+              ]
+            },
+            {
+              "type": "academic_block",
+              "variant": "warning",
+              "title": null,
+              "children": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "Los tamaños predeterminados de las herramientas del navegador son puntos de prueba, no una garantía de funcionamiento responsivo."
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Cambie el ancho de manera continua para descubrir los estados intermedios."
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "frame-crear-demasiados-breakpoints-0c522c8",
+          "type": "frame",
+          "title": "Crear demasiados breakpoints",
+          "sourceLine": 1563,
+          "blocks": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "No agregue una media query cada vez que cambia unos pocos píxeles."
+                }
+              ]
+            },
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Esto produce:"
+                }
+              ]
+            },
+            {
+              "type": "list",
+              "variant": "itemize",
+              "items": [
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "reglas difíciles de mantener;"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "sobrescrituras contradictorias;"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "comportamiento impredecible;"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "dependencia de dispositivos específicos."
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "academic_block",
+              "variant": "idea",
+              "title": null,
+              "children": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "Comience con una estructura flexible y añada un breakpoint solamente cuando el contenido lo necesite."
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "frame-usar-anchos-fijos-en-toda-la-pagina-071372e",
+          "type": "frame",
+          "title": "Usar anchos fijos en toda la página",
+          "sourceLine": 1581,
+          "blocks": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Una declaración como "
+                },
+                {
+                  "type": "code_inline",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "width: 1200px"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "value": " puede funcionar en una pantalla amplia, pero no tiene espacio suficiente dentro de un viewport de 360px."
+                }
+              ]
+            },
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Prefiera combinaciones como:"
+                }
+              ]
+            },
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "code_inline",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "width: 92%; max-width: 1200px;"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Los tamaños fijos siguen siendo útiles para iconos, bordes o límites concretos."
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "frame-confundir-responsivo-con-ocultar-cb1665a",
+          "type": "frame",
+          "title": "Confundir responsivo con ocultar",
+          "sourceLine": 1594,
+          "blocks": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Ocultar navegación, texto o acciones puede hacer que la interfaz parezca limpia, pero también puede impedir que el usuario complete una tarea."
+                }
+              ]
+            },
+            {
+              "type": "academic_block",
+              "variant": "comparison",
+              "title": null,
+              "children": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "Reorganizar conserva el contenido y cambia su presentación. Ocultar elimina su disponibilidad en ese contexto."
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "frame-cambiar-el-orden-visual-sin-revisar-la-lectura-083bcf1",
+          "type": "frame",
+          "title": "Cambiar el orden visual sin revisar la lectura",
+          "sourceLine": 1604,
+          "blocks": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Grid y Flexbox pueden modificar el orden visual de los elementos."
+                }
+              ]
+            },
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Sin embargo:"
+                }
+              ]
+            },
+            {
+              "type": "list",
+              "variant": "itemize",
+              "items": [
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "el teclado normalmente sigue el orden del HTML;"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "los lectores de pantalla interpretan la estructura del documento;"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "el orden semántico debe conservar sentido sin CSS."
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "academic_block",
+              "variant": "warning",
+              "title": null,
+              "children": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "No utilice "
+                    },
+                    {
+                      "type": "code_inline",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "order"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "value": " para corregir una estructura HTML mal organizada."
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "frame-corregir-todo-con-overflow-hidden-c097cfa",
+          "type": "frame",
+          "title": "Corregir todo con overflow hidden",
+          "sourceLine": 1620,
+          "blocks": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Aplicar "
+                },
+                {
+                  "type": "code_inline",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "overflow-x: hidden"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "value": " al documento puede ocultar la evidencia, pero no corrige el elemento que causa el desbordamiento."
+                }
+              ]
+            },
+            {
+              "type": "academic_block",
+              "variant": "practice",
+              "title": null,
+              "children": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "Active contornos temporales, inspeccione tamaños calculados y localice el elemento responsable."
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "La corrección puede requerir "
+                },
+                {
+                  "type": "code_inline",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "max-width"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "value": ", "
+                },
+                {
+                  "type": "code_inline",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "min-width: 0"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "value": ", ajuste de línea o una distribución diferente."
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "introTitle": "Errores frecuentes",
+      "introSubtitle": "Problemas que impiden una adaptación correcta"
+    },
+    {
+      "id": "sec-c0998e283626",
+      "type": "section",
+      "title": "Cierre",
+      "implicit": false,
+      "children": [
+        {
+          "id": "frame-mapa-de-decisiones-09d5a14",
+          "type": "frame",
+          "title": "Mapa de decisiones",
+          "sourceLine": 1641,
+          "blocks": [
+            {
+              "type": "figure",
+              "assetId": "asset-d023fd98103d"
+            },
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Primero permita que la interfaz fluya; después cambie la composición solo cuando resulte necesario."
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "frame-consulta-rapida-9dcdfe2",
+          "type": "frame",
+          "title": "Consulta rápida",
+          "sourceLine": 1664,
+          "blocks": [
+            {
+              "type": "table",
+              "columnSpec": "p{5.0cm}p{7.5cm}",
+              "rows": [
+                [
+                  {
+                    "colspan": 1,
+                    "rowspan": 1,
+                    "children": [
+                      {
+                        "type": "paragraph",
+                        "children": [
+                          {
+                            "type": "strong",
+                            "children": [
+                              {
+                                "type": "text",
+                                "value": "Recurso"
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "colspan": 1,
+                    "rowspan": 1,
+                    "children": [
+                      {
+                        "type": "paragraph",
+                        "children": [
+                          {
+                            "type": "strong",
+                            "children": [
+                              {
+                                "type": "text",
+                                "value": "Propósito"
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ],
+                [
+                  {
+                    "colspan": 1,
+                    "rowspan": 1,
+                    "children": [
+                      {
+                        "type": "paragraph",
+                        "children": [
+                          {
+                            "type": "code_inline",
+                            "children": [
+                              {
+                                "type": "text",
+                                "value": "meta viewport"
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "colspan": 1,
+                    "rowspan": 1,
+                    "children": [
+                      {
+                        "type": "paragraph",
+                        "children": [
+                          {
+                            "type": "text",
+                            "value": "usar el ancho real del viewport"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ],
+                [
+                  {
+                    "colspan": 1,
+                    "rowspan": 1,
+                    "children": [
+                      {
+                        "type": "paragraph",
+                        "children": [
+                          {
+                            "type": "code_inline",
+                            "children": [
+                              {
+                                "type": "text",
+                                "value": "max-width: 100%"
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "colspan": 1,
+                    "rowspan": 1,
+                    "children": [
+                      {
+                        "type": "paragraph",
+                        "children": [
+                          {
+                            "type": "text",
+                            "value": "limitar imágenes y otros elementos"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ],
+                [
+                  {
+                    "colspan": 1,
+                    "rowspan": 1,
+                    "children": [
+                      {
+                        "type": "paragraph",
+                        "children": [
+                          {
+                            "type": "code_inline",
+                            "children": [
+                              {
+                                "type": "text",
+                                "value": "max-width"
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "colspan": 1,
+                    "rowspan": 1,
+                    "children": [
+                      {
+                        "type": "paragraph",
+                        "children": [
+                          {
+                            "type": "text",
+                            "value": "impedir un crecimiento excesivo"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ],
+                [
+                  {
+                    "colspan": 1,
+                    "rowspan": 1,
+                    "children": [
+                      {
+                        "type": "paragraph",
+                        "children": [
+                          {
+                            "type": "code_inline",
+                            "children": [
+                              {
+                                "type": "text",
+                                "value": "@media (min-width: ...)"
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "colspan": 1,
+                    "rowspan": 1,
+                    "children": [
+                      {
+                        "type": "paragraph",
+                        "children": [
+                          {
+                            "type": "text",
+                            "value": "mejorar la composición al ganar espacio"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ],
+                [
+                  {
+                    "colspan": 1,
+                    "rowspan": 1,
+                    "children": [
+                      {
+                        "type": "paragraph",
+                        "children": [
+                          {
+                            "type": "code_inline",
+                            "children": [
+                              {
+                                "type": "text",
+                                "value": "flex-wrap"
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "colspan": 1,
+                    "rowspan": 1,
+                    "children": [
+                      {
+                        "type": "paragraph",
+                        "children": [
+                          {
+                            "type": "text",
+                            "value": "permitir varias líneas en Flexbox"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ],
+                [
+                  {
+                    "colspan": 1,
+                    "rowspan": 1,
+                    "children": [
+                      {
+                        "type": "paragraph",
+                        "children": [
+                          {
+                            "type": "code_inline",
+                            "children": [
+                              {
+                                "type": "text",
+                                "value": "auto-fit + minmax()"
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "colspan": 1,
+                    "rowspan": 1,
+                    "children": [
+                      {
+                        "type": "paragraph",
+                        "children": [
+                          {
+                            "type": "text",
+                            "value": "crear columnas automáticas en Grid"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ],
+                [
+                  {
+                    "colspan": 1,
+                    "rowspan": 1,
+                    "children": [
+                      {
+                        "type": "paragraph",
+                        "children": [
+                          {
+                            "type": "code_inline",
+                            "children": [
+                              {
+                                "type": "text",
+                                "value": "clamp()"
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "colspan": 1,
+                    "rowspan": 1,
+                    "children": [
+                      {
+                        "type": "paragraph",
+                        "children": [
+                          {
+                            "type": "text",
+                            "value": "establecer tamaño mínimo, flexible y máximo"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              ]
+            }
+          ]
+        },
+        {
+          "id": "frame-preguntas-de-comprension-7e45fdf",
+          "type": "frame",
+          "title": "Preguntas de comprensión",
+          "sourceLine": 1683,
+          "blocks": [
+            {
+              "type": "list",
+              "variant": "enumerate",
+              "items": [
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "¿Qué diferencia existe entre viewport y pantalla física?"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "¿Por qué "
+                        },
+                        {
+                          "type": "code_inline",
+                          "children": [
+                            {
+                              "type": "text",
+                              "value": "max-width"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "text",
+                          "value": " ayuda a construir interfaces fluidas?"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "¿Cuándo se justifica crear un breakpoint?"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "¿Cómo se interpreta "
+                        },
+                        {
+                          "type": "code_inline",
+                          "children": [
+                            {
+                              "type": "text",
+                              "value": "min-width: 700px"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "text",
+                          "value": "?"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "¿Qué caracteriza al enfoque mobile first?"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "¿Cuándo puede Grid adaptarse sin una media query?"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "¿Por qué no conviene bloquear el zoom?"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "frame-lo-esencial-de-esta-clase-0adc149",
+          "type": "frame",
+          "title": "Lo esencial de esta clase",
+          "sourceLine": 1695,
+          "blocks": [
+            {
+              "type": "list",
+              "variant": "itemize",
+              "items": [
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "El diseño responsivo se basa en el espacio disponible."
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "El viewport debe configurarse desde el HTML."
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "Las medidas flexibles resuelven gran parte de la adaptación."
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "Las imágenes deben respetar el ancho de su contenedor."
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "Los breakpoints nacen de las necesidades del contenido."
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "Mobile first construye desde una base sencilla hacia espacios mayores."
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "Flexbox y Grid permiten reorganizar la interfaz."
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "La verificación debe incluir anchos intermedios, zoom e interacción."
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "academic_block",
+              "variant": "result",
+              "title": null,
+              "children": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "Una página responsiva no intenta adivinar el dispositivo: conserva su utilidad mientras cambia el espacio disponible."
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "frame-aplicacion-en-el-proyecto-intermedio-173dcff",
+          "type": "frame",
+          "title": "Aplicación en el proyecto intermedio",
+          "sourceLine": 1713,
+          "blocks": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "En el proyecto del concierto deberán comprobar que:"
+                }
+              ]
+            },
+            {
+              "type": "list",
+              "variant": "itemize",
+              "items": [
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "las dos páginas funcionan en anchos estrechos y amplios;"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "cada hoja CSS conserva una organización clara;"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "la navegación permite pasar entre las páginas;"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "las imágenes no generan desbordamiento;"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "Flexbox, Grid y las media queries se utilizan con una finalidad explicable."
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "academic_block",
+              "variant": "warning",
+              "title": null,
+              "children": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "Primero aseguren el cumplimiento de lo solicitado. Después pueden incorporar elementos adicionales sin sustituir los requisitos básicos."
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "introTitle": "Cierre",
+      "introSubtitle": "Decidir qué debe fluir y qué debe cambiar"
+    }
+  ]
+}

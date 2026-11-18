@@ -23,9 +23,9 @@
 .reader-floating-actions{position:fixed;bottom:22px;right:28px;z-index:20;display:flex;align-items:center;gap:10px;background:#fff;border:1px solid #ccd9ec;padding:6px 7px 6px 13px;border-radius:10px;box-shadow:0 6px 24px #1d3b7224}.reader-floating-actions>span{font-size:10px;color:#617aa1}.reader-floating-actions button{height:33px;font-size:11px;background:#213f7b;color:white}.reader-floating-actions button:hover{background:#31569b}@media(max-width:650px){.reader-floating-actions{right:15px;bottom:14px}.reader-floating-actions button{font-size:10px}}
 /* Shared theme tokens. The boot script resolves the preference before first paint. */
 :root{--code-bg:#f8faff;--code-fg:#263a58;--code-gutter:#edf2f9;--code-muted:#71829b;--code-active:#e9eff8;--code-selection:#cbdcf6}
-.theme-toggle{display:inline-flex;align-items:center;justify-content:center;gap:7px;border:1px solid #d7e0ed;border-radius:7px;height:33px;padding:0 10px;background:#fff;color:#365581;font-size:11px;flex-shrink:0}.theme-toggle:hover{background:#eaf0fb}.topbar-right .theme-toggle{margin-right:14px}.presentation-toolbar .theme-toggle{background:#21375a;border-color:#3c5378;color:#f5ca36}.presentation-toolbar .theme-toggle:hover{background:#2e486f}.presentation-toolbar .theme-toggle span{font-size:11px;color:inherit;display:inline}.code-block pre,.code-highlight pre{background:var(--code-bg)!important;color:var(--code-fg)}.shiki span{color:var(--shiki-light)!important}
+.theme-toggle{display:inline-flex;align-items:center;justify-content:center;gap:7px;border:1px solid #d7e0ed;border-radius:7px;height:33px;padding:0 10px;background:#fff;color:#365581;font-size:11px;flex-shrink:0}.theme-toggle:hover{background:#eaf0fb}.topbar-right .theme-toggle{margin-right:14px}.presentation-toolbar .theme-toggle{background:#21375a;border-color:#3c5378;color:#f5ca36}.presentation-toolbar .theme-toggle:hover{background:#2e486f}.presentation-toolbar .theme-toggle span{font-size:11px;color:inherit;display:inline}.code-block pre,.code-highlight pre{background:var(--code-bg)!important;color:var(--code-fg)}.shiki span{color:var(--shiki-light)!important;font-style:var(--shiki-light-font-style,inherit)!important;font-weight:var(--shiki-light-font-weight,inherit)!important}
 :root[data-theme="dark"]{color-scheme:dark;--background:#0e1522;--foreground:#e2eaf7;--border:#2c3b52;--primary:#86a9f1;--muted:#9bacc5;--code-bg:#101b2d;--code-fg:#e1eaf7;--code-gutter:#162439;--code-muted:#8da1bf;--code-active:#20334f;--code-selection:#304e77}
-[data-theme="dark"] .theme-toggle{background:#1d2d45;border-color:#3b5070;color:#f4d15a}[data-theme="dark"] .theme-toggle:hover{background:#2b4162}[data-theme="dark"] .shiki span{color:var(--shiki-dark)!important}
+[data-theme="dark"] .theme-toggle{background:#1d2d45;border-color:#3b5070;color:#f4d15a}[data-theme="dark"] .theme-toggle:hover{background:#2b4162}[data-theme="dark"] .shiki span{color:var(--shiki-dark)!important;font-style:var(--shiki-dark-font-style,inherit)!important;font-weight:var(--shiki-dark-font-weight,inherit)!important}
 [data-theme="dark"] .sidebar{background:#101e37;border-color:#2a3b55}[data-theme="dark"] .topbar{background:#142136;border-color:var(--border)}[data-theme="dark"] .topbar strong{color:#d3e1fc}[data-theme="dark"] .topbar>div,[data-theme="dark"] .topbar-right{color:#a2b3cd}[data-theme="dark"] .avatar-small{background:#2d3f5b;border-color:#17263c;color:#e5d48c}
 [data-theme="dark"] .welcome-row p,[data-theme="dark"] .section-title p,[data-theme="dark"] .card-body>p,[data-theme="dark"] .reader-heading p,[data-theme="dark"] .progress-lessons p,[data-theme="dark"] .topic-lesson p,[data-theme="dark"] .topic-lesson small,[data-theme="dark"] .institution-card p{color:#a3b4cf}[data-theme="dark"] .eyebrow,[data-theme="dark"] .welcome-eyebrow{color:#a7bfe9}[data-theme="dark"] .stats-grid,[data-theme="dark"] .subject-card,[data-theme="dark"] .institution-card,[data-theme="dark"] .progress-lessons article,[data-theme="dark"] .topic-section,[data-theme="dark"] .search-box,[data-theme="dark"] .semester-badge{background:#162338;border-color:var(--border)}[data-theme="dark"] .stats-grid strong,[data-theme="dark"] .semester-badge strong,[data-theme="dark"] .card-body h3,[data-theme="dark"] .institution-card h3,[data-theme="dark"] .topic-title h3{color:#e0eafa}[data-theme="dark"] .stats-grid div>div>span,[data-theme="dark"] .card-meta,[data-theme="dark"] .card-meta svg,[data-theme="dark"] .card-progress>div:first-child,[data-theme="dark"] .filter-row>span,[data-theme="dark"] .semester-badge{color:#a1b3ce}[data-theme="dark"] .card-progress strong{color:#a7c4fa}[data-theme="dark"] .card-progress{border-color:var(--border)}[data-theme="dark"] .stat-icon.sage{background:#233b60;color:#a3c0ff}[data-theme="dark"] .stat-icon.sand{background:#443b21;color:#f1cf6b}[data-theme="dark"] .stat-icon.lilac{background:#352c51;color:#c8b1f2}[data-theme="dark"] .stat-icon.blue{background:#213b50;color:#92c9ed}[data-theme="dark"] .section-title h2 span{background:#283f66;color:#b0cbff}[data-theme="dark"] .search-box input{color:#e3eaf6}[data-theme="dark"] .search-box input::placeholder{color:#94a6c3}[data-theme="dark"] .filter-row button{color:#acbed9}[data-theme="dark"] .filter-row button.selected{background:#365b9f;border-color:#5378b7;color:white}[data-theme="dark"] .progress-track{background:#2b3d59}[data-theme="dark"] .progress-track i{background:#87a9ed}[data-theme="dark"] .card-art{background:#1d304d}[data-theme="dark"] .code .card-art{background:#353223}[data-theme="dark"] .institution-tag{background:#edf2fa;color:#254371}[data-theme="dark"] .art-grid{opacity:.5}[data-theme="dark"] .learning-banner{background:#1b2f4c;border-color:#334d73}[data-theme="dark"] .learning-banner h3{color:#d4e2ff}[data-theme="dark"] .learning-banner p,[data-theme="dark"] .learning-banner .eyebrow{color:#adc2e5}[data-theme="dark"] .banner-decoration{color:#344f78}[data-theme="dark"] .topic-title{background:#1c3151;border-color:var(--border)}[data-theme="dark"] .topic-title>span{color:#95b1dd}[data-theme="dark"] footer{border-color:var(--border);color:#a0b1cc}[data-theme="dark"] .footer-brand{color:#d7e6ff}[data-theme="dark"] .footer-signature{background:#edf3fc;border-radius:4px;padding:2px}[data-theme="dark"] .institution-monogram{border-radius:6px;padding:4px}
 [data-theme="dark"] .ui-button[data-variant="default"]{background:#365b9d;color:#fff}[data-theme="dark"] .ui-button[data-variant="default"]:hover{background:#456fb9}[data-theme="dark"] .ui-button[data-variant="outline"]{background:#1b2d47;border-color:#3c5272;color:#c2d6fa}[data-theme="dark"] .ui-button[data-variant="outline"]:hover{background:#2b4263}[data-theme="dark"] .ui-button[data-variant="ghost"]{color:#b2c6e7}[data-theme="dark"] .ui-button[data-variant="ghost"]:hover{background:#293f60}[data-theme="dark"] .reader-actions>.ui-button[data-variant="default"]{background:#f5ca36;color:#152746}
@@ -74,9 +74,9 @@
 .image-lightbox-btn:hover{background:rgba(255,255,255,.22)!important;border-color:rgba(255,255,255,.35)!important}
 .image-lightbox-btn.close-main{background:#2563eb!important;border-color:#3b82f6!important;font-weight:600!important}
 .image-lightbox-btn.close-main:hover{background:#1d4ed8!important}
-.image-lightbox-body{flex:1!important;overflow:auto!important;display:flex!important;align-items:center!important;justify-content:center!important;padding:24px!important;min-height:0!important}
-.image-lightbox-canvas{display:inline-flex!important;align-items:center!important;justify-content:center!important;transition:transform .15s ease-out!important;width:auto!important;height:auto!important;max-width:95vw!important;max-height:85vh!important}
-.image-lightbox-canvas img,.image-lightbox-canvas svg{background:#fff!important;border-radius:8px!important;padding:20px!important;width:auto!important;max-width:90vw!important;height:auto!important;max-height:80vh!important;object-fit:contain!important;box-shadow:0 16px 48px rgba(0,0,0,.6)!important}
+.image-lightbox-body{flex:1!important;overflow:auto!important;display:flex!important;align-items:center!important;justify-content:center!important;padding:16px 24px!important;min-height:0!important;width:100%!important;box-sizing:border-box!important}
+.image-lightbox-canvas{display:flex!important;align-items:center!important;justify-content:center!important;transition:transform .15s ease-out!important;width:min(95vw,1580px)!important;max-width:96vw!important;height:auto!important;max-height:85vh!important;margin:auto!important}
+.image-lightbox-canvas img,.image-lightbox-canvas svg,.image-lightbox-canvas .tikz-render-target svg,.image-lightbox-canvas .tikz-render-target img{background:#fff!important;border-radius:10px!important;padding:clamp(16px,2.5vw,36px)!important;width:100%!important;max-width:100%!important;height:auto!important;max-height:82vh!important;object-fit:contain!important;box-shadow:0 16px 48px rgba(0,0,0,.6)!important;box-sizing:border-box!important}
 .figure-enlarge-hint{display:inline-flex;align-items:center;gap:5px;font-size:11px;color:var(--muted);background:transparent;border:0;padding:4px 8px;margin-top:6px;cursor:pointer;border-radius:4px;transition:color .15s}
 .figure-enlarge-hint:hover{color:var(--foreground);background:color-mix(in srgb,var(--foreground) 6%,transparent)}
 .btn-danger-action{color:#b91c1c!important;border-color:#fca5a5!important;background-color:transparent;margin-left:auto;transition:all .15s ease}
@@ -785,6 +785,329 @@
   flex-direction: column;
   box-sizing: border-box;
   scrollbar-gutter: stable;
+  scroll-behavior: smooth;
+}
+
+/* ==========================================================================
+   Modo Presentación: Lectura Continua a Pantalla Completa (Diseño Pulido)
+   ========================================================================== */
+.presentation-stage {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  height: 100%;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  scroll-behavior: smooth !important;
+  padding: 0 !important;
+  box-sizing: border-box;
+  background: var(--background);
+  color: var(--foreground);
+}
+
+.presentation-reading-document {
+  width: 100%;
+  max-width: min(1560px, 96vw);
+  margin: 0 auto;
+  padding: 44px clamp(16px, 3.5vw, 48px) 160px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 36px;
+}
+
+/* En pantalla completa (F) ampliamos aún más para pantallas panorámicas */
+.slide-deck-container.is-fullscreen .presentation-reading-document {
+  max-width: min(1720px, 98vw);
+}
+
+/* Tarjeta Heroica / Portada del Documento de Presentación */
+.presentation-document-header {
+  display: flex;
+  align-items: center;
+  gap: 26px;
+  padding: 32px clamp(24px, 4vw, 44px);
+  border-radius: 20px;
+  background: var(--card);
+  color: var(--card-foreground);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  box-sizing: border-box;
+}
+
+.presentation-header-logo-badge {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow-xs);
+  flex-shrink: 0;
+}
+
+.presentation-header-logo-badge img {
+  width: 96px;
+  height: 52px;
+  object-fit: contain;
+}
+
+.presentation-header-info {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.presentation-header-eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+}
+
+.institution-tag-name {
+  color: var(--muted-foreground);
+}
+
+.eyebrow-sep {
+  opacity: 0.4;
+}
+
+.subject-tag-name {
+  color: var(--primary);
+}
+
+.presentation-header-title {
+  font-size: clamp(28px, 3.2vw, 44px);
+  font-weight: 800;
+  letter-spacing: -0.9px;
+  line-height: 1.15;
+  margin: 0;
+  color: var(--foreground);
+}
+
+.presentation-header-badges {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 6px;
+  flex-wrap: wrap;
+}
+
+.presentation-header-badges .meta-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 11px;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--primary) 12%, var(--card));
+  color: var(--primary);
+  border: 1px solid color-mix(in srgb, var(--primary) 28%, var(--border));
+}
+
+/* Tarjeta individual por cada Tema de la presentación */
+.presentation-reading-frame {
+  display: block !important;
+  width: 100%;
+  scroll-margin-top: 75px;
+  padding: clamp(28px, 4vw, 48px);
+  border-radius: 18px;
+  background: var(--card);
+  color: var(--card-foreground);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  box-sizing: border-box;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.presentation-reading-frame:hover {
+  border-color: color-mix(in srgb, var(--primary) 40%, var(--border));
+  box-shadow: var(--shadow-md);
+}
+
+/* Cabecera del tema */
+.presentation-frame-header {
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 28px;
+}
+
+.presentation-frame-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.presentation-frame-section {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--primary) 12%, var(--card));
+  color: var(--primary);
+  border: 1px solid color-mix(in srgb, var(--primary) 28%, var(--border));
+}
+
+.presentation-frame-badge {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 9999px;
+  background: var(--muted);
+  color: var(--muted-foreground);
+  border: 1px solid var(--border);
+}
+
+.presentation-frame-title {
+  font-size: clamp(24px, 2.6vw, 38px);
+  font-weight: 800;
+  letter-spacing: -0.6px;
+  line-height: 1.25;
+  margin: 0;
+  color: var(--foreground);
+}
+
+/* Tratamiento especial para reflexiones / pensamientos */
+.presentation-reading-frame.is-reflection-frame {
+  background: color-mix(in srgb, var(--primary) 7%, var(--card));
+  border-color: color-mix(in srgb, var(--primary) 25%, var(--border));
+  border-left: 5px solid var(--primary);
+}
+
+.presentation-reading-frame.is-reflection-frame .lesson-text {
+  font-size: clamp(19px, 1.8vw, 25px);
+  font-style: italic;
+  line-height: 1.8;
+  color: var(--card-foreground);
+  opacity: 0.95;
+}
+
+/* Contenido de cada tema */
+.presentation-frame-content {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: 100%;
+  overflow: visible !important;
+}
+
+.presentation-frame-content .lesson-text {
+  font-size: clamp(16px, 1.4vw, 21px);
+  line-height: 1.8;
+  color: var(--card-foreground);
+  margin: 6px 0;
+}
+
+.presentation-frame-content .math-block {
+  font-size: clamp(18px, 1.6vw, 26px);
+  margin: 22px 0;
+  padding: 10px 0;
+  color: var(--foreground);
+}
+
+.presentation-frame-content .teaching-block {
+  margin: 22px 0;
+  border-radius: 12px;
+  box-shadow: var(--shadow-sm);
+}
+
+.presentation-frame-content .teaching-title {
+  padding: 12px 18px;
+  font-size: 14px;
+  font-weight: 650;
+}
+
+.presentation-frame-content .teaching-body {
+  padding: 12px 18px 16px;
+}
+
+.presentation-frame-content .teaching-body .lesson-text {
+  font-size: clamp(15px, 1.3vw, 19px);
+  line-height: 1.75;
+}
+
+.presentation-frame-content .lesson-figure,
+.presentation-frame-content .diagram-figure {
+  margin: 26px auto;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.presentation-frame-content .diagram-figure > img,
+.presentation-frame-content .tikz-render-target svg,
+.presentation-frame-content .lesson-figure > img {
+  display: block;
+  width: min(100%, 1360px);
+  max-width: 100%;
+  height: auto;
+  max-height: 65vh;
+  object-fit: contain;
+  margin: 0 auto;
+  cursor: zoom-in;
+  border-radius: 12px;
+  box-shadow: var(--shadow-md);
+}
+
+/* Breadcrumbs y etiquetas de la cabecera */
+.slide-heading-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  opacity: 0.8;
+  margin-bottom: 2px;
+}
+.slide-heading-breadcrumb .breadcrumb-section {
+  color: var(--primary);
+  font-weight: 700;
+}
+.slide-heading-breadcrumb .breadcrumb-sep {
+  opacity: 0.5;
+}
+
+.slide-step-badge {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 14px;
+  font-size: 0.6em;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 9999px;
+  background: color-mix(in srgb, var(--primary) 12%, transparent);
+  color: var(--primary);
+  border: 1px solid color-mix(in srgb, var(--primary) 30%, transparent);
+  vertical-align: middle;
+}
+
+.slide-footer-left {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.footer-section-tag {
+  font-weight: 600;
+  color: var(--foreground);
+}
+.footer-dot {
+  opacity: 0.4;
+  padding: 0 2px;
 }
 
 /* Distribución unificada de 1 columna (flujo continuo) */
@@ -1000,6 +1323,46 @@
 
 .image-lightbox-btn.close-main:hover {
   background: #1d4ed8 !important;
+}
+
+.image-lightbox-body {
+  flex: 1 !important;
+  overflow: auto !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 16px 24px !important;
+  min-height: 0 !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+.image-lightbox-canvas {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transition: transform 0.15s ease-out !important;
+  width: min(95vw, 1580px) !important;
+  max-width: 96vw !important;
+  height: auto !important;
+  max-height: 85vh !important;
+  margin: auto !important;
+}
+
+.image-lightbox-canvas img,
+.image-lightbox-canvas svg,
+.image-lightbox-canvas .tikz-render-target svg,
+.image-lightbox-canvas .tikz-render-target img {
+  background: #fff !important;
+  border-radius: 10px !important;
+  padding: clamp(16px, 2.5vw, 36px) !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  height: auto !important;
+  max-height: 82vh !important;
+  object-fit: contain !important;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.65) !important;
+  box-sizing: border-box !important;
 }
 
 /* ==========================================================================

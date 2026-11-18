@@ -1,0 +1,1287 @@
+{
+  "schemaVersion": "1.1.0",
+  "id": "industrial-exam1",
+  "type": "exam",
+  "title": "Quiz #1",
+  "metadata": {
+    "courseName": "Robótica Industrial",
+    "courseCode": "ING 01339 / SOL-ING 220",
+    "faculty": "Facultad de Ingeniería",
+    "institution": "Politécnico Colombiano Jaime Isaza Cadavid",
+    "instructor": "Deimer Miranda Montoya, MSc.(c).",
+    "email": "correo@institucion.edu.co",
+    "examTitle": "Quiz #1",
+    "examTopics": "Fundamentación matemática, rotaciones 2D y marcos rotados",
+    "academicPeriod": "2026-2",
+    "examDuration": "60 minutos",
+    "examValue": "100 puntos",
+    "examQuestions": "10",
+    "institutionLogo": "Template/LogoPoli.png",
+    "institutionLogoAssetId": "asset-1461476e1ba3"
+  },
+  "source": {
+    "file": "Industrial_exam1.tex",
+    "template": "exam"
+  },
+  "instructions": [
+    {
+      "type": "paragraph",
+      "children": [
+        {
+          "type": "text",
+          "value": "Seleccione una única respuesta en cada pregunta. El valor de cada pregunta se indica en el enunciado. En las preguntas que involucren cálculo, el procedimiento podrá utilizarse como criterio de revisión. Use grados para los ángulos y conserve formas exactas con radicales cuando sea posible."
+        }
+      ]
+    }
+  ],
+  "answerSheet": 10,
+  "structure": [
+    {
+      "id": "sec-questions",
+      "type": "section",
+      "title": "Preguntas",
+      "children": [
+        {
+          "id": "q-1-4812e523",
+          "type": "question",
+          "number": 1,
+          "points": 7,
+          "stem": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Sea"
+                }
+              ]
+            },
+            {
+              "type": "math",
+              "latex": "\\mathbf{v}=\\begin{bmatrix}3\\\\-4\\\\12\\end{bmatrix}.",
+              "display": true
+            },
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "¿Cuál es su vector unitario asociado?"
+                }
+              ]
+            }
+          ],
+          "options": {
+            "layout": "inline",
+            "items": [
+              {
+                "label": "A",
+                "blocks": [
+                  {
+                    "type": "paragraph",
+                    "children": [
+                      {
+                        "type": "math_inline",
+                        "latex": "\\begin{bmatrix}3/13\\\\-4/13\\\\12/13\\end{bmatrix}"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "label": "B",
+                "blocks": [
+                  {
+                    "type": "paragraph",
+                    "children": [
+                      {
+                        "type": "math_inline",
+                        "latex": "\\begin{bmatrix}3/12\\\\-4/12\\\\1\\end{bmatrix}"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "label": "C",
+                "blocks": [
+                  {
+                    "type": "paragraph",
+                    "children": [
+                      {
+                        "type": "math_inline",
+                        "latex": "\\begin{bmatrix}3/17\\\\-4/17\\\\12/17\\end{bmatrix}"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "label": "D",
+                "blocks": [
+                  {
+                    "type": "paragraph",
+                    "children": [
+                      {
+                        "type": "math_inline",
+                        "latex": "\\begin{bmatrix}-3/13\\\\4/13\\\\-12/13\\end{bmatrix}"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "id": "q-2-71318bff",
+          "type": "question",
+          "number": 2,
+          "points": 8,
+          "stem": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Sean"
+                }
+              ]
+            },
+            {
+              "type": "math",
+              "latex": "\\mathbf{a}=\\begin{bmatrix}2\\\\1\\\\-1\\end{bmatrix},\n            \\qquad\n            \\mathbf{b}=\\begin{bmatrix}1\\\\-1\\\\1\\end{bmatrix}.",
+              "display": true
+            },
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "El ángulo entre ambos vectores es:"
+                }
+              ]
+            }
+          ],
+          "options": {
+            "layout": "inline",
+            "items": [
+              {
+                "label": "A",
+                "blocks": [
+                  {
+                    "type": "paragraph",
+                    "children": [
+                      {
+                        "type": "math_inline",
+                        "latex": "0^\\circ"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "label": "B",
+                "blocks": [
+                  {
+                    "type": "paragraph",
+                    "children": [
+                      {
+                        "type": "math_inline",
+                        "latex": "45^\\circ"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "label": "C",
+                "blocks": [
+                  {
+                    "type": "paragraph",
+                    "children": [
+                      {
+                        "type": "math_inline",
+                        "latex": "90^\\circ"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "label": "D",
+                "blocks": [
+                  {
+                    "type": "paragraph",
+                    "children": [
+                      {
+                        "type": "math_inline",
+                        "latex": "180^\\circ"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "id": "q-3-7494383f",
+          "type": "question",
+          "number": 3,
+          "points": 10,
+          "stem": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Considere"
+                }
+              ]
+            },
+            {
+              "type": "math",
+              "latex": "Q=\n            \\begin{bmatrix}\n                \\frac35 & \\frac45\\\\[1mm]\n                \\frac45 & -\\frac35\n            \\end{bmatrix}.",
+              "display": true
+            },
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "¿Cuál afirmación es correcta?"
+                }
+              ]
+            }
+          ],
+          "options": {
+            "layout": "vertical",
+            "items": [
+              {
+                "label": "A",
+                "blocks": [
+                  {
+                    "type": "paragraph",
+                    "children": [
+                      {
+                        "type": "math_inline",
+                        "latex": "Q"
+                      },
+                      {
+                        "type": "text",
+                        "value": " es una rotación propia porque "
+                      },
+                      {
+                        "type": "math_inline",
+                        "latex": "Q^TQ=I"
+                      },
+                      {
+                        "type": "text",
+                        "value": "."
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "label": "B",
+                "blocks": [
+                  {
+                    "type": "paragraph",
+                    "children": [
+                      {
+                        "type": "math_inline",
+                        "latex": "Q"
+                      },
+                      {
+                        "type": "text",
+                        "value": " es una reflexión: "
+                      },
+                      {
+                        "type": "math_inline",
+                        "latex": "Q^TQ=I"
+                      },
+                      {
+                        "type": "text",
+                        "value": " y "
+                      },
+                      {
+                        "type": "math_inline",
+                        "latex": "\\det(Q)=-1"
+                      },
+                      {
+                        "type": "text",
+                        "value": "."
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "label": "C",
+                "blocks": [
+                  {
+                    "type": "paragraph",
+                    "children": [
+                      {
+                        "type": "math_inline",
+                        "latex": "Q"
+                      },
+                      {
+                        "type": "text",
+                        "value": " no es ortogonal porque "
+                      },
+                      {
+                        "type": "math_inline",
+                        "latex": "\\det(Q)\\neq 1"
+                      },
+                      {
+                        "type": "text",
+                        "value": "."
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "label": "D",
+                "blocks": [
+                  {
+                    "type": "paragraph",
+                    "children": [
+                      {
+                        "type": "math_inline",
+                        "latex": "Q"
+                      },
+                      {
+                        "type": "text",
+                        "value": " es una rotación de "
+                      },
+                      {
+                        "type": "math_inline",
+                        "latex": "90^\\circ"
+                      },
+                      {
+                        "type": "text",
+                        "value": "."
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "id": "q-4-8250d2e2",
+          "type": "question",
+          "number": 4,
+          "points": 10,
+          "stem": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "El vector"
+                }
+              ]
+            },
+            {
+              "type": "math",
+              "latex": "\\mathbf{p}=\\begin{bmatrix}2\\\\1\\end{bmatrix}",
+              "display": true
+            },
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "se rota "
+                },
+                {
+                  "type": "math_inline",
+                  "latex": "90^\\circ"
+                },
+                {
+                  "type": "text",
+                  "value": " en sentido antihorario. El resultado es:"
+                }
+              ]
+            }
+          ],
+          "options": {
+            "layout": "inline",
+            "items": [
+              {
+                "label": "A",
+                "blocks": [
+                  {
+                    "type": "paragraph",
+                    "children": [
+                      {
+                        "type": "math_inline",
+                        "latex": "\\begin{bmatrix}1\\\\2\\end{bmatrix}"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "label": "B",
+                "blocks": [
+                  {
+                    "type": "paragraph",
+                    "children": [
+                      {
+                        "type": "math_inline",
+                        "latex": "\\begin{bmatrix}-1\\\\2\\end{bmatrix}"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "label": "C",
+                "blocks": [
+                  {
+                    "type": "paragraph",
+                    "children": [
+                      {
+                        "type": "math_inline",
+                        "latex": "\\begin{bmatrix}1\\\\-2\\end{bmatrix}"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "label": "D",
+                "blocks": [
+                  {
+                    "type": "paragraph",
+                    "children": [
+                      {
+                        "type": "math_inline",
+                        "latex": "\\begin{bmatrix}-2\\\\1\\end{bmatrix}"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "id": "q-5-9c0d7022",
+          "type": "question",
+          "number": 5,
+          "points": 10,
+          "stem": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "La matriz"
+                }
+              ]
+            },
+            {
+              "type": "math",
+              "latex": "R=\n            \\begin{bmatrix}\n                -\\frac{\\sqrt3}{2} & -\\frac12\\\\[1mm]\n                \\frac12 & -\\frac{\\sqrt3}{2}\n            \\end{bmatrix}",
+              "display": true
+            },
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "corresponde a una rotación antihoraria de:"
+                }
+              ]
+            }
+          ],
+          "options": {
+            "layout": "inline",
+            "items": [
+              {
+                "label": "A",
+                "blocks": [
+                  {
+                    "type": "paragraph",
+                    "children": [
+                      {
+                        "type": "math_inline",
+                        "latex": "30^\\circ"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "label": "B",
+                "blocks": [
+                  {
+                    "type": "paragraph",
+                    "children": [
+                      {
+                        "type": "math_inline",
+                        "latex": "120^\\circ"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "label": "C",
+                "blocks": [
+                  {
+                    "type": "paragraph",
+                    "children": [
+                      {
+                        "type": "math_inline",
+                        "latex": "150^\\circ"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "label": "D",
+                "blocks": [
+                  {
+                    "type": "paragraph",
+                    "children": [
+                      {
+                        "type": "math_inline",
+                        "latex": "210^\\circ"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "id": "q-6-a495fc85",
+          "type": "question",
+          "number": 6,
+          "points": 10,
+          "stem": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Si"
+                }
+              ]
+            },
+            {
+              "type": "math",
+              "latex": "R=R(30^\\circ),",
+              "display": true
+            },
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "¿cuál expresión corresponde a "
+                },
+                {
+                  "type": "math_inline",
+                  "latex": "R^{-1}"
+                },
+                {
+                  "type": "text",
+                  "value": "?"
+                }
+              ]
+            }
+          ],
+          "options": {
+            "layout": "vertical",
+            "items": [
+              {
+                "label": "A",
+                "blocks": [
+                  {
+                    "type": "paragraph",
+                    "children": [
+                      {
+                        "type": "math_inline",
+                        "latex": "R^{-1}=R(30^\\circ)"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "label": "B",
+                "blocks": [
+                  {
+                    "type": "paragraph",
+                    "children": [
+                      {
+                        "type": "math_inline",
+                        "latex": "R^{-1}=R^T=R(-30^\\circ)"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "label": "C",
+                "blocks": [
+                  {
+                    "type": "paragraph",
+                    "children": [
+                      {
+                        "type": "math_inline",
+                        "latex": "R^{-1}=-R(30^\\circ)"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "label": "D",
+                "blocks": [
+                  {
+                    "type": "paragraph",
+                    "children": [
+                      {
+                        "type": "math_inline",
+                        "latex": "R^{-1}=I-R(30^\\circ)"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "id": "q-7-2e6ce5fa",
+          "type": "question",
+          "number": 7,
+          "points": 10,
+          "stem": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Un vector inicialmente coincide con el eje "
+                },
+                {
+                  "type": "math_inline",
+                  "latex": "x"
+                },
+                {
+                  "type": "text",
+                  "value": " positivo. Primero se rota "
+                },
+                {
+                  "type": "math_inline",
+                  "latex": "40^\\circ"
+                },
+                {
+                  "type": "text",
+                  "value": " en sentido antihorario y luego "
+                },
+                {
+                  "type": "math_inline",
+                  "latex": "100^\\circ"
+                },
+                {
+                  "type": "text",
+                  "value": " en sentido horario. La rotación equivalente y el vector final son:"
+                }
+              ]
+            },
+            {
+              "type": "figure",
+              "assetId": "asset-4e4d64b78392"
+            }
+          ],
+          "options": {
+            "layout": "vertical",
+            "items": [
+              {
+                "label": "A",
+                "blocks": [
+                  {
+                    "type": "paragraph",
+                    "children": [
+                      {
+                        "type": "math_inline",
+                        "latex": "R(60^\\circ)"
+                      },
+                      {
+                        "type": "text",
+                        "value": " y "
+                      },
+                      {
+                        "type": "math_inline",
+                        "latex": "\\begin{bmatrix}\\frac12\\\\ \\frac{\\sqrt3}{2}\\end{bmatrix}"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "label": "B",
+                "blocks": [
+                  {
+                    "type": "paragraph",
+                    "children": [
+                      {
+                        "type": "math_inline",
+                        "latex": "R(-60^\\circ)"
+                      },
+                      {
+                        "type": "text",
+                        "value": " y "
+                      },
+                      {
+                        "type": "math_inline",
+                        "latex": "\\begin{bmatrix}\\frac12\\\\ -\\frac{\\sqrt3}{2}\\end{bmatrix}"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "label": "C",
+                "blocks": [
+                  {
+                    "type": "paragraph",
+                    "children": [
+                      {
+                        "type": "math_inline",
+                        "latex": "R(-140^\\circ)"
+                      },
+                      {
+                        "type": "text",
+                        "value": " y "
+                      },
+                      {
+                        "type": "math_inline",
+                        "latex": "\\begin{bmatrix}-\\frac{\\sqrt3}{2}\\\\ \\frac12\\end{bmatrix}"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "label": "D",
+                "blocks": [
+                  {
+                    "type": "paragraph",
+                    "children": [
+                      {
+                        "type": "math_inline",
+                        "latex": "R(140^\\circ)"
+                      },
+                      {
+                        "type": "text",
+                        "value": " y "
+                      },
+                      {
+                        "type": "math_inline",
+                        "latex": "\\begin{bmatrix}-\\frac12\\\\ \\frac{\\sqrt3}{2}\\end{bmatrix}"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "id": "q-8-62fb05e1",
+          "type": "question",
+          "number": 8,
+          "points": 12,
+          "stem": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Los marcos "
+                },
+                {
+                  "type": "math_inline",
+                  "latex": "\\{A\\}"
+                },
+                {
+                  "type": "text",
+                  "value": " y "
+                },
+                {
+                  "type": "math_inline",
+                  "latex": "\\{B\\}"
+                },
+                {
+                  "type": "text",
+                  "value": " comparten origen. El marco "
+                },
+                {
+                  "type": "math_inline",
+                  "latex": "\\{B\\}"
+                },
+                {
+                  "type": "text",
+                  "value": " está rotado "
+                },
+                {
+                  "type": "math_inline",
+                  "latex": "30^\\circ"
+                },
+                {
+                  "type": "text",
+                  "value": " en sentido antihorario respecto a "
+                },
+                {
+                  "type": "math_inline",
+                  "latex": "\\{A\\}"
+                },
+                {
+                  "type": "text",
+                  "value": " y"
+                }
+              ]
+            },
+            {
+              "type": "math",
+              "latex": "{}^B\\mathbf{p}=\\begin{bmatrix}2\\\\1\\end{bmatrix}.",
+              "display": true
+            },
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "¿Cuáles son las coordenadas del mismo punto expresadas en "
+                },
+                {
+                  "type": "math_inline",
+                  "latex": "\\{A\\}"
+                },
+                {
+                  "type": "text",
+                  "value": "?"
+                }
+              ]
+            }
+          ],
+          "options": {
+            "layout": "vertical",
+            "items": [
+              {
+                "label": "A",
+                "blocks": [
+                  {
+                    "type": "paragraph",
+                    "children": [
+                      {
+                        "type": "math_inline",
+                        "latex": "\\begin{bmatrix}\\sqrt3-\\frac12\\\\[1mm]1+\\frac{\\sqrt3}{2}\\end{bmatrix}"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "label": "B",
+                "blocks": [
+                  {
+                    "type": "paragraph",
+                    "children": [
+                      {
+                        "type": "math_inline",
+                        "latex": "\\begin{bmatrix}\\sqrt3+\\frac12\\\\[1mm]-1+\\frac{\\sqrt3}{2}\\end{bmatrix}"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "label": "C",
+                "blocks": [
+                  {
+                    "type": "paragraph",
+                    "children": [
+                      {
+                        "type": "math_inline",
+                        "latex": "\\begin{bmatrix}2\\sqrt3-1\\\\[1mm]2+\\sqrt3\\end{bmatrix}"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "label": "D",
+                "blocks": [
+                  {
+                    "type": "paragraph",
+                    "children": [
+                      {
+                        "type": "math_inline",
+                        "latex": "\\begin{bmatrix}2\\\\1\\end{bmatrix}"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "id": "q-9-86d3a60b",
+          "type": "question",
+          "number": 9,
+          "points": 12,
+          "stem": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "El marco "
+                },
+                {
+                  "type": "math_inline",
+                  "latex": "\\{B\\}"
+                },
+                {
+                  "type": "text",
+                  "value": " está rotado "
+                },
+                {
+                  "type": "math_inline",
+                  "latex": "45^\\circ"
+                },
+                {
+                  "type": "text",
+                  "value": " en sentido antihorario respecto a "
+                },
+                {
+                  "type": "math_inline",
+                  "latex": "\\{A\\}"
+                },
+                {
+                  "type": "text",
+                  "value": ". Si"
+                }
+              ]
+            },
+            {
+              "type": "math",
+              "latex": "{}^A\\mathbf{q}=\\begin{bmatrix}0\\\\2\\end{bmatrix},",
+              "display": true
+            },
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "¿cuáles son las coordenadas de ese punto expresadas en "
+                },
+                {
+                  "type": "math_inline",
+                  "latex": "\\{B\\}"
+                },
+                {
+                  "type": "text",
+                  "value": "?"
+                }
+              ]
+            }
+          ],
+          "options": {
+            "layout": "inline",
+            "items": [
+              {
+                "label": "A",
+                "blocks": [
+                  {
+                    "type": "paragraph",
+                    "children": [
+                      {
+                        "type": "math_inline",
+                        "latex": "\\begin{bmatrix}\\sqrt2\\\\\\sqrt2\\end{bmatrix}"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "label": "B",
+                "blocks": [
+                  {
+                    "type": "paragraph",
+                    "children": [
+                      {
+                        "type": "math_inline",
+                        "latex": "\\begin{bmatrix}-\\sqrt2\\\\\\sqrt2\\end{bmatrix}"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "label": "C",
+                "blocks": [
+                  {
+                    "type": "paragraph",
+                    "children": [
+                      {
+                        "type": "math_inline",
+                        "latex": "\\begin{bmatrix}\\sqrt2\\\\-\\sqrt2\\end{bmatrix}"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "label": "D",
+                "blocks": [
+                  {
+                    "type": "paragraph",
+                    "children": [
+                      {
+                        "type": "math_inline",
+                        "latex": "\\begin{bmatrix}0\\\\2\\end{bmatrix}"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "id": "q-10-02b6fd83",
+          "type": "question",
+          "number": 10,
+          "points": 11,
+          "stem": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Observe los marcos "
+                },
+                {
+                  "type": "math_inline",
+                  "latex": "\\{A\\}"
+                },
+                {
+                  "type": "text",
+                  "value": " y "
+                },
+                {
+                  "type": "math_inline",
+                  "latex": "\\{B\\}"
+                },
+                {
+                  "type": "text",
+                  "value": ":"
+                }
+              ]
+            },
+            {
+              "type": "figure",
+              "assetId": "asset-5df1ccef4381"
+            },
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Para esta configuración,"
+                }
+              ]
+            },
+            {
+              "type": "math",
+              "latex": "{}^A R_B=\n            \\begin{bmatrix}\n                0 & -1\\\\\n                1 & 0\n            \\end{bmatrix}.",
+              "display": true
+            },
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "¿Cuál interpretación es correcta?"
+                }
+              ]
+            }
+          ],
+          "options": {
+            "layout": "vertical",
+            "items": [
+              {
+                "label": "A",
+                "blocks": [
+                  {
+                    "type": "paragraph",
+                    "children": [
+                      {
+                        "type": "text",
+                        "value": "La primera columna indica que "
+                      },
+                      {
+                        "type": "math_inline",
+                        "latex": "x_B"
+                      },
+                      {
+                        "type": "text",
+                        "value": " coincide con "
+                      },
+                      {
+                        "type": "math_inline",
+                        "latex": "-y_A"
+                      },
+                      {
+                        "type": "text",
+                        "value": "."
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "label": "B",
+                "blocks": [
+                  {
+                    "type": "paragraph",
+                    "children": [
+                      {
+                        "type": "text",
+                        "value": "La segunda columna indica que "
+                      },
+                      {
+                        "type": "math_inline",
+                        "latex": "y_B"
+                      },
+                      {
+                        "type": "text",
+                        "value": " coincide con "
+                      },
+                      {
+                        "type": "math_inline",
+                        "latex": "+x_A"
+                      },
+                      {
+                        "type": "text",
+                        "value": "."
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "label": "C",
+                "blocks": [
+                  {
+                    "type": "paragraph",
+                    "children": [
+                      {
+                        "type": "math_inline",
+                        "latex": "x_B"
+                      },
+                      {
+                        "type": "text",
+                        "value": " coincide con "
+                      },
+                      {
+                        "type": "math_inline",
+                        "latex": "+y_A"
+                      },
+                      {
+                        "type": "text",
+                        "value": ", "
+                      },
+                      {
+                        "type": "math_inline",
+                        "latex": "y_B"
+                      },
+                      {
+                        "type": "text",
+                        "value": " con "
+                      },
+                      {
+                        "type": "math_inline",
+                        "latex": "-x_A"
+                      },
+                      {
+                        "type": "text",
+                        "value": " y para pasar de "
+                      },
+                      {
+                        "type": "math_inline",
+                        "latex": "A"
+                      },
+                      {
+                        "type": "text",
+                        "value": " a "
+                      },
+                      {
+                        "type": "math_inline",
+                        "latex": "B"
+                      },
+                      {
+                        "type": "text",
+                        "value": " se usa "
+                      },
+                      {
+                        "type": "math_inline",
+                        "latex": "({}^A R_B)^T"
+                      },
+                      {
+                        "type": "text",
+                        "value": "."
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "label": "D",
+                "blocks": [
+                  {
+                    "type": "paragraph",
+                    "children": [
+                      {
+                        "type": "text",
+                        "value": "El punto físico debe rotarse "
+                      },
+                      {
+                        "type": "math_inline",
+                        "latex": "90^\\circ"
+                      },
+                      {
+                        "type": "text",
+                        "value": " cada vez que cambia de marco."
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "blocks": []
+    }
+  ]
+}

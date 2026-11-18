@@ -1,0 +1,35 @@
+{
+  "schemaVersion": "1.1.0",
+  "generator": "3.0.0-beta",
+  "documentType": "guide",
+  "source": "Web1_guia1.tex",
+  "createdAt": "2026-11-18T16:25:52.422725+00:00",
+  "counts": {
+    "section": 19,
+    "paragraph": 318,
+    "text": 540,
+    "code_inline": 136,
+    "list": 17,
+    "academic_block": 12,
+    "subsection": 48,
+    "code": 54,
+    "table": 10,
+    "span": 4,
+    "emphasis": 1,
+    "strong": 5,
+    "figure": 4,
+    "math_inline": 3,
+    "math": 1
+  },
+  "assets": {
+    "resolved": 4,
+    "missing": 1
+  },
+  "diagnostics": [
+    {
+      "severity": "warning",
+      "code": "ASSET",
+      "message": "Imagen no encontrada: Template/LogoSena.png"
+    }
+  ]
+}

@@ -1,0 +1,2607 @@
+\documentclass[11pt]{article}
+
+% Plantilla maestra para guías del instructor
+\input{~/Dropbox/Latex/TemplateGuide/template-guide.tex}
+
+\makeatletter
+\renewcommand*\l@subsection{\@dottedtocline{2}{1.5em}{3.8em}}
+\makeatother
+
+\renewcommand{\CourseName}{Diseño Web 1}
+\renewcommand{\CourseCode}{ADSO-CTMA}
+\renewcommand{\Faculty}{Análisis y Desarrollo de Software}
+\renewcommand{\Institution}{Servicio Nacional de Aprendizaje SENA}
+\renewcommand{\Instructor}{Deimer Miranda Montoya, MSc.(c).}
+\renewcommand{\Email}{damiranda@sena.edu.co}
+\renewcommand{\GuideTitle}{Guía 3: Construcción de layouts con CSS}
+\renewcommand{\ClassName}{Posicionamiento, Flexbox y Grid}
+\renewcommand{\AcademicPeriod}{2026-3T}
+\renewcommand{\InstitutionLogo}{Template/LogoSena.png}
+
+\begin{document}
+\thispagestyle{firstpage}
+\GuideHeader
+\GuideInfo{Clases 6 a 8}{Presencial con explicación, práctica guiada y trabajo autónomo}{Layout compuesto con posicionamiento, Flexbox y Grid}
+
+\section{Presentación}
+Esta guía se concentra en un único problema: \textbf{cómo organizar elementos en la interfaz}. Parte del flujo normal y el posicionamiento, continúa con Flexbox para distribuciones principalmente unidimensionales y finaliza con CSS Grid para composiciones bidimensionales.
+
+\section*{Resultados de aprendizaje de la guía}
+Al finalizar, el aprendiz podrá:
+\begin{itemize}
+    \item explicar qué ocurre con un elemento dentro y fuera del flujo normal;
+    \item utilizar \texttt{relative}, \texttt{absolute}, \texttt{fixed} y \texttt{sticky} en situaciones justificadas;
+    \item comprender superposición y \texttt{z-index};
+    \item identificar eje principal y eje transversal en Flexbox;
+    \item distribuir, alinear y permitir salto de elementos flex;
+    \item controlar el comportamiento de elementos mediante \texttt{flex}, \texttt{order} y \texttt{align-self};
+    \item construir cuadrículas mediante columnas, filas, líneas, áreas y unidades \texttt{fr};
+    \item decidir cuándo conviene Flexbox y cuándo Grid.
+\end{itemize}
+
+\section*{Conocimientos previos}
+Se espera dominio básico de selectores, clases, modelo de caja, dimensiones y \texttt{display}.
+
+\Warning[Alcance de esta guía]{
+Aunque algunas técnicas de Flexbox y Grid son fluidas por naturaleza, las media queries y el diseño responsive como estrategia se estudian en la Guía 4. Aquí el objetivo es dominar primero la distribución.
+}
+
+\tableofcontents
+\newpage
+
+\section{Mapa conceptual de la distribución}
+\begin{center}
+    \begin{tikzpicture}[
+        node distance=1.5cm and 1.8cm,
+        caja/.style={
+            draw=BrandBlue,
+            thick,
+            rounded corners=3pt,
+            fill=IdeaBody,
+            minimum width=3.6cm,
+            minimum height=1.0cm,
+            align=center
+        },
+        subcaja/.style={
+            draw=PracticeTitle,
+            thick,
+            rounded corners=3pt,
+            fill=PracticeBody,
+            minimum width=3.6cm,
+            minimum height=1.0cm,
+            align=center
+        },
+        flecha/.style={
+            -{Latex[length=3mm]},
+            thick,
+            BrandBlue
+        },
+        nota/.style={
+            font=\small,
+            align=center,
+            text width=3.8cm
+        }
+        ]
+
+        % Nodo principal
+        \node[caja] (flujo)
+        {Flujo normal\\\small comportamiento base};
+
+        % Nivel inferior
+        \node[subcaja, below left=1.6cm and 3.2cm of flujo] (position)
+        {Position\\\small altera o ancla elementos};
+
+        \node[subcaja, below=1.6cm of flujo] (flex)
+        {Flexbox\\\small un eje dominante};
+
+        \node[subcaja, below right=1.6cm and 3.2cm of flujo] (grid)
+        {Grid\\\small filas y columnas};
+
+        % Flechas
+        \draw[flecha] (flujo) -- (position);
+        \draw[flecha] (flujo) -- (flex);
+        \draw[flecha] (flujo) -- (grid);
+
+        % Notas explicativas
+        \node[nota, below=0.45cm of position]
+        {Útil para superposición, desplazamiento y elementos anclados.};
+
+        \node[nota, below=0.45cm of flex]
+        {Adecuado cuando la distribución se entiende principalmente como fila o columna.};
+
+        \node[nota, below=0.45cm of grid]
+        {Adecuado cuando deben controlarse filas y columnas simultáneamente.};
+
+    \end{tikzpicture}
+\end{center}
+    \section{Posicionamiento en CSS}
+    % =========================================================
+
+    \subsection{Flujo normal}
+
+    Antes de utilizar \texttt{position}, los elementos se ubican según el orden del HTML y su comportamiento de visualización. Los bloques suelen aparecer uno debajo de otro y los elementos inline participan en la línea de texto.
+
+    \subsection{Propiedad position}
+
+    Valores principales:
+
+    \begin{itemize}
+        \item \texttt{static}
+        \item \texttt{relative}
+        \item \texttt{absolute}
+        \item \texttt{fixed}
+        \item \texttt{sticky}
+    \end{itemize}
+
+    Las propiedades \texttt{top}, \texttt{right}, \texttt{bottom} y \texttt{left} permiten indicar desplazamientos, pero su efecto depende del tipo de posicionamiento.
+
+    \subsection{static}
+
+    Es el valor predeterminado. El elemento permanece dentro del flujo normal.
+
+    \begin{csscodedark}
+        .caja {
+            position: static;
+        }
+    \end{csscodedark}
+
+    \subsection{relative}
+
+    Conserva el espacio original del elemento en el flujo, pero permite desplazarlo visualmente.
+
+    \begin{csscodedark}
+        .caja {
+            position: relative;
+            top: 20px;
+            left: 30px;
+        }
+    \end{csscodedark}
+
+    También es muy útil para establecer un contenedor de referencia para descendientes con \texttt{position: absolute}.
+
+    \subsection{absolute}
+
+    Sale del flujo normal: deja de reservar su espacio original. Se posiciona respecto al ancestro posicionado más cercano, es decir, un ancestro cuyo \texttt{position} sea diferente de \texttt{static}.
+
+    \begin{htmlcodedark}
+    <div class="tarjeta">
+        <span class="etiqueta">Nuevo</span>
+        <h2>Producto</h2>
+    </div>
+    \end{htmlcodedark}
+
+    \begin{csscodedark}
+        .tarjeta {
+            position: relative;
+        }
+
+        .etiqueta {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+        }
+    \end{csscodedark}
+
+    \subsection{fixed}
+
+    Se posiciona respecto a la ventana visible del navegador y permanece en esa ubicación durante el desplazamiento.
+
+    \begin{csscodedark}
+        .ayuda {
+            position: fixed;
+            right: 20px;
+            bottom: 20px;
+        }
+    \end{csscodedark}
+
+    \subsection{sticky}
+
+    Participa inicialmente en el flujo normal y puede mantenerse visible al alcanzar un umbral durante el desplazamiento.
+
+    \begin{csscodedark}
+        nav {
+            position: sticky;
+            top: 0;
+        }
+    \end{csscodedark}
+
+    Su comportamiento depende también del contenedor y de las condiciones de desplazamiento.
+
+    \subsection{Comparación de position}
+
+    \begin{center}
+        \begin{tabularx}{0.94\textwidth}{>{\bfseries}p{2.2cm}p{2.8cm}p{3.5cm}X}
+            \toprule
+            Valor & ¿En flujo? & ¿Conserva espacio? & Referencia inicial \\
+            \midrule
+            static & Sí & Sí & Flujo normal. \\
+            relative & Sí & Sí & Posición original. \\
+            absolute & No & No & Ancestro posicionado. \\
+            fixed & No & No & Ventana visible. \\
+            sticky & Sí inicialmente & Sí & Contenedor y desplazamiento. \\
+            \bottomrule
+        \end{tabularx}
+    \end{center}
+
+    \subsection{z-index}
+
+    Cuando elementos posicionados se superponen, \texttt{z-index} ayuda a controlar el orden de apilamiento dentro de su contexto.
+
+    \begin{csscodedark}
+        nav {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+    \end{csscodedark}
+
+    En ejemplos sencillos, un valor mayor puede aparecer por encima de uno menor. En proyectos más complejos intervienen los contextos de apilamiento, tema que se profundizará posteriormente.
+
+    \Warning[Uso de absolute]{
+        No utilice \texttt{position: absolute} como herramienta principal para construir toda la distribución de una página. Para distribuir grupos de elementos se estudiarán Flexbox y Grid.
+    }
+
+
+    % =========================================================
+    \section{Práctica guiada: Cafetería Urbana}
+    % =========================================================
+
+    \subsection{Contexto trabajado en clase: Cafetería Urbana}
+
+    Durante la práctica se construirá progresivamente la presentación visual de un pequeño sitio para una cafetería. El propósito no es copiar una hoja CSS completa desde el inicio, sino incorporar una regla a la vez y observar su efecto.
+
+    \subsection{Estructura del proyecto}
+
+    \begin{bashcodedark}
+        cafeteria-urbana/
+        ├── index.html
+        ├── contacto.html
+        ├── css/
+        │   └── styles.css
+        └── img/
+            └── cafe.jpg
+    \end{bashcodedark}
+
+    Las dos páginas HTML deben vincular la misma hoja de estilos:
+
+    \begin{htmlcodedark}
+        <link rel="stylesheet" href="css/styles.css">
+    \end{htmlcodedark}
+
+    \Practice[Paso 1 - Comprobar la conexión]{
+        En \texttt{styles.css}, escriba temporalmente una regla sencilla para \texttt{body}, guarde los archivos y compruebe que el navegador refleja el cambio. Si no ocurre, revise primero la ruta del atributo \texttt{href}.
+    }
+
+    \subsection{HTML de referencia}
+
+    En \texttt{index.html} utilice una estructura equivalente a la siguiente:
+
+    \begin{htmlcodedark}
+    <header id="inicio">
+        <h1>Cafetería Urbana</h1>
+        <p class="destacado">
+        Café artesanal y productos frescos.
+        </p>
+    </header>
+
+    <nav>
+        <a href="index.html">Inicio</a>
+        <a href="contacto.html">Contacto</a>
+    </nav>
+
+    <main>
+        <section id="menu" class="tarjeta">
+            <span class="etiqueta">Recomendado</span>
+
+            <h2>Producto del día</h2>
+
+            <img src="img/cafe.jpg"
+            alt="Taza de café">
+
+            <p>Café especial de origen colombiano.</p>
+
+            <button type="button">Ver producto</button>
+        </section>
+    </main>
+    \end{htmlcodedark}
+
+    \subsection{Paso 2: selector de etiqueta}
+
+    Comience con una sola regla:
+
+    \begin{csscodedark}
+        h1 {
+            color: brown;
+        }
+    \end{csscodedark}
+
+    Compruebe que solamente cambia el encabezado \texttt{h1}. Después agregue:
+
+    \begin{csscodedark}
+        p {
+            font-size: 18px;
+        }
+    \end{csscodedark}
+
+    \Practice[Comprobación]{
+        Explique por qué todos los párrafos coinciden con el selector \texttt{p}.
+    }
+
+    \subsection{Paso 3: selector de clase}
+
+    \begin{csscodedark}
+        .destacado {
+            color: darkred;
+            font-weight: bold;
+        }
+    \end{csscodedark}
+
+    Observe que el punto indica un selector de clase.
+
+    \subsection{Paso 4: selector de ID}
+
+    \begin{csscodedark}
+        #menu {
+            background-color: beige;
+        }
+    \end{csscodedark}
+
+    \Practice[Comparación]{
+        Identifique en el documento un selector de etiqueta, uno de clase y uno de ID. Explique qué elementos selecciona cada uno.
+    }
+
+    \subsection{Paso 5: tipografía y color}
+
+    \begin{csscodedark}
+        body {
+            font-family: Arial, sans-serif;
+            color: #333333;
+        }
+    \end{csscodedark}
+
+    Modifique temporalmente \texttt{\#333333} por un nombre de color y luego por un valor \texttt{rgb()} para comparar las representaciones.
+
+    \subsection{Paso 6: dimensiones}
+
+    \begin{csscodedark}
+        .tarjeta {
+            width: 80%;
+            max-width: 500px;
+        }
+
+        .tarjeta img {
+            width: 100%;
+        }
+    \end{csscodedark}
+
+    \Practice[Unidades]{
+        Explique qué parte utiliza una longitud relativa y cuál establece un límite máximo.
+    }
+
+    \subsection{Paso 7: modelo de caja}
+
+    Agregue progresivamente:
+
+    \begin{csscodedark}
+        * {
+            box-sizing: border-box;
+        }
+
+        .tarjeta {
+            width: 80%;
+            max-width: 500px;
+            padding: 20px;
+            border: 2px solid brown;
+            margin: 30px auto;
+        }
+    \end{csscodedark}
+
+    Identifique en el resultado:
+
+    \begin{itemize}
+        \item contenido;
+        \item padding;
+        \item borde;
+        \item margen.
+    \end{itemize}
+
+    \subsection{Paso 8: estados visuales del botón}
+
+    \begin{csscodedark}
+        button {
+            background-color: brown;
+            color: white;
+            padding: 10px 16px;
+            border: none;
+        }
+
+        button:hover {
+            background-color: darkred;
+        }
+
+        button:active {
+            background-color: black;
+        }
+
+        button:focus {
+            outline: 3px solid orange;
+        }
+    \end{csscodedark}
+
+    \Practice[Interacción visual]{
+        Pruebe cada estado. Recuerde que CSS cambia la apariencia del botón, pero no define una lógica de negocio para el clic.
+    }
+
+    \subsection{Paso 9: relative y absolute}
+
+    Convierta la tarjeta en referencia para la etiqueta:
+
+    \begin{csscodedark}
+        .tarjeta {
+            position: relative;
+        }
+
+        .etiqueta {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background-color: #8B0000;
+            color: white;
+            padding: 5px 8px;
+        }
+    \end{csscodedark}
+
+    \Practice[Pregunta clave]{
+        ¿Qué ocurriría con la referencia del elemento \texttt{.etiqueta} si se elimina \texttt{position: relative} de \texttt{.tarjeta}?
+    }
+
+    \subsection{Paso 10: sticky y fixed}
+
+    Para la navegación:
+
+    \begin{csscodedark}
+        nav {
+            position: sticky;
+            top: 0;
+            background-color: white;
+            padding: 10px;
+            z-index: 10;
+        }
+    \end{csscodedark}
+
+    Agregue un botón de ayuda al HTML:
+
+    \begin{htmlcodedark}
+        <button class="ayuda" type="button">Ayuda</button>
+    \end{htmlcodedark}
+
+    Y aplique:
+
+    \begin{csscodedark}
+        .ayuda {
+            position: fixed;
+            right: 20px;
+            bottom: 20px;
+        }
+    \end{csscodedark}
+
+    \subsection{Lista de verificación de la práctica}
+
+    \begin{itemize}
+        \ChecklistItem{Las dos páginas utilizan la misma hoja de estilos externa.}
+        \ChecklistItem{Se utiliza correctamente un selector de etiqueta.}
+        \ChecklistItem{Se utiliza correctamente un selector de clase.}
+        \ChecklistItem{Se utiliza correctamente un selector de ID.}
+        \ChecklistItem{Se aplican colores y propiedades tipográficas.}
+        \ChecklistItem{Se utilizan \texttt{px} y \texttt{\%} con sentido.}
+        \ChecklistItem{La tarjeta permite identificar content, padding, border y margin.}
+        \ChecklistItem{Se utiliza \texttt{box-sizing: border-box}.}
+        \ChecklistItem{El botón posee estados \texttt{:hover}, \texttt{:active} y \texttt{:focus}.}
+        \ChecklistItem{El elemento absolute utiliza un contenedor de referencia.}
+        \ChecklistItem{Se prueba al menos un elemento sticky y uno fixed.}
+    \end{itemize}
+
+    % =========================================================
+    \section{Ejercicio autónomo: Evento Cultural}
+    % =========================================================
+
+    \subsection{Contexto trabajado: Evento Cultural}
+
+    Construya la presentación visual de un \textbf{evento cultural} diferente a la
+    Cafetería Urbana. Incluya el nombre del evento, fecha, lugar, programación, una
+    imagen representativa, una acción principal y una página de contacto. El cambio
+    de contexto permite aplicar los mismos conceptos sin copiar la práctica guiada.
+
+    \subsection{Estructura mínima}
+
+    \begin{bashcodedark}
+        proyecto-css-nombre-apellido/
+        ├── index.html
+        ├── contacto.html
+        ├── css/
+        │   └── styles.css
+        └── img/
+            └── imagen.jpg
+    \end{bashcodedark}
+
+    \subsection{Requisitos CSS}
+
+    El trabajo debe incluir:
+
+    \begin{itemize}
+        \item hoja de estilos externa compartida por las dos páginas;
+        \item al menos un selector de etiqueta, dos clases y un ID;
+        \item al menos dos formas diferentes de representar colores;
+        \item \texttt{font-family}, \texttt{font-size}, \texttt{font-weight} y \texttt{text-align};
+        \item uso justificado de \texttt{px} y \texttt{\%};
+        \item \texttt{width} y al menos una propiedad de límite como \texttt{max-width};
+        \item \texttt{padding}, \texttt{border} y \texttt{margin};
+        \item \texttt{box-sizing: border-box};
+        \item un elemento con \texttt{display: inline-block};
+        \item un botón con \texttt{:hover}, \texttt{:active} y \texttt{:focus};
+        \item un contenedor \texttt{relative} con un elemento interno \texttt{absolute};
+        \item un uso razonable de \texttt{fixed} o \texttt{sticky};
+        \item \texttt{z-index} únicamente cuando exista una superposición que lo justifique.
+    \end{itemize}
+
+    \Warning[No se evalúa decoración por decoración]{
+        El propósito es comprobar que cada propiedad se utiliza de forma consciente. El aprendiz debe poder explicar qué selecciona cada regla, qué propiedad modifica y por qué eligió su valor.
+    }
+
+    \subsection{Lista de verificación}
+
+    \begin{itemize}
+        \ChecklistItem{El archivo CSS está correctamente vinculado en ambas páginas.}
+        \ChecklistItem{No se utiliza CSS en línea como forma principal de trabajo.}
+        \ChecklistItem{Los nombres de clases son reutilizables y comprensibles.}
+        \ChecklistItem{Los ID no se repiten dentro de una misma página.}
+        \ChecklistItem{El aprendiz diferencia selector, propiedad y valor.}
+        \ChecklistItem{El aprendiz diferencia selector de etiqueta, clase e ID.}
+        \ChecklistItem{El aprendiz diferencia padding y margin.}
+        \ChecklistItem{El aprendiz puede explicar el efecto de border-box.}
+        \ChecklistItem{El aprendiz puede explicar la referencia de un elemento absolute.}
+        \ChecklistItem{No se utiliza position:absolute para construir toda la distribución.}
+    \end{itemize}
+
+    \clearpage
+    \section{Introducción a Flexbox}
+    % =========================================================
+
+    Flexbox es un modelo de distribución unidimensional pensado para organizar elementos en una fila o una columna. El algoritmo calcula tamaños, espacio libre y posibles reducciones antes de ubicar los hijos.
+
+    \DefBlock[Modelo unidimensional]{
+        Unidimensional no significa únicamente horizontal. Significa que la distribución se estudia desde un eje principal. Cuando se requieren filas y columnas coordinadas simultáneamente, CSS Grid suele ser más apropiado.
+    }
+
+    \Idea[Relación directa]{
+        Al aplicar \texttt{display: flex} al padre, únicamente sus hijos directos se convierten en elementos flex. Un elemento puede ser, al mismo tiempo, hijo flex de su padre y contenedor flex de sus propios hijos.
+    }
+
+    \subsection{HTML básico utilizado en clase}
+
+    Para observar una propiedad por vez se utiliza un contenedor con cajas numeradas:
+
+    \begin{htmlcodedark}
+        <div class="contenedor">
+        <div class="caja">1</div>
+        <div class="caja">2</div>
+        <div class="caja">3</div>
+        </div>
+    \end{htmlcodedark}
+
+    \begin{csscodedark}
+        .contenedor {
+            border: 3px solid #1e3c78;
+            min-height: 250px;
+        }
+
+        .caja {
+            padding: 20px;
+            border: 2px solid #14785a;
+            background-color: #e8faf5;
+        }
+    \end{csscodedark}
+
+    \subsection{Contenedor flex y elementos flex}
+
+    Active Flexbox únicamente en el padre:
+
+    \begin{csscodedark}
+        .contenedor {
+            display: flex;
+        }
+    \end{csscodedark}
+
+\begin{center}
+    \begin{tikzpicture}[
+        container/.style={
+            draw=BrandBlue,
+            very thick,
+            rounded corners=3pt
+        },
+        item/.style={
+            draw=PracticeTitle,
+            thick,
+            fill=PracticeBody,
+            rounded corners=2pt,
+            minimum width=2.2cm,
+            minimum height=1cm,
+            align=center
+        },
+        flecha/.style={
+            -{Latex[length=3mm]},
+            thick,
+            BrandBlue
+        }
+        ]
+
+        % Contenedor
+        \draw[container] (0,0) rectangle (10.5,3.4);
+
+        \node[
+        font=\small\bfseries
+        ] at (5.25,3.05)
+        {
+            Contenedor Flex: \texttt{.contenedor}
+        };
+
+        % Elementos
+        \node[item] (e1) at (1.8,1.65) {Elemento 1};
+        \node[item] (e2) at (5.25,1.65) {Elemento 2};
+        \node[item] (e3) at (8.7,1.65) {Elemento 3};
+
+        % Eje principal
+        \draw[flecha] (1.1,0.65) -- (9.4,0.65);
+
+        \node[
+        font=\small,
+        text=BrandBlue
+        ] at (5.25,0.35)
+        {
+            eje principal
+        };
+
+    \end{tikzpicture}
+\end{center}
+\Idea[Relación entre contenedor e items]{
+    Cuando un elemento recibe \texttt{display: flex}, sus hijos directos se convierten
+    en \textbf{flex items}. Las propiedades como \texttt{justify-content},
+    \texttt{align-items} y \texttt{flex-direction} se aplican al contenedor para
+    controlar la distribución de esos elementos.
+}
+    Los hijos directos pasan a ser elementos flex. El orden lógico continúa definido por el HTML y los elementos conservan, como punto de partida, sus tamaños automáticos y el valor inicial \texttt{flex-shrink: 1}.
+
+    % =========================================================
+    \section{Ejes y dirección en Flexbox}
+    % =========================================================
+
+    Flexbox utiliza dos ejes. Sus direcciones de inicio y final dependen de \texttt{flex-direction} y también de la dirección de escritura del documento:
+
+    \begin{itemize}
+        \item \textbf{Eje principal}: dirección en la que se distribuyen inicialmente los elementos.
+        \item \textbf{Eje transversal}: eje perpendicular al principal.
+    \end{itemize}
+
+\begin{center}
+    \begin{tikzpicture}[
+        item/.style={
+            draw=PracticeTitle,
+            thick,
+            fill=PracticeBody,
+            rounded corners=2pt,
+            minimum width=1.5cm,
+            minimum height=0.9cm,
+            align=center
+        },
+        axis/.style={
+            -{Latex[length=3mm]},
+            thick,
+            BrandBlue
+        },
+        label/.style={
+            font=\small,
+            text=BrandBlue
+        }
+        ]
+
+        % Contenedor Flex
+        \draw[
+        BrandBlue,
+        very thick,
+        rounded corners=3pt
+        ] (0,0) rectangle (10,4.2);
+
+        % Título interno
+        \node[
+        font=\small\bfseries
+        ] at (5,3.85)
+        {
+            \texttt{flex-direction: row}
+        };
+
+        % Flex items
+        \node[item] at (2.1,2.2) {1};
+        \node[item] at (4.4,2.2) {2};
+        \node[item] at (6.7,2.2) {3};
+
+        % =========================================================
+        % EJE PRINCIPAL
+        % =========================================================
+
+        \draw[axis] (1.25,0.85) -- (8.55,0.85);
+
+        \node[label] at (4.9,0.48)
+        {
+            eje principal
+        };
+
+        \node[
+        font=\scriptsize,
+        anchor=north west
+        ] at (1.25,0.78)
+        {
+            inicio
+        };
+
+        \node[
+        font=\scriptsize,
+        anchor=north east
+        ] at (8.55,0.78)
+        {
+            fin
+        };
+
+        % =========================================================
+        % EJE TRANSVERSAL
+        % =========================================================
+
+        \draw[axis] (9.0,0.8) -- (9.0,3.25);
+
+        \node[
+        label,
+        rotate=90
+        ] at (9.45,2.0)
+        {
+            eje transversal
+        };
+
+        \node[
+        font=\scriptsize,
+        rotate=90
+        ] at (8.73,1.05)
+        {
+            inicio
+        };
+
+        \node[
+        font=\scriptsize,
+        rotate=90
+        ] at (8.73,3.05)
+        {
+            fin
+        };
+
+    \end{tikzpicture}
+\end{center}
+\Idea[Los ejes dependen de \texttt{flex-direction}]{
+    En este ejemplo se utiliza \texttt{flex-direction: row}, por lo que el eje
+    principal es horizontal y el eje transversal es vertical. Si se utiliza
+    \texttt{flex-direction: column}, el eje principal pasa a ser vertical y el
+    transversal horizontal.
+}
+
+    \subsection{flex-direction}
+
+    Por defecto:
+
+    \begin{csscodedark}
+        .contenedor {
+            display: flex;
+            flex-direction: row;
+        }
+    \end{csscodedark}
+
+    Pruebe después:
+
+    \begin{csscodedark}
+        flex-direction: column;
+    \end{csscodedark}
+
+    Valores principales: \texttt{row}, \texttt{row-reverse}, \texttt{column} y \texttt{column-reverse}.
+
+    \Practice[Experimento de dirección]{
+        Cambie únicamente \texttt{flex-direction}. No modifique el HTML. Observe cómo cambia el eje principal y vuelva finalmente a \texttt{row} para continuar.
+    }
+
+    % =========================================================
+    \section{Distribución y alineación con Flexbox}
+    % =========================================================
+
+    \subsection{justify-content}
+
+    Esta propiedad distribuye el espacio libre sobre el eje principal. Para que valores como \texttt{center} o \texttt{space-between} sean visibles, el contenedor debe disponer de espacio después de calcular los tamaños de sus hijos.
+
+    Trabaja sobre el \textbf{eje principal}. Pruebe una modificación a la vez:
+
+    \begin{csscodedark}
+        .contenedor {
+            display: flex;
+            justify-content: center;
+        }
+    \end{csscodedark}
+
+    Después cambie solamente el valor por:
+
+    \begin{csscodedark}
+        justify-content: flex-start;
+        justify-content: flex-end;
+        justify-content: space-between;
+        justify-content: space-around;
+        justify-content: space-evenly;
+    \end{csscodedark}
+
+    \begin{center}
+        \begin{tabularx}{0.92\textwidth}{>{\bfseries}p{3.4cm}X}
+            \toprule
+            Valor & Idea principal \\
+            \midrule
+            flex-start & Agrupa al inicio del eje principal. \\
+            center & Agrupa en el centro. \\
+            flex-end & Agrupa al final. \\
+            space-between & Espacio entre elementos, sin espacio equivalente en extremos. \\
+            space-around & Espacio alrededor de cada elemento. \\
+            space-evenly & Espacios uniformes entre elementos y extremos. \\
+            \bottomrule
+        \end{tabularx}
+    \end{center}
+
+    \subsection{align-items}
+
+    Esta propiedad define la alineación transversal predeterminada dentro de cada línea. En una fila, suele observarse al proporcionar altura al contenedor. El valor inicial \texttt{stretch} solo estira hijos cuyo tamaño transversal es automático.
+
+    Trabaja sobre el \textbf{eje transversal}. Para observarlo, agregue una altura temporal:
+
+    \begin{csscodedark}
+        .contenedor {
+            display: flex;
+            height: 260px;
+            align-items: center;
+        }
+    \end{csscodedark}
+
+    Pruebe \texttt{flex-start}, \texttt{center}, \texttt{flex-end}, \texttt{stretch} y \texttt{baseline}.
+
+    \Warning[Regla de los ejes]{
+        No memorice ``justify es horizontal'' y ``align es vertical''. \texttt{justify-content} trabaja sobre el eje principal y \texttt{align-items} sobre el transversal. Los ejes cambian con \texttt{flex-direction}.
+    }
+
+    % =========================================================
+    \section{Separación, salto de línea y varias filas}
+    % =========================================================
+
+    \subsection{gap}
+
+    Elimine la altura temporal y agregue:
+
+    \begin{csscodedark}
+        .contenedor {
+            display: flex;
+            gap: 20px;
+        }
+    \end{csscodedark}
+
+    \texttt{gap} crea separación entre los elementos sin tener que asignar un margen diferente a cada hijo.
+
+    \subsection{flex-wrap}
+
+    El valor inicial es \texttt{nowrap}: todos los hijos intentan permanecer en una sola línea y pueden reducirse. \texttt{wrap} permite formar nuevas líneas cuando el tamaño base de los elementos ya no cabe.
+
+    Defina una base visible para las tarjetas:
+
+    \begin{csscodedark}
+        .caja {
+            width: 240px;
+            padding: 16px;
+            border: 1px solid #bbbbbb;
+        }
+    \end{csscodedark}
+
+    En el contenedor:
+
+    \begin{csscodedark}
+        .contenedor {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+    \end{csscodedark}
+
+    Reduzca el ancho de la ventana. Los elementos pueden continuar en una nueva línea cuando dejan de caber.
+
+    Valores principales: \texttt{nowrap}, \texttt{wrap} y \texttt{wrap-reverse}.
+
+    \subsection{align-content}
+
+    Esta propiedad no alinea cajas individuales. Distribuye el conjunto de líneas flex cuando existen varias líneas y sobra espacio transversal.
+
+    Esta propiedad distribuye \textbf{líneas flex}, no elementos individuales. Para probarla, se necesitan varias líneas y espacio disponible:
+
+    \begin{csscodedark}
+        .contenedor {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            height: 500px;
+            align-content: center;
+        }
+    \end{csscodedark}
+
+    \begin{center}
+        \begin{tabularx}{0.9\textwidth}{>{\bfseries}p{3.3cm}X}
+            \toprule
+            Propiedad & Actúa principalmente sobre \\
+            \midrule
+            align-items & Los elementos de una línea flex. \\
+            align-content & El conjunto de líneas cuando existen varias. \\
+            \bottomrule
+        \end{tabularx}
+    \end{center}
+
+    Después del experimento, retire la altura de 500px.
+
+    % =========================================================
+    \section{Propiedades de los elementos flex}
+    % =========================================================
+
+    Hasta ahora las propiedades principales se aplicaron al contenedor. Ahora modificaremos los hijos \texttt{.caja}.
+
+    \subsection{flex-grow}
+
+    Su valor inicial es cero. El número representa una proporción del espacio libre positivo, no una medida ni el ancho total.
+
+    \begin{csscodedark}
+        .caja {
+            flex-grow: 1;
+        }
+    \end{csscodedark}
+
+    Cuando existe espacio libre, los elementos pueden crecer. Si todos tienen \texttt{1}, participan de forma equivalente en la distribución del espacio libre.
+
+    Para destacar temporalmente el segundo elemento, agregue al HTML:
+
+    \begin{htmlcodedark}
+        <div class="caja">1</div>
+        <div class="caja destacada">2</div>
+        <div class="caja">3</div>
+    \end{htmlcodedark}
+
+    Y pruebe:
+
+    \begin{csscodedark}
+        .destacada {
+            flex-grow: 2;
+        }
+    \end{csscodedark}
+
+    \Warning{
+        \texttt{flex-grow: 2} no significa necesariamente que el elemento termine con el doble del ancho total. El valor expresa una proporción del espacio libre distribuible.
+    }
+
+    \subsection{flex-shrink}
+
+    Interviene cuando la suma de los tamaños base supera el tamaño del contenedor. El valor inicial habitual es uno; la reducción real también considera el tamaño base.
+
+    Controla la reducción cuando falta espacio. Su valor inicial habitual es \texttt{1}.
+
+    \begin{csscodedark}
+        .destacada {
+            flex-shrink: 0;
+        }
+    \end{csscodedark}
+
+    El elemento intenta conservar su tamaño base mientras otros pueden reducirse.
+
+    \subsection{flex-basis}
+
+    Define el tamaño inicial sobre el eje principal antes de repartir espacio positivo con \texttt{grow} o espacio negativo con \texttt{shrink}.
+
+    Define el tamaño base sobre el eje principal antes de distribuir espacio:
+
+    \begin{csscodedark}
+        .caja {
+            flex-basis: 240px;
+        }
+    \end{csscodedark}
+
+    Con \texttt{row}, esa base se relaciona con el ancho. Con \texttt{column}, se relaciona con el eje vertical.
+
+    \subsection{Propiedad abreviada flex}
+
+    En lugar de:
+
+    \begin{csscodedark}
+        .caja {
+            flex-grow: 1;
+            flex-shrink: 1;
+            flex-basis: 240px;
+        }
+    \end{csscodedark}
+
+    puede escribirse:
+
+    \begin{csscodedark}
+        .caja {
+            flex: 1 1 240px;
+        }
+    \end{csscodedark}
+
+    Orden: \texttt{grow shrink basis}.
+
+    \subsection{order}
+
+    Modifica únicamente la presentación visual. No cambia el orden del DOM, del foco ni de la lectura asistida; por eso no debe reparar un HTML mal organizado.
+
+    Permite modificar el orden visual:
+
+    \begin{csscodedark}
+        .destacada {
+            order: -1;
+        }
+    \end{csscodedark}
+
+    \Warning[Accesibilidad y estructura]{
+        \texttt{order} cambia el orden visual, no el orden lógico del HTML. No lo utilice para corregir una estructura semánticamente desordenada.
+    }
+
+    \subsection{align-self}
+
+    Permite cambiar la alineación transversal de un solo elemento:
+
+    \begin{csscodedark}
+        .destacada {
+            align-self: flex-end;
+        }
+    \end{csscodedark}
+
+    Esta propiedad puede sobrescribir, para ese elemento, la alineación general establecida mediante \texttt{align-items}.
+
+    % =========================================================
+    \section{Síntesis: contenedor frente a elementos flex}
+    % =========================================================
+
+    \begin{center}
+        \begin{tabularx}{0.5\textwidth}{>{\bfseries}p{4.2cm}X}
+            \toprule
+            Contenedor flex & Elementos flex \\
+            \midrule
+            \texttt{display: flex} & \texttt{flex-grow} \\
+            \texttt{flex-direction} & \texttt{flex-shrink} \\
+            \texttt{justify-content} & \texttt{flex-basis} \\
+            \texttt{align-items} & \texttt{flex} \\
+            \texttt{gap} & \texttt{order} \\
+            \texttt{flex-wrap} & \texttt{align-self} \\
+            \texttt{align-content} &  \\
+            \bottomrule
+        \end{tabularx}
+    \end{center}
+
+    \Idea{
+        Una forma práctica de razonar es preguntar primero: ``¿quiero organizar al grupo desde el padre o modificar el comportamiento de un hijo en particular?''.
+    }
+
+    % =========================================================
+
+
+    % =========================================================
+    \section{Práctica guiada de Flexbox: sección de servicios}
+    % =========================================================
+
+    Una empresa necesita presentar tres servicios mediante tarjetas. Este ejemplo,
+    trabajado en clase, permite observar Flexbox en dos niveles.
+
+    \begin{consolecode}
+        servicios-flex/
+        ├── index.html
+        └── css/
+            └── styles.css
+    \end{consolecode}
+
+    \begin{htmlcodedark}
+        <section class="servicios">
+        <article class="tarjeta">
+        <h2>Diseño Web</h2>
+        <p>Diseño de interfaces modernas.</p>
+        <button type="button">Consultar</button>
+        </article>
+
+        <article class="tarjeta">
+        <h2>Soporte</h2>
+        <p>Asistencia para plataformas digitales.</p>
+        <button type="button">Consultar</button>
+        </article>
+
+        <article class="tarjeta">
+        <h2>Desarrollo</h2>
+        <p>Construcción de aplicaciones web.</p>
+        <button type="button">Consultar</button>
+        </article>
+        </section>
+    \end{htmlcodedark}
+
+    \begin{csscodedark}
+        .servicios {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .tarjeta {
+            flex: 1 1 250px;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            border: 1px solid gray;
+        }
+
+        .tarjeta button {
+            margin-top: auto;
+        }
+    \end{csscodedark}
+
+    \Result[Lectura del resultado]{
+        \texttt{.servicios} organiza las tarjetas. Cada tarjeta es simultáneamente un
+        elemento flex de la sección y un contenedor flex vertical de su propio
+        contenido. El margen automático consume el espacio libre anterior al botón y
+        ayuda a mantener los botones en la parte inferior.
+    }
+
+    \Practice[Construcción progresiva]{
+        No copie todo el CSS de una vez. Active primero \texttt{display: flex}; después
+        agregue \texttt{gap}, \texttt{wrap}, la base de 250 px, crecimiento y reducción.
+        Finalmente convierta cada tarjeta en columna y compruebe el efecto de
+        \texttt{margin-top: auto}.
+    }
+
+    % =========================================================
+    \section{Ejercicio autónomo de Flexbox: catálogo de cursos}
+    % =========================================================
+
+    Construya un catálogo con al menos cuatro cursos: Programación, Diseño, Bases
+    de datos y Redes. Cada tarjeta debe presentar nombre, descripción, duración,
+    modalidad y botón de información.
+
+    \begin{consolecode}
+        catalogo-cursos-nombre-apellido/
+        ├── index.html
+        └── css/
+            └── styles.css
+    \end{consolecode}
+
+    Utilice como mínimo \texttt{display: flex}, \texttt{flex-direction},
+    \texttt{justify-content}, \texttt{align-items}, \texttt{gap},
+    \texttt{flex-wrap} y \texttt{flex-basis} o \texttt{flex}. Dentro de cada
+    tarjeta use dirección vertical y mantenga el botón hacia la parte inferior.
+
+    \Warning[Primero los requisitos]{
+        Añadir más cursos, animaciones, efectos o secciones no exime de cumplir lo
+        básico. Primero construya, pruebe y fije lo solicitado. Después puede añadir
+        elementos complementarios sin reemplazar ni deteriorar los requisitos.
+    }
+
+    \Question[Comprobación oral]{
+        ¿Puede señalar el padre y sus hijos directos, dibujar ambos ejes, justificar
+        cada valor de alineación y leer los tres componentes de
+        \texttt{flex: 1 1 250px}?
+    }
+
+
+    % =========================================================
+\section{¿Flexbox o Grid?}
+
+Ambos modelos organizan elementos, pero responden mejor a problemas distintos.
+Flexbox parte de un eje principal; Grid permite controlar filas y columnas al
+mismo tiempo.
+
+\Compare[Elección del sistema]{
+\begin{tabularx}{\linewidth}{>{\bfseries}p{3cm}X X}
+\toprule
+Pregunta & Flexbox & Grid \\
+\midrule
+Dimensión dominante & Una: fila o columna. & Dos: filas y columnas. \\
+Caso típico & Menú, grupo de botones, contenido interno. & Galería, tablero, composición de página. \\
+Ubicación & Distribución flexible en el eje. & Posición en celdas, líneas o áreas. \\
+Combinación & Puede ser hijo de Grid. & Sus tarjetas pueden contener Flexbox. \\
+\bottomrule
+\end{tabularx}
+}
+
+\begin{center}
+    \begin{tikzpicture}[
+        item/.style={
+            draw=PracticeTitle,
+            fill=PracticeBody,
+            thick,
+            minimum width=1.5cm,
+            minimum height=0.75cm
+        },
+        container/.style={
+            draw=BrandBlue,
+            very thick,
+            rounded corners=2pt
+        },
+        axis/.style={
+            -{Latex[length=3mm]},
+            thick,
+            BrandBlue
+        },
+        secondary/.style={
+            -{Latex[length=2.5mm]},
+            thick,
+            dashed,
+            PracticeTitle
+        }
+        ]
+
+        % =========================================================
+        % FLEXBOX
+        % =========================================================
+
+        \node[font=\bfseries] at (2.8,4.0)
+        {Flexbox: un eje dominante};
+
+        \draw[container] (0.2,2.0) rectangle (5.4,3.25);
+
+        \node[item] at (1.15,2.62) {};
+        \node[item] at (2.8,2.62) {};
+        \node[item] at (4.45,2.62) {};
+
+        % Eje principal
+        \draw[axis] (0.75,1.45) -- (4.85,1.45);
+
+        \node[
+        font=\small,
+        text=BrandBlue
+        ] at (2.8,1.08)
+        {eje principal};
+
+        % Eje transversal
+        \draw[secondary] (5.8,2.05) -- (5.8,3.2);
+
+        \node[
+        font=\scriptsize,
+        rotate=90,
+        text=PracticeTitle
+        ] at (6.15,2.62)
+        {eje transversal};
+
+        % =========================================================
+        % GRID
+        % =========================================================
+
+        \node[font=\bfseries] at (10.0,4.0)
+        {Grid: distribución bidimensional};
+
+        \draw[container] (7.2,1.75) rectangle (12.8,3.4);
+
+        % Líneas verticales
+        \draw[PracticeTitle, thick] (9.05,1.75) -- (9.05,3.4);
+        \draw[PracticeTitle, thick] (10.9,1.75) -- (10.9,3.4);
+
+        % Línea horizontal
+        \draw[PracticeTitle, thick] (7.2,2.575) -- (12.8,2.575);
+
+        % Ejes visuales
+        \draw[axis] (7.6,1.25) -- (12.35,1.25);
+
+        \node[
+        font=\small,
+        text=BrandBlue
+        ] at (9.95,0.88)
+        {columnas};
+
+        \draw[axis] (13.25,1.9) -- (13.25,3.25);
+
+        \node[
+        font=\small,
+        rotate=90,
+        text=BrandBlue
+        ] at (13.65,2.58)
+        {filas};
+
+    \end{tikzpicture}
+\end{center}
+
+\Compare[Flexbox y Grid]{
+    Flexbox también posee un eje transversal, pero la distribución se plantea
+    principalmente a partir de un \textbf{eje dominante}. Grid, en cambio, permite
+    definir y controlar explícitamente \textbf{filas y columnas} de manera simultánea.
+}
+
+
+\section{Fundamentos de CSS Grid}
+
+CSS Grid es un sistema de distribución bidimensional. A diferencia de Flexbox,
+donde el razonamiento parte de un eje principal, en Grid el contenedor define
+simultáneamente una estructura de \textbf{filas} y \textbf{columnas}. Los
+elementos hijos directos se colocan dentro de esa estructura.
+
+\DefBlock[Terminología mínima]{
+\begin{itemize}
+    \item \textbf{Contenedor Grid:} elemento al que se aplica \texttt{display: grid}.
+    \item \textbf{Grid item:} hijo directo del contenedor Grid.
+    \item \textbf{Línea:} frontera numerada que separa filas o columnas.
+    \item \textbf{Track:} espacio comprendido entre dos líneas; puede ser una fila o una columna.
+    \item \textbf{Celda:} intersección de una fila y una columna.
+    \item \textbf{Área:} rectángulo formado por una o más celdas contiguas.
+    \item \textbf{Gap:} separación entre tracks.
+\end{itemize}
+}
+
+\begin{center}
+    \begin{tikzpicture}[
+        gridline/.style={
+            draw=PracticeTitle,
+            thick
+        },
+        mainborder/.style={
+            draw=BrandBlue,
+            very thick
+        },
+        area/.style={
+            draw=WarnTitle,
+            very thick,
+            rounded corners=4pt,
+            fill=WarnBody
+        },
+        axis/.style={
+            <->,
+            >=Latex,
+            thick,
+            BrandBlue
+        },
+        label/.style={
+            font=\small
+        }
+        ]
+
+        % =========================================================
+        % CUADRÍCULA
+        % =========================================================
+
+        % Marco exterior
+        \draw[mainborder] (0,0) rectangle (9,4.5);
+
+        % Columnas
+        \draw[gridline] (2.5,0) -- (2.5,4.5);
+        \draw[gridline] (5.8,0) -- (5.8,4.5);
+
+        % Filas
+        \draw[gridline] (0,1.5) -- (9,1.5);
+        \draw[gridline] (0,3.0) -- (9,3.0);
+
+        % =========================================================
+        % LÍNEAS VERTICALES
+        % =========================================================
+
+        \node[label, above] at (0,4.5) {línea 1};
+        \node[label, above] at (2.5,4.5) {línea 2};
+        \node[label, above] at (5.8,4.5) {línea 3};
+        \node[label, above] at (9,4.5) {línea 4};
+
+        % =========================================================
+        % CELDAS
+        % =========================================================
+
+        \node[label] at (1.25,3.75) {celda};
+        \node[label] at (4.15,3.75) {celda};
+        \node[label] at (7.4,3.75) {celda};
+
+        % =========================================================
+        % ÁREA
+        % =========================================================
+
+        \draw[area]
+        (2.7,1.68) rectangle (8.8,2.82);
+
+        \node[
+        font=\small\bfseries
+        ] at (5.75,2.25)
+        {
+            área
+        };
+
+        % =========================================================
+        % TRACK DE COLUMNA
+        % =========================================================
+
+        \draw[axis]
+        (0,-0.45) -- (2.5,-0.45);
+
+        \node[
+        label,
+        below
+        ] at (1.25,-0.45)
+        {
+            track de columna
+        };
+
+        % =========================================================
+        % TRACK DE FILA
+        % =========================================================
+
+        \draw[axis]
+        (9.5,0) -- (9.5,1.5);
+
+        \node[
+        label,
+        right,
+        align=left
+        ] at (9.5,0.75)
+        {
+            track\\
+            de fila
+        };
+
+    \end{tikzpicture}
+\end{center}
+
+\Idea[Cómo leer una cuadrícula]{
+    Una \textbf{línea} representa una frontera de la cuadrícula.
+    El espacio entre dos líneas consecutivas forma un \textbf{track}.
+    La intersección entre una fila y una columna forma una \textbf{celda}.
+    Varias celdas contiguas pueden formar un \textbf{área}.
+}
+
+\Idea[Una distinción importante]{
+Las líneas no son las columnas. Una cuadrícula de tres columnas tiene
+\textbf{cuatro líneas verticales}. Esta diferencia permite comprender reglas como
+\texttt{grid-column: 1 / 3}: el elemento comienza en la línea 1 y termina antes de
+la línea 3, por lo que ocupa dos columnas.
+}
+
+\subsection{Crear una cuadrícula}
+
+El punto de partida es declarar el contenedor y definir sus columnas.
+
+\begin{csscodedark}
+.rejilla {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 1rem;
+}
+\end{csscodedark}
+
+La misma estructura puede escribirse con \texttt{repeat()}:
+
+\begin{csscodedark}
+.rejilla {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+}
+\end{csscodedark}
+
+La unidad \texttt{fr} representa una fracción del \textbf{espacio distribuible}.
+No significa exactamente ``un tercio del ancho total'', porque antes deben
+considerarse gaps, tamaños fijos y restricciones mínimas del contenido.
+
+\Question[Lectura de una plantilla]{
+Si un contenedor mide 900 px y tiene tres columnas declaradas como
+\texttt{200px 1fr 2fr}, ¿qué parte del ancho se reparte mediante las unidades
+\texttt{fr}? ¿Por qué la segunda y la tercera columna no se calculan antes de
+restar la columna fija y los gaps?
+}
+
+\section{Tracks: tamaños fijos, flexibles y basados en contenido}
+
+Una de las fortalezas de Grid es que cada track puede seguir una estrategia de
+tamaño diferente.
+
+\subsection{Tamaños fijos y fracciones}
+
+\begin{csscodedark}
+.layout {
+    display: grid;
+    grid-template-columns: 220px 1fr 2fr;
+    gap: 1rem;
+}
+\end{csscodedark}
+
+Aquí la primera columna conserva 220 px. El espacio restante se divide en tres
+fracciones: una para la segunda columna y dos para la tercera.
+
+\subsection{\texttt{auto}, \texttt{min-content} y \texttt{max-content}}
+
+Grid también puede dimensionar pistas de acuerdo con el contenido.
+
+\begin{csscodedark}
+.ficha {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: 0.75rem 1rem;
+}
+\end{csscodedark}
+
+\begin{itemize}
+    \item \texttt{auto}: permite que el algoritmo determine el tamaño considerando
+    contenido y espacio disponible.
+    \item \texttt{min-content}: busca el menor tamaño intrínseco que el contenido
+    puede ocupar sin desbordarse inevitablemente.
+    \item \texttt{max-content}: representa el tamaño que el contenido preferiría
+    si no tuviera que realizar saltos de línea.
+\end{itemize}
+
+\Warning[Contenido largo]{
+Una pista \texttt{1fr} conserva por defecto un mínimo automático relacionado con
+su contenido. Por eso un enlace, una palabra muy larga o un elemento con ancho
+intrínseco puede forzar desbordamiento. En muchas composiciones de tarjetas,
+\texttt{minmax(0, 1fr)} comunica de forma explícita que la pista puede reducirse
+hasta cero antes de repartir el espacio restante.
+}
+
+\begin{csscodedark}
+.rejilla {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+\end{csscodedark}
+
+\subsection{\texttt{minmax()}}
+
+\texttt{minmax(minimo, maximo)} establece un rango permitido para una pista.
+
+\begin{csscodedark}
+.rejilla {
+    display: grid;
+    grid-template-columns:
+        minmax(180px, 1fr)
+        minmax(260px, 2fr);
+}
+\end{csscodedark}
+
+La primera columna no debe medir menos de 180 px y puede crecer hasta una
+fracción. La segunda parte de 260 px y puede recibir dos fracciones del espacio
+disponible.
+
+\Idea[Cómo leer \texttt{minmax()}]{
+No piense en \texttt{minmax()} como un valor mágico para responsive. Léalo como
+una \textbf{restricción de diseño}: ``esta pista no debería reducirse por debajo
+de cierto límite y puede crecer hasta este máximo''.
+}
+
+\section{Cuadrícula explícita e implícita}
+
+La \textbf{cuadrícula explícita} es la parte declarada mediante propiedades como
+\texttt{grid-template-columns} y \texttt{grid-template-rows}. Si aparecen
+elementos adicionales o se ubica un elemento fuera de esa estructura, Grid puede
+crear tracks nuevos. Esos tracks pertenecen a la \textbf{cuadrícula implícita}.
+
+\begin{csscodedark}
+.rejilla {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: 120px;
+    grid-auto-rows: minmax(120px, auto);
+    gap: 1rem;
+}
+\end{csscodedark}
+
+En este caso se declara una sola fila explícita. Si los elementos necesitan una
+segunda o tercera fila, estas se crean automáticamente y siguen la regla definida
+por \texttt{grid-auto-rows}.
+
+\begin{center}
+    \begin{tikzpicture}[
+        item/.style={
+            draw=PracticeTitle,
+            thick,
+            fill=PracticeBody,
+            minimum width=2.1cm,
+            minimum height=0.85cm,
+            align=center
+        },
+        imp/.style={
+            draw=WarnTitle,
+            thick,
+            dashed,
+            fill=WarnBody,
+            minimum width=2.1cm,
+            minimum height=0.85cm,
+            align=center
+        },
+        label/.style={
+            font=\small\bfseries
+        }
+        ]
+
+        % =========================================================
+        % CUADRÍCULA EXPLÍCITA
+        % =========================================================
+
+        \node[font=\bfseries] at (4.1,4.1)
+        {Cuadrícula explícita};
+
+        \node[
+        font=\small,
+        text=BrandBlue
+        ] at (4.1,3.55)
+        {\texttt{grid-template-columns} + \texttt{grid-template-rows}};
+
+        \foreach \x in {1.2,4.1,7}{
+            \node[item] at (\x,2.75) {item};
+        }
+
+        % =========================================================
+        % CUADRÍCULA IMPLÍCITA
+        % =========================================================
+
+        \draw[
+        WarnTitle,
+        dashed,
+        very thick,
+        rounded corners=2pt
+        ] (0,0.65) rectangle (8.2,2.0);
+
+        \foreach \x in {1.2,4.1,7}{
+            \node[imp] at (\x,1.35) {item};
+        }
+
+        \node[
+        font=\small\bfseries,
+        text=WarnTitle
+        ] at (4.1,0.28)
+        {Fila implícita};
+
+        \node[
+        font=\small,
+        align=center,
+        text width=8cm
+        ] at (4.1,-0.75)
+        {
+            Grid crea esta fila automáticamente porque existen
+            más elementos de los que caben en la cuadrícula explícita.
+        };
+
+    \end{tikzpicture}
+\end{center}
+
+\Practice[Ejercicio: explícito e implícito]{
+Cree un contenedor con tres columnas y una sola fila explícita. Inserte ocho
+elementos. Observe en DevTools qué filas fueron declaradas y cuáles fueron
+creadas por el algoritmo. Luego cambie \texttt{grid-auto-rows} entre
+\texttt{100px}, \texttt{auto} y \texttt{minmax(100px, auto)}.
+}
+
+\section{El algoritmo de colocación automática}
+
+Si los items no reciben coordenadas explícitas, Grid los coloca siguiendo un
+algoritmo automático. Por defecto avanza por filas.
+
+\begin{csscodedark}
+.rejilla {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-auto-flow: row;
+}
+\end{csscodedark}
+
+También puede avanzarse por columnas:
+
+\begin{csscodedark}
+.rejilla {
+    grid-auto-flow: column;
+    grid-auto-columns: 180px;
+}
+\end{csscodedark}
+
+\subsection{\texttt{grid-auto-flow: dense}}
+
+Cuando algunos elementos ocupan varias pistas pueden quedar huecos. El valor
+\texttt{dense} permite que el algoritmo intente rellenarlos con elementos
+posteriores que quepan.
+
+\begin{csscodedark}
+.rejilla {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    grid-auto-flow: row dense;
+}
+\end{csscodedark}
+
+\Warning[Orden visual y orden del documento]{
+\texttt{dense} puede hacer que el orden visual deje de coincidir con el orden del
+HTML. Esto puede ser problemático para navegación por teclado, lectura lineal o
+comprensión del contenido. Debe utilizarse cuando ese reordenamiento visual no
+cambie el significado.
+}
+
+\section{Ubicar elementos mediante líneas}
+
+Las líneas permiten controlar con precisión dónde comienza y termina un item.
+
+\begin{csscodedark}
+.destacado {
+    grid-column-start: 1;
+    grid-column-end: 3;
+
+    grid-row-start: 1;
+    grid-row-end: 2;
+}
+\end{csscodedark}
+
+La forma abreviada es:
+
+\begin{csscodedark}
+.destacado {
+    grid-column: 1 / 3;
+    grid-row: 1 / 2;
+}
+\end{csscodedark}
+
+\begin{center}
+\begin{tikzpicture}[
+    item/.style={draw=PracticeTitle, thick, fill=PracticeBody, align=center},
+    principal/.style={draw=WarnTitle, very thick, fill=WarnBody, align=center}
+]
+    \draw[BrandBlue, very thick] (0,0) rectangle (10,4);
+    \draw[BrandBlue] (3.3,0)--(3.3,4);
+    \draw[BrandBlue] (6.6,0)--(6.6,4);
+    \draw[BrandBlue] (0,2)--(10,2);
+
+    \foreach \x/\n in {0/1,3.3/2,6.6/3,10/4}{
+        \node[above] at (\x,4) {\n};
+    }
+
+    \node[principal, minimum width=6.2cm, minimum height=1.55cm] at (3.3,3)
+        {\texttt{grid-column: 1 / 3}};
+    \node[item, minimum width=2.8cm, minimum height=1.55cm] at (8.3,3) {item};
+    \node[item, minimum width=2.8cm, minimum height=1.55cm] at (1.65,1) {item};
+    \node[item, minimum width=2.8cm, minimum height=1.55cm] at (4.95,1) {item};
+    \node[item, minimum width=2.8cm, minimum height=1.55cm] at (8.3,1) {item};
+\end{tikzpicture}
+\end{center}
+
+\subsection{Usar \texttt{span}}
+
+En lugar de indicar la línea final, puede expresarse cuántos tracks debe abarcar
+el elemento.
+
+\begin{csscodedark}
+.destacado {
+    grid-column: 1 / span 2;
+}
+\end{csscodedark}
+
+También puede omitirse la línea inicial si solo interesa la cantidad de pistas:
+
+\begin{csscodedark}
+.tarjeta--ancha {
+    grid-column: span 2;
+}
+\end{csscodedark}
+
+\Question[Interpretación]{
+¿Qué diferencia conceptual existe entre
+\texttt{grid-column: 1 / 3} y \texttt{grid-column: 1 / span 2}?
+¿Cuál expresa mejor la intención cuando el diseñador piensa en ``ocupar dos
+columnas'' y no en una línea final concreta?
+}
+
+\subsection{Líneas negativas}
+
+Las líneas pueden contarse desde el final utilizando números negativos.
+
+\begin{csscodedark}
+.banner {
+    grid-column: 1 / -1;
+}
+\end{csscodedark}
+
+\texttt{-1} representa la última línea de la cuadrícula explícita. Este patrón es
+útil cuando un elemento debe ocupar todas las columnas declaradas sin depender
+del número exacto de ellas.
+
+\section{Líneas con nombre}
+
+Cuando una composición es estable, los números pueden reemplazarse por nombres.
+
+\begin{csscodedark}
+.pagina {
+    display: grid;
+    grid-template-columns:
+        [inicio] 240px
+        [contenido-inicio] 1fr
+        [fin];
+}
+
+.lateral {
+    grid-column: inicio / contenido-inicio;
+}
+
+.contenido {
+    grid-column: contenido-inicio / fin;
+}
+\end{csscodedark}
+
+\Idea[Números frente a nombres]{
+Los números son adecuados para ejercicios pequeños y distribuciones simples.
+Los nombres pueden mejorar la legibilidad cuando las líneas representan límites
+semánticos claros del layout.
+}
+
+\section{Áreas con nombre}
+
+\texttt{grid-template-areas} permite describir una composición mediante nombres.
+Cada cadena representa una fila y cada palabra una celda. Un punto representa una
+celda sin nombre.
+
+\begin{csscodedark}
+.pagina {
+    display: grid;
+    grid-template-columns: 240px 1fr;
+    grid-template-areas:
+        "cabecera cabecera"
+        "lateral  contenido"
+        "pie      pie";
+}
+
+.cabecera  { grid-area: cabecera; }
+.lateral   { grid-area: lateral; }
+.contenido { grid-area: contenido; }
+.pie       { grid-area: pie; }
+\end{csscodedark}
+
+\begin{center}
+\begin{tikzpicture}[
+    area/.style={draw=BrandBlue, thick, rounded corners,
+        minimum height=0.9cm, align=center}
+]
+    \node[area, fill=IdeaBody, minimum width=9cm] at (4.5,4) {cabecera};
+    \node[area, fill=PracticeBody, minimum width=2.6cm, minimum height=2.1cm]
+        at (1.3,2.4) {lateral};
+    \node[area, fill=white, minimum width=6cm, minimum height=2.1cm]
+        at (6,2.4) {contenido};
+    \node[area, fill=IdeaBody, minimum width=9cm] at (4.5,0.8) {pie};
+\end{tikzpicture}
+\end{center}
+
+\Warning[Las áreas deben ser rectangulares]{
+Un área debe formar un rectángulo continuo. No puede aparecer fragmentada ni con
+forma de L. Cada fila de la plantilla debe contener el mismo número de celdas y
+los nombres utilizados deben coincidir exactamente con los asignados mediante
+\texttt{grid-area}.
+}
+
+\Practice[Ejercicio: leer antes de escribir]{
+Dibuje en papel una interfaz con cabecera, navegación lateral, contenido principal
+y pie. Primero escriba la matriz de nombres; después conviértala en
+\texttt{grid-template-areas}. No empiece por el CSS.
+}
+
+\section{Alineación en Grid}
+
+En Grid existen dos preguntas diferentes:
+
+\begin{enumerate}
+    \item ¿Cómo se alinea cada item \textbf{dentro de su celda}?
+    \item ¿Cómo se distribuye la \textbf{cuadrícula completa} dentro del contenedor
+    cuando sobra espacio?
+\end{enumerate}
+
+\begin{tabularx}{\linewidth}{>{\ttfamily\bfseries}p{3.8cm}X}
+\toprule
+Propiedad & Acción \\
+\midrule
+justify-items & Alinea los items dentro de sus celdas en el eje en línea. \\
+align-items & Alinea los items dentro de sus celdas en el eje de bloque. \\
+place-items & Abrevia \texttt{align-items} y \texttt{justify-items}. \\
+justify-self & Cambia la alineación horizontal de un item concreto. \\
+align-self & Cambia la alineación vertical de un item concreto. \\
+place-self & Abrevia \texttt{align-self} y \texttt{justify-self}. \\
+justify-content & Distribuye la cuadrícula completa en el eje en línea. \\
+align-content & Distribuye la cuadrícula completa en el eje de bloque. \\
+place-content & Abrevia \texttt{align-content} y \texttt{justify-content}. \\
+\bottomrule
+\end{tabularx}
+
+\begin{center}
+    \begin{tikzpicture}[
+        container/.style={
+            draw=BrandBlue,
+            very thick
+        },
+        cell/.style={
+            draw=PracticeTitle,
+            dashed,
+            thin
+        },
+        item/.style={
+            draw=PracticeTitle,
+            fill=PracticeBody,
+            thick,
+            minimum width=0.9cm,
+            minimum height=0.6cm
+        },
+        gridbox/.style={
+            draw=PracticeTitle,
+            fill=IdeaBody,
+            thick
+        },
+        label/.style={
+            font=\small\bfseries,
+            align=center
+        }
+        ]
+
+        % =========================================================
+        % ITEMS DENTRO DE SUS CELDAS
+        % =========================================================
+
+        \node[label] at (2.3,3.9)
+        {Alineación de los items};
+
+        \draw[container] (0,1.2) rectangle (4.6,3.4);
+
+        % Celdas
+        \draw[cell] (0.25,1.45) rectangle (2.15,3.15);
+        \draw[cell] (2.45,1.45) rectangle (4.35,3.15);
+
+        % Items en posiciones distintas dentro de sus celdas
+        \node[item, anchor=north west] at (0.45,2.95) {};
+        \node[item, anchor=south east] at (4.15,1.65) {};
+
+        \node[
+        font=\ttfamily\small,
+        align=center
+        ] at (2.3,0.5)
+        {
+            justify-items \\ align-items
+        };
+
+        \node[
+        font=\small,
+        align=center,
+        text width=4.4cm
+        ] at (2.3,-0.5)
+        {
+            Cada item se mueve dentro de su propia celda
+        };
+
+        % =========================================================
+        % CUADRÍCULA COMPLETA DENTRO DEL CONTENEDOR
+        % =========================================================
+
+        \node[label] at (8.1,3.9)
+        {Alineación de la cuadrícula};
+
+        \draw[container] (5.7,1.2) rectangle (10.5,3.4);
+
+        % Cuadrícula interna más pequeña
+        \draw[gridbox] (6.8,1.75) rectangle (9.4,2.85);
+
+        % Líneas internas del Grid
+        \draw[PracticeTitle] (8.1,1.75) -- (8.1,2.85);
+        \draw[PracticeTitle] (6.8,2.3) -- (9.4,2.3);
+
+        \node[
+        font=\ttfamily\small,
+        align=center
+        ] at (8.1,0.5)
+        {
+            justify-content \\ align-content
+        };
+
+        \node[
+        font=\small,
+        align=center,
+        text width=4.6cm
+        ] at (8.1,-0.5)
+        {
+            Se mueve la cuadrícula completa dentro del contenedor
+        };
+
+    \end{tikzpicture}
+\end{center}
+
+\Question{
+Si una tarjeta no se centra dentro de su celda, ¿debería revisar
+\texttt{justify-items} o \texttt{justify-content}? Explique qué objeto mueve cada
+propiedad.
+}
+
+\section{Atajos de colocación}
+
+Grid permite expresar fila y columna con propiedades abreviadas.
+
+\begin{csscodedark}
+.item {
+    grid-column: 2 / 4;
+    grid-row: 1 / 3;
+}
+\end{csscodedark}
+
+También existe \texttt{grid-area} con cuatro valores:
+
+\begin{csscodedark}
+.item {
+    grid-area: 1 / 2 / 3 / 4;
+}
+\end{csscodedark}
+
+El orden es:
+
+\[
+\texttt{row-start / column-start / row-end / column-end}
+\]
+
+\Warning[Legibilidad antes que brevedad]{
+Que una sintaxis sea más corta no significa que deba utilizarse siempre. Para
+aprendices que están depurando una cuadrícula, separar
+\texttt{grid-row} y \texttt{grid-column} suele ser más fácil de leer que una
+declaración \texttt{grid-area} con cuatro números.
+}
+
+\section{Cuadrículas repetitivas con \texttt{repeat()}}
+
+\texttt{repeat()} evita escribir la misma definición varias veces.
+
+\begin{csscodedark}
+.rejilla {
+    grid-template-columns: repeat(4, 1fr);
+}
+\end{csscodedark}
+
+También puede repetirse un patrón de varias pistas:
+
+\begin{csscodedark}
+.rejilla {
+    grid-template-columns: repeat(2, 120px 1fr);
+}
+\end{csscodedark}
+
+La regla anterior produce cuatro columnas:
+
+\[
+120px \quad 1fr \quad 120px \quad 1fr
+\]
+
+\section{\texttt{auto-fill} y \texttt{auto-fit}}
+
+En lugar de declarar un número fijo de columnas, Grid puede calcular cuántas
+pistas caben.
+
+\begin{csscodedark}
+.rejilla {
+    display: grid;
+    grid-template-columns:
+        repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1rem;
+}
+\end{csscodedark}
+
+\begin{center}
+    \begin{tikzpicture}[
+        card/.style={
+            draw=PracticeTitle,
+            fill=PracticeBody,
+            thick,
+            rounded corners=2pt,
+            minimum width=2.05cm,
+            minimum height=1.05cm,
+            align=center,
+            font=\small\bfseries
+        },
+        container/.style={
+            draw=BrandBlue,
+            very thick,
+            rounded corners=3pt
+        },
+        note/.style={
+            font=\small,
+            text=BrandBlue
+        }
+        ]
+
+        % =========================================================
+        % CONTENEDOR AMPLIO
+        % =========================================================
+        \node[font=\bfseries] at (5.2,5.25) {Contenedor amplio};
+
+        % Marco
+        \draw[container] (0,3.45) rectangle (10.4,4.85);
+
+        % Tarjetas
+        \node[card] at (1.35,4.15) {1};
+        \node[card] at (3.90,4.15) {2};
+        \node[card] at (6.45,4.15) {3};
+        \node[card] at (9.00,4.15) {4};
+
+        \node[note] at (5.2,3.12)
+        {Hay espacio suficiente para cuatro columnas};
+
+        % =========================================================
+        % CONTENEDOR ESTRECHO
+        % =========================================================
+        \node[font=\bfseries] at (3.75,2.45) {Contenedor más estrecho};
+
+        % Marco
+        \draw[container] (0,0) rectangle (7.5,2.05);
+
+        % Primera fila
+        \node[card] at (1.35,1.42) {1};
+        \node[card] at (3.75,1.42) {2};
+        \node[card] at (6.15,1.42) {3};
+
+        % Segunda fila
+        \node[card] at (1.35,0.60) {4};
+
+        \node[note, anchor=west,align=center] at (7.8,1.05)
+        {La siguiente tarjeta\\pasa a una nueva fila};
+
+        % =========================================================
+        % REGLA CSS
+        % =========================================================
+        \node[
+        draw=BrandBlue,
+        rounded corners=3pt,
+        fill=IdeaBody,
+        inner xsep=10pt,
+        inner ysep=5pt,
+        font=\ttfamily\small
+        ] at (5.2,-0.65)
+        {
+            repeat(auto-fit, minmax(240px, 1fr))
+        };
+
+    \end{tikzpicture}
+\end{center}
+
+\DefBlock[Lectura paso a paso]{
+\begin{enumerate}
+    \item \texttt{repeat(...)} indica que se repetirá un patrón.
+    \item \texttt{auto-fit} calcula cuántas pistas pueden entrar.
+    \item \texttt{minmax(240px, 1fr)} establece que cada pista intenta conservar
+    al menos 240 px y puede crecer para repartir espacio libre.
+\end{enumerate}
+}
+
+\subsection{Diferencia conceptual}
+
+\begin{itemize}
+    \item \texttt{auto-fill} conserva el concepto de pistas potenciales aunque
+    algunas estén vacías.
+    \item \texttt{auto-fit} colapsa las pistas vacías y permite que las ocupadas
+    se expandan.
+\end{itemize}
+
+La diferencia se vuelve visible cuando el contenedor podría alojar más columnas
+que el número de elementos existentes.
+
+\Compare[\texttt{auto-fill} frente a \texttt{auto-fit}]{
+No memorice ``uno sirve y el otro no''. Ambos son válidos. Pregunte si las pistas
+vacías deben seguir reservando espacio. Si la respuesta es no, normalmente
+\texttt{auto-fit} expresa mejor la intención.
+}
+
+\section{Patrones de Grid frecuentes}
+
+\subsection{Galería uniforme}
+
+\begin{csscodedark}
+.galeria {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1rem;
+}
+\end{csscodedark}
+
+Útil cuando el número de columnas pertenece al diseño que se está trabajando.
+
+\subsection{Contenido principal y barra lateral}
+
+\begin{csscodedark}
+.layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 280px;
+    gap: 2rem;
+}
+\end{csscodedark}
+
+La columna principal utiliza el espacio flexible y la barra lateral conserva un
+ancho definido.
+
+\subsection{Tarjetas con una destacada}
+
+\begin{csscodedark}
+.tarjetas {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+}
+
+.tarjeta--destacada {
+    grid-column: span 2;
+}
+\end{csscodedark}
+
+\subsection{Página por áreas}
+
+\begin{csscodedark}
+.pagina {
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    grid-template-areas:
+        "nav main"
+        "nav footer";
+}
+\end{csscodedark}
+
+\Idea[Grid y Flexbox pueden convivir]{
+Una tarjeta puede ser un \textbf{grid item} dentro de una galería y, al mismo
+tiempo, ser un \textbf{flex container} para organizar su contenido interno.
+Elegir Grid no obliga a abandonar Flexbox; cada modelo debe resolver el problema
+para el que resulta más claro.
+}
+
+\section{Superposición en Grid}
+
+Dos elementos pueden ocupar la misma zona de la cuadrícula. En ese caso puede
+utilizarse \texttt{z-index} para controlar cuál aparece visualmente encima.
+
+\begin{csscodedark}
+.hero {
+    display: grid;
+}
+
+.hero__imagen,
+.hero__contenido {
+    grid-area: 1 / 1;
+}
+
+.hero__contenido {
+    z-index: 1;
+    align-self: end;
+}
+\end{csscodedark}
+
+\begin{center}
+\begin{tikzpicture}
+    \filldraw[fill=PracticeBody, draw=PracticeTitle, thick]
+        (0,0) rectangle (8,3.5);
+    \node at (4,2.4) {imagen / fondo};
+    \filldraw[fill=IdeaBody, draw=BrandBlue, very thick, rounded corners]
+        (1,0.45) rectangle (7,1.65);
+    \node at (4,1.05) {contenido superpuesto};
+\end{tikzpicture}
+\end{center}
+
+\Warning[Superponer no es posicionar todo]{
+Grid puede superponer elementos manteniéndolos dentro de la lógica de la
+cuadrícula. Esto puede ser preferible a utilizar coordenadas absolutas cuando
+ambos elementos pertenecen realmente a la misma región del layout.
+}
+
+\section{Diagnóstico de problemas frecuentes en Grid}
+
+Cuando una cuadrícula ``no funciona'', conviene revisar el problema por capas.
+
+\begin{enumerate}
+    \item \textbf{¿El elemento correcto tiene \texttt{display: grid}?}
+    Las propiedades de Grid afectan a sus hijos directos.
+    \item \textbf{¿La plantilla crea las pistas que se esperan?}
+    Revise \texttt{grid-template-columns} y \texttt{grid-template-rows}.
+    \item \textbf{¿El item está ubicado en líneas que realmente existen?}
+    Dibuje o active el overlay del navegador.
+    \item \textbf{¿Existe contenido que impide reducir una pista?}
+    Pruebe \texttt{minmax(0, 1fr)}, \texttt{min-width: 0} o revise el contenido.
+    \item \textbf{¿El problema es de alineación o de distribución de tracks?}
+    No confunda \texttt{items}, \texttt{self} y \texttt{content}.
+    \item \textbf{¿El algoritmo creó filas o columnas implícitas?}
+    Revise \texttt{grid-auto-rows}, \texttt{grid-auto-columns} y
+    \texttt{grid-auto-flow}.
+\end{enumerate}
+
+\Practice[DevTools como herramienta de aprendizaje]{
+Active el inspector de Grid del navegador. Identifique visualmente:
+\begin{itemize}
+    \item números de línea;
+    \item tracks explícitos;
+    \item tracks implícitos;
+    \item gaps;
+    \item área ocupada por un elemento;
+    \item cambios al modificar una regla CSS en tiempo real.
+\end{itemize}
+La meta no es solo ``arreglar'' el layout, sino relacionar lo observado con la
+regla que lo produce.
+}
+
+\section{Laboratorio secuencial de Grid}
+
+\Practice[Fase 1: cuadrícula básica]{
+Cree nueve elementos y organícelos en tres columnas. Utilice
+\texttt{repeat()} y \texttt{gap}. Después cambie una de las columnas por un ancho
+fijo y explique cómo se redistribuye el espacio restante.
+}
+
+\Practice[Fase 2: elementos que abarcan pistas]{
+Haga que el primer elemento ocupe dos columnas y que otro ocupe dos filas.
+Resuelva una versión con líneas numéricas y otra con \texttt{span}.
+}
+
+\Practice[Fase 3: cuadrícula implícita]{
+Declare una sola fila explícita y agregue suficientes items para crear filas
+nuevas. Controle esas filas mediante \texttt{grid-auto-rows}.
+}
+
+\Practice[Fase 4: áreas]{
+Construya una interfaz con cabecera, lateral, contenido y pie mediante
+\texttt{grid-template-areas}. Dibuje primero la matriz en papel y luego
+transcríbala a CSS.
+}
+
+\Practice[Fase 5: pistas automáticas]{
+Construya una colección de tarjetas con
+\texttt{repeat(auto-fit, minmax(...))}. Pruebe distintos mínimos y observe en qué
+momento cambia el número de columnas. No utilice media queries en este ejercicio.
+}
+
+\section{Mini reto: tablero académico}
+
+Construya un tablero con la siguiente estructura:
+
+\begin{itemize}
+    \item una cabecera que ocupe todo el ancho;
+    \item una zona lateral;
+    \item     un área principal con cuatro tarjetas en total;
+    \item     una de las cuatro tarjetas debe ocupar dos columnas;
+    \item un pie que atraviese toda la cuadrícula.
+
+\end{itemize}
+
+\begin{center}
+    \begin{tikzpicture}[
+        zona/.style={
+            draw=BrandBlue,
+            thick,
+            rounded corners=3pt,
+            align=center,
+            font=\small
+        },
+        principal/.style={
+            draw=WarnTitle,
+            thick,
+            rounded corners=3pt,
+            fill=WarnBody,
+            align=center,
+            font=\small\bfseries
+        }
+        ]
+
+        % =========================================================
+        % CABECERA
+        % =========================================================
+
+        \node[
+        zona,
+        fill=IdeaBody,
+        minimum width=10cm,
+        minimum height=0.75cm
+        ] at (5,4.8) {cabecera};
+
+        % =========================================================
+        % LATERAL
+        % =========================================================
+
+        \node[
+        zona,
+        fill=PracticeBody,
+        minimum width=2.0cm,
+        minimum height=3.0cm
+        ] at (1,2.85) {lateral};
+
+        % =========================================================
+        % ÁREA PRINCIPAL
+        % 3 columnas
+        % =========================================================
+
+        % Tarjeta destacada: ocupa dos columnas
+        \node[
+        principal,
+        minimum width=4.45cm,
+        minimum height=1.15cm
+        ] at (4.55,3.65) {destacada};
+
+        % Tarjeta 2
+        \node[
+        zona,
+        fill=white,
+        minimum width=2.05cm,
+        minimum height=1.15cm
+        ] at (8.05,3.65) {tarjeta};
+
+        % Tarjeta 3
+        \node[
+        zona,
+        fill=white,
+        minimum width=2.05cm,
+        minimum height=1.15cm
+        ] at (3.35,2.15) {tarjeta};
+
+        % Tarjeta 4
+        \node[
+        zona,
+        fill=white,
+        minimum width=2.05cm,
+        minimum height=1.15cm
+        ] at (5.75,2.15) {tarjeta};
+
+        % Espacio libre de la cuadrícula:
+        % se deja intencionalmente para visualizar que
+        % solo existen cuatro tarjetas en total.
+
+        % =========================================================
+        % PIE
+        % =========================================================
+
+        \node[
+        zona,
+        fill=IdeaBody,
+        minimum width=10cm,
+        minimum height=0.75cm
+        ] at (5,0.65) {pie};
+
+        % =========================================================
+        % ANOTACIÓN
+        % =========================================================
+
+        \node[
+        font=\scriptsize,
+        text=BrandBlue,
+        align=center
+        ] at (8.1,2.1)
+        {
+            celda disponible\\
+            sin contenido
+        };
+
+    \end{tikzpicture}
+\end{center}
+
+\Question[Antes de escribir CSS]{
+¿Cuántas columnas necesita la estructura? ¿Qué elementos deberían ubicarse con
+líneas, cuáles podrían resolverse mediante áreas y cuál es la ventaja de
+representar primero el layout como una cuadrícula dibujada?
+}
+
+\section{Resumen conceptual de CSS Grid}
+
+\begin{center}
+\begin{tabularx}{0.99\linewidth}{>{\ttfamily}p{7.2cm}X}
+\toprule
+\textnormal{Propiedad o concepto} & \textnormal{Idea central} \\
+\midrule
+display: grid & Activa Grid para los hijos directos. \\
+grid-template-columns & Declara columnas explícitas. \\
+grid-template-rows & Declara filas explícitas. \\
+fr & Distribuye una fracción del espacio flexible. \\
+repeat() & Repite una definición de tracks. \\
+minmax() & Impone un mínimo y un máximo a una pista. \\
+gap & Separa filas y columnas sin usar márgenes externos. \\
+grid-auto-rows & Dimensiona filas implícitas. \\
+grid-auto-columns & Dimensiona columnas implícitas. \\
+grid-auto-flow & Controla la dirección del algoritmo automático. \\
+grid-column & Ubica o extiende un item entre líneas verticales. \\
+grid-row & Ubica o extiende un item entre líneas horizontales. \\
+span & Expresa cuántos tracks debe abarcar un item. \\
+grid-template-areas & Describe una composición mediante nombres. \\
+grid-area & Asigna un item a un área o abrevia su colocación. \\
+justify-items / align-items & Alinean items dentro de sus celdas. \\
+justify-content / align-content & Distribuyen la cuadrícula completa. \\
+auto-fit / auto-fill & Generan automáticamente pistas repetidas. \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\section{Preguntas de comprensión sobre Grid}
+
+\begin{enumerate}
+    \item ¿Por qué una cuadrícula de cuatro columnas tiene cinco líneas verticales?
+    \item ¿Cuál es la diferencia entre una pista explícita y una implícita?
+    \item ¿Qué problema resuelve \texttt{grid-auto-rows}?
+    \item ¿Por qué \texttt{1fr} no debe interpretarse siempre como una fracción
+    exacta del ancho total del contenedor?
+    \item ¿Qué ventaja aporta \texttt{minmax(0, 1fr)} cuando existe contenido ancho?
+    \item ¿Qué diferencia existe entre \texttt{grid-column: 1 / 3} y
+    \texttt{grid-column: span 2}?
+    \item ¿Qué significa utilizar la línea \texttt{-1}?
+    \item ¿Qué mueve \texttt{justify-items} y qué mueve \texttt{justify-content}?
+    \item ¿Cuándo puede \texttt{grid-auto-flow: dense} alterar el orden visual?
+    \item ¿Cuál es la diferencia conceptual entre \texttt{auto-fill} y
+    \texttt{auto-fit}?
+    \item ¿Por qué Grid y Flexbox pueden utilizarse simultáneamente en una misma
+    interfaz?
+    \item ¿Qué ventajas y desventajas encuentra entre líneas numéricas,
+    líneas con nombre y áreas con nombre?
+\end{enumerate}
+
+\section{Práctica integradora: página de servicios}
+
+\Practice[Construcción progresiva]{
+Cree una página de servicios y resuelva cada parte con la herramienta indicada. El propósito es evitar usar una técnica por costumbre cuando otra describe mejor el problema.
+}
+
+\begin{enumerate}
+    \item Construya un encabezado cuyo contenido permanezca en flujo normal.
+    \item Añada una insignia sobre una tarjeta mediante un contenedor
+    \texttt{relative} y una insignia \texttt{absolute}.
+    \item Organice el menú y un grupo de botones con Flexbox.
+    \item Construya con Grid una galería de seis servicios.
+    \item Haga que una tarjeta destacada abarque dos columnas utilizando
+    \texttt{span}.
+    \item Añada suficientes tarjetas para que se creen filas implícitas y controle
+    su tamaño mediante \texttt{grid-auto-rows}.
+    \item Construya una segunda versión del layout utilizando
+    \texttt{grid-template-areas}.
+    \item Compare ambas versiones y explique cuál comunica mejor la intención del
+    diseño.
+    \item Dentro de cada tarjeta utilice Flexbox únicamente si necesita alinear
+    elementos internos en un eje.
+\end{enumerate}
+
+\Compare[Pregunta de diseño]{
+\begin{tabularx}{\linewidth}{>{\bfseries}p{10cm}X}
+\toprule
+Si el problema es... & Considere primero...\\
+\midrule
+Desplazar o anclar un elemento concreto & \texttt{position}\\
+Alinear elementos en una fila o columna & Flexbox\\
+Organizar filas y columnas simultáneamente & Grid\\
+Mantener el orden natural del documento & Flujo normal\\
+\bottomrule
+\end{tabularx}
+}
+
+\section{Ejercicio autónomo}
+Construya una sección de catálogo con encabezado, barra de filtros, tarjetas y una etiqueta destacada en una de ellas. Debe justificar en comentarios CSS por qué utilizó flujo, posicionamiento, Flexbox o Grid en cada zona principal.
+
+\section{Preguntas de integración}
+\begin{enumerate}
+    \item ¿Por qué \texttt{position: absolute} no debe convertirse en la estrategia
+    principal de maquetación?
+    \item ¿Qué propiedad cambia la dirección del eje principal de Flexbox?
+    \item ¿Qué diferencia existe entre \texttt{justify-content} y
+    \texttt{align-items} en Flexbox?
+    \item ¿Qué problema se entiende mejor como bidimensional y, por tanto, como
+    candidato natural para Grid?
+    \item ¿Cuándo una cuadrícula resulta más clara que una colección de
+    contenedores Flexbox anidados?
+    \item Proponga un ejemplo donde Grid organice el layout exterior y Flexbox
+    organice el contenido interior de cada componente.
+\end{enumerate}
+
+\section{Errores frecuentes}
+\begin{itemize}
+    \item usar coordenadas absolutas para reconstruir una cuadrícula completa;
+    \item confundir el eje principal de Flexbox con ``horizontal'' de manera
+    permanente;
+    \item aplicar propiedades de contenedor flex a un hijo o viceversa;
+    \item crear Grid pero continuar ubicando todos los elementos mediante márgenes
+    manuales;
+    \item confundir columnas con líneas y obtener un \textit{span} diferente al
+    esperado;
+    \item no distinguir pistas explícitas de pistas implícitas;
+    \item aplicar \texttt{justify-content} cuando el problema está dentro de cada
+    celda y corresponde a \texttt{justify-items};
+    \item usar \texttt{grid-auto-flow: dense} sin considerar el orden visual;
+    \item forzar muchas columnas fijas cuando el contenido necesita límites de
+    tamaño más flexibles;
+    \item utilizar \texttt{order} para corregir un HTML desorganizado;
+    \item olvidar que una posición absoluta busca un ancestro posicionado como
+    referencia.
+\end{itemize}
+
+\section{Cierre de la guía}
+\Result[Cierre]{
+El propósito de esta guía es que el aprendiz pueda regresar a ella durante la práctica sin encontrar todavía la solución de los temas de la guía siguiente. Antes de avanzar, debe ser capaz de explicar con sus propias palabras los conceptos centrales y construir una solución funcional sin copiar el ejemplo completo.
+}
+\end{document}

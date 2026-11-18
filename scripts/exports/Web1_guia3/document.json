@@ -1,0 +1,3117 @@
+{
+  "schemaVersion": "1.1.0",
+  "id": "web1-guia3",
+  "type": "guide",
+  "title": "Guía 4: Diseño responsivo e interacción visual",
+  "metadata": {
+    "courseName": "Diseño Web 1",
+    "courseCode": "ADSO-CTMA",
+    "faculty": "Análisis y Desarrollo de Software",
+    "institution": "Servicio Nacional de Aprendizaje SENA",
+    "instructor": "Deimer Miranda Montoya, MSc.(c).",
+    "email": "damiranda@sena.edu.co",
+    "guideTitle": "Guía 4: Diseño responsivo e interacción visual",
+    "className": "Responsive, estados y animaciones",
+    "academicPeriod": "2026-3T",
+    "institutionLogo": "Template/LogoSena.png",
+    "guideDuration": "Clases 9 y 10",
+    "guideModality": "Presencial con explicación, práctica guiada y trabajo autónomo",
+    "guideEvidence": "Interfaz adaptable con estados, transiciones y movimiento accesible",
+    "institutionLogoAssetId": "asset-47e258b49483"
+  },
+  "source": {
+    "file": "Web1_guia3.tex",
+    "template": "guide"
+  },
+  "structure": [
+    {
+      "type": "section",
+      "id": "sec-presentacion-8fd5ebc",
+      "title": "Presentación",
+      "starred": false,
+      "blocks": [
+        {
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "value": "Esta guía parte de una interfaz que ya tiene estructura y layout. El nuevo objetivo es hacer que conserve contenido, legibilidad y control en diferentes tamaños de pantalla y, después, agregar estados, transiciones y animaciones con una función comunicativa clara."
+            }
+          ]
+        }
+      ],
+      "children": []
+    },
+    {
+      "type": "section",
+      "id": "sec-resultados-de-aprendizaje-de-la-guia-25a0d11",
+      "title": "Resultados de aprendizaje de la guía",
+      "starred": true,
+      "blocks": [
+        {
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "value": "Al finalizar, el aprendiz podrá:"
+            }
+          ]
+        },
+        {
+          "type": "list",
+          "variant": "itemize",
+          "items": [
+            {
+              "blocks": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "explicar el propósito del viewport en dispositivos móviles;"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "blocks": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "combinar medidas fluidas, límites y recursos adaptables;"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "blocks": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "escribir media queries a partir de necesidades reales del contenido;"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "blocks": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "aplicar un enfoque mobile first;"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "blocks": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "diseñar estados visibles para interacción por puntero y teclado;"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "blocks": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "utilizar transformaciones y transiciones con moderación;"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "blocks": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "construir animaciones mediante "
+                    },
+                    {
+                      "type": "code_inline",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "@keyframes"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "value": ";"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "blocks": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "respetar "
+                    },
+                    {
+                      "type": "code_inline",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "prefers-reduced-motion"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "value": " cuando el movimiento no sea esencial."
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "children": []
+    },
+    {
+      "type": "section",
+      "id": "sec-conocimientos-previos-0a0dc7b",
+      "title": "Conocimientos previos",
+      "starred": true,
+      "blocks": [
+        {
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "value": "Se espera que el aprendiz pueda construir una página con HTML semántico y organizarla mediante propiedades CSS, Flexbox o Grid."
+            }
+          ]
+        },
+        {
+          "type": "academic_block",
+          "variant": "warning",
+          "title": "Alcance de esta guía",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "No se introduce JavaScript. La interacción trabajada corresponde a estados y movimiento que CSS puede expresar por sí mismo."
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "children": []
+    },
+    {
+      "type": "section",
+      "id": "sec-de-una-pantalla-fija-a-una-interfaz-adaptable-9703728",
+      "title": "De una pantalla fija a una interfaz adaptable",
+      "starred": false,
+      "blocks": [
+        {
+          "type": "figure",
+          "assetId": "asset-545234500b74"
+        },
+        {
+          "type": "academic_block",
+          "variant": "idea",
+          "title": "La pregunta correcta",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Diseño responsive no significa “hacer una versión para celular”. Significa permitir que el contenido reorganice su presentación cuando el espacio disponible cambia."
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "children": []
+    },
+    {
+      "type": "section",
+      "id": "sec-laboratorio-secuencial-ruta-verde-cea0662",
+      "title": "Laboratorio secuencial: Ruta Verde",
+      "starred": false,
+      "blocks": [
+        {
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "value": "Se desarrollará una página informativa sobre recorridos ecológicos. La estructura se mantendrá durante toda la guía y el CSS evolucionará de una columna a una composición responsiva con movimiento moderado."
+            }
+          ]
+        }
+      ],
+      "children": [
+        {
+          "type": "subsection",
+          "id": "sub-archivos-992f81b",
+          "title": "Archivos",
+          "starred": false,
+          "blocks": [
+            {
+              "type": "code",
+              "language": "text",
+              "value": "ruta-verde/\n├── index.html\n├── css/\n│   └── styles.css\n└── img/\n    ├── portada.jpg\n    ├── bosque.jpg\n    ├── cascada.jpg\n    └── mirador.jpg"
+            },
+            {
+              "type": "code",
+              "language": "html",
+              "value": "<!DOCTYPE html>\n<html lang=\"es\">\n<head>\n    <meta charset=\"UTF-8\">\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n    <title>Ruta Verde</title>\n    <link rel=\"stylesheet\" href=\"css/styles.css\">\n</head>\n<body>\n    <header class=\"encabezado\">\n        <a class=\"marca\" href=\"#inicio\">Ruta Verde</a>\n        <nav aria-label=\"Navegación principal\">\n            <ul class=\"menu\">\n                <li><a href=\"#rutas\">Rutas</a></li>\n                <li><a href=\"#recomendaciones\">Recomendaciones</a></li>\n                <li><a href=\"#contacto\">Contacto</a></li>\n            </ul>\n        </nav>\n    </header>\n\n    <main id=\"inicio\">\n        <section class=\"hero\">\n            <div class=\"hero__contenido\">\n                <p class=\"etiqueta\">Exploración responsable</p>\n                <h1>Caminos para volver a respirar</h1>\n                <p>Recorridos locales para observar, aprender y cuidar.</p>\n                <a class=\"boton\" href=\"#rutas\">Ver recorridos</a>\n            </div>\n        </section>\n\n        <section class=\"seccion\" id=\"rutas\">\n            <header class=\"seccion__titulo\">\n                <p>Elige tu experiencia</p>\n                <h2>Rutas destacadas</h2>\n            </header>\n            <div class=\"rejilla-rutas\">\n                <article class=\"ruta ruta--principal\">\n                    <img src=\"img/bosque.jpg\" alt=\"Sendero entre árboles altos\">\n                    <div class=\"ruta__contenido\">\n                        <p class=\"nivel\">Nivel intermedio</p>\n                        <h3>Bosque de niebla</h3>\n                        <p>Un trayecto interpretativo entre nacimientos de agua.</p>\n                        <a href=\"#contacto\">Consultar salida</a>\n                    </div>\n                </article>\n                <article class=\"ruta\">\n                    <img src=\"img/cascada.jpg\" alt=\"Cascada rodeada de vegetación\">\n                    <div class=\"ruta__contenido\">\n                        <p class=\"nivel\">Nivel básico</p>\n                        <h3>Camino del agua</h3>\n                        <p>Recorrido breve para reconocer el ciclo hídrico.</p>\n                        <a href=\"#contacto\">Consultar salida</a>\n                    </div>\n                </article>\n                <article class=\"ruta\">\n                    <img src=\"img/mirador.jpg\" alt=\"Mirador sobre un valle verde\">\n                    <div class=\"ruta__contenido\">\n                        <p class=\"nivel\">Nivel avanzado</p>\n                        <h3>Mirador del valle</h3>\n                        <p>Ascenso exigente con observación del paisaje regional.</p>\n                        <a href=\"#contacto\">Consultar salida</a>\n                    </div>\n                </article>\n            </div>\n        </section>\n\n        <section class=\"seccion recomendaciones\" id=\"recomendaciones\">\n            <div>\n                <p class=\"etiqueta\">Antes de salir</p>\n                <h2>Preparación responsable</h2>\n            </div>\n            <ul>\n                <li>Lleva hidratación y protección solar.</li>\n                <li>Regresa todos tus residuos.</li>\n                <li>Respeta senderos y fauna local.</li>\n            </ul>\n        </section>\n    </main>\n    <footer id=\"contacto\"><p>Ruta Verde · Proyecto académico</p></footer>\n</body>\n</html>",
+              "fileName": "index.html"
+            }
+          ],
+          "children": []
+        }
+      ]
+    },
+    {
+      "type": "section",
+      "id": "sec-diseno-responsivo-c900a24",
+      "title": "Diseño responsivo",
+      "starred": false,
+      "blocks": [
+        {
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "value": "Un diseño responsivo no es una versión pequeña del escritorio. Es una composición capaz de conservar contenido, lectura y operación en diferentes condiciones de ancho, orientación, zoom y preferencias del usuario."
+            }
+          ]
+        }
+      ],
+      "children": [
+        {
+          "type": "subsection",
+          "id": "sub-viewport-y-medidas-fluidas-5772d53",
+          "title": "Viewport y medidas fluidas",
+          "starred": false,
+          "blocks": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "La etiqueta "
+                },
+                {
+                  "type": "code_inline",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "meta viewport"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "value": " permite que el ancho lógico del documento coincida con el ancho del dispositivo. Ya está incluida en el HTML base."
+                }
+              ]
+            },
+            {
+              "type": "code",
+              "language": "css",
+              "value": ".seccion {\n    width: min(100% - 2rem, 1120px);\n    margin-inline: auto;\n}\n\n.hero h1 {\n    font-size: clamp(2.2rem, 7vw, 5rem);\n}"
+            },
+            {
+              "type": "academic_block",
+              "variant": "idea",
+              "title": "Responsivo por naturaleza",
+              "children": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "Antes de escribir una media query, permita que el contenido fluya: use anchos máximos, porcentajes, "
+                    },
+                    {
+                      "type": "code_inline",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "min()"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "value": ", "
+                    },
+                    {
+                      "type": "code_inline",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "max()"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "value": ", "
+                    },
+                    {
+                      "type": "code_inline",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "clamp()"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "value": ", Flexbox con "
+                    },
+                    {
+                      "type": "code_inline",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "wrap"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "value": " y Grid con pistas flexibles."
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "academic_block",
+              "variant": "example",
+              "title": "Decisión basada en el contenido",
+              "children": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "Si dos columnas de 300 px, su separación de 24 px y los márgenes laterales ya no caben con comodidad, ese comportamiento ofrece una razón concreta para cambiar a una columna. El punto de ruptura nace de la composición, no del nombre de un dispositivo."
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "children": []
+        },
+        {
+          "type": "subsection",
+          "id": "sub-imagenes-adaptables-y-object-fit-37251c5",
+          "title": "Imágenes adaptables y object-fit",
+          "starred": false,
+          "blocks": [
+            {
+              "type": "code",
+              "language": "css",
+              "value": "img {\n    display: block;\n    max-width: 100%;\n}\n\n.ruta img {\n    width: 100%;\n    height: 220px;\n    object-fit: cover;\n}"
+            },
+            {
+              "type": "figure",
+              "assetId": "asset-4652f06ef9f4"
+            }
+          ],
+          "children": []
+        },
+        {
+          "type": "subsection",
+          "id": "sub-media-queries-y-mobile-first-fb5719f",
+          "title": "Media queries y mobile first",
+          "starred": false,
+          "blocks": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "En mobile first las reglas base resuelven el ancho pequeño. Las consultas con "
+                },
+                {
+                  "type": "code_inline",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "min-width"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "value": " añaden cambios cuando existe espacio suficiente. Los puntos de ruptura deben responder al contenido, no a una lista rígida de dispositivos."
+                }
+              ]
+            },
+            {
+              "type": "figure",
+              "assetId": "asset-927876cbc608"
+            },
+            {
+              "type": "code",
+              "language": "css",
+              "value": "/* Base: pantalla estrecha */\n.encabezado { padding: 1rem; }\n.menu { display: flex; flex-wrap: wrap; gap: 0.75rem; }\n.recomendaciones { display: grid; gap: 1.5rem; }\n\n@media (min-width: 700px) {\n    .recomendaciones {\n        grid-template-columns: 1fr 1fr;\n        align-items: center;\n    }\n}\n\n@media (min-width: 1000px) {\n    .ruta--principal {\n        grid-column: span 2;\n    }\n}"
+            },
+            {
+              "type": "academic_block",
+              "variant": "practice",
+              "title": "Ejercicio 2: encontrar el punto de ruptura",
+              "children": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "No elija primero 700 px. Reduzca lentamente el navegador y observe cuándo el contenido deja de respirar o el menú se vuelve difícil de usar. Registre ese ancho, ajuste la consulta y explique qué problema concreto resuelve."
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "academic_block",
+              "variant": "warning",
+              "title": "No oculte contenido esencial",
+              "children": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "Una media query puede reorganizar, reducir espacios o cambiar la presentación, pero no debería eliminar información o acciones necesarias solo para hacer caber la interfaz."
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "children": []
+        }
+      ]
+    },
+    {
+      "type": "section",
+      "id": "sec-estados-y-pseudoelementos-fba821f",
+      "title": "Estados y pseudoelementos",
+      "starred": false,
+      "blocks": [
+        {
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "value": "La interacción debe comunicar qué elemento puede usarse y qué está ocurriendo. Los estados más habituales son "
+            },
+            {
+              "type": "code_inline",
+              "children": [
+                {
+                  "type": "text",
+                  "value": ":hover"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "value": ", "
+            },
+            {
+              "type": "code_inline",
+              "children": [
+                {
+                  "type": "text",
+                  "value": ":focus-visible"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "value": ", "
+            },
+            {
+              "type": "code_inline",
+              "children": [
+                {
+                  "type": "text",
+                  "value": ":active"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "value": " y "
+            },
+            {
+              "type": "code_inline",
+              "children": [
+                {
+                  "type": "text",
+                  "value": ":focus-within"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "value": ". Ratón y teclado deben recibir señales claras."
+            }
+          ]
+        },
+        {
+          "type": "code",
+          "language": "css",
+          "value": ".boton:hover {\n    background-color: #0a6048;\n}\n.boton:focus-visible {\n    outline: 3px solid #f7b32b;\n    outline-offset: 4px;\n}\n.boton:active {\n    transform: translateY(1px);\n}"
+        },
+        {
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "value": "Los pseudoelementos "
+            },
+            {
+              "type": "code_inline",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "::before"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "value": " y "
+            },
+            {
+              "type": "code_inline",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "::after"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "value": " crean una caja decorativa asociada a un elemento. No deben contener información esencial que falte en HTML."
+            }
+          ]
+        },
+        {
+          "type": "code",
+          "language": "css",
+          "value": ".nivel::before {\n    content: \"\";\n    display: inline-block;\n    width: 0.6rem;\n    height: 0.6rem;\n    margin-right: 0.45rem;\n    background: #22a06b;\n    border-radius: 50%;\n}"
+        },
+        {
+          "type": "figure",
+          "assetId": "asset-2040a0d496da"
+        }
+      ],
+      "children": []
+    },
+    {
+      "type": "section",
+      "id": "sec-transformaciones-y-transiciones-6f6ccc0",
+      "title": "Transformaciones y transiciones",
+      "starred": false,
+      "blocks": [
+        {
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "code_inline",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "transform"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "value": " modifica la representación visual sin reorganizar el flujo. Puede trasladar, escalar, rotar o inclinar. "
+            },
+            {
+              "type": "code_inline",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "transition"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "value": " interpola el cambio entre un estado inicial y uno final."
+            }
+          ]
+        },
+        {
+          "type": "code",
+          "language": "css",
+          "value": ".ruta {\n    transition:\n        transform 220ms ease,\n        box-shadow 220ms ease;\n}\n\n.ruta:hover {\n    transform: translateY(-6px);\n    box-shadow: 0 18px 40px #14362a28;\n}"
+        },
+        {
+          "type": "figure",
+          "assetId": "asset-2f1d53e18913"
+        },
+        {
+          "type": "academic_block",
+          "variant": "definition",
+          "title": "Cuatro partes de una transición",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "La propiedad que cambia, la duración, la función de tiempo y el retraso opcional. Evite "
+                },
+                {
+                  "type": "code_inline",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "transition: all"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "value": "; declarar propiedades concretas hace el efecto más predecible y evita animar cambios costosos o accidentales."
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "children": [
+        {
+          "type": "subsection",
+          "id": "sub-transformaciones-habituales-29215fd",
+          "title": "Transformaciones habituales",
+          "starred": false,
+          "blocks": [
+            {
+              "type": "table",
+              "columnSpec": ">{\\ttfamily\\bfseries\\small}p{4.4cm}X",
+              "rows": [
+                [
+                  {
+                    "colspan": 1,
+                    "rowspan": 1,
+                    "children": [
+                      {
+                        "type": "paragraph",
+                        "children": [
+                          {
+                            "type": "text",
+                            "value": "Función"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "colspan": 1,
+                    "rowspan": 1,
+                    "children": [
+                      {
+                        "type": "paragraph",
+                        "children": [
+                          {
+                            "type": "text",
+                            "value": "Resultado"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ],
+                [
+                  {
+                    "colspan": 1,
+                    "rowspan": 1,
+                    "children": [
+                      {
+                        "type": "paragraph",
+                        "children": [
+                          {
+                            "type": "text",
+                            "value": "translate(x, y)"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "colspan": 1,
+                    "rowspan": 1,
+                    "children": [
+                      {
+                        "type": "paragraph",
+                        "children": [
+                          {
+                            "type": "text",
+                            "value": "Desplaza visualmente."
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ],
+                [
+                  {
+                    "colspan": 1,
+                    "rowspan": 1,
+                    "children": [
+                      {
+                        "type": "paragraph",
+                        "children": [
+                          {
+                            "type": "text",
+                            "value": "scale(n)"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "colspan": 1,
+                    "rowspan": 1,
+                    "children": [
+                      {
+                        "type": "paragraph",
+                        "children": [
+                          {
+                            "type": "text",
+                            "value": "Amplía o reduce desde el origen de transformación."
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ],
+                [
+                  {
+                    "colspan": 1,
+                    "rowspan": 1,
+                    "children": [
+                      {
+                        "type": "paragraph",
+                        "children": [
+                          {
+                            "type": "text",
+                            "value": "rotate(ángulo)"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "colspan": 1,
+                    "rowspan": 1,
+                    "children": [
+                      {
+                        "type": "paragraph",
+                        "children": [
+                          {
+                            "type": "text",
+                            "value": "Gira el elemento."
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ],
+                [
+                  {
+                    "colspan": 1,
+                    "rowspan": 1,
+                    "children": [
+                      {
+                        "type": "paragraph",
+                        "children": [
+                          {
+                            "type": "text",
+                            "value": "skew(ángulo)"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "colspan": 1,
+                    "rowspan": 1,
+                    "children": [
+                      {
+                        "type": "paragraph",
+                        "children": [
+                          {
+                            "type": "text",
+                            "value": "Inclina sus ejes."
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ],
+                [
+                  {
+                    "colspan": 1,
+                    "rowspan": 1,
+                    "children": [
+                      {
+                        "type": "paragraph",
+                        "children": [
+                          {
+                            "type": "text",
+                            "value": "transform-origin"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "colspan": 1,
+                    "rowspan": 1,
+                    "children": [
+                      {
+                        "type": "paragraph",
+                        "children": [
+                          {
+                            "type": "text",
+                            "value": "Cambia el punto desde el que ocurre la transformación."
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              ]
+            },
+            {
+              "type": "academic_block",
+              "variant": "practice",
+              "title": "Ejercicio 3: microinteracción",
+              "children": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "Cree un botón con tres estados: reposo, foco visible y activación. Use una sola transformación pequeña y una transición entre 150 y 300 ms. Compruebe que el texto no se mueve y que el foco no depende únicamente del color."
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "children": []
+        }
+      ]
+    },
+    {
+      "type": "section",
+      "id": "sec-animaciones-con-keyframes-92665c6",
+      "title": "Animaciones con @keyframes",
+      "starred": false,
+      "blocks": [
+        {
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "value": "Una animación describe uno o más estados intermedios y puede ejecutarse sin que una pseudoclase mantenga el cambio. Es adecuada cuando hay una secuencia temporal; para un cambio simple entre dos estados suele bastar una transición."
+            }
+          ]
+        },
+        {
+          "type": "code",
+          "language": "css",
+          "value": "@keyframes aparecer {\n    from {\n        opacity: 0;\n        transform: translateY(18px);\n    }\n    to {\n        opacity: 1;\n        transform: translateY(0);\n    }\n}\n\n.ruta {\n    animation: aparecer 500ms ease-out both;\n}\n.ruta:nth-child(2) { animation-delay: 100ms; }\n.ruta:nth-child(3) { animation-delay: 200ms; }"
+        },
+        {
+          "type": "figure",
+          "assetId": "asset-764a31149cc1"
+        },
+        {
+          "type": "table",
+          "columnSpec": ">{\\ttfamily\\bfseries\\small}p{6.3cm}X",
+          "rows": [
+            [
+              {
+                "colspan": 1,
+                "rowspan": 1,
+                "children": [
+                  {
+                    "type": "paragraph",
+                    "children": [
+                      {
+                        "type": "text",
+                        "value": "Propiedad"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "colspan": 1,
+                "rowspan": 1,
+                "children": [
+                  {
+                    "type": "paragraph",
+                    "children": [
+                      {
+                        "type": "text",
+                        "value": "Control"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ],
+            [
+              {
+                "colspan": 1,
+                "rowspan": 1,
+                "children": [
+                  {
+                    "type": "paragraph",
+                    "children": [
+                      {
+                        "type": "text",
+                        "value": "animation-name"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "colspan": 1,
+                "rowspan": 1,
+                "children": [
+                  {
+                    "type": "paragraph",
+                    "children": [
+                      {
+                        "type": "text",
+                        "value": "Nombre de los "
+                      },
+                      {
+                        "type": "code_inline",
+                        "children": [
+                          {
+                            "type": "text",
+                            "value": "@keyframes"
+                          }
+                        ]
+                      },
+                      {
+                        "type": "text",
+                        "value": "."
+                      }
+                    ]
+                  }
+                ]
+              }
+            ],
+            [
+              {
+                "colspan": 1,
+                "rowspan": 1,
+                "children": [
+                  {
+                    "type": "paragraph",
+                    "children": [
+                      {
+                        "type": "text",
+                        "value": "animation-duration"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "colspan": 1,
+                "rowspan": 1,
+                "children": [
+                  {
+                    "type": "paragraph",
+                    "children": [
+                      {
+                        "type": "text",
+                        "value": "Tiempo de un ciclo."
+                      }
+                    ]
+                  }
+                ]
+              }
+            ],
+            [
+              {
+                "colspan": 1,
+                "rowspan": 1,
+                "children": [
+                  {
+                    "type": "paragraph",
+                    "children": [
+                      {
+                        "type": "text",
+                        "value": "animation-timing-function"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "colspan": 1,
+                "rowspan": 1,
+                "children": [
+                  {
+                    "type": "paragraph",
+                    "children": [
+                      {
+                        "type": "text",
+                        "value": "Ritmo del cambio."
+                      }
+                    ]
+                  }
+                ]
+              }
+            ],
+            [
+              {
+                "colspan": 1,
+                "rowspan": 1,
+                "children": [
+                  {
+                    "type": "paragraph",
+                    "children": [
+                      {
+                        "type": "text",
+                        "value": "animation-delay"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "colspan": 1,
+                "rowspan": 1,
+                "children": [
+                  {
+                    "type": "paragraph",
+                    "children": [
+                      {
+                        "type": "text",
+                        "value": "Espera antes de comenzar."
+                      }
+                    ]
+                  }
+                ]
+              }
+            ],
+            [
+              {
+                "colspan": 1,
+                "rowspan": 1,
+                "children": [
+                  {
+                    "type": "paragraph",
+                    "children": [
+                      {
+                        "type": "text",
+                        "value": "animation-iteration-count"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "colspan": 1,
+                "rowspan": 1,
+                "children": [
+                  {
+                    "type": "paragraph",
+                    "children": [
+                      {
+                        "type": "text",
+                        "value": "Número de repeticiones."
+                      }
+                    ]
+                  }
+                ]
+              }
+            ],
+            [
+              {
+                "colspan": 1,
+                "rowspan": 1,
+                "children": [
+                  {
+                    "type": "paragraph",
+                    "children": [
+                      {
+                        "type": "text",
+                        "value": "animation-direction"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "colspan": 1,
+                "rowspan": 1,
+                "children": [
+                  {
+                    "type": "paragraph",
+                    "children": [
+                      {
+                        "type": "text",
+                        "value": "Sentido de cada ciclo."
+                      }
+                    ]
+                  }
+                ]
+              }
+            ],
+            [
+              {
+                "colspan": 1,
+                "rowspan": 1,
+                "children": [
+                  {
+                    "type": "paragraph",
+                    "children": [
+                      {
+                        "type": "text",
+                        "value": "animation-fill-mode"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "colspan": 1,
+                "rowspan": 1,
+                "children": [
+                  {
+                    "type": "paragraph",
+                    "children": [
+                      {
+                        "type": "text",
+                        "value": "Estado aplicado antes o después."
+                      }
+                    ]
+                  }
+                ]
+              }
+            ],
+            [
+              {
+                "colspan": 1,
+                "rowspan": 1,
+                "children": [
+                  {
+                    "type": "paragraph",
+                    "children": [
+                      {
+                        "type": "text",
+                        "value": "animation-play-state"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "colspan": 1,
+                "rowspan": 1,
+                "children": [
+                  {
+                    "type": "paragraph",
+                    "children": [
+                      {
+                        "type": "text",
+                        "value": "Ejecución o pausa."
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          ]
+        },
+        {
+          "type": "academic_block",
+          "variant": "comparison",
+          "title": "Transición o animación",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Use transición cuando existe un estado inicial y otro final provocado por una interacción. Use animación cuando necesita una secuencia, repetición, retrasos independientes o varios puntos intermedios."
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "children": []
+    },
+    {
+      "type": "section",
+      "id": "sec-efectos-visuales-con-moderacion-42c3e9e",
+      "title": "Efectos visuales con moderación",
+      "starred": false,
+      "blocks": [
+        {
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "value": "Sombras, degradados, opacidad y filtros pueden mejorar profundidad o legibilidad, pero también reducir contraste y rendimiento si se acumulan."
+            }
+          ]
+        },
+        {
+          "type": "code",
+          "language": "css",
+          "value": ".hero {\n    color: white;\n    background:\n        linear-gradient(90deg, #073b2ddd, #073b2d44),\n        url(\"../img/portada.jpg\") center / cover;\n}\n\n.ruta img {\n    filter: saturate(0.9) contrast(1.05);\n    transition: filter 220ms ease, transform 220ms ease;\n}\n.ruta:hover img {\n    filter: saturate(1.1) contrast(1.08);\n    transform: scale(1.025);\n}"
+        },
+        {
+          "type": "academic_block",
+          "variant": "warning",
+          "title": "Opacidad y texto",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Aplicar "
+                },
+                {
+                  "type": "code_inline",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "opacity"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "value": " al contenedor vuelve transparentes también sus hijos. Para oscurecer una imagen sin afectar el texto, use una capa, un pseudoelemento o un degradado en el fondo."
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "children": []
+    },
+    {
+      "type": "section",
+      "id": "sec-movimiento-accesible-7bc2f34",
+      "title": "Movimiento accesible",
+      "starred": false,
+      "blocks": [
+        {
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "value": "No todas las personas toleran o desean movimiento. La consulta "
+            },
+            {
+              "type": "code_inline",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "prefers-reduced-motion"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "value": " permite reducirlo cuando el sistema expresa esa preferencia."
+            }
+          ]
+        },
+        {
+          "type": "code",
+          "language": "css",
+          "value": "@media (prefers-reduced-motion: reduce) {\n    html {\n        scroll-behavior: auto;\n    }\n\n    *, *::before, *::after {\n        animation-duration: 0.01ms !important;\n        animation-iteration-count: 1 !important;\n        transition-duration: 0.01ms !important;\n        scroll-behavior: auto !important;\n    }\n}"
+        },
+        {
+          "type": "academic_block",
+          "variant": "idea",
+          "title": "Movimiento con propósito",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Una animación útil orienta la atención, confirma una acción o explica una transición espacial. Si no cumple una función reconocible, probablemente puede eliminarse."
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "children": []
+    },
+    {
+      "type": "section",
+      "id": "sec-css-integrado-del-laboratorio-5ca79cb",
+      "title": "CSS integrado del laboratorio",
+      "starred": false,
+      "blocks": [
+        {
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "value": "La siguiente síntesis muestra cómo conviven Grid, Flexbox, reglas responsivas y movimiento. Las reglas tipográficas menores pueden ampliarse durante la práctica."
+            }
+          ]
+        },
+        {
+          "type": "code",
+          "language": "css",
+          "value": ":root { --verde: #0a6048; --oscuro: #102820; --claro: #f2f7f4; --acento: #f7b32b; }\n*, *::before, *::after { box-sizing: border-box; }\nhtml { scroll-behavior: smooth; }\nbody { margin: 0; color: var(--oscuro); background: var(--claro); font-family: Arial, sans-serif; line-height: 1.6; }\nimg { display: block; max-width: 100%; }\na { color: inherit; }\n\n.encabezado { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; padding: 1rem max(1rem, calc((100% - 1120px) / 2)); background: white; }\n.marca { color: var(--verde); font-weight: 800; text-decoration: none; }\n.menu { display: flex; flex-wrap: wrap; gap: 0.75rem 1.25rem; margin: 0; padding: 0; list-style: none; }\n.menu a:focus-visible, .boton:focus-visible, .ruta a:focus-visible { outline: 3px solid var(--acento); outline-offset: 4px; }\n\n.hero { min-height: 70vh; display: grid; align-items: center; padding: 4rem max(1rem, calc((100% - 1120px) / 2)); color: white; background: linear-gradient(90deg, #073b2dee, #073b2d44), url(\"../img/portada.jpg\") center / cover; }\n.hero__contenido { max-width: 720px; }\n.hero h1 { margin: 0; font-size: clamp(2.2rem, 7vw, 5rem); line-height: 1.05; }\n.boton { display: inline-block; padding: 0.75rem 1rem; color: white; background: var(--verde); border-radius: 999px; text-decoration: none; transition: background-color 180ms ease, transform 180ms ease; }\n.boton:hover { background: #073b2d; transform: translateY(-2px); }\n\n.seccion { width: min(100% - 2rem, 1120px); margin-inline: auto; padding-block: 4rem; }\n.seccion__titulo { margin-bottom: 2rem; }\n.rejilla-rutas { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); gap: 1.5rem; }\n.ruta { overflow: hidden; display: flex; flex-direction: column; background: white; border-radius: 1rem; box-shadow: 0 8px 24px #14362a18; animation: aparecer 500ms ease-out both; transition: transform 220ms ease, box-shadow 220ms ease; }\n.ruta:nth-child(2) { animation-delay: 100ms; }\n.ruta:nth-child(3) { animation-delay: 200ms; }\n.ruta:hover { transform: translateY(-6px); box-shadow: 0 18px 40px #14362a28; }\n.ruta img { width: 100%; height: 220px; object-fit: cover; }\n.ruta__contenido { flex: 1; display: flex; flex-direction: column; padding: 1.25rem; }\n.ruta__contenido a { margin-top: auto; color: var(--verde); font-weight: 700; }\n.nivel::before { content: \"\"; display: inline-block; width: 0.6rem; height: 0.6rem; margin-right: 0.45rem; background: #22a06b; border-radius: 50%; }\n.recomendaciones { display: grid; gap: 1.5rem; }\nfooter { padding: 2rem; color: white; background: var(--oscuro); text-align: center; }\n\n@keyframes aparecer {\n    from { opacity: 0; transform: translateY(18px); }\n    to { opacity: 1; transform: translateY(0); }\n}\n@media (min-width: 700px) {\n    .recomendaciones { grid-template-columns: 1fr 1fr; align-items: center; }\n}\n@media (min-width: 1000px) {\n    .ruta--principal { grid-column: span 2; }\n}\n@media (prefers-reduced-motion: reduce) {\n    html { scroll-behavior: auto; }\n    *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }\n}"
+        }
+      ],
+      "children": []
+    },
+    {
+      "type": "section",
+      "id": "sec-practica-guiada-agenda-cultural-1d0d1a8",
+      "title": "Práctica guiada: agenda cultural",
+      "starred": false,
+      "blocks": [
+        {
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "value": "Construya una cartelera de actividades culturales con un evento destacado y al menos cinco eventos secundarios."
+            }
+          ]
+        },
+        {
+          "type": "list",
+          "variant": "enumerate",
+          "items": [
+            {
+              "blocks": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "Diseñe primero una versión de una columna, completamente legible."
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "blocks": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "Cree una cuadrícula fluida con "
+                    },
+                    {
+                      "type": "code_inline",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "auto-fit"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "value": " y "
+                    },
+                    {
+                      "type": "code_inline",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "minmax()"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "value": "."
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "blocks": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "En ancho amplio, haga que el evento destacado abarque dos columnas."
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "blocks": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "Organice el contenido interno de cada tarjeta con Flexbox."
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "blocks": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "Añada una consulta basada en el punto donde el contenido necesita cambiar."
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "blocks": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "Cree estados de foco y ratón equivalentes."
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "blocks": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "Incorpore una transición breve y una animación de entrada no repetitiva."
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "blocks": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "Implemente la preferencia de movimiento reducido."
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "academic_block",
+          "variant": "practice",
+          "title": "Prueba en cuatro condiciones",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Revise la interfaz a 360, 700, 1000 y 1400 px. En cada ancho compruebe lectura, orden, navegación, desbordamiento, tamaño de imágenes, foco por teclado y reducción de movimiento."
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "children": []
+    },
+    {
+      "type": "section",
+      "id": "sec-ejercicio-autonomo-destinos-regionales-6130ee0",
+      "title": "Ejercicio autónomo: destinos regionales",
+      "starred": false,
+      "blocks": [
+        {
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "value": "Desarrolle una página para presentar mínimo seis destinos regionales. Incluya una portada, categorías visuales, galería de destinos, recomendaciones y pie de página."
+            }
+          ]
+        }
+      ],
+      "children": [
+        {
+          "type": "subsection",
+          "id": "sub-requisitos-minimos-bc31eb4",
+          "title": "Requisitos mínimos",
+          "starred": false,
+          "blocks": [
+            {
+              "type": "list",
+              "variant": "itemize",
+              "items": [
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "HTML semántico y contenido completo antes de aplicar efectos."
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "Grid para la galería y Flexbox para al menos dos componentes internos."
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "Uso de "
+                        },
+                        {
+                          "type": "code_inline",
+                          "children": [
+                            {
+                              "type": "text",
+                              "value": "fr"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "text",
+                          "value": ", "
+                        },
+                        {
+                          "type": "code_inline",
+                          "children": [
+                            {
+                              "type": "text",
+                              "value": "repeat()"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "text",
+                          "value": ", "
+                        },
+                        {
+                          "type": "code_inline",
+                          "children": [
+                            {
+                              "type": "text",
+                              "value": "minmax()"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "text",
+                          "value": " y separación con "
+                        },
+                        {
+                          "type": "code_inline",
+                          "children": [
+                            {
+                              "type": "text",
+                              "value": "gap"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "text",
+                          "value": "."
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "Un elemento que abarque más de una columna en ancho amplio."
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "Imágenes fluidas con una decisión justificada entre "
+                        },
+                        {
+                          "type": "code_inline",
+                          "children": [
+                            {
+                              "type": "text",
+                              "value": "cover"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "text",
+                          "value": " y "
+                        },
+                        {
+                          "type": "code_inline",
+                          "children": [
+                            {
+                              "type": "text",
+                              "value": "contain"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "text",
+                          "value": "."
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "Enfoque mobile first y mínimo una media query basada en el contenido."
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "Estados visibles para ratón y teclado."
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "Una transición y una animación breve con propósito distinto."
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "blocks": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "Compatibilidad con "
+                        },
+                        {
+                          "type": "code_inline",
+                          "children": [
+                            {
+                              "type": "text",
+                              "value": "prefers-reduced-motion"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "text",
+                          "value": "."
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "academic_block",
+              "variant": "warning",
+              "title": "Los adicionales no sustituyen la base",
+              "children": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "Agregar más destinos, animaciones, filtros o efectos no exime del cumplimiento de los requisitos mínimos. Complete y compruebe primero lo solicitado; después añada los elementos complementarios sin deteriorar accesibilidad ni rendimiento."
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "children": []
+        }
+      ]
+    },
+    {
+      "type": "section",
+      "id": "sec-preguntas-de-comprension-2f68a91",
+      "title": "Preguntas de comprensión",
+      "starred": false,
+      "blocks": [
+        {
+          "type": "list",
+          "variant": "enumerate",
+          "items": [
+            {
+              "blocks": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "¿Qué diferencia conceptual existe entre Flexbox y Grid?"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "blocks": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "¿Qué representa una unidad "
+                    },
+                    {
+                      "type": "code_inline",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "fr"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "value": "?"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "blocks": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "¿Cuándo crea Grid filas implícitas?"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "blocks": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "¿Qué diferencia existe entre alinear elementos y distribuir la cuadrícula?"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "blocks": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "¿Cómo se comportan "
+                    },
+                    {
+                      "type": "code_inline",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "auto-fit"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "value": " y "
+                    },
+                    {
+                      "type": "code_inline",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "minmax()"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "value": " juntos?"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "blocks": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "¿Por qué un punto de ruptura debe responder al contenido?"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "blocks": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "¿Qué diferencia visual existe entre "
+                    },
+                    {
+                      "type": "code_inline",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "cover"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "value": " y "
+                    },
+                    {
+                      "type": "code_inline",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "contain"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "value": "?"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "blocks": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "¿Cuándo conviene una transición y cuándo una animación?"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "blocks": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "¿Qué propósito cumple "
+                    },
+                    {
+                      "type": "code_inline",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "prefers-reduced-motion"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "value": "?"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "children": []
+    },
+    {
+      "type": "section",
+      "id": "sec-errores-frecuentes-y-diagnostico-86cc25b",
+      "title": "Errores frecuentes y diagnóstico",
+      "starred": false,
+      "blocks": [
+        {
+          "type": "table",
+          "columnSpec": "X X",
+          "rows": [
+            [
+              {
+                "colspan": 1,
+                "rowspan": 1,
+                "children": [
+                  {
+                    "type": "paragraph",
+                    "children": [
+                      {
+                        "type": "text",
+                        "value": "Síntoma"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "colspan": 1,
+                "rowspan": 1,
+                "children": [
+                  {
+                    "type": "paragraph",
+                    "children": [
+                      {
+                        "type": "text",
+                        "value": "Revisión recomendada"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ],
+            [
+              {
+                "colspan": 1,
+                "rowspan": 1,
+                "children": [
+                  {
+                    "type": "paragraph",
+                    "children": [
+                      {
+                        "type": "text",
+                        "value": "Las columnas desbordan."
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "colspan": 1,
+                "rowspan": 1,
+                "children": [
+                  {
+                    "type": "paragraph",
+                    "children": [
+                      {
+                        "type": "text",
+                        "value": "Revise mínimos, contenido largo y "
+                      },
+                      {
+                        "type": "code_inline",
+                        "children": [
+                          {
+                            "type": "text",
+                            "value": "minmax(0, 1fr)"
+                          }
+                        ]
+                      },
+                      {
+                        "type": "text",
+                        "value": "."
+                      }
+                    ]
+                  }
+                ]
+              }
+            ],
+            [
+              {
+                "colspan": 1,
+                "rowspan": 1,
+                "children": [
+                  {
+                    "type": "paragraph",
+                    "children": [
+                      {
+                        "type": "text",
+                        "value": "Un área no aparece."
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "colspan": 1,
+                "rowspan": 1,
+                "children": [
+                  {
+                    "type": "paragraph",
+                    "children": [
+                      {
+                        "type": "text",
+                        "value": "Compruebe nombres y que el área sea rectangular."
+                      }
+                    ]
+                  }
+                ]
+              }
+            ],
+            [
+              {
+                "colspan": 1,
+                "rowspan": 1,
+                "children": [
+                  {
+                    "type": "paragraph",
+                    "children": [
+                      {
+                        "type": "code_inline",
+                        "children": [
+                          {
+                            "type": "text",
+                            "value": "align-content"
+                          }
+                        ]
+                      },
+                      {
+                        "type": "text",
+                        "value": " no cambia nada."
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "colspan": 1,
+                "rowspan": 1,
+                "children": [
+                  {
+                    "type": "paragraph",
+                    "children": [
+                      {
+                        "type": "text",
+                        "value": "Verifique que la cuadrícula sea menor que su contenedor."
+                      }
+                    ]
+                  }
+                ]
+              }
+            ],
+            [
+              {
+                "colspan": 1,
+                "rowspan": 1,
+                "children": [
+                  {
+                    "type": "paragraph",
+                    "children": [
+                      {
+                        "type": "text",
+                        "value": "La media query nunca se activa."
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "colspan": 1,
+                "rowspan": 1,
+                "children": [
+                  {
+                    "type": "paragraph",
+                    "children": [
+                      {
+                        "type": "text",
+                        "value": "Revise sintaxis, unidad y orden de reglas."
+                      }
+                    ]
+                  }
+                ]
+              }
+            ],
+            [
+              {
+                "colspan": 1,
+                "rowspan": 1,
+                "children": [
+                  {
+                    "type": "paragraph",
+                    "children": [
+                      {
+                        "type": "text",
+                        "value": "La imagen se deforma."
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "colspan": 1,
+                "rowspan": 1,
+                "children": [
+                  {
+                    "type": "paragraph",
+                    "children": [
+                      {
+                        "type": "text",
+                        "value": "Use dimensiones coherentes y "
+                      },
+                      {
+                        "type": "code_inline",
+                        "children": [
+                          {
+                            "type": "text",
+                            "value": "object-fit"
+                          }
+                        ]
+                      },
+                      {
+                        "type": "text",
+                        "value": "."
+                      }
+                    ]
+                  }
+                ]
+              }
+            ],
+            [
+              {
+                "colspan": 1,
+                "rowspan": 1,
+                "children": [
+                  {
+                    "type": "paragraph",
+                    "children": [
+                      {
+                        "type": "text",
+                        "value": "La transición es brusca."
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "colspan": 1,
+                "rowspan": 1,
+                "children": [
+                  {
+                    "type": "paragraph",
+                    "children": [
+                      {
+                        "type": "text",
+                        "value": "Defina estado inicial, propiedad concreta y duración."
+                      }
+                    ]
+                  }
+                ]
+              }
+            ],
+            [
+              {
+                "colspan": 1,
+                "rowspan": 1,
+                "children": [
+                  {
+                    "type": "paragraph",
+                    "children": [
+                      {
+                        "type": "text",
+                        "value": "La animación vuelve al inicio."
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "colspan": 1,
+                "rowspan": 1,
+                "children": [
+                  {
+                    "type": "paragraph",
+                    "children": [
+                      {
+                        "type": "text",
+                        "value": "Revise "
+                      },
+                      {
+                        "type": "code_inline",
+                        "children": [
+                          {
+                            "type": "text",
+                            "value": "animation-fill-mode"
+                          }
+                        ]
+                      },
+                      {
+                        "type": "text",
+                        "value": "."
+                      }
+                    ]
+                  }
+                ]
+              }
+            ],
+            [
+              {
+                "colspan": 1,
+                "rowspan": 1,
+                "children": [
+                  {
+                    "type": "paragraph",
+                    "children": [
+                      {
+                        "type": "text",
+                        "value": "El movimiento distrae."
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "colspan": 1,
+                "rowspan": 1,
+                "children": [
+                  {
+                    "type": "paragraph",
+                    "children": [
+                      {
+                        "type": "text",
+                        "value": "Reduzca distancia, duración y repeticiones; respete preferencias."
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          ]
+        }
+      ],
+      "children": []
+    },
+    {
+      "type": "section",
+      "id": "sec-lista-de-verificacion-09736b6",
+      "title": "Lista de verificación",
+      "starred": false,
+      "blocks": [
+        {
+          "type": "list",
+          "variant": "checklist",
+          "items": [
+            {
+              "blocks": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "La página funciona en una columna antes de las media queries."
+                    }
+                  ]
+                }
+              ],
+              "checked": false
+            },
+            {
+              "blocks": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "La cuadrícula tiene columnas y separaciones comprensibles."
+                    }
+                  ]
+                }
+              ],
+              "checked": false
+            },
+            {
+              "blocks": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "Las líneas o áreas se usan sin alterar el orden lógico del HTML."
+                    }
+                  ]
+                }
+              ],
+              "checked": false
+            },
+            {
+              "blocks": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "No existe desplazamiento horizontal accidental."
+                    }
+                  ]
+                }
+              ],
+              "checked": false
+            },
+            {
+              "blocks": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "Las imágenes conservan proporción y encuadre apropiado."
+                    }
+                  ]
+                }
+              ],
+              "checked": false
+            },
+            {
+              "blocks": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "Los puntos de ruptura resuelven problemas observados."
+                    }
+                  ]
+                }
+              ],
+              "checked": false
+            },
+            {
+              "blocks": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "La navegación funciona con teclado y el foco es visible."
+                    }
+                  ]
+                }
+              ],
+              "checked": false
+            },
+            {
+              "blocks": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "Las transiciones declaran propiedades concretas."
+                    }
+                  ]
+                }
+              ],
+              "checked": false
+            },
+            {
+              "blocks": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "Las animaciones tienen propósito y duración moderada."
+                    }
+                  ]
+                }
+              ],
+              "checked": false
+            },
+            {
+              "blocks": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "Se implementó movimiento reducido."
+                    }
+                  ]
+                }
+              ],
+              "checked": false
+            },
+            {
+              "blocks": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "Los requisitos mínimos se fijaron antes de los adicionales."
+                    }
+                  ]
+                }
+              ],
+              "checked": false
+            }
+          ]
+        }
+      ],
+      "children": []
+    },
+    {
+      "type": "section",
+      "id": "sec-consulta-rapida-eefdb1a",
+      "title": "Consulta rápida",
+      "starred": false,
+      "blocks": [
+        {
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "strong",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Grid y responsive"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "list",
+          "variant": "itemize",
+          "items": [
+            {
+              "blocks": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "code_inline",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "grid-template-columns"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "blocks": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "code_inline",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "grid-template-rows"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "blocks": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "code_inline",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "gap"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "value": ", "
+                    },
+                    {
+                      "type": "code_inline",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "fr"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "value": ", "
+                    },
+                    {
+                      "type": "code_inline",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "repeat()"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "blocks": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "code_inline",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "minmax()"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "value": ", "
+                    },
+                    {
+                      "type": "code_inline",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "auto-fit"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "blocks": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "code_inline",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "grid-column"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "value": ", "
+                    },
+                    {
+                      "type": "code_inline",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "grid-area"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "blocks": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "code_inline",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "place-items"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "value": ", "
+                    },
+                    {
+                      "type": "code_inline",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "place-self"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "blocks": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "code_inline",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "@media (min-width: ...)"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "blocks": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "code_inline",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "clamp()"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "value": ", "
+                    },
+                    {
+                      "type": "code_inline",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "object-fit"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "strong",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Interacción y movimiento"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "list",
+          "variant": "itemize",
+          "items": [
+            {
+              "blocks": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "code_inline",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": ":hover"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "value": ", "
+                    },
+                    {
+                      "type": "code_inline",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": ":focus-visible"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "value": ", "
+                    },
+                    {
+                      "type": "code_inline",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": ":active"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "blocks": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "code_inline",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "::before"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "value": ", "
+                    },
+                    {
+                      "type": "code_inline",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "::after"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "blocks": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "code_inline",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "transform"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "value": ", "
+                    },
+                    {
+                      "type": "code_inline",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "transform-origin"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "blocks": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "code_inline",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "transition-property"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "value": ", "
+                    },
+                    {
+                      "type": "code_inline",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "duration"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "value": ", "
+                    },
+                    {
+                      "type": "code_inline",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "timing-function"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "blocks": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "code_inline",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "@keyframes"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "value": ", "
+                    },
+                    {
+                      "type": "code_inline",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "animation"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "blocks": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "code_inline",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "filter"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "value": ", "
+                    },
+                    {
+                      "type": "code_inline",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "opacity"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "value": ", sombras y degradados"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "blocks": [
+                {
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "code_inline",
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "prefers-reduced-motion"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "children": []
+    },
+    {
+      "type": "section",
+      "id": "sec-cierre-de-la-guia-0e462b6",
+      "title": "Cierre de la guía",
+      "starred": false,
+      "blocks": [
+        {
+          "type": "academic_block",
+          "variant": "result",
+          "title": "Cierre",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "El propósito de esta guía es que el aprendiz pueda regresar a ella durante la práctica sin encontrar todavía la solución de los temas de la guía siguiente. Antes de avanzar, debe ser capaz de explicar con sus propias palabras los conceptos centrales y construir una solución funcional sin copiar el ejemplo completo."
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "children": []
+    }
+  ]
+}

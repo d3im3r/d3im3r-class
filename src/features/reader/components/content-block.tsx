@@ -139,116 +139,131 @@ function Figure({ block }: { block: Block }) {
     return () => window.removeEventListener('keydown', onKey, true);
   }, [lightbox]);
 
-  const lightboxModal = lightbox && typeof document !== 'undefined'
-    ? createPortal(
-        <div
-          className="image-lightbox-dialog"
-          role="dialog"
-          aria-modal="true"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) setLightbox(false);
-          }}
-        >
-          <header className="image-lightbox-header">
-            <div className="image-lightbox-title">
-              {isDiagram ? <Workflow size={18} /> : <ZoomIn size={18} />}
-              <span>{isDiagram ? 'Diagrama vectorial de la clase' : 'Ilustración de la clase'}</span>
-              <span className="lightbox-zoom-badge">{Math.round(zoom * 100)}%</span>
-            </div>
-            <div className="image-lightbox-actions">
-              <button
-                type="button"
-                className="image-lightbox-btn"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setZoom((z) => Math.max(0.4, Number((z - 0.25).toFixed(2))));
-                }}
-                title="Reducir zoom"
-                aria-label="Reducir zoom"
-              >
-                <ZoomOut size={15} />
-                <span>Alejar</span>
-              </button>
-              <button
-                type="button"
-                className="image-lightbox-btn"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setZoom(1);
-                }}
-                title="Restablecer tamaño original (100%)"
-                aria-label="Restablecer tamaño original"
-              >
-                <RotateCcw size={14} />
-                <span>100%</span>
-              </button>
-              <button
-                type="button"
-                className="image-lightbox-btn"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setZoom((z) => Math.min(4, Number((z + 0.25).toFixed(2))));
-                }}
-                title="Aumentar zoom"
-                aria-label="Aumentar zoom"
-              >
-                <ZoomIn size={15} />
-                <span>Acercar</span>
-              </button>
-              <button
-                type="button"
-                className="image-lightbox-btn close-main"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setLightbox(false);
-                }}
-                title="Cerrar visor y volver a la clase (Esc)"
-                aria-label="Cerrar visor"
-              >
-                <X size={16} />
-                <span>Cerrar (Esc)</span>
-              </button>
-            </div>
-          </header>
+  const lightboxModal =
+    lightbox && typeof document !== 'undefined'
+      ? createPortal(
           <div
-            className="image-lightbox-body"
-            onWheel={(e) => {
-              e.stopPropagation();
-              if (e.deltaY < 0) {
-                setZoom((z) => Math.min(4, Number((z + 0.2).toFixed(2))));
-              } else {
-                setZoom((z) => Math.max(0.4, Number((z - 0.2).toFixed(2))));
-              }
-            }}
+            className="image-lightbox-dialog"
+            role="dialog"
+            aria-modal="true"
             onClick={(e) => {
               if (e.target === e.currentTarget) setLightbox(false);
             }}
           >
+            <header className="image-lightbox-header">
+              <div className="image-lightbox-title">
+                {isDiagram ? <Workflow size={18} /> : <ZoomIn size={18} />}
+                <span>
+                  {isDiagram ? 'Diagrama vectorial de la clase' : 'Ilustración de la clase'}
+                </span>
+                <span className="lightbox-zoom-badge">{Math.round(zoom * 100)}%</span>
+              </div>
+              <div className="image-lightbox-actions">
+                <button
+                  type="button"
+                  className="image-lightbox-btn"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setZoom((z) => Math.max(0.4, Number((z - 0.25).toFixed(2))));
+                  }}
+                  title="Reducir zoom"
+                  aria-label="Reducir zoom"
+                >
+                  <ZoomOut size={15} />
+                  <span>Alejar</span>
+                </button>
+                <button
+                  type="button"
+                  className="image-lightbox-btn"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setZoom(1);
+                  }}
+                  title="Restablecer tamaño original (100%)"
+                  aria-label="Restablecer tamaño original"
+                >
+                  <RotateCcw size={14} />
+                  <span>100%</span>
+                </button>
+                <button
+                  type="button"
+                  className="image-lightbox-btn"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setZoom((z) => Math.min(4, Number((z + 0.25).toFixed(2))));
+                  }}
+                  title="Aumentar zoom"
+                  aria-label="Aumentar zoom"
+                >
+                  <ZoomIn size={15} />
+                  <span>Acercar</span>
+                </button>
+                <button
+                  type="button"
+                  className="image-lightbox-btn close-main"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setLightbox(false);
+                  }}
+                  title="Cerrar visor y volver a la clase (Esc)"
+                  aria-label="Cerrar visor"
+                >
+                  <X size={16} />
+                  <span>Cerrar (Esc)</span>
+                </button>
+              </div>
+            </header>
             <div
-              className="image-lightbox-canvas"
-              style={{
-                transform: `scale(${zoom})`,
-                transformOrigin: 'center center',
-                transition: 'transform 0.15s ease-out',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                maxWidth: '92vw',
-                maxHeight: '82vh',
+              className="image-lightbox-body"
+              onWheel={(e) => {
+                e.stopPropagation();
+                if (e.deltaY < 0) {
+                  setZoom((z) => Math.min(4, Number((z + 0.2).toFixed(2))));
+                } else {
+                  setZoom((z) => Math.max(0.4, Number((z - 0.2).toFixed(2))));
+                }
+              }}
+              onClick={(e) => {
+                if (e.target === e.currentTarget) setLightbox(false);
               }}
             >
-              {block.asset && !failed ? (
-                <img src={block.asset} alt={alt} />
-              ) : block.content ? (
-                <TikZDiagram code={block.content} />
-              ) : null}
+              <div
+                className="image-lightbox-canvas"
+                style={{
+                  transform: `scale(${zoom})`,
+                  transformOrigin: 'center center',
+                  transition: 'transform 0.15s ease-out',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: 'min(95vw, 1580px)',
+                  maxWidth: '96vw',
+                  maxHeight: '84vh',
+                }}
+              >
+                {block.asset && !failed ? (
+                  <img
+                    src={block.asset}
+                    alt={alt}
+                    style={{
+                      width: '100%',
+                      maxWidth: '100%',
+                      height: 'auto',
+                      maxHeight: '82vh',
+                      objectFit: 'contain',
+                      display: 'block',
+                    }}
+                  />
+                ) : block.content ? (
+                  <TikZDiagram code={block.content} />
+                ) : null}
+              </div>
             </div>
-          </div>
-        </div>,
-        (typeof document !== 'undefined' &&
-          (document.querySelector('.presentation-dialog') || document.body)) as HTMLElement
-      )
-    : null;
+          </div>,
+          (typeof document !== 'undefined' &&
+            (document.querySelector('.presentation-dialog') || document.body)) as HTMLElement
+        )
+      : null;
 
   if (isDiagram) {
     if (block.asset && !failed) {

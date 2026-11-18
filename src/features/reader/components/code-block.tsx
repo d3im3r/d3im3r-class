@@ -3,17 +3,29 @@ import { useState, useEffect, useRef } from 'react';
 import { Check, Copy, Code2, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/sonner';
+import { detectLanguage } from '../lib/parser-utils';
 
 const highlightCache = new Map<string, string>();
 
-export function CodeBlock({
-  content,
-  language = 'text',
-}: {
-  content: string;
-  language?: string;
-}) {
-  const cacheKey = `${language}\0${content}`;
+const langLabels: Record<string, string> = {
+  javascript: 'JavaScript',
+  typescript: 'TypeScript',
+  python: 'Python',
+  html: 'HTML',
+  css: 'CSS',
+  sql: 'SQL',
+  json: 'JSON',
+  bash: 'Bash / Shell',
+  cpp: 'C++',
+  c: 'C',
+  java: 'Java',
+  rust: 'Rust',
+  text: 'Código',
+};
+
+export function CodeBlock({ content, language = 'text' }: { content: string; language?: string }) {
+  const resolvedLang = detectLanguage(content, language);
+  const cacheKey = `${resolvedLang}\0${content}`;
   const [copied, setCopied] = useState(false);
   const [highlighted, setHighlighted] = useState(() => highlightCache.get(cacheKey) ?? '');
   const container = useRef<HTMLDivElement>(null);
@@ -32,8 +44,8 @@ export function CodeBlock({
         import('shiki')
           .then(({ codeToHtml }) =>
             codeToHtml(content, {
-              lang: language === 'text' ? 'text' : language,
-              themes: { light: 'github-light', dark: 'github-dark' },
+              lang: resolvedLang === 'text' ? 'text' : resolvedLang,
+              themes: { light: 'one-light', dark: 'one-dark-pro' },
               defaultColor: false,
             })
           )
@@ -50,7 +62,7 @@ export function CodeBlock({
       active = false;
       observer.disconnect();
     };
-  }, [cacheKey, content, language]);
+  }, [cacheKey, content, resolvedLang]);
 
   const copy = async () => {
     try {
@@ -69,13 +81,14 @@ export function CodeBlock({
       new CustomEvent('aula:inspect-resource', {
         detail: {
           code: content,
-          language,
+          language: resolvedLang,
         },
       })
     );
   };
 
-  const cleanLang = language === 'text' ? 'Código' : language;
+  const cleanLang =
+    langLabels[resolvedLang] ?? (resolvedLang === 'text' ? 'Código' : resolvedLang.toUpperCase());
 
   return (
     <div className="code-block" ref={container}>

@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useState, type FormEvent } from 'react';
+import JSZip from 'jszip';
 import {
   Building2,
   BookOpen,
@@ -1410,42 +1411,141 @@ export function AdminPanel({
                   )}
 
                   <label>
-                    Subir archivo clase.json exportado
+                    Subir archivo clase.json o paquete .zip
                     <input
                       type="file"
-                      accept=".json"
-                      onChange={(e) => {
+                      accept=".json,.zip,application/zip"
+                      onChange={async (e) => {
                         const file = e.target.files?.[0];
                         if (!file) return;
-                        const reader = new FileReader();
-                        reader.onload = (event) => {
-                          try {
-                            const json = JSON.parse(event.target?.result as string);
-                            if (!json.frames || !Array.isArray(json.frames)) {
+                        try {
+                          let jsonContent = '';
+                          if (file.name.endsWith('.zip')) {
+                            const zip = await JSZip.loadAsync(file);
+                            const claseFile =
+                              zip.file('clase.json') || zip.file(/(?:^|\/)clase\.json$/)[0];
+                            const docFile =
+                              zip.file('document.json') || zip.file(/(?:^|\/)document\.json$/)[0];
+                            if (claseFile) {
+                              jsonContent = await claseFile.async('text');
+                            } else if (docFile) {
+                              jsonContent = await docFile.async('text');
+                            } else {
                               throw new Error(
-                                'El archivo JSON no tiene la estructura de clase válida (falta el arreglo "frames").'
+                                'El archivo ZIP no contiene "clase.json" ni "document.json".'
+                              );
+                            }
+                          } else {
+                            jsonContent = await file.text();
+                          }
+                          const json = JSON.parse(jsonContent);
+                            let frames = json.frames;
+                            if ((!frames || !Array.isArray(frames)) && Array.isArray(json.structure)) {
+                              // Compatibilidad nativa con d3im3r-class v2 (document.json)
+                              frames = [];
+                              const inlineToText = (inlines: any[]): string =>
+                                inlines
+                                  .map((node) => {
+                                    if (node.type === 'text') return node.value || '';
+                                    if (node.type === 'code_inline')
+                                      return `\`${node.children ? inlineToText(node.children) : node.value || ''}\``;
+                                    if (node.type === 'strong') return `**${inlineToText(node.children || [])}**`;
+                                    if (node.type === 'emphasis') return `*${inlineToText(node.children || [])}*`;
+                                    if (node.type === 'math_inline') return `$${node.latex || ''}$`;
+                                    if (node.type === 'line_break') return '\n';
+                                    return node.value || '';
+                                  })
+                                  .join('');
+
+                              const convertBlock = (b: any): any => {
+                                if (b.type === 'paragraph')
+                                  return { type: 'text', content: inlineToText(b.children || []) };
+                                if (b.type === 'code')
+                                  return { type: 'code', language: b.language || 'text', content: b.value || '' };
+                                if (b.type === 'math') return { type: 'math', content: b.latex || '' };
+                                if (b.type === 'academic_block')
+                                  return {
+                                    type: 'callout',
+                                    variant: b.variant || 'idea',
+                                    title: b.title || '',
+                                    children: (b.children || []).map(convertBlock).filter(Boolean),
+                                  };
+                                if (b.type === 'figure')
+                                  return {
+                                    type: 'diagram',
+                                    asset: b.assetId ? `assets/${b.assetId}.svg` : '',
+                                    content: '',
+                                  };
+                                if (b.type === 'list')
+                                  return {
+                                    type: 'list',
+                                    variant: b.variant || 'itemize',
+                                    items: (b.items || []).map((it: any) =>
+                                      (it.blocks || []).map(convertBlock).filter(Boolean)
+                                    ),
+                                  };
+                                if (b.type === 'table')
+                                  return {
+                                    type: 'table',
+                                    rows: (b.rows || []).map((row: any[]) =>
+                                      row.map((cell: any) =>
+                                        (cell.children || [])
+                                          .map((c: any) => inlineToText(c.children || []))
+                                          .join(' ')
+                                      )
+                                    ),
+                                  };
+                                return null;
+                              };
+
+                              for (const sec of json.structure) {
+                                const secTitle = sec.title || 'General';
+                                const processChild = (child: any, parentTitle: string) => {
+                                  if (child.type === 'frame') {
+                                    frames.push({
+                                      id: child.id || `frame-${frames.length + 1}`,
+                                      title: child.title || '',
+                                      section: parentTitle,
+                                      line: child.sourceLine || 1,
+                                      blocks: (child.blocks || []).map(convertBlock).filter(Boolean),
+                                    });
+                                  } else if (child.type === 'subsection' && Array.isArray(child.children)) {
+                                    for (const sub of child.children) {
+                                      processChild(sub, child.title || parentTitle);
+                                    }
+                                  }
+                                };
+                                if (Array.isArray(sec.children)) {
+                                  for (const child of sec.children) {
+                                    processChild(child, secTitle);
+                                  }
+                                }
+                              }
+                            }
+
+                            if (!frames || !Array.isArray(frames)) {
+                              throw new Error(
+                                'El archivo JSON no tiene una estructura de clase válida (se esperaba arreglo "frames" o "structure").'
                               );
                             }
                             setEditingLesson({
                               lessonId: replace || undefined,
                               title: json.title || 'Nueva clase',
-                              subtitle: json.subtitle || '',
-                              frames: json.frames,
+                              subtitle: json.subtitle || json.metadata?.subtitle || '',
+                              frames: frames,
                               subjectId: currentSubject.id,
                               topicId: currentTopic.id,
                               topicName: currentTopic.name,
                             });
                             toast.success(
-                              `Clase cargada: ${json.frames.length} diapositivas listas para previsualizar y editar.`
+                              `Clase cargada: ${frames.length} diapositivas listas para previsualizar y editar.`
                             );
                             e.target.value = '';
                           } catch (err) {
                             toast.error(
-                              err instanceof Error ? err.message : 'Error al procesar el archivo JSON.'
+                              err instanceof Error ? err.message : 'Error al procesar el archivo.'
                             );
                           }
-                        };
-                        reader.readAsText(file);
                       }}
                     />
                     <small>Se abrirá de inmediato la ventana de edición y previsualización en vivo.</small>

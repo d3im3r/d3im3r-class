@@ -1,0 +1,52 @@
+{
+  "schemaVersion": "1.1.0",
+  "documentId": "web1-guia1",
+  "assets": [
+    {
+      "id": "asset-99096603a816",
+      "origin": "tikz",
+      "source": "\\begin{tikzpicture}[\n    node distance=1.3cm,\n    caja/.style={draw=BrandBlue, rounded corners, very thick, fill=IdeaBody,\n        minimum width=3.2cm, minimum height=0.9cm, align=center},\n    flecha/.style={-{Latex[length=3mm]}, thick, BrandBlue}\n]\n    \\node[caja] (html) {\\texttt{index.html}\\\\estructura};\n    \\node[caja, right=of html] (link) {\\texttt{<link>}\\\\conexión};\n    \\node[caja, right=of link] (css) {\\texttt{styles.css}\\\\presentación};\n    \\draw[flecha] (html) -- (link);\n    \\draw[flecha] (link) -- (css);\n\\end{tikzpicture}",
+      "status": "resolved",
+      "src": "assets/asset-99096603a816.svg",
+      "background": "white",
+      "format": "svg"
+    },
+    {
+      "id": "asset-e8fdd93bb5a1",
+      "origin": "tikz",
+      "source": "\\begin{tikzpicture}[\n            nivel/.style={draw=BrandBlue, thick, rounded corners, fill=IdeaBody,\n                minimum height=0.75cm, align=center}\n            ]\n            \\node[nivel, minimum width=8.5cm] at (0,2.7)\n            {estilo en línea: \\texttt{style=\"...\"}};\n            \\node[nivel, minimum width=7cm] at (0,1.8)\n            {identificador: \\texttt{\\#menu}};\n            \\node[nivel, minimum width=5.5cm] at (0,0.9)\n            {clase o estado: \\texttt{.destacado:hover}};\n            \\node[nivel, minimum width=4cm] at (0,0)\n            {etiqueta: \\texttt{p}};\n            \\node[right=0.4cm] at (4.5,2.7) {mayor peso};\n        \\end{tikzpicture}",
+      "status": "resolved",
+      "src": "assets/asset-e8fdd93bb5a1.svg",
+      "background": "white",
+      "format": "svg"
+    },
+    {
+      "id": "asset-6b3009c6c1ae",
+      "origin": "tikz",
+      "source": "\\begin{tikzpicture}[every node/.style={font=\\small}]\n            \\fill[WarnBody] (-5,-2.35) rectangle (5,2.35);\n            \\fill[BrandYellow!32] (-4.2,-1.75) rectangle (4.2,1.75);\n            \\fill[PracticeBody] (-3.35,-1.15) rectangle (3.35,1.15);\n            \\fill[IdeaBody] (-2.35,-0.58) rectangle (2.35,0.58);\n            \\draw[WarnTitle,thick] (-5,-2.35) rectangle (5,2.35);\n            \\draw[orange!80!black,thick] (-4.2,-1.75) rectangle (4.2,1.75);\n            \\draw[PracticeTitle,thick] (-3.35,-1.15) rectangle (3.35,1.15);\n            \\draw[IdeaTitle,thick] (-2.35,-0.58) rectangle (2.35,0.58);\n            \\node at (0,0) {contenido};\n            \\node at (0,0.86) {\\texttt{padding}};\n            \\node at (0,1.48) {\\texttt{border}};\n            \\node at (0,2.05) {\\texttt{margin}};\n        \\end{tikzpicture}",
+      "status": "resolved",
+      "src": "assets/asset-6b3009c6c1ae.svg",
+      "background": "white",
+      "format": "svg"
+    },
+    {
+      "id": "asset-d9db7fa1aa2d",
+      "origin": "tikz",
+      "source": "\\begin{tikzpicture}[\n    caja/.style={draw=BrandBlue, very thick, rounded corners, minimum width=4.2cm,\n        minimum height=1.0cm, align=center},\n    flecha/.style={-{Latex[length=3mm]}, thick}\n]\n    \\node[caja, fill=IdeaBody] (estructura) {HTML\\\\contenido y significado};\n    \\node[caja, fill=PracticeBody, right=2cm of estructura] (estilo) {CSS\\\\presentación visual};\n    \\draw[flecha] (estructura) -- node[above]{\\texttt{class} / selectores} (estilo);\n\\end{tikzpicture}",
+      "status": "resolved",
+      "src": "assets/asset-d9db7fa1aa2d.svg",
+      "background": "white",
+      "format": "svg"
+    },
+    {
+      "id": "asset-47e258b49483",
+      "origin": "external",
+      "source": "Template/LogoSena.png",
+      "status": "missing",
+      "src": null,
+      "background": "white",
+      "format": "svg",
+      "error": "SOURCE_NOT_FOUND"
+    }
+  ]
+}

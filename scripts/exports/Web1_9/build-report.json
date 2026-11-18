@@ -1,0 +1,26 @@
+{
+  "schemaVersion": "1.1.0",
+  "generator": "3.0.0-beta",
+  "documentType": "lesson",
+  "source": "Web1_9.tex",
+  "createdAt": "2026-11-18T16:21:51.514449+00:00",
+  "counts": {
+    "section": 15,
+    "frame": 80,
+    "paragraph": 327,
+    "text": 374,
+    "list": 30,
+    "emphasis": 2,
+    "academic_block": 44,
+    "figure": 11,
+    "code": 40,
+    "code_inline": 43,
+    "table": 4,
+    "strong": 9,
+    "math_inline": 2
+  },
+  "assets": {
+    "pending": 11
+  },
+  "diagnostics": []
+}

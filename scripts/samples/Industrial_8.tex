@@ -1,0 +1,2386 @@
+% =========================================================
+% BLOQUE 1/8 — PREAMBULO Y MACROS DE GEOMETRIA
+% Todos los bloques se concatenan en este mismo orden.
+% =========================================================
+\documentclass[aspectratio=169,11pt]{beamer}
+\input{~/Dropbox/Latex/TemplateSlides/template-slide.tex}
+\usetikzlibrary{arrows.meta,calc,positioning,angles,quotes}
+
+\renewcommand{\CourseName}{Robótica Industrial}
+\renewcommand{\CourseCode}{ING 01339 / SOL-ING 220}
+\renewcommand{\Faculty}{Facultad de Ingeniería}
+\renewcommand{\Institution}{Politécnico Colombiano Jaime Isaza Cadavid}
+\renewcommand{\Instructor}{Deimer Andrés Miranda Montoya, MSc.(c).}
+\renewcommand{\Email}{deimer\_miranda91162@elpoli.edu.co}
+\renewcommand{\InstitutionLogo}{Template/LogoPoli.png}
+
+% Las medidas en las figuras son ilustrativas, no longitudes calibradas.
+% En los ejemplos se expresan sus valores numericos por separado.
+\def\AngA{25}
+\def\AngB{35}
+\pgfmathsetmacro{\AngAB}{\AngA+\AngB}
+\def\LongA{3.2}
+\def\LongB{2.6}
+\def\AngRP{25}
+\pgfmathsetmacro{\AngRPTan}{\AngRP+90}
+\def\AngPR{40}
+\tikzset{
+ brazoA/.style={line width=12pt,gray!55,line cap=round},
+ brazoB/.style={line width=12pt,gray!70,line cap=round},
+ articulacion/.style={circle,draw=black,fill=white,thick,
+                       minimum size=6mm,inner sep=0pt},
+ ejeZ/.style={->,very thick,BrandGreen},
+ ejeX/.style={->,very thick,BrandBlue},
+ ejeY/.style={->,very thick,black},
+ coordenada/.style={->,very thick,red!75!black},
+ guia/.style={dashed,gray!75},
+ notafig/.style={font=\scriptsize,align=center}
+}
+% Simbolo de un eje perpendicular al dibujo (hacia el lector).
+\newcommand{\EjeSale}[2]{%
+ \draw[thick,BrandGreen] (#1) circle (0.15);
+ \fill[BrandGreen] (#1) circle (1.6pt);
+ \node[below=0.23cm,fill=white,inner sep=0.5pt] at (#1) {$#2$};
+}
+% Simbolo de un eje que entra en el plano del dibujo.
+\newcommand{\EjeEntra}[2]{%
+ \draw[thick,BrandBlue] (#1) circle (0.15);
+ \draw[thick,BrandBlue] ($(#1)+(-0.10,-0.10)$)--($(#1)+(0.10,0.10)$);
+ \draw[thick,BrandBlue] ($(#1)+(-0.10,0.10)$)--($(#1)+(0.10,-0.10)$);
+ \node[above right=0.19cm] at (#1) {$#2$};
+}
+
+% ---------- 2R: vista superior XY ----------
+% Niveles: 0 fisico; 1 angulos; 2 z articulares; 3 z terminal;
+% 4 x0; 5 x1; 6 x2; 7 origenes; 8 ternas.
+\newcommand{\RobotDosR}[1]{%
+\begin{tikzpicture}[scale=0.84,>=Latex]
+ \coordinate (J1) at (0,0);
+ \coordinate (J2) at (\AngA:\LongA);
+ \coordinate (E) at ($(J2)+(\AngAB:\LongB)$);
+ \draw[brazoA] (J1)--(J2); \draw[brazoB] (J2)--(E);
+ \node[articulacion] at (J1) {}; \node[articulacion] at (J2) {};
+ \fill (E) circle (2.2pt);
+ \node[above,sloped] at ($(J1)!0.55!(J2)$) {$L_1$};
+ \node[above,sloped] at ($(J2)!0.53!(E)$) {$L_2$};
+ \ifnum#1>0
+  \draw[guia] (J1)--++(0:1.1);
+  \draw[coordenada] ($(J1)+(0:0.63)$)
+    arc[start angle=0,end angle=\AngA,radius=0.63];
+  \node[red!75!black] at ($(J1)+(13:1.05)$) {$q_1$};
+  \draw[guia] (J2)--++(\AngA:1.1);
+  \draw[coordenada] ($(J2)+(\AngA:0.63)$)
+    arc[start angle=\AngA,end angle=\AngAB,radius=0.63];
+  \node[red!75!black] at ($(J2)+(42:1.04)$) {$q_2$};
+ \fi
+ \ifnum#1>1 \EjeSale{J1}{z_0}\EjeSale{J2}{z_1}\fi
+ \ifnum#1>2 \EjeSale{E}{z_2}\fi
+ \ifnum#1>3
+  \draw[ejeX] (J1)--++(0:0.78) node[below right] {$x_0$};
+ \fi
+ \ifnum#1>4
+  \draw[ejeX] (J2)--++(\AngA:0.75) node[below right] {$x_1$};
+ \fi
+ \ifnum#1>5
+  \draw[ejeX] (E)--++(\AngAB:0.78) node[right] {$x_2$};
+ \fi
+ \ifnum#1>6
+  \node[below left=0.30cm] at (J1) {$O_0$};
+  \node[below left=0.30cm] at (J2) {$O_1$};
+  \node[below right=0.30cm] at (E) {$O_2$};
+ \fi
+ \ifnum#1>7
+  \draw[ejeY] (J1)--++(90:0.80) node[above] {$y_0$};
+  \draw[ejeY] (J2)--++(\AngA+90:0.80) node[above] {$y_1$};
+  \draw[ejeY] (E)--++(\AngAB+90:0.80) node[above] {$y_2$};
+ \fi
+\end{tikzpicture}%
+}
+
+% ---------- 2P ortogonal: seccion XZ ----------
+% z0 +Z arriba; z1 y z2 +X derecha; x1,x2 +Y entran en hoja.
+% 0 mecanismo; 1 q; 2 z0,z1; 3 z2; 4 x0,x1; 5 x2;
+% 6 origenes; 7 ternas.
+\newcommand{\RobotDosP}[1]{%
+\begin{tikzpicture}[scale=0.88,>=Latex]
+ \coordinate (B) at (0,0);
+ \coordinate (C) at (0,2.0);
+ \coordinate (E) at (3.0,2.0);
+ \draw[fill=gray!20,thick] (-0.46,-0.30) rectangle (0.46,0.25);
+ \draw[line width=10pt,gray!55,line cap=round] (B)--(0,3.05);
+ \draw[line width=10pt,gray!65,line cap=round] (C)--(3.75,2.0);
+ \draw[fill=white,thick] (-0.27,1.72) rectangle (0.27,2.28);
+ \draw[fill=gray!15,thick] (2.74,1.70) rectangle (3.26,2.30);
+ \fill (B) circle (2pt); \fill (C) circle (2pt); \fill (E) circle (2pt);
+ \ifnum#1>0
+  \draw[coordenada] (-0.74,0.02)--(-0.74,1.94)
+    node[midway,left] {$q_1>0$};
+  \draw[coordenada] (0.38,2.73)--(2.90,2.73)
+    node[midway,above] {$q_2>0$};
+ \fi
+ \ifnum#1>1
+  \draw[ejeZ] (0,0.30)--(0,1.45) node[left] {$z_0$};
+  \draw[ejeZ] (0.35,2.0)--(1.50,2.0) node[below] {$z_1$};
+ \fi
+ \ifnum#1>2
+  \draw[ejeZ] (E)--++(0.75,0) node[below] {$z_2$};
+ \fi
+ \ifnum#1>3
+  \draw[ejeX] (B)--++(0.68,0) node[below] {$x_0$};
+  \EjeEntra{C}{x_1\;\otimes}
+ \fi
+ \ifnum#1>4 \EjeEntra{E}{x_2\;\otimes}\fi
+ \ifnum#1>5
+  \node[below left=0.38cm] at (B) {$O_0$};
+  \node[above left=0.42cm] at (C) {$O_1$};
+  \node[below right=0.42cm] at (E) {$O_2$};
+ \fi
+ \ifnum#1>6
+  \draw[ejeY] (C)--++(0,0.74) node[left] {$y_1$};
+  \draw[ejeY] (E)--++(0,0.74) node[right] {$y_2$};
+  \node[notafig] at (1.7,-0.9)
+   {$+Y$ entra en la hoja; la vista contiene $+X$ (derecha) y $+Z$ (arriba).};
+ \fi
+\end{tikzpicture}%
+}
+
+% ---------- RP cilindrico: vista superior XY ----------
+% z0 hacia el lector; z1 radial; x1 tangencial;
+% y1 coincide en direccion con z0; z2 radial en el TCP.
+\newcommand{\RobotRP}[1]{%
+\begin{tikzpicture}[scale=0.89,>=Latex]
+ \coordinate (C) at (0,0);
+ \coordinate (E) at (\AngRP:3.2);
+ \draw[fill=gray!20,thick] (C) circle (0.35);
+ \draw[brazoA] (C)--(\AngRP:3.72);
+ \node[articulacion] at (C) {};
+ \draw[fill=white,thick] ($(E)+(\AngRP+90:0.29)+(\AngRP:-0.20)$)
+       -- ($(E)+(\AngRP+90:-0.29)+(\AngRP:-0.20)$)
+       -- ($(E)+(\AngRP+90:-0.29)+(\AngRP:0.20)$)
+       -- ($(E)+(\AngRP+90:0.29)+(\AngRP:0.20)$)--cycle;
+ \fill (E) circle (2pt);
+ \ifnum#1>0
+  \draw[guia] (C)--(0:1.4);
+  \draw[coordenada] ($(C)+(0:0.82)$)
+    arc[start angle=0,end angle=\AngRP,radius=0.82];
+  \node[red!75!black] at ($(C)+(12:1.25)$) {$q_1$};
+  \draw[coordenada] ($(C)+(\AngRP+90:0.45)$)--
+                      ($(E)+(\AngRP+90:0.45)$)
+    node[midway,above,sloped] {$q_2>0$};
+ \fi
+ \ifnum#1>1
+  \EjeSale{C}{z_0}
+  \draw[ejeZ] (C)--++(\AngRP:1.18) node[below] {$z_1$};
+ \fi
+ \ifnum#1>2
+  \draw[ejeZ] (E)--++(\AngRP:0.84) node[right] {$z_2$};
+ \fi
+ \ifnum#1>3
+  \draw[ejeX] (C)--++(0:0.60) node[below] {$x_0$};
+ \fi
+ \ifnum#1>4
+  \draw[ejeX] (C)--++(\AngRPTan:0.95) node[above] {$x_1$};
+ \fi
+ \ifnum#1>5
+  \draw[ejeX] (E)--++(\AngRPTan:0.75) node[above] {$x_2$};
+ \fi
+ \ifnum#1>6
+  \node[below left=0.36cm] at (C) {$O_0=O_1$};
+  \node[below=0.28cm] at (E) {$O_2$};
+ \fi
+ \ifnum#1>7
+  % y_1 y z_0 tienen la misma direccion: se explica bajo el diagrama.
+  \node[above right=0.28cm] at (E) {\scriptsize $y_2\;\odot$};
+ \fi
+\end{tikzpicture}%
+}
+
+% ---------- PR: planta XY; z0,z1 coaxiales (alturas distintas) ----------
+\newcommand{\RobotPR}[1]{%
+\begin{tikzpicture}[scale=0.88,>=Latex]
+ \coordinate (C) at (0,0);
+ \coordinate (E) at (\AngPR:3.25);
+ \draw[fill=gray!22,thick] (C) circle (0.38);
+ \draw[brazoA] (C)--(E);
+ \node[articulacion] at (C) {};
+ \fill (E) circle (2.5pt);
+ \node[above,sloped] at ($(C)!0.57!(E)$) {$L$};
+ \ifnum#1>0
+  \draw[guia] (C)--(1.2,0);
+  \draw[coordenada] ($(C)+(0:0.82)$)
+    arc[start angle=0,end angle=\AngPR,radius=0.82];
+  \node[red!75!black] at ($(C)+(20:1.28)$) {$q_2$};
+ \fi
+ \ifnum#1>1
+  \draw[thick,BrandGreen] (C) circle (0.15);
+  \fill[BrandGreen] (C) circle (1.6pt);
+  \node[above left=0.25cm] at (C) {$z_0,z_1$};
+ \fi
+ \ifnum#1>2 \EjeSale{E}{z_2}\fi
+ \ifnum#1>3
+  \draw[ejeX] (C)--++(0:0.82) node[below right] {$x_0,x_1$};
+ \fi
+ \ifnum#1>4
+  \draw[ejeX] (E)--++(\AngPR:0.86) node[right] {$x_2$};
+ \fi
+ \ifnum#1>5
+  \node[below left=0.55cm] at (C) {$O_0,O_1$ (proyección)};
+  \node[below right=0.33cm] at (E) {$O_2$};
+ \fi
+ \ifnum#1>6
+  \draw[ejeY] (E)--++(\AngPR+90:0.92) node[above] {$y_2$};
+ \fi
+\end{tikzpicture}%
+}
+\newcommand{\RobotPRPerfil}{%
+\begin{tikzpicture}[scale=0.94,>=Latex]
+ \coordinate (B) at (0,0); \coordinate (C) at (0,2.2);
+ \coordinate (E) at (2.65,2.2);
+ \draw[fill=gray!20,thick] (-0.45,-0.28) rectangle (0.45,0.23);
+ \draw[line width=10pt,gray!50] (B)--(0,3.0);
+ \draw[fill=white,thick] (-0.28,1.93) rectangle (0.28,2.47);
+ \draw[brazoB] (C)--(E);
+ \draw[coordenada] (-0.7,0.10)--(-0.7,2.12)
+    node[midway,left] {$q_1>0$};
+ \draw[ejeZ] (B)--(0,0.85) node[right] {$z_0$};
+ \draw[ejeZ] (C)--(0,3.24) node[above] {$z_1$};
+ \fill (B) circle (2pt); \fill (C) circle (2pt);
+ \node[right] at (E) {brazo que gira};
+ \node[below right] at (B) {$O_0$};
+ \node[below right] at (C) {$O_1$};
+\end{tikzpicture}%
+}
+
+% ---------- SCARA: vista superior XY y corte lateral ----------
+\newcommand{\SCARAPlanta}[1]{%
+\begin{tikzpicture}[scale=0.84,>=Latex]
+ \coordinate (J1) at (0,0);
+ \coordinate (J2) at (\AngA:\LongA);
+ \coordinate (J3) at ($(J2)+(\AngAB:\LongB)$);
+ \draw[fill=gray!25,thick] (-0.47,-0.32) rectangle (0.47,0.30);
+ \draw[brazoA] (J1)--(J2); \draw[brazoB] (J2)--(J3);
+ \node[articulacion] at (J1) {};\node[articulacion] at (J2) {};
+ \draw[fill=gray!15,thick] (J3) circle (0.24);
+ \node[above,sloped] at ($(J1)!0.52!(J2)$) {$L_1$};
+ \node[above,sloped] at ($(J2)!0.52!(J3)$) {$L_2$};
+ \ifnum#1>0
+  \draw[guia] (J1)--++(0:1.14);
+  \draw[coordenada] ($(J1)+(0:0.65)$)
+      arc[start angle=0,end angle=\AngA,radius=0.65];
+  \node[red!75!black] at ($(J1)+(13:1.08)$) {$q_1$};
+  \draw[guia] (J2)--++(\AngA:1.10);
+  \draw[coordenada] ($(J2)+(\AngA:0.64)$)
+      arc[start angle=\AngA,end angle=\AngAB,radius=0.64];
+  \node[red!75!black] at ($(J2)+(43:1.08)$) {$q_2$};
+ \fi
+ \ifnum#1>1
+  \EjeSale{J1}{z_0}\EjeSale{J2}{z_1}\EjeSale{J3}{z_2}
+ \fi
+ \ifnum#1>2
+  % z_3 coincide con z_2: ver explicacion debajo de la figura.
+ \fi
+ \ifnum#1>3
+  \draw[ejeX] (J1)--++(0:0.72) node[below right] {$x_0$};
+ \fi
+ \ifnum#1>4
+  \draw[ejeX] (J2)--++(\AngA:0.70) node[below right] {$x_1$};
+ \fi
+ \ifnum#1>5
+  \draw[ejeX] (J3)--++(\AngAB:0.72) node[right] {$x_2$};
+ \fi
+ \ifnum#1>6
+  \node[below left=0.35cm] at (J1) {$O_0$};
+  \node[below left=0.35cm] at (J2) {$O_1$};
+  \node[below right=0.35cm] at (J3) {$O_2$};
+ \fi
+ \ifnum#1>7
+  \draw[ejeY] (J1)--++(90:0.75) node[above] {$y_0$};
+  \draw[ejeY] (J2)--++(\AngA+90:0.75) node[above] {$y_1$};
+  \draw[ejeY] (J3)--++(\AngAB+90:0.75) node[above] {$y_2$};
+ \fi
+\end{tikzpicture}%
+}
+\newcommand{\SCARALateral}{%
+\begin{tikzpicture}[scale=0.93,>=Latex]
+ \coordinate (J3) at (0,2.4); \coordinate (TCP) at (0,0.55);
+ \draw[brazoB] (-2.0,2.4)--(J3);
+ \draw[line width=8pt,gray!55] (0,2.66)--(TCP);
+ \draw[fill=white,thick] (-0.33,1.02) rectangle (0.33,1.53);
+ \fill (J3) circle (2pt);\fill (TCP) circle (2pt);
+ \draw[ejeZ] (J3)--++(0,1.14) node[above] {$z_2$};
+ \draw[ejeZ] (TCP)--++(0,0.97) node[right] {$z_3$};
+ \draw[ejeX] (J3)--++(1.22,0) node[right] {$x_2$};
+ \draw[ejeX] (TCP)--++(1.22,0) node[right] {$x_3$};
+ \draw[coordenada] (1.70,2.30)--(1.70,0.65)
+     node[midway,right] {$q_3>0$};
+ \draw[thick] (J3) circle (0.13); \fill (J3) circle (1.5pt);
+ \node[above left=0.25cm] at (J3) {$y_2\;\odot$};
+ \draw[thick] (TCP) circle (0.13); \fill (TCP) circle (1.5pt);
+ \node[above left=0.22cm] at (TCP) {$y_3\;\odot$};
+ \node[below left=0.1cm] at (J3) {$O_2$};
+ \node[below left=0.1cm] at (TCP) {$O_3=TCP$};
+\end{tikzpicture}%
+}
+
+% Abreviaturas matematicas solo para las matrices.
+% Las abreviaturas c_i y s_i se definen en el texto.
+\begin{document}
+\TitleSlide
+\NormasSlide
+
+% =========================================================
+% BLOQUE 2/8 — FUNDAMENTOS SIN SALTOS CONCEPTUALES
+% =========================================================
+\begin{frame}{Reflexión inicial}
+ \centering\vspace{0.65cm}
+ {\Large ``Una buena representación matemática no oculta
+ la geometría: permite comprenderla y comprobarla.''}
+ \vspace{0.55cm}
+ \begin{block}{Pregunta para iniciar}
+ ¿Cómo describiríamos la posición de la herramienta de un robot
+ si cada articulación cambia el sistema de referencia del siguiente eslabón?
+ \end{block}
+\end{frame}
+
+\begin{frame}[t]{Recordemos: una transformación homogénea}
+ \small
+ Un marco $\{i\}$ tiene un origen $O_i$ y tres ejes ortogonales.
+ La matriz ${}^{i-1}T_i$ describe la pose de $\{i\}$ respecto a $\{i-1\}$:
+ \[
+ {}^{i-1}T_i=\begin{bmatrix}
+ {}^{i-1}R_i&{}^{i-1}\mathbf p_i\\
+ \mathbf0^{\mathsf T}&1
+ \end{bmatrix}.
+ \]
+ \pause
+ \begin{itemize}
+  \item ${}^{i-1}R_i$: orientación del marco nuevo expresada en el anterior.
+  \item ${}^{i-1}\mathbf p_i$: posición de $O_i$ expresada en $\{i-1\}$.
+ \end{itemize}
+ \[
+ \boxed{{}^{0}T_n={}^{0}T_1\,{}^{1}T_2\cdots{}^{n-1}T_n}
+ \]
+\end{frame}
+
+\begin{frame}[t]{¿Qué problema queremos resolver ahora?}
+ \small
+ En las clases anteriores las matrices se obtenían por inspección:
+ observábamos un giro, una distancia y escribíamos la transformación.
+ \pause
+ \begin{alertblock}{Dificultad}
+ En un manipulador con varias articulaciones, dos personas podrían
+ elegir marcos diferentes y construir expresiones distintas,
+ aun cuando representen el mismo movimiento físico.
+ \end{alertblock}
+ \pause
+ \begin{block}{Propósito de Denavit--Hartenberg}
+ Adoptar reglas de asignación de marcos para obtener una tabla
+ de \emph{cuatro parámetros por articulación} y construir matrices
+ de forma sistemática.
+ \end{block}
+\end{frame}
+
+\begin{frame}[t]{Ruta de aprendizaje de la clase}
+ \small
+ Primero aprenderemos la convención DH clásica. Luego avanzaremos
+ de configuraciones simples a mecanismos compuestos:
+ \[
+ \boxed{2R\longrightarrow2P\longrightarrow RP
+ \longrightarrow PR\longrightarrow SCARA\ (RRP)}
+ \]
+ \pause
+ \begin{tabular}{ll}
+ \toprule
+ Robot & Qué concepto nuevo aporta\\\midrule
+ $2R$ & Dos giros consecutivos y ángulos relativos\\
+ $2P$ & Dos desplazamientos y un cambio fijo de dirección\\
+ $RP$ & Un eje prismático que gira con la primera revoluta\\
+ $PR$ & Un giro que ocurre sobre un carro previamente desplazado\\
+ SCARA $RRP$ & Integración de traslación vertical y rotaciones planares\\
+ \bottomrule
+ \end{tabular}
+\end{frame}
+
+\begin{frame}[t]{Articulación, eslabón y efector final}
+ \small
+ \begin{description}
+ \item[Articulación:] unión que permite un movimiento relativo
+ entre dos partes del robot.
+ \item[Eslabón:] cuerpo rígido que conecta articulaciones.
+ \item[Cadena serial:] secuencia de eslabones articulados desde una base
+ hasta el efector final.
+ \item[TCP:] punto elegido para describir la posición de la herramienta.
+ \end{description}
+ \pause
+ \begin{alertblock}{Evitemos una confusión}
+ Un punto de extremo (TCP) puede portar un marco de referencia,
+ pero \textbf{no se convierte en articulación} por tener ese marco.
+ \end{alertblock}
+\end{frame}
+
+\begin{frame}[t]{Diferencia entre articulaciones R y P}
+ \begin{columns}[T,onlytextwidth]
+ \column{0.48\textwidth}
+ \begin{block}{Revoluta (R)}
+  \small Permite un \textbf{giro} alrededor de su eje.
+  \[q_i\quad[\mathrm{rad}]\]
+  Ejemplo: motor que hace girar un brazo.
+ \end{block}
+ \column{0.48\textwidth}
+ \begin{block}{Prismática (P)}
+  \small Permite una \textbf{traslación} a lo largo de una guía.
+  \[q_i\quad[\mathrm{m}]\]
+  Ejemplo: actuador que extiende un carro.
+ \end{block}
+ \end{columns}
+ \pause
+ \vspace{0.25cm}
+ \centering\small
+ R y P indican el \emph{tipo} de movimiento, no la orientación
+ espacial del eje (vertical, horizontal u oblicuo).
+\end{frame}
+
+\begin{frame}[t]{Nomenclatura geométrica: no mezclar objetos}
+ \small
+ \begin{tabular}{lp{9.0cm}}
+ \toprule
+ Símbolo & Interpretación precisa\\\midrule
+ $\{i\}$ & Sistema cartesiano asociado al eslabón $i$\\
+ $O_i$ & Punto de origen del sistema $\{i\}$\\
+ $x_i,y_i,z_i$ & Rectas orientadas que constituyen sus ejes\\
+ $\hat{\mathbf x}_i,\hat{\mathbf y}_i,\hat{\mathbf z}_i$
+    & Vectores unitarios que indican sus direcciones\\
+ $q_i$ & Coordenada articular generalizada\\
+ $L_i$ & Longitud física de un eslabón (no siempre igual a $a_i$)\\
+ \bottomrule
+ \end{tabular}
+ \pause
+ \[
+ \boxed{\hat{\mathbf x}_i\cdot\hat{\mathbf z}_i=0,
+ \quad\hat{\mathbf y}_i=\hat{\mathbf z}_i\times\hat{\mathbf x}_i}
+ \]
+\end{frame}
+
+\begin{frame}[t]{¿Por qué importa la dirección positiva de un eje?}
+ \small
+ Una recta física no tiene sentido preferente: podemos orientar
+ su vector director en cualquiera de los dos sentidos.
+ \pause
+ \begin{columns}[T,onlytextwidth]
+ \column{0.46\textwidth}
+ \begin{block}{Eje orientado hacia arriba}
+  \[d_i=+q_i\]
+  si la coordenada crece hacia arriba.
+ \end{block}
+ \column{0.46\textwidth}
+ \begin{block}{Eje orientado hacia arriba}
+  \[d_i=-q_i\]
+  si definimos $q_i$ positivo hacia abajo.
+ \end{block}
+ \end{columns}
+ \vspace{0.2cm}
+ \begin{alertblock}{Consecuencia}
+ Un mismo mecanismo puede tener tablas DH distintas si se eligen
+ marcos diferentes; lo indispensable es la \textbf{consistencia}.
+ \end{alertblock}
+\end{frame}
+
+\begin{frame}[t]{Convención que usaremos: DH clásica}
+ \small
+ En esta clase usaremos \textbf{Denavit--Hartenberg clásica}, no la modificada.
+ Su regla inicial de indexación es:
+ \[
+ \boxed{\text{articulación }i\ \longleftrightarrow\ z_{i-1}}
+ \]
+ \pause
+ \begin{itemize}
+  \item La articulación 1 gira o traslada sobre $z_0$.
+  \item La articulación 2 gira o traslada sobre $z_1$.
+  \item La articulación $n$ gira o traslada sobre $z_{n-1}$.
+ \end{itemize}
+ \pause
+ \begin{block}{¿Por qué también aparece $z_n$?}
+ Porque seleccionamos un marco terminal $\{n\}$ para describir
+ la pose del extremo; no implica una articulación adicional.
+ \end{block}
+\end{frame}
+
+\begin{frame}[t]{Primero identificamos el eje físico}
+ \begin{columns}[T,onlytextwidth]
+ \column{0.53\textwidth}\centering
+ \begin{tikzpicture}[scale=0.82,>=Latex]
+  \draw[fill=gray!20,thick] (-0.6,-0.20) rectangle (0.6,0.23);
+  \draw[brazoA] (0,0)--(0,1.8);
+  \draw[brazoB] (0,1.75)--(2.9,1.75);
+  \draw[ejeZ] (0,0)--(0,3.1) node[above] {$z_{i-1}$};
+  \draw[coordenada] (0.75,0.60)
+     arc[start angle=0,end angle=300,x radius=0.75,y radius=0.28];
+  \node[red!75!black] at (1.15,0.72) {$q_i$};
+ \end{tikzpicture}
+ \column{0.44\textwidth}
+ \small Una revoluta gira alrededor de su eje físico.
+ \pause
+ \[
+ \boxed{\theta_i=q_i+\theta_{i,0}}
+ \]
+ \small El eje $z_{i-1}$ debe seguir esa dirección de giro,
+ no necesariamente la línea del brazo.
+ \end{columns}
+\end{frame}
+
+\begin{frame}[t]{Una prismática también determina un eje $z$}
+ \begin{columns}[T,onlytextwidth]
+ \column{0.54\textwidth}\centering
+ \begin{tikzpicture}[scale=0.9,>=Latex]
+  \draw[line width=11pt,gray!55] (0,0)--(4.2,0);
+  \draw[fill=white,thick] (2.30,-0.35) rectangle (3.13,0.35);
+  \draw[ejeZ] (0.3,0)--(1.65,0) node[below] {$z_{i-1}$};
+  \draw[coordenada] (1.35,0.72)--(3.00,0.72)
+     node[midway,above] {$q_i>0$};
+ \end{tikzpicture}
+ \column{0.43\textwidth}
+ \small En una prismática el eje $z_{i-1}$ coincide con
+ la dirección de movimiento del carro.
+ \pause
+ \[
+ \boxed{d_i=d_{i,0}+\sigma_iq_i}
+ \]
+ \small $\sigma_i=+1$ cuando $q_i$ aumenta hacia $+z_{i-1}$,
+ y $-1$ en caso contrario.
+ \end{columns}
+\end{frame}
+
+\begin{frame}[t]{Después observamos dos ejes consecutivos}
+ \small
+ Para construir el marco $\{i\}$ debemos comparar las rectas
+ de los ejes $z_{i-1}$ y $z_i$. Pueden ser:
+ \begin{enumerate}
+  \item paralelas distintas, con igual o distinto sentido;
+  \item secantes (se cruzan en un punto);
+  \item coincidentes (son la misma recta);
+  \item alabeadas (ni paralelas ni secantes en 3D).
+ \end{enumerate}
+ \pause
+ \[
+ \boxed{\text{La relación geométrica determina }x_i,
+ \ a_i\text{ y }\alpha_i.}
+ \]
+\end{frame}
+
+\begin{frame}[t]{Ejes paralelos: la normal común}
+ \begin{columns}[T,onlytextwidth]
+ \column{0.56\textwidth}\centering
+ \begin{tikzpicture}[scale=0.82,>=Latex]
+  \draw[ejeZ] (0,0)--(0,3.2) node[above] {$z_{i-1}$};
+  \draw[ejeZ] (3.5,0)--(3.5,3.2) node[above] {$z_i$};
+  \draw[ejeX] (0,1.75)--(3.5,1.75)
+    node[midway,above] {normal común};
+  \draw[<->,thick,red!75!black] (0,1.05)--(3.5,1.05)
+    node[midway,below] {$a_i$};
+  \node[below right] at (3.5,1.75) {$O_i$};
+ \end{tikzpicture}
+ \column{0.41\textwidth}
+ \small La normal común es perpendicular a ambos ejes.
+ Si $x_i$ apunta desde el eje anterior al siguiente,
+ su longitud positiva coincide con la separación.
+ \pause
+ \[\boxed{a_i>0,\qquad\alpha_i=0} \]
+ \small Aquí los vectores $z$ tienen el mismo sentido.
+ \end{columns}
+\end{frame}
+
+\begin{frame}[t]{Ejes paralelos opuestos: cuidado con la torsión}
+ \small
+ Dos rectas pueden ser paralelas y, sin embargo, sus vectores
+ unitarios directores tener sentidos opuestos:
+ \[
+ \hat{\mathbf z}_{i-1}=-\hat{\mathbf z}_i.
+ \]
+ \pause
+ En ese caso el giro alrededor de $x_i$ no es nulo:
+ \[
+ \boxed{\alpha_i=\pi\quad(\mathrm{mod}\ 2\pi)}
+ \]
+ \pause
+ \begin{alertblock}{Regla que no debemos memorizar incorrectamente}
+ ``Ejes paralelos'' \textbf{no significa automáticamente} $\alpha_i=0$.
+ Para concluirlo hay que comprobar que apuntan en el mismo sentido.
+ \end{alertblock}
+\end{frame}
+
+\begin{frame}[t]{Ejes secantes y coincidentes}
+ \small
+ \begin{columns}[T,onlytextwidth]
+ \column{0.48\textwidth}
+  \begin{block}{Secantes}
+   Se cruzan en un punto. La distancia mínima es cero:
+   \[\boxed{a_i=0}\]
+   El eje $x_i$ puede elegirse perpendicular al plano
+   que contienen los dos ejes $z$.
+  \end{block}
+ \column{0.48\textwidth}
+  \begin{block}{Coincidentes}
+   Son la misma recta espacial:
+   \[\boxed{a_i=0}\]
+   Existe libertad para elegir $x_i$, siempre que se preserve
+   una terna ortonormal.
+  \end{block}
+ \end{columns}
+ \pause
+ \vspace{0.18cm}
+ \small En ambos casos debemos declarar la elección realizada:
+ la geometría por sí sola no siempre produce un marco único.
+\end{frame}
+
+\begin{frame}[t]{Ejes alabeados: un problema verdaderamente espacial}
+ \small
+ Dos rectas son alabeadas si \textbf{no son paralelas ni se cortan}.
+ Aunque una proyección bidimensional parezca mostrar una intersección,
+ esta puede no existir en el espacio.
+ \pause
+ \begin{block}{Construcción}
+ Se determina el segmento de menor separación, perpendicular a ambas
+ rectas. Su dirección define $x_i$; su longitud firmada determina $a_i$.
+ \end{block}
+ \[
+ \boxed{\hat{\mathbf x}_i\cdot\hat{\mathbf z}_{i-1}=0,
+ \quad\hat{\mathbf x}_i\cdot\hat{\mathbf z}_{i}=0}
+ \]
+\end{frame}
+
+\begin{frame}[t]{¿Dónde ponemos el origen $O_i$ y el eje $y_i$?}
+ \small
+ Una vez seleccionada la normal común, ubicamos $O_i$
+ sobre $z_i$ donde la normal común llega a ese eje.
+ Luego completamos la terna con la regla de la mano derecha.
+ \pause
+ \[
+ \boxed{\hat{\mathbf y}_i=
+        \hat{\mathbf z}_i\times\hat{\mathbf x}_i}
+ \]
+ \pause
+ \begin{alertblock}{Comprobación indispensable}
+ Los ejes del marco deben ser mutuamente perpendiculares;
+ no basta con dibujar flechas que \emph{parezcan} una terna 3D.
+ \end{alertblock}
+\end{frame}
+
+\begin{frame}[t]{Los cuatro parámetros, antes de ver las matrices}
+ \small
+ \begin{tabular}{cll}
+ \toprule
+ Parámetro & Interpretación geométrica & Referencia\\\midrule
+ $\theta_i$ & Ángulo de $x_{i-1}$ a $x_i$ & alrededor de $z_{i-1}$\\
+ $d_i$ & Desplazamiento axial firmado & sobre $z_{i-1}$\\
+ $a_i$ & Separación transversal firmada & sobre $x_i$\\
+ $\alpha_i$ & Ángulo de $z_{i-1}$ a $z_i$ & alrededor de $x_i$\\
+ \bottomrule
+ \end{tabular}
+ \pause
+ \vspace{0.24cm}
+ \begin{block}{No confundir los dos tipos de parámetros}
+ En una articulación R el parámetro variable es $\theta_i$;
+ en una P lo es $d_i$. Los demás son constantes
+ para la configuración geométrica rígida habitual.
+ \end{block}
+\end{frame}
+
+\begin{frame}[t]{¿Un eslabón siempre tiene longitud $a_i$?}
+ \small
+ \textbf{No.} La longitud física $L_i$ describe una pieza,
+ mientras que $a_i$ mide sobre $x_i$ la separación entre
+ las rectas de $z_{i-1}$ y $z_i$.
+ \pause
+ \begin{block}{Cuando sí coinciden}
+ Si las articulaciones son paralelas y el brazo une sus ejes
+ siguiendo exactamente la normal común, entonces $a_i=L_i$.
+ Es lo que ocurre en el 2R planar.
+ \end{block}
+ \pause
+ \begin{alertblock}{Cuando no coinciden}
+ Si dos ejes se cortan, $a_i=0$, aunque pueda existir
+ una pieza física de longitud no nula.
+ \end{alertblock}
+\end{frame}
+
+\begin{frame}[t]{De los parámetros a una transformación DH}
+ \small
+ Después de colocar los marcos, construimos la transformación
+ mediante cuatro operaciones elementales, en este orden:
+ \[
+ \boxed{{}^{i-1}T_i=R_z(\theta_i)\,T_z(d_i)\,T_x(a_i)\,R_x(\alpha_i)}
+ \]
+ \pause
+ \begin{enumerate}
+  \item Girar alrededor del eje articular anterior.
+  \item Avanzar sobre ese eje el desplazamiento axial.
+  \item Avanzar perpendicularmente sobre la normal común.
+  \item Aplicar la torsión para orientar el eje $z_i$.
+ \end{enumerate}
+ \pause
+ \small Las operaciones se expresan en marcos intermedios;
+ intercambiarlas puede producir un resultado diferente.
+\end{frame}
+
+\begin{frame}[t]{La matriz DH clásica, derivada de esa secuencia}
+ \scriptsize
+ Denotemos $c_\theta=\cos\theta_i$, $s_\theta=\sin\theta_i$,
+ $c_\alpha=\cos\alpha_i$ y $s_\alpha=\sin\alpha_i$.
+ \[
+ \boxed{{}^{i-1}T_i=\begin{bmatrix}
+ c_\theta&-s_\theta c_\alpha&s_\theta s_\alpha&a_ic_\theta\\
+ s_\theta&c_\theta c_\alpha&-c_\theta s_\alpha&a_is_\theta\\
+ 0&s_\alpha&c_\alpha&d_i\\
+ 0&0&0&1
+ \end{bmatrix}}
+ \]
+ \pause
+ \small
+ La última columna informa la traslación relativa;
+ el bloque $3\times3$ superior izquierdo informa la orientación.
+ Cuando $\alpha_i=0$, el cálculo se simplifica notablemente.
+\end{frame}
+
+\begin{frame}[t]{Ejemplo de lectura directa de una fila DH}
+ \small
+ Supongamos $\theta_i=q_i$, $d_i=0$, $a_i=L$,
+ $\alpha_i=0$. Sustituimos en la matriz general:
+ \[
+ \boxed{{}^{i-1}T_i=\begin{bmatrix}
+ \cos q_i&-\sin q_i&0&L\cos q_i\\
+ \sin q_i&\cos q_i&0&L\sin q_i\\
+ 0&0&1&0\\0&0&0&1
+ \end{bmatrix}}
+ \]
+ \pause
+ \begin{block}{Interpretemos antes de continuar}
+ El eslabón gira $q_i$ en el plano XY y el siguiente origen
+ queda a una distancia $L$ en la dirección del brazo.
+ \end{block}
+\end{frame}
+
+\begin{frame}[t]{Método de trabajo que repetiremos en cinco robots}
+ \small
+ Para cada mecanismo realizaremos exactamente las mismas preguntas:
+ \begin{enumerate}
+ \item ¿Cuántas articulaciones hay y de qué tipo son?
+ \item ¿Cuáles son sus ejes $z_{i-1}$ y sentidos positivos?
+ \item ¿Cómo se construyen $x_i$, $O_i$ y $y_i$?
+ \item ¿Qué significa cada valor de $\theta_i,d_i,a_i,\alpha_i$?
+ \item ¿Cuál es su tabla DH y qué matriz produce?
+ \item ¿La cinemática resultante coincide con el dibujo?
+ \end{enumerate}
+ \pause
+ \centering\[\boxed{\text{Primero geometría; después álgebra.}}\]
+\end{frame}
+
+% =========================================================
+% BLOQUE 3/8 — EJEMPLO COMPLETO 2R: DOS REVOLUTAS
+% =========================================================
+\begin{frame}[t]{Ejemplo 1 — ¿Qué representa un robot 2R planar?}
+ \begin{columns}[T,onlytextwidth]
+ \column{0.53\textwidth}\centering
+ \RobotDosR{0}
+ \column{0.44\textwidth}
+ \small Hay dos articulaciones \textbf{revolutas} conectadas
+ por dos brazos rígidos de longitudes $L_1$ y $L_2$.
+ \medskip
+ Todo el movimiento del mecanismo se desarrolla en un mismo plano.
+ \pause
+ \begin{block}{Nuestra meta}
+ Hallar la posición $(x,y)$ y la orientación $\phi$ del extremo
+ a partir de $q_1$ y $q_2$.
+ \end{block}
+ \end{columns}
+\end{frame}
+
+\begin{frame}[t]{2R — Paso 1: identificar las variables articulares}
+ \centering\RobotDosR{1}
+ \vspace{0.12cm}
+ \small $q_1$ mide el giro del primer brazo respecto a la horizontal fija;
+ $q_2$ mide el giro del segundo brazo \textbf{respecto al primero}.
+ \[
+ \boxed{\phi_1=q_1,\qquad\phi_2=q_1+q_2}
+ \]
+\end{frame}
+
+\begin{frame}[t]{2R — ¿Por qué el segundo ángulo es relativo?}
+ \small
+ Si la primera articulación gira $25^\circ$, ambos brazos
+ se orientan inicialmente con ese giro respecto a la base.
+ Si además la segunda gira $35^\circ$ respecto al primer brazo,
+ su orientación absoluta será:
+ \[
+ \boxed{\phi_2=25^\circ+35^\circ=60^\circ}
+ \]
+ \pause
+ \begin{alertblock}{Error frecuente}
+ Medir $q_2$ de la horizontal fija al segundo brazo
+ conduciría a $q_2=60^\circ$, que \textbf{no} es la coordenada
+ articular relativa utilizada en este modelo.
+ \end{alertblock}
+\end{frame}
+
+\begin{frame}[t]{2R — Paso 2: colocar los ejes articulares}
+ \centering\RobotDosR{2}
+ \vspace{0.10cm}
+ \small En ambas revolutas el eje físico es perpendicular al plano XY.
+ El símbolo $\odot$ indica que el vector director sale de la hoja.
+ \[
+ \boxed{\mathrm{R1}:z_0,\qquad\mathrm{R2}:z_1}
+ \]
+\end{frame}
+
+\begin{frame}[t]{2R — Paso 3: seleccionar el eje terminal}
+ \centering\RobotDosR{3}
+ \vspace{0.10cm}
+ \small Elegimos $z_2$ en el extremo del segundo brazo,
+ paralelo y con el mismo sentido que $z_0$ y $z_1$.
+ \[
+ \boxed{\hat{\mathbf z}_0=\hat{\mathbf z}_1
+       =\hat{\mathbf z}_2=(0,0,1)^{\mathsf T}}
+ \]
+ \small $z_2$ pertenece al marco terminal; no es una tercera revoluta.
+\end{frame}
+
+\begin{frame}[t]{2R — Paso 4: fijar el marco base $\{0\}$}
+ \centering\RobotDosR{4}
+ \vspace{0.10cm}
+ \small Situamos $O_0$ en la primera articulación.
+ Seleccionamos $x_0$ horizontal a la derecha y $z_0$ saliendo del plano.
+ \[
+ \hat{\mathbf x}_0=(1,0,0)^{\mathsf T},\quad
+ \hat{\mathbf y}_0=(0,1,0)^{\mathsf T},\quad
+ \hat{\mathbf z}_0=(0,0,1)^{\mathsf T}.
+ \]
+ \small Estas elecciones determinan dónde empieza a medirse $\theta_1$.
+\end{frame}
+
+\begin{frame}[t]{2R — Paso 5: construir el eje $x_1$}
+ \centering\RobotDosR{5}
+ \vspace{0.10cm}
+ \small $z_0$ y $z_1$ son paralelos distintos.
+ Su normal común coincide con el primer brazo y determina $x_1$.
+ \[
+ \boxed{a_1=L_1,\quad\alpha_1=0,\quad\theta_1=q_1}
+ \]
+\end{frame}
+
+\begin{frame}[t]{2R — Paso 6: construir el eje $x_2$}
+ \centering\RobotDosR{6}
+ \vspace{0.10cm}
+ \small La normal común de $z_1$ y $z_2$ sigue el segundo brazo.
+ Por tanto $x_2$ se orienta según la dirección $q_1+q_2$.
+ \[
+ \boxed{a_2=L_2,\quad\alpha_2=0,\quad\theta_2=q_2}
+ \]
+\end{frame}
+
+\begin{frame}[t]{2R — Paso 7: ubicar los orígenes}
+ \centering\RobotDosR{7}
+ \vspace{0.12cm}
+ \small $O_0$ está en R1, $O_1$ en R2 y $O_2$ en el extremo del robot.
+ Los tres están en el mismo plano; no se necesita
+ una traslación sobre $z_0$ ni sobre $z_1$.
+ \[
+ \boxed{d_1=0,\qquad d_2=0}
+ \]
+\end{frame}
+
+\begin{frame}[t]{2R — Paso 8: completar las ternas cartesianas}
+ \centering\RobotDosR{8}
+ \vspace{0.06cm}
+ \small Los ejes $y_i$ se obtienen sin elegir nuevas direcciones arbitrarias:
+ \[
+ \boxed{\hat{\mathbf y}_i=\hat{\mathbf z}_i\times\hat{\mathbf x}_i}
+ \]
+ \small La terna de cada marco queda ortogonal y orientada
+ según la regla de la mano derecha.
+\end{frame}
+
+\begin{frame}[t]{2R — Paso 9: justificar cada fila de la tabla DH}
+ \small
+ \begin{tabular}{c|cccc}
+  \toprule
+  $i$ & $\theta_i$ & $d_i$ & $a_i$ & $\alpha_i$\\\midrule
+  1 & $q_1$ & $0$ & $L_1$ & $0$\\
+  2 & $q_2$ & $0$ & $L_2$ & $0$\\
+  \bottomrule
+ \end{tabular}
+ \pause
+ \vspace{0.22cm}
+ \begin{itemize}
+  \item $\theta_1,\theta_2$ varían porque las dos articulaciones giran.
+  \item $a_1,a_2$ coinciden con las longitudes de las normales comunes.
+  \item $d_i=0$ porque no existe desplazamiento axial entre orígenes.
+  \item $\alpha_i=0$ porque todos los $z$ tienen el mismo sentido.
+ \end{itemize}
+\end{frame}
+
+\begin{frame}[t]{2R — Paso 10: construir la primera matriz}
+ \small
+ La primera fila indica una rotación $q_1$ y luego
+ una traslación $L_1$ según el eje $x_1$:
+ \[
+ {}^0T_1=R_z(q_1)\,T_x(L_1).
+ \]
+ \pause
+ \[
+ \boxed{{}^0T_1=
+ \begin{bmatrix}
+ c_1&-s_1&0&L_1c_1\\
+ s_1&c_1&0&L_1s_1\\
+ 0&0&1&0\\0&0&0&1
+ \end{bmatrix}}
+ \]
+ \small Aquí $c_1=\cos q_1$ y $s_1=\sin q_1$.
+\end{frame}
+
+\begin{frame}[t]{2R — Paso 11: construir la segunda matriz}
+ \small
+ La segunda transformación se expresa respecto al \emph{marco 1},
+ no respecto a la base fija:
+ \[
+ {}^1T_2=R_z(q_2)\,T_x(L_2).
+ \]
+ \pause
+ \[
+ \boxed{{}^1T_2=
+ \begin{bmatrix}
+ c_2&-s_2&0&L_2c_2\\
+ s_2&c_2&0&L_2s_2\\
+ 0&0&1&0\\0&0&0&1
+ \end{bmatrix}}
+ \]
+ \small Aquí $c_2=\cos q_2$ y $s_2=\sin q_2$.
+\end{frame}
+
+\begin{frame}[t]{2R — Paso 12: multiplicar y leer el resultado}
+ \small
+ Componemos las transformaciones en el orden físico de la cadena:
+ \[
+ {}^0T_2={}^0T_1\,{}^1T_2.
+ \]
+ \pause
+ \[
+ \boxed{{}^0T_2=
+ \begin{bmatrix}
+ c_{12}&-s_{12}&0&L_1c_1+L_2c_{12}\\
+ s_{12}&c_{12}&0&L_1s_1+L_2s_{12}\\
+ 0&0&1&0\\0&0&0&1
+ \end{bmatrix}}
+ \]
+ \small $c_{12}=\cos(q_1+q_2)$ y $s_{12}=\sin(q_1+q_2)$.
+\end{frame}
+
+\begin{frame}[t]{2R — Paso 13: interpretar la cinemática directa}
+ \small
+ La última columna contiene la posición del extremo:
+ \[
+ \boxed{\begin{aligned}
+ x&=L_1\cos q_1+L_2\cos(q_1+q_2),\\
+ y&=L_1\sin q_1+L_2\sin(q_1+q_2),\\
+ z&=0.
+ \end{aligned}}
+ \]
+ \pause
+ La orientación del marco terminal es una rotación plana:
+ \[
+ \boxed{\phi=q_1+q_2}
+ \]
+ \small Cada componente tiene una interpretación geométrica directa.
+\end{frame}
+
+\begin{frame}[t]{2R — Verificación numérica paso a paso}
+ \small
+ Use $L_1=3.2$, $L_2=2.6$, $q_1=25^\circ$ y $q_2=35^\circ$.
+ Primero calculamos la orientación del segundo brazo:
+ \[\phi=25^\circ+35^\circ=60^\circ.\]
+ \pause
+ Después sustituimos:
+ \[
+ \begin{aligned}
+ x&=3.2\cos25^\circ+2.6\cos60^\circ\approx4.20,\\
+ y&=3.2\sin25^\circ+2.6\sin60^\circ\approx3.60.
+ \end{aligned}
+ \]
+ \begin{block}{Control de consistencia}
+ El punto calculado debe quedar en el mismo cuadrante
+ y con la misma dirección que el extremo dibujado.
+ \end{block}
+\end{frame}
+
+\begin{frame}[t]{2R — Comprobación de aprendizaje}
+ \small
+ Sin cambiar la convención DH, razone:
+ \begin{enumerate}
+ \item Si $q_2=0$, ¿los dos brazos se alinean?
+ \item Si $q_1$ aumenta $20^\circ$ y $q_2$ permanece fijo,
+       ¿qué ocurre con la orientación absoluta del segundo brazo?
+ \item ¿Por qué la matriz ${}^1T_2$ no depende de $q_1$?
+ \end{enumerate}
+ \pause
+ \begin{block}{Ideas para discutir}
+ Con $q_2=0$ hay alineación; una variación de $q_1$
+ cambia la orientación global de ambos brazos; la segunda matriz
+ expresa un movimiento \emph{relativo al marco 1}.
+ \end{block}
+\end{frame}
+
+% =========================================================
+% BLOQUE 4/8 — EJEMPLO COMPLETO 2P: DOS PRISMATICAS
+% =========================================================
+\begin{frame}[t]{Ejemplo 2 — ¿Qué aporta un robot 2P?}
+ \small
+ Un mecanismo $2P$ tiene dos articulaciones prismáticas:
+ ninguna de ellas introduce una rotación \emph{articular}.
+ \pause
+ \begin{block}{Decisión geométrica para el ejercicio}
+ Usaremos dos guías \textbf{perpendiculares}: una vertical
+ ($q_1$ sobre $+Z$) y otra horizontal ($q_2$ sobre $+X$).
+ Así se obtiene posicionamiento independiente en un plano vertical.
+ \end{block}
+ \[
+ \boxed{q_1\text{ controla altura},\qquad
+ q_2\text{ controla avance horizontal}.}
+ \]
+\end{frame}
+
+\begin{frame}[t]{2P — Paso 0: observar el mecanismo físico}
+ \centering\RobotDosP{0}
+ \vspace{0.12cm}
+ \small Vista lateral $XZ$: la primera guía sostiene un carro que
+ se desplaza verticalmente; la segunda guía se desplaza con ese carro
+ y sostiene otro carro horizontal.
+ \end{frame}
+
+\begin{frame}[t]{2P — Paso 1: definir los movimientos positivos}
+ \centering\RobotDosP{1}
+ \vspace{0.12cm}
+ \small $q_1>0$ significa subir el primer carro;
+ $q_2>0$ significa avanzar el segundo carro hacia la derecha.
+ \[
+ \boxed{q_1,q_2\text{ tienen unidades de longitud.}}
+ \]
+\end{frame}
+
+\begin{frame}[t]{2P — Paso 2: identificar los ejes articulares}
+ \centering\RobotDosP{2}
+ \vspace{0.12cm}
+ \small La primera prismática se mueve sobre la recta vertical $z_0$.
+ La segunda se mueve sobre la recta horizontal $z_1$.
+ \[
+ \boxed{\hat{\mathbf z}_0=(0,0,1)^{\mathsf T},\qquad
+ \hat{\mathbf z}_1=(1,0,0)^{\mathsf T}}
+ \]
+\end{frame}
+
+\begin{frame}[t]{2P — Paso 3: seleccionar el marco terminal}
+ \centering\RobotDosP{3}
+ \vspace{0.12cm}
+ \small Elegimos $z_2$ en el carro final con la misma
+ orientación horizontal de $z_1$.
+ \[
+ \boxed{\hat{\mathbf z}_2=\hat{\mathbf z}_1}
+ \]
+ \small La elección simplifica $\alpha_2=0$ y no agrega otro actuador.
+\end{frame}
+
+\begin{frame}[t]{2P — Paso 4: entender la normal común de ejes secantes}
+ \small
+ Las rectas $z_0$ y $z_1$ se cortan físicamente en la posición
+ del primer carro. Por tanto su distancia mínima vale cero:
+ \[
+ \boxed{a_1=0.}
+ \]
+ \pause
+ Elegimos $x_1$ perpendicular al plano $XZ$ y entrando
+ en la hoja ($+Y$ físico). Como $x_0$ apunta hacia $+X$,
+ la rotación fija entre esos ejes es:
+ \[
+ \boxed{\theta_1=+90^\circ,\qquad\alpha_1=+90^\circ.}
+ \]
+ \small Ambos valores son \emph{constantes geométricas},
+ no movimientos de una revoluta inexistente.
+\end{frame}
+
+\begin{frame}[t]{2P — Paso 5: completar los ejes $x_1$ y $x_2$}
+ \centering\RobotDosP{5}
+ \vspace{0.12cm}
+ \small Los símbolos $\otimes$ indican que $x_1$ y $x_2$
+ entran en el papel. Ambos son perpendiculares a los ejes
+ prismáticos horizontales, y $x_2$ se selecciona paralelo a $x_1$.
+ \[
+ \boxed{\theta_2=0,\qquad\alpha_2=0,\qquad a_2=0.}
+ \]
+\end{frame}
+
+\begin{frame}[t]{2P — Paso 6: ubicar orígenes y desplazamientos}
+ \centering\RobotDosP{6}
+ \vspace{0.10cm}
+ \small $O_0$ está en la base; $O_1$ en el carro vertical;
+ $O_2$ en el carro horizontal. Las coordenadas son desplazamientos
+ medidos sobre sus respectivos ejes articulares:
+ \[
+ \boxed{d_1=q_1\text{ sobre }z_0,
+ \qquad d_2=q_2\text{ sobre }z_1.}
+ \]
+\end{frame}
+
+\begin{frame}[t]{2P — Paso 7: regla de la mano derecha}
+ \centering\RobotDosP{7}
+ \vspace{0.12cm}
+ \small En la vista $XZ$, los ejes $x_1,x_2$ entran en el papel;
+ $y_1,y_2$ apuntan hacia arriba y $z_1,z_2$ a la derecha.
+ \[
+ \boxed{\hat{\mathbf y}_i=\hat{\mathbf z}_i\times\hat{\mathbf x}_i.}
+ \]
+\end{frame}
+
+\begin{frame}[t]{2P — ¿Por qué aparecen ángulos si no hay revolutas?}
+ \small
+ Los parámetros $\theta_i$ y $\alpha_i$ no significan
+ que \emph{siempre exista} una articulación rotacional.
+ También describen la \textbf{orientación relativa de dos marcos}.
+ \pause
+ \begin{block}{Para el 2P ortogonal}
+ $\theta_1=+90^\circ$ ubica la dirección $x_1$
+ respecto a $x_0$ alrededor de $z_0$;
+ $\alpha_1=+90^\circ$ lleva $z_0$ a $z_1$
+ alrededor de $x_1$.
+ \end{block}
+ \pause
+ \small Estos giros son constantes mientras el mecanismo
+ se desplaza: no hay ninguna tercera o cuarta articulación.
+\end{frame}
+
+\begin{frame}[t]{2P — Construir la tabla DH razonando cada columna}
+ \small
+ \begin{tabular}{c|c|cccc}
+ \toprule
+ $i$ & Tipo & $\theta_i$ & $d_i$ & $a_i$ & $\alpha_i$\\\midrule
+ 1 & P & $+90^\circ$ & $q_1$ & $0$ & $+90^\circ$\\
+ 2 & P & $0$ & $q_2$ & $0$ & $0$\\
+ \bottomrule
+ \end{tabular}
+ \pause
+ \begin{itemize}
+  \item Las únicas variables articulares son $d_1=q_1$ y $d_2=q_2$.
+  \item $a_1=a_2=0$: las rectas consideradas se cortan o coinciden.
+  \item La torsión $\alpha_1$ proviene del cambio fijo vertical--horizontal.
+  \item $\theta_1$ proviene de la elección de los ejes $x_0,x_1$.
+ \end{itemize}
+\end{frame}
+
+\begin{frame}[t]{2P — Primera matriz: traslación y cambio de orientación}
+ \small
+ De la primera fila:
+ \[
+ {}^0T_1=R_z(90^\circ)\,T_z(q_1)\,R_x(90^\circ).
+ \]
+ \pause
+ \[
+ \boxed{{}^0T_1=
+ \begin{bmatrix}
+ 0&0&1&0\\
+ 1&0&0&0\\
+ 0&1&0&q_1\\
+ 0&0&0&1
+ \end{bmatrix}}
+ \]
+ \small La tercera columna $(1,0,0)^{\mathsf T}$ confirma
+ que $z_1$ apunta horizontalmente hacia $+X$.
+\end{frame}
+
+\begin{frame}[t]{2P — Segunda matriz: extender el carro horizontal}
+ \small
+ La segunda fila tiene tres parámetros nulos:
+ \[
+ \theta_2=0,\quad a_2=0,\quad\alpha_2=0.
+ \]
+ Por eso solo queda una traslación sobre $z_1$:
+ \[
+ \boxed{{}^1T_2=T_z(q_2)=
+ \begin{bmatrix}
+ 1&0&0&0\\0&1&0&0\\0&0&1&q_2\\0&0&0&1
+ \end{bmatrix}}
+ \]
+ \pause
+ \small En coordenadas del marco 1 el desplazamiento es axial;
+ al pasarlo a la base aparece como desplazamiento horizontal.
+\end{frame}
+
+\begin{frame}[t]{2P — Cinemática directa: producto de matrices}
+ \small
+ Componemos ambas transformaciones:
+ \[
+ {}^0T_2={}^0T_1\,{}^1T_2.
+ \]
+ \pause
+ \[
+ \boxed{{}^0T_2=
+ \begin{bmatrix}
+ 0&0&1&q_2\\
+ 1&0&0&0\\
+ 0&1&0&q_1\\
+ 0&0&0&1
+ \end{bmatrix}}
+ \]
+ \small La orientación de la herramienta es constante;
+ únicamente varían las componentes de posición.
+\end{frame}
+
+\begin{frame}[t]{2P — ¿Cómo interpretamos la última columna?}
+ \small
+ En el marco base, cuya orientación tiene $+X$ a la derecha,
+ $+Z$ hacia arriba y $+Y$ entrando en el papel:
+ \[
+ \boxed{{}^0\mathbf p_2=
+ \begin{bmatrix}q_2\\0\\q_1\end{bmatrix}}
+ \]
+ \pause
+ \begin{itemize}
+  \item Aumentar $q_1$ eleva el punto terminal sin alterar $X$.
+  \item Aumentar $q_2$ avanza a la derecha sin alterar $Z$.
+  \item No se produce rotación articular ni cambio de orientación.
+ \end{itemize}
+\end{frame}
+
+\begin{frame}[t]{2P — Verificación numérica y caso degenerado}
+ \small
+ Si $q_1=2\,\mathrm m$ y $q_2=3\,\mathrm m$:
+ \[
+ \boxed{(X,Y,Z)=(3,0,2)\;\mathrm m.}
+ \]
+ \pause
+ \begin{block}{¿Y si las dos guías fueran coaxiales?}
+ Si $z_0$ y $z_1$ fueran la misma recta con igual sentido,
+ podríamos tomar $\alpha_1=\alpha_2=0$,
+ $a_1=a_2=0$, $\theta_1=\theta_2=0$ y $d_i=q_i$.
+ El efecto sobre el eje común sería $z=q_1+q_2$.
+ \end{block}
+ \small Dos variables prismáticas coaxiales no proporcionan
+ dos direcciones cartesianas de movimiento independientes.
+\end{frame}
+
+\begin{frame}[t]{2P — Preguntas antes de pasar a un mecanismo mixto}
+ \small
+ \begin{enumerate}
+  \item Si ambas variables son traslaciones, ¿por qué $\alpha_1\neq0$?
+  \item ¿En qué marco se mide $d_2$ y en qué marco se presenta
+        el resultado final $(X,Y,Z)$?
+  \item Si invertimos el sentido de $z_1$, ¿qué signos deben revisarse?
+ \end{enumerate}
+ \pause
+ \begin{alertblock}{Aprendizaje central}
+ Los ángulos de DH describen \emph{orientaciones entre marcos};
+ las variables articulares identifican \emph{qué movimiento puede cambiar}.
+ \end{alertblock}
+\end{frame}
+
+% =========================================================
+% BLOQUE 5/8 — EJEMPLO COMPLETO RP: REVOLUTA-PRISMATICA
+% =========================================================
+\begin{frame}[t]{Ejemplo 3 — Robot RP: un giro y una extensión}
+ \small
+ Ahora combinamos dos movimientos diferentes:
+ \begin{itemize}
+  \item La primera articulación R gira una guía sobre un eje vertical.
+  \item La segunda articulación P hace avanzar un carro a lo largo
+  de esa guía radial que \textbf{gira con la primera articulación}.
+ \end{itemize}
+ \pause
+ \begin{block}{Interpretación física}
+ Es un modelo cilíndrico simplificado: $q_1$ controla la dirección
+ de avance y $q_2$ controla la distancia radial recorrida.
+ \end{block}
+\end{frame}
+
+\begin{frame}[t]{RP — Paso 0: observar el mecanismo en planta}
+ \centering\RobotRP{0}
+ \vspace{0.14cm}
+ \small Vista superior del plano $XY$: la guía horizontal
+ está montada sobre la primera articulación revoluta.
+ Su extremo radial será el punto terminal del modelo.
+\end{frame}
+
+\begin{frame}[t]{RP — Paso 1: comprender los dos movimientos}
+ \centering\RobotRP{1}
+ \vspace{0.14cm}
+ \small El ángulo $q_1$ se mide desde la dirección horizontal fija;
+ el recorrido $q_2$ se mide sobre la guía radial, no sobre $x_0$ fijo.
+ \[
+ \boxed{q_1\;[\mathrm{rad}],\qquad q_2\;[\mathrm m]}
+ \]
+\end{frame}
+
+\begin{frame}[t]{RP — Paso 2: colocar $z_0$ y $z_1$}
+ \centering\RobotRP{2}
+ \vspace{0.12cm}
+ \small El primer eje $z_0$ sale del plano: es el giro vertical.
+ El segundo eje $z_1$ es la guía radial de la prismática.
+ \[
+ \boxed{z_0\perp z_1,\qquad
+ z_0\cap z_1\neq\varnothing}
+ \]
+ \small Los ejes son secantes; su normal común tiene longitud cero.
+\end{frame}
+
+\begin{frame}[t]{RP — Paso 3: seleccionar $z_2$}
+ \centering\RobotRP{3}
+ \vspace{0.13cm}
+ \small Elegimos el eje terminal $z_2$ sobre la misma
+ recta radial y en el mismo sentido de $z_1$.
+ \[
+ \boxed{\hat{\mathbf z}_2=\hat{\mathbf z}_1,
+ \qquad a_2=0,\quad\alpha_2=0}
+ \]
+\end{frame}
+
+\begin{frame}[t]{RP — Paso 4: seleccionar el marco base}
+ \centering\RobotRP{4}
+ \vspace{0.12cm}
+ \small El origen $O_0$ se ubica en el eje de giro vertical.
+ Elegimos $x_0$ horizontal a la derecha, $y_0$ hacia arriba
+ en la planta y $z_0$ hacia el observador.
+ \[
+ \boxed{\hat{\mathbf x}_0=(1,0,0)^{\mathsf T}}
+ \]
+\end{frame}
+
+\begin{frame}[t]{RP — Paso 5: ¿por qué $x_1$ es tangencial?}
+ \centering\RobotRP{5}
+ \vspace{0.12cm}
+ \small Las rectas $z_0$ y $z_1$ se cortan.
+ Elegimos $x_1$ perpendicular al plano formado por ambas;
+ ese vector es \textbf{tangente} a la circunferencia de giro.
+ \[
+ \boxed{\hat{\mathbf x}_1=
+ (-\sin q_1,\cos q_1,0)^{\mathsf T}}
+ \]
+\end{frame}
+
+\begin{frame}[t]{RP — Paso 6: distinguir $q_1$ de $\theta_1$}
+ \small
+ En este modelo $q_1$ mide el ángulo de la guía \emph{radial}
+ desde la horizontal $x_0$.
+ Pero $\theta_1$ se mide desde $x_0$ hasta el eje \emph{tangencial} $x_1$.
+ \pause
+ Como la dirección tangencial adelanta a la radial en $90^\circ$:
+ \[
+ \boxed{\theta_1=q_1+90^\circ}
+ \]
+ \pause
+ \begin{alertblock}{Por qué no es un error}
+ Una coordenada articular y un parámetro DH pueden diferir
+ en un \textbf{desfase angular constante}; describen el mismo giro
+ usando referencias angulares diferentes.
+ \end{alertblock}
+\end{frame}
+
+\begin{frame}[t]{RP — Paso 7: torsión entre el giro y la guía}
+ \small
+ El vector $z_0$ sale del plano; el vector $z_1$ apunta
+ radialmente dentro del plano. No son paralelos.
+ \pause
+ Con $x_1$ tangencial en el sentido elegido,
+ la regla de la mano derecha da:
+ \[
+ \boxed{\alpha_1=+90^\circ,\qquad a_1=0}
+ \]
+ \small Además tomamos $d_1=0$ porque los ejes
+ se intersectan a la altura del origen $O_0$ elegido.
+ Una altura de columna fija podría modelarse por separado.
+\end{frame}
+
+\begin{frame}[t]{RP — Paso 8: colocar $x_2$ y los orígenes}
+ \centering\RobotRP{7}
+ \vspace{0.11cm}
+ \small Elegimos $x_2$ paralelo a $x_1$, pues $z_1$ y $z_2$
+ son coincidentes como rectas espaciales. El origen $O_2$
+ es el carro radial desplazado una distancia $q_2$.
+ \[
+ \boxed{\theta_2=0,\quad d_2=q_2,\quad a_2=\alpha_2=0}
+ \]
+\end{frame}
+
+\begin{frame}[t]{RP — Paso 9: completar la orientación de los marcos}
+ \centering\RobotRP{8}
+ \vspace{0.11cm}
+ \small Los ejes $x_1,x_2$ son tangenciales y los ejes $z_1,z_2$
+ son radiales. El producto $\hat{\mathbf z}_i\times\hat{\mathbf x}_i$
+ apunta fuera de la planta, en dirección vertical.
+ \[
+ \boxed{\hat{\mathbf y}_1=\hat{\mathbf y}_2
+ =(0,0,1)^{\mathsf T}}
+ \]
+\end{frame}
+
+\begin{frame}[t]{RP — Paso 10: tabla DH razonada}
+ \small
+ \begin{tabular}{c|c|cccc}
+ \toprule
+ $i$ & Tipo & $\theta_i$ & $d_i$ & $a_i$ & $\alpha_i$\\\midrule
+ 1 & R & $q_1+90^\circ$ & $0$ & $0$ & $+90^\circ$\\
+ 2 & P & $0$ & $q_2$ & $0$ & $0$\\
+ \bottomrule
+ \end{tabular}
+ \pause
+ \begin{itemize}
+  \item La revoluta hace variable a $\theta_1$.
+  \item La prismática hace variable a $d_2$.
+  \item La torsión $\alpha_1$ corrige el cambio fijo vertical--radial.
+  \item El desfase de $90^\circ$ en $\theta_1$ se debe a la elección de $x_1$.
+ \end{itemize}
+\end{frame}
+
+\begin{frame}[t]{RP — Paso 11: primera transformación}
+ \small
+ Sea $c=\cos q_1$ y $s=\sin q_1$.
+ Sustituimos $\theta_1=q_1+90^\circ$, $a_1=d_1=0$,
+ $\alpha_1=90^\circ$:
+ \[
+ \boxed{{}^0T_1=
+ \begin{bmatrix}
+ -s&0&c&0\\
+ c&0&s&0\\
+ 0&1&0&0\\
+ 0&0&0&1
+ \end{bmatrix}}
+ \]
+ \pause
+ \small Su tercera columna $(c,s,0)^{\mathsf T}$ es la dirección
+ radial de la segunda articulación expresada en la base.
+\end{frame}
+
+\begin{frame}[t]{RP — Paso 12: segunda transformación}
+ \small
+ La segunda articulación no introduce giros relativos:
+ solo desplaza el carro a lo largo de $z_1$.
+ \[
+ \boxed{{}^1T_2=T_z(q_2)=
+ \begin{bmatrix}
+ 1&0&0&0\\
+ 0&1&0&0\\
+ 0&0&1&q_2\\
+ 0&0&0&1
+ \end{bmatrix}}
+ \]
+ \pause
+ \small El desplazamiento $q_2$ está expresado en el eje
+ radial del marco 1; después lo convertiremos a la base.
+\end{frame}
+
+\begin{frame}[t]{RP — Paso 13: posición cartesiana resultante}
+ \small
+ Multiplicamos las dos matrices:
+ \[
+ \boxed{{}^0T_2=
+ \begin{bmatrix}
+ -s&0&c&q_2c\\
+ c&0&s&q_2s\\
+ 0&1&0&0\\
+ 0&0&0&1
+ \end{bmatrix}}
+ \]
+ \pause
+ Por tanto:
+ \[
+ \boxed{X=q_2\cos q_1,\quad Y=q_2\sin q_1,\quad Z=0.}
+ \]
+ \small El giro dirige la extensión; el desplazamiento determina su magnitud.
+\end{frame}
+
+\begin{frame}[t]{RP — Verificación y discusión}
+ \small
+ Con $q_1=25^\circ$ y $q_2=3.2\,\mathrm m$:
+ \[
+ X=3.2\cos25^\circ\approx2.90\,\mathrm m,\qquad
+ Y=3.2\sin25^\circ\approx1.35\,\mathrm m.
+ \]
+ \pause
+ \begin{enumerate}
+  \item ¿Qué ocurriría si el primer giro cambiara y $q_2$ quedara fijo?
+  \item ¿Puede la herramienta extenderse hacia otra dirección
+  sin cambiar la articulación prismática?
+  \item ¿Por qué una guía radial no corresponde a $a_2=q_2$?
+ \end{enumerate}
+ \begin{block}{Clave}
+ La prismática se desplaza \emph{sobre $z_1$};
+ por eso su coordenada aparece en $d_2$, no en $a_2$.
+ \end{block}
+\end{frame}
+
+% =========================================================
+% BLOQUE 6/8 — EJEMPLO COMPLETO PR: PRISMATICA-REVOLUTA
+% =========================================================
+\begin{frame}[t]{Ejemplo 4 — Robot PR: primero subir, después girar}
+ \small
+ Invertimos la secuencia de tipos de articulación,
+ pero debemos volver a estudiar la \textbf{geometría física}.
+ \begin{itemize}
+  \item La primera articulación P eleva una plataforma verticalmente.
+  \item La segunda articulación R hace girar un brazo horizontal
+  montado sobre esa plataforma.
+ \end{itemize}
+ \pause
+ \begin{alertblock}{No basta con intercambiar letras}
+ $RP$ y $PR$ no tienen la misma interpretación geométrica:
+ un desplazamiento radial giratorio no equivale a un
+ desplazamiento vertical seguido de un giro.
+ \end{alertblock}
+\end{frame}
+
+\begin{frame}[t]{PR — Paso 0: observar la planta del brazo giratorio}
+ \centering\RobotPR{0}
+ \vspace{0.13cm}
+ \small En planta vemos un brazo de longitud $L$
+ girando alrededor de un eje vertical.
+ La prismática vertical existe, pero su recorrido no puede verse
+ en una proyección superior.
+\end{frame}
+
+\begin{frame}[t]{PR — Paso 1: el movimiento prismático requiere otra vista}
+ \begin{columns}[T,onlytextwidth]
+ \column{0.54\textwidth}\centering\RobotPRPerfil
+ \column{0.43\textwidth}
+ \small En la sección vertical, el carro sube $q_1$ a lo largo
+ de la columna.
+ \[
+ \boxed{q_1>0\;\Rightarrow\;Z\text{ aumenta}}
+ \]
+ \pause
+ El brazo gira sobre esa plataforma,
+ manteniéndose a la altura alcanzada.
+ \end{columns}
+\end{frame}
+
+\begin{frame}[t]{PR — Paso 2: los ejes de las articulaciones}
+ \small
+ La articulación 1 se desplaza verticalmente; por DH clásica
+ su eje es $z_0$. La articulación 2 gira también alrededor
+ de la misma recta vertical; por ello su eje es $z_1$.
+ \pause
+ \[
+ \boxed{\ell_{z_0}=\ell_{z_1},\qquad
+ \hat{\mathbf z}_0=\hat{\mathbf z}_1=(0,0,1)^{\mathsf T}}
+ \]
+ \small Son ejes \textbf{coincidentes}, no solo paralelos,
+ aunque sus orígenes estén a diferentes alturas.
+\end{frame}
+
+\begin{frame}[t]{PR — Paso 3: representar los ángulos en planta}
+ \centering\RobotPR{1}
+ \vspace{0.12cm}
+ \small Ahora $q_2$ mide el giro del brazo horizontal
+ respecto a una dirección fija $x_1$, elegida igual que $x_0$.
+ \[
+ \boxed{\theta_2=q_2}
+ \]
+\end{frame}
+
+\begin{frame}[t]{PR — Paso 4: elegir $x_1$ para ejes coincidentes}
+ \centering\RobotPR{4}
+ \vspace{0.14cm}
+ \small Como $z_0$ y $z_1$ coinciden, podemos escoger
+ $x_1$ paralelo a $x_0$ para simplificar la primera fila.
+ \[
+ \boxed{\theta_1=0,\qquad a_1=0,\qquad\alpha_1=0.}
+ \]
+ \small No hay giro articular en el primer movimiento.
+\end{frame}
+
+\begin{frame}[t]{PR — Paso 5: el desplazamiento de la primera etapa}
+ \small
+ El origen $O_0$ se sitúa en el punto de referencia de la base;
+ $O_1$ se desplaza con el carro vertical.
+ \pause
+ La diferencia axial es variable y se mide a lo largo de $+z_0$:
+ \[
+ \boxed{d_1=q_1}
+ \]
+ \begin{block}{Interpretación}
+ La primera transformación simplemente cambia la \textbf{altura}
+ del marco 1, sin modificar la orientación de sus ejes.
+ \end{block}
+\end{frame}
+
+\begin{frame}[t]{PR — Paso 6: incorporar el eje terminal}
+ \centering\RobotPR{3}
+ \vspace{0.12cm}
+ \small Elegimos $z_2$ vertical y paralelo a $z_1$,
+ pasando por el extremo del brazo de longitud $L$.
+ \[
+ \boxed{\hat{\mathbf z}_2=\hat{\mathbf z}_1,
+ \qquad a_2=L,\quad\alpha_2=0.}
+ \]
+ \small Aquí sí existe separación entre rectas verticales distintas;
+ la normal común coincide con el brazo horizontal.
+\end{frame}
+
+\begin{frame}[t]{PR — Paso 7: completar $x_2$ y $y_2$}
+ \centering\RobotPR{7}
+ \vspace{0.12cm}
+ \small $x_2$ sigue la dirección del brazo y forma
+ el ángulo $q_2$ con $x_1$.
+ Como $z_2$ sale del plano, el eje $y_2$
+ se obtiene girando $x_2$ exactamente $90^\circ$ en sentido positivo.
+ \[
+ \boxed{\hat{\mathbf y}_2=\hat{\mathbf z}_2\times\hat{\mathbf x}_2.}
+ \]
+\end{frame}
+
+\begin{frame}[t]{PR — Paso 8: tabla DH final}
+ \small
+ \begin{tabular}{c|c|cccc}
+ \toprule
+ $i$ & Tipo & $\theta_i$ & $d_i$ & $a_i$ & $\alpha_i$\\\midrule
+ 1 & P & $0$ & $q_1$ & $0$ & $0$\\
+ 2 & R & $q_2$ & $0$ & $L$ & $0$\\
+ \bottomrule
+ \end{tabular}
+ \pause
+ \begin{itemize}
+  \item La primera fila solo contiene una traslación axial variable.
+  \item La segunda fila contiene una rotación variable y un
+  desplazamiento transversal fijo igual a la longitud del brazo.
+  \item Todos los vectores $z$ se orientan hacia arriba.
+ \end{itemize}
+\end{frame}
+
+\begin{frame}[t]{PR — Paso 9: matriz de la primera articulación}
+ \small
+ La primera fila no contiene rotaciones ni desplazamiento
+ sobre $x_1$:
+ \[
+ \boxed{{}^0T_1=T_z(q_1)=
+ \begin{bmatrix}
+ 1&0&0&0\\
+ 0&1&0&0\\
+ 0&0&1&q_1\\
+ 0&0&0&1
+ \end{bmatrix}}
+ \]
+ \pause
+ \small La orientación relativa es la identidad:
+ $\,{}^0R_1=I_3$.
+\end{frame}
+
+\begin{frame}[t]{PR — Paso 10: matriz de la segunda articulación}
+ \small
+ La segunda fila introduce el giro $q_2$ y luego
+ el desplazamiento fijo a lo largo del brazo:
+ \[
+ \boxed{{}^1T_2=R_z(q_2)T_x(L)=
+ \begin{bmatrix}
+ \cos q_2&-\sin q_2&0&L\cos q_2\\
+ \sin q_2&\cos q_2&0&L\sin q_2\\
+ 0&0&1&0\\0&0&0&1
+ \end{bmatrix}}
+ \]
+\end{frame}
+
+\begin{frame}[t]{PR — Paso 11: cinemática directa de la cadena}
+ \small
+ Al multiplicar ${}^0T_2={}^0T_1{}^1T_2$ obtenemos:
+ \[
+ \boxed{{}^0T_2=
+ \begin{bmatrix}
+ \cos q_2&-\sin q_2&0&L\cos q_2\\
+ \sin q_2&\cos q_2&0&L\sin q_2\\
+ 0&0&1&q_1\\0&0&0&1
+ \end{bmatrix}}
+ \]
+ \pause
+ \[
+ \boxed{X=L\cos q_2,\quad Y=L\sin q_2,\quad Z=q_1.}
+ \]
+\end{frame}
+
+\begin{frame}[t]{PR — Paso 12: verificación física y numérica}
+ \small
+ Para $L=3\,\mathrm m$, $q_1=2\,\mathrm m$ y $q_2=40^\circ$:
+ \[
+ \boxed{\begin{aligned}
+ X&=3\cos40^\circ\approx2.30\,\mathrm m,\\
+ Y&=3\sin40^\circ\approx1.93\,\mathrm m,\\
+ Z&=2\,\mathrm m.
+ \end{aligned}}
+ \]
+ \pause
+ \begin{block}{Lectura geométrica}
+ Cambiar $q_1$ mueve todo el brazo arriba o abajo;
+ cambiar $q_2$ lo hace girar en un plano horizontal
+ sin modificar la altura alcanzada.
+ \end{block}
+\end{frame}
+
+\begin{frame}[t]{RP y PR — ¿Por qué la secuencia importa?}
+ \small
+ Los dos modelos utilizan una R y una P,
+ pero no representan el mismo mecanismo:
+ \begin{columns}[T,onlytextwidth]
+ \column{0.47\textwidth}
+ \begin{block}{RP radial}
+ $R$ orienta la guía; $P$ avanza sobre ella.
+ \[
+ (X,Y,Z)=(q_2\cos q_1,q_2\sin q_1,0).
+ \]
+ \end{block}
+ \column{0.48\textwidth}
+ \begin{block}{PR vertical}
+ $P$ cambia la altura; $R$ gira un brazo fijo.
+ \[
+ (X,Y,Z)=(L\cos q_2,L\sin q_2,q_1).
+ \]
+ \end{block}
+ \end{columns}
+ \pause
+ \small La comparación incluye \textbf{geometrías físicas distintas};
+ no debe interpretarse como el mero intercambio algebraico
+ de dos factores conservando exactamente los mismos ejes.
+\end{frame}
+
+% =========================================================
+% BLOQUE 7/8 — EJEMPLO INTEGRADOR SCARA RRP
+% =========================================================
+\begin{frame}[t]{Ejemplo 5 — ¿Qué es un robot SCARA RRP?}
+ \small
+ Integra tres movimientos ya estudiados:
+ \begin{itemize}
+  \item R1: primer brazo gira alrededor de una recta vertical.
+  \item R2: segundo brazo gira alrededor de otra recta vertical.
+  \item P3: el extremo sube o baja sobre una guía vertical.
+ \end{itemize}
+ \pause
+ \begin{block}{Alcance del ejemplo}
+ Estudiaremos un \textbf{SCARA simplificado de tres grados de libertad
+ (RRP)}. Algunas configuraciones industriales incorporan
+ además una revoluta de muñeca y se describen como RRPR.
+ \end{block}
+\end{frame}
+
+\begin{frame}[t]{SCARA — Paso 0: observarlo en vista superior}
+ \centering\SCARAPlanta{0}
+ \vspace{0.12cm}
+ \small Los brazos horizontales describen la posición $(X,Y)$.
+ La guía vertical aparece solo como una proyección circular
+ en el extremo del segundo brazo.
+\end{frame}
+
+\begin{frame}[t]{SCARA — Paso 1: reconocer las coordenadas articulares}
+ \centering\SCARAPlanta{1}
+ \vspace{0.13cm}
+ \small Los ángulos $q_1$ y $q_2$ son movimientos \emph{relativos}.
+ La tercera coordenada $q_3$ es una longitud vertical;
+ la vista superior no muestra su profundidad ni su recorrido.
+ \[
+ \boxed{q_1,q_2\ [\mathrm{rad}],\qquad q_3\ [\mathrm m]}
+ \]
+\end{frame}
+
+\begin{frame}[t]{SCARA — Paso 2: asignar los ejes articulares}
+ \centering\SCARAPlanta{2}
+ \vspace{0.10cm}
+ \small $z_0$ corresponde a R1; $z_1$ a R2; $z_2$ a P3.
+ Aunque sus \emph{movimientos} sean diferentes, los tres
+ ejes físicos son paralelos y verticales en el espacio.
+ \[
+ \boxed{\hat{\mathbf z}_0=\hat{\mathbf z}_1
+       =\hat{\mathbf z}_2=(0,0,1)^{\mathsf T}}
+ \]
+\end{frame}
+
+\begin{frame}[t]{SCARA — Paso 3: el marco terminal y $z_3$}
+ \centering\SCARAPlanta{3}
+ \vspace{0.11cm}
+ \small Seleccionamos $z_3$ coincidente con la guía prismática
+ y apuntando en el mismo sentido de $z_2$.
+ \[
+ \boxed{\ell_{z_2}=\ell_{z_3},\quad
+ \alpha_3=0,\quad a_3=0}
+ \]
+ \small En planta ambos ejes tienen la misma proyección,
+ aunque $O_2$ y $O_3$ pueden encontrarse a alturas diferentes.
+\end{frame}
+
+\begin{frame}[t]{SCARA — Paso 4: definir el marco base}
+ \centering\SCARAPlanta{4}
+ \vspace{0.11cm}
+ \small Elegimos $O_0$ en R1, $x_0$ horizontal
+ y $z_0$ saliendo del plano de la vista superior.
+ Como en el 2R planar, esta decisión fija el cero angular
+ desde el cual se mide $q_1$.
+\end{frame}
+
+\begin{frame}[t]{SCARA — Paso 5: primera normal común}
+ \centering\SCARAPlanta{5}
+ \vspace{0.12cm}
+ \small $z_0$ y $z_1$ son paralelos distintos.
+ La normal común sigue el primer eslabón:
+ \[
+ \boxed{x_1\text{ sobre el brazo 1},\quad
+ a_1=L_1,\quad\alpha_1=0.}
+ \]
+\end{frame}
+
+\begin{frame}[t]{SCARA — Paso 6: segunda normal común}
+ \centering\SCARAPlanta{6}
+ \vspace{0.12cm}
+ \small $z_1$ y $z_2$ también son paralelos distintos.
+ La normal común sigue el segundo eslabón:
+ \[
+ \boxed{x_2\text{ sobre el brazo 2},\quad
+ a_2=L_2,\quad\alpha_2=0.}
+ \]
+\end{frame}
+
+\begin{frame}[t]{SCARA — Paso 7: ubicar los orígenes $O_0,O_1,O_2$}
+ \centering\SCARAPlanta{7}
+ \vspace{0.11cm}
+ \small Elegimos $O_0$ en R1, $O_1$ en R2 y $O_2$
+ donde el segundo brazo encuentra la guía P3.
+ Los tres orígenes se sitúan a la misma altura mecánica:
+ \[
+ \boxed{d_1=0,\qquad d_2=0.}
+ \]
+\end{frame}
+
+\begin{frame}[t]{SCARA — Paso 8: cerrar las ternas}
+ \centering\SCARAPlanta{8}
+ \vspace{0.12cm}
+ \small Todos los $z_i$ vistos desde arriba salen de la hoja;
+ $x_1$ y $x_2$ siguen los eslabones y sus correspondientes
+ $y_i$ son perpendiculares en el plano horizontal.
+ \[
+ \boxed{\hat{\mathbf y}_i
+       =\hat{\mathbf z}_i\times\hat{\mathbf x}_i}
+ \]
+\end{frame}
+
+\begin{frame}[t]{SCARA — Paso 9: mirar la prismática desde un lado}
+ \begin{columns}[T,onlytextwidth]
+ \column{0.54\textwidth}\centering\SCARALateral
+ \column{0.43\textwidth}
+ \small Aquí vemos un corte longitudinal del segundo brazo.
+ El vector $+z_2$ apunta \textbf{hacia arriba}, pero definimos
+ el avance positivo $q_3$ \textbf{hacia abajo}.
+ \pause
+ \[
+ \boxed{d_3=-q_3}
+ \]
+ \small Seleccionamos $x_3\parallel x_2$ y
+ $z_3\parallel z_2$; los ejes $y_2,y_3$ salen de esta vista.
+ \end{columns}
+\end{frame}
+
+\begin{frame}[t]{SCARA — Dos vistas de un mismo mecanismo}
+ \begin{columns}[T,onlytextwidth]
+ \column{0.49\textwidth}\centering
+ \scalebox{0.70}{\SCARAPlanta{8}}\\[1mm]
+ {\scriptsize Vista superior: movimiento de R1 y R2 en XY.}
+ \column{0.49\textwidth}\centering
+ \scalebox{0.73}{\SCARALateral}\\[1mm]
+ {\scriptsize Corte lateral: desplazamiento vertical P3.}
+ \end{columns}
+ \pause
+ \begin{alertblock}{Regla de lectura espacial}
+ Una flecha vertical \emph{dentro de la página} no es
+ necesariamente un eje vertical del robot.
+ Las dos vistas son proyecciones distintas del mismo espacio 3D.
+ \end{alertblock}
+\end{frame}
+
+\begin{frame}[t]{SCARA — Paso 10: construir la tabla DH}
+ \small
+ \begin{tabular}{c|c|cccc}
+ \toprule
+ $i$ & Tipo & $\theta_i$ & $d_i$ & $a_i$ & $\alpha_i$\\\midrule
+ 1 & R & $q_1$ & $0$ & $L_1$ & $0$\\
+ 2 & R & $q_2$ & $0$ & $L_2$ & $0$\\
+ 3 & P & $0$ & $-q_3$ & $0$ & $0$\\
+ \bottomrule
+ \end{tabular}
+ \pause
+ \begin{itemize}
+  \item R1 y R2 tienen la misma geometría DH que el 2R planar.
+  \item P3 se desplaza sobre $z_2$, por eso aparece en $d_3$.
+  \item $\alpha_i=0$ porque todos los ejes $z$ tienen igual sentido.
+  \item $a_3=0$ porque $z_2$ y $z_3$ son coincidentes.
+ \end{itemize}
+\end{frame}
+
+\begin{frame}[t]{SCARA — Paso 11: matrices de las dos revolutas}
+ \small
+ Las dos primeras transformaciones ya fueron estudiadas en el 2R:
+ \[
+ {}^0T_1=\begin{bmatrix}
+ c_1&-s_1&0&L_1c_1\\s_1&c_1&0&L_1s_1\\
+ 0&0&1&0\\0&0&0&1
+ \end{bmatrix}
+ \]
+ \[
+ {}^1T_2=\begin{bmatrix}
+ c_2&-s_2&0&L_2c_2\\s_2&c_2&0&L_2s_2\\
+ 0&0&1&0\\0&0&0&1
+ \end{bmatrix}.
+ \]
+ \small Como ambas giran en el plano XY, el bloque rotacional
+ del producto será una rotación $q_1+q_2$ alrededor de $Z$.
+\end{frame}
+
+\begin{frame}[t]{SCARA — Paso 12: matriz de la tercera articulación}
+ \small
+ Para P3: $\theta_3=0$, $d_3=-q_3$, $a_3=0$,
+ $\alpha_3=0$. Solo existe una traslación relativa:
+ \[
+ \boxed{{}^2T_3=T_z(-q_3)=\begin{bmatrix}
+ 1&0&0&0\\
+ 0&1&0&0\\
+ 0&0&1&-q_3\\
+ 0&0&0&1
+ \end{bmatrix}}
+ \]
+ \pause
+ \begin{block}{Interpretación del signo}
+ Al incrementar $q_3$, el origen terminal $O_3$ desciende
+ con respecto a $O_2$; por tanto su coordenada $Z$ disminuye.
+ \end{block}
+\end{frame}
+
+\begin{frame}[t]{SCARA — Paso 13: composición de la cinemática directa}
+ \small
+ Multiplicamos las matrices según el orden físico R--R--P:
+ \[
+ {}^0T_3={}^0T_1\,{}^1T_2\,{}^2T_3.
+ \]
+ \pause
+ \[
+ \boxed{{}^0T_3=\begin{bmatrix}
+ c_{12}&-s_{12}&0&L_1c_1+L_2c_{12}\\
+ s_{12}&c_{12}&0&L_1s_1+L_2s_{12}\\
+ 0&0&1&-q_3\\
+ 0&0&0&1
+ \end{bmatrix}}
+ \]
+ \small $c_{12}=\cos(q_1+q_2)$ y $s_{12}=\sin(q_1+q_2)$.
+\end{frame}
+
+\begin{frame}[t]{SCARA — Paso 14: interpretación física de la pose}
+ \small
+ Las componentes del punto terminal son:
+ \[
+ \boxed{\begin{aligned}
+ X&=L_1\cos q_1+L_2\cos(q_1+q_2),\\
+ Y&=L_1\sin q_1+L_2\sin(q_1+q_2),\\
+ Z&=-q_3.
+ \end{aligned}}
+ \]
+ \pause
+ \[
+ \boxed{\phi=q_1+q_2}\qquad
+ \boxed{\text{P3 modifica $Z$ pero no el ángulo $\phi$.}}
+ \]
+ \small Las rotaciones posicionan el robot horizontalmente;
+ la prismática ajusta su altura relativa al marco $\{0\}$.
+\end{frame}
+
+\begin{frame}[t]{SCARA — Paso 15: comprobación numérica}
+ \small
+ Use $L_1=3.2\,\mathrm m$, $L_2=2.6\,\mathrm m$,
+ $q_1=25^\circ$, $q_2=35^\circ$ y $q_3=0.8\,\mathrm m$.
+ \pause
+ \[
+ \begin{aligned}
+ X&=3.2\cos25^\circ+2.6\cos60^\circ\approx4.20\,\mathrm m,\\
+ Y&=3.2\sin25^\circ+2.6\sin60^\circ\approx3.60\,\mathrm m,\\
+ Z&=-0.8\,\mathrm m,\qquad\phi=60^\circ.
+ \end{aligned}
+ \]
+ \begin{block}{Comparación con 2R}
+ Las coordenadas $X,Y$ coinciden con el ejemplo 2R;
+ el nuevo grado de libertad solo agrega el ajuste vertical.
+ \end{block}
+\end{frame}
+
+\begin{frame}[t]{SCARA — La altura de la base física}
+ \small
+ Nuestro $O_0$ está a la altura de la primera revoluta.
+ Si la base mecánica $\{B\}$ está a una altura $h$ inferior,
+ incorporamos una transformación fija adicional:
+ \[
+ \boxed{{}^{B}T_0=T_z(h)}
+ \]
+ \pause
+ \[
+ \boxed{{}^{B}T_3={}^{B}T_0\,{}^0T_3,
+ \qquad Z_B=h-q_3.}
+ \]
+ \small Una herramienta con longitud propia requeriría otra
+ transformación fija ${}^3T_{TCP}$; no representa una cuarta articulación.
+\end{frame}
+
+\begin{frame}[t]{SCARA — Extensión del modelo prismático}
+ \small
+ En un equipo real puede existir una posición inicial de herramienta
+ o un cero del encoder distinto al plano de $O_2$.
+ Entonces escribimos:
+ \[
+ \boxed{d_3=d_{3,0}-q_3.}
+ \]
+ \pause
+ \begin{block}{Razón para usar $d_3=-q_3$ en el ejercicio}
+ Seleccionamos $d_{3,0}=0$ para estudiar primero el efecto del
+ desplazamiento de la articulación, sin confundirlo con dimensiones
+ fijas del mecanismo.
+ \end{block}
+\end{frame}
+
+\begin{frame}[t]{SCARA — Preguntas de control conceptual}
+ \small
+ \begin{enumerate}
+  \item ¿Por qué $z_2$ es un eje vertical si la tercera articulación
+        no es revoluta?
+  \item ¿Por qué $x_2$ sigue el segundo brazo, aunque $z_2$
+        corresponda a la prismática?
+  \item ¿Qué ocurriría con $Z$ si invertimos el sentido positivo de $q_3$?
+  \item ¿Cuántos marcos aparecen para tres articulaciones y
+        por qué el marco terminal no es una cuarta articulación?
+ \end{enumerate}
+ \pause
+ \begin{alertblock}{Idea fundamental}
+ La nomenclatura DH describe la geometría de \emph{ejes y marcos}.
+ El tipo R o P determina cuál parámetro cambia en cada fila.
+ \end{alertblock}
+\end{frame}
+
+% =========================================================
+% BLOQUE 8/8 — COMPARACION, VERIFICACION Y CIERRE
+% =========================================================
+\begin{frame}[t]{Volvamos a la matriz DH: ¿qué explica cada término?}
+ \scriptsize
+ \[
+ {}^{i-1}T_i=\begin{bmatrix}
+ c_\theta&-s_\theta c_\alpha&s_\theta s_\alpha&a_ic_\theta\\
+ s_\theta&c_\theta c_\alpha&-c_\theta s_\alpha&a_is_\theta\\
+ 0&s_\alpha&c_\alpha&d_i\\0&0&0&1
+ \end{bmatrix}.
+ \]
+ \pause
+ \small
+ \begin{itemize}
+  \item Las tres primeras columnas contienen las direcciones de los
+        ejes $x_i,y_i,z_i$ expresadas en el marco $\{i-1\}$.
+  \item La cuarta columna localiza $O_i$ respecto a $O_{i-1}$.
+  \item La última fila permite componer rotaciones y traslaciones
+        mediante multiplicación matricial.
+ \end{itemize}
+\end{frame}
+
+\begin{frame}[t]{¿Cómo verificamos la orientación de una matriz?}
+ \small
+ Sea $R$ el bloque superior izquierdo $3\times3$
+ de una transformación homogénea.
+ Una orientación cartesiana válida debe cumplir:
+ \[
+ \boxed{R^{\mathsf T}R=I_3,\qquad \det R=+1.}
+ \]
+ \pause
+ \begin{block}{Significado físico}
+ Las columnas de $R$ son tres vectores unitarios
+ mutuamente perpendiculares. Su determinante positivo
+ indica que conservan la orientación de la mano derecha.
+ \end{block}
+\end{frame}
+
+\begin{frame}[t]{Comparación 1: dos revolutas frente a dos prismáticas}
+ \small
+ \begin{tabular}{p{0.22\linewidth}p{0.35\linewidth}p{0.33\linewidth}}
+ \toprule
+ Aspecto & 2R planar & 2P ortogonal\\\midrule
+ Tipos & R--R & P--P\\
+ Variables & $\theta_1,\theta_2$ & $d_1,d_2$\\
+ Efecto principal & cambia posición y orientación & cambia posición sin girar\\
+ Parámetros fijos & $a_1=L_1,a_2=L_2$ & $\theta_1=90^\circ,\alpha_1=90^\circ$\\
+ Posición & $(L_1c_1+L_2c_{12},L_1s_1+L_2s_{12},0)$ & $(q_2,0,q_1)$\\
+ \bottomrule
+ \end{tabular}
+ \pause
+ \vspace{0.14cm}
+ \begin{block}{Conclusión}
+ Que una articulación sea P no obliga a que todos los ángulos
+ de su fila DH sean cero: pueden existir ángulos \emph{fijos}.
+ \end{block}
+\end{frame}
+
+\begin{frame}[t]{Comparación 2: ¿qué distingue RP de PR?}
+ \small
+ \begin{tabular}{p{0.18\linewidth}p{0.36\linewidth}p{0.36\linewidth}}
+ \toprule
+ Aspecto & RP radial & PR vertical\\\midrule
+ Primera variable & ángulo $q_1$ & desplazamiento $q_1$\\
+ Segunda variable & desplazamiento $q_2$ & ángulo $q_2$\\
+ Eje prismático & horizontal radial y giratorio & vertical y fijo\\
+ Resultado & $(q_2\cos q_1,q_2\sin q_1,0)$ & $(L\cos q_2,L\sin q_2,q_1)$\\
+ \bottomrule
+ \end{tabular}
+ \pause
+ \vspace{0.22cm}
+ \begin{alertblock}{No confundir orden con geometría}
+ La secuencia R--P o P--R identifica tipos de articulación,
+ pero para determinar DH también debemos conocer
+ la disposición y el sentido de los ejes físicos.
+ \end{alertblock}
+\end{frame}
+
+\begin{frame}[t]{Comparación 3: el SCARA integra los conceptos del 2R y PR}
+ \small
+ El SCARA RRP combina:\vspace{0.08cm}
+ \begin{enumerate}
+  \item Dos ejes revolutos verticales con longitudes
+        transversales $L_1$ y $L_2$ (como el 2R planar).
+  \item Un tercer desplazamiento vertical controlado
+        por $q_3$ (como una etapa prismática).
+ \end{enumerate}
+ \pause
+ \[
+ \boxed{{}^0\mathbf p_3=
+ \begin{bmatrix}
+ L_1\cos q_1+L_2\cos(q_1+q_2)\\
+ L_1\sin q_1+L_2\sin(q_1+q_2)\\
+ -q_3
+ \end{bmatrix}}
+ \]
+ \small La diferencia con PR es que el SCARA dispone de
+ dos grados de libertad para ajustar la posición horizontal.
+\end{frame}
+
+\begin{frame}[t]{Tabla síntesis: ¿qué parámetro es variable?}
+ \small
+ \begin{tabular}{lclp{5.2cm}}
+ \toprule
+ Modelo & Secuencia & Variables DH & Observación esencial\\\midrule
+ 2R & R--R & $\theta_1,\theta_2$ & $a_1=L_1$, $a_2=L_2$\\
+ 2P & P--P & $d_1,d_2$ & $\theta_1$ y $\alpha_1$ son fijos no nulos\\
+ RP & R--P & $\theta_1,d_2$ & $\theta_1=q_1+90^\circ$\\
+ PR & P--R & $d_1,\theta_2$ & ejes 1 y 2 coaxiales en la base\\
+ SCARA & R--R--P & $\theta_1,\theta_2,d_3$ & $d_3=-q_3$ con sentido positivo hacia abajo\\
+ \bottomrule
+ \end{tabular}
+ \pause
+ \vspace{0.22cm}
+ \begin{block}{Interpretación}
+ El tipo de articulación indica qué parámetro DH puede variar;
+ los ejes elegidos determinan todos sus valores y signos.
+ \end{block}
+\end{frame}
+
+\begin{frame}[t]{Cuidado con los ceros de referencia}
+ \small
+ No siempre podemos afirmar directamente $\theta_i=q_i$
+ o $d_i=q_i$. En general:
+ \[
+ \boxed{\begin{aligned}
+ \text{R: }&\theta_i=q_i+\theta_{i,0},\\
+ \text{P: }&d_i=d_{i,0}+\sigma_iq_i,
+ \qquad\sigma_i\in\{+1,-1\}.
+ \end{aligned}}
+ \]
+ \pause
+ \begin{itemize}
+  \item $\theta_{i,0}$ representa un desfase angular fijo.
+  \item $d_{i,0}$ representa un desplazamiento inicial fijo.
+  \item $\sigma_i$ expresa el acuerdo o desacuerdo entre sentidos positivos.
+ \end{itemize}
+\end{frame}
+
+\begin{frame}[t]{Verificación: ¿cómo saber si una fila DH tiene sentido?}
+ \small
+ Para cada fila $i$, conteste estas cinco preguntas:
+ \begin{enumerate}
+  \item ¿El eje $z_{i-1}$ corresponde al movimiento de la articulación $i$?
+  \item ¿$x_i$ es perpendicular a $z_{i-1}$ y $z_i$?
+  \item ¿$\theta_i$ se mide desde $x_{i-1}$ hasta $x_i$ alrededor de $z_{i-1}$?
+  \item ¿$d_i$ y $a_i$ se asignaron sobre sus ejes correctos?
+  \item ¿El signo de $\alpha_i$ respeta la regla de la mano derecha?
+ \end{enumerate}
+ \pause
+ \begin{block}{Revisión final}
+ Comprobar $R^{\mathsf T}R=I_3$, $\det R=+1$,
+ y que la posición calculada reproduce la geometría del robot.
+ \end{block}
+\end{frame}
+
+\begin{frame}[t]{Error frecuente 1: confundir índices y ejes físicos}
+ \small
+ \begin{alertblock}{Incorrecto}
+ ``La articulación 2 se mueve sobre $z_2$''
+ bajo la convención DH clásica.
+ \end{alertblock}
+ \pause
+ \begin{block}{Correcto}
+ La articulación 2 utiliza el eje $z_1$.
+ El eje $z_2$ corresponde a la tercera articulación
+ \emph{si existe}; si el robot tiene solo dos articulaciones,
+ puede ser el eje seleccionado para el marco terminal.
+ \end{block}
+\end{frame}
+
+\begin{frame}[t]{Error frecuente 2: confundir ángulo articular y ángulo DH}
+ \small
+ En el RP radial, la articulación 1 es revoluta
+ y el valor físico $q_1$ dirige la guía radial.
+ Pero el eje DH $x_1$ es tangencial:
+ \[
+ \boxed{\theta_1=q_1+90^\circ.}
+ \]
+ \pause
+ \begin{alertblock}{Qué significan realmente las variables}
+ $q_1$ es la lectura física definida para esa articulación;
+ $\theta_1$ es el ángulo necesario para relacionar los marcos
+ elegidos. Un desfase constante no cambia el número de articulaciones.
+ \end{alertblock}
+\end{frame}
+
+\begin{frame}[t]{Error frecuente 3: confundir altura física con $d_i$}
+ \small
+ El dibujo puede incluir una columna de altura $h$,
+ pero no siempre esa dimensión pertenece a una fila DH
+ del manipulador que estamos modelando.
+ \pause
+ Si $\{0\}$ se ubica en la primera revoluta,
+ la altura entre la base mecánica $\{B\}$ y $\{0\}$ es:
+ \[
+ \boxed{{}^{B}T_0=T_z(h).}
+ \]
+ \small Esta transformación fija puede preceder a la cadena DH.
+ \begin{block}{Pregunta útil}
+ ¿Desde cuál origen estamos midiendo el desplazamiento:
+ el de la base física o el del marco base elegido?
+ \end{block}
+\end{frame}
+
+\begin{frame}[t]{Práctica guiada 1: interpretar una fila desconocida}
+ \small
+ Se entrega la fila DH:
+ \[
+ \begin{array}{c|cccc}
+ i & \theta_i & d_i & a_i & \alpha_i\\\hline
+ 1 & 0 & q_1 & 0 & 0
+ \end{array}
+ \]
+ \pause
+ Discuta:
+ \begin{enumerate}
+  \item ¿Qué tipo de articulación es compatible con la fila?
+  \item ¿Hay un cambio de orientación entre marcos?
+  \item ¿En qué dirección se traslada el nuevo origen?
+ \end{enumerate}
+ \pause
+ \begin{block}{Comprobación}
+ Es una etapa prismática coaxial, ${}^0T_1=T_z(q_1)$,
+ sin cambio de orientación.
+ \end{block}
+\end{frame}
+
+\begin{frame}[t]{Práctica guiada 2: descubrir una inconsistencia}
+ \small
+ Un estudiante afirma que para el SCARA RRP:
+ \[
+ z_0\parallel z_1,\qquad z_1\perp z_2,
+ \qquad\alpha_2=90^\circ.
+ \]
+ \pause
+ ¿Es correcta esa descripción para el SCARA convencional
+ cuyo tercer eje se traslada verticalmente?
+ \pause
+ \begin{alertblock}{Discusión}
+ No. En el SCARA RRP adoptado las dos revolutas y la prismática
+ se mueven alrededor/a lo largo de \textbf{rectas verticales}.
+ Sus directores tienen igual sentido, luego
+ $\alpha_1=\alpha_2=\alpha_3=0$.
+ \end{alertblock}
+\end{frame}
+
+\begin{frame}[t]{Reto de cierre: antes de calcular, explique la geometría}
+ \small
+ Considere una cadena R--P--P. Sin proponer valores de tabla todavía:
+ \begin{enumerate}
+  \item Dibuje los tres ejes físicos de movimiento.
+  \item Determine si las rectas son paralelas, secantes o alabeadas.
+  \item Elija un eje terminal $z_3$ y defina los sentidos positivos.
+  \item Indique para cada articulación si varía $\theta_i$ o $d_i$.
+ \end{enumerate}
+ \pause
+ \begin{block}{Por qué esta actividad es deliberadamente abierta}
+ La secuencia R--P--P \textbf{no determina una tabla DH única}:
+ faltan las orientaciones y posiciones de los ejes.
+ Primero se necesita la geometría completa del robot.
+ \end{block}
+\end{frame}
+
+\begin{frame}[t]{El procedimiento completo, con orden de decisiones}
+ \footnotesize
+ \begin{columns}[T,onlytextwidth]
+ \column{0.49\textwidth}
+ \begin{enumerate}
+  \item Dibujar el robot físico y sus movimientos.
+  \item Declarar sentidos positivos y ceros articulares.
+  \item Asignar $z_{i-1}$ a cada articulación $i$.
+  \item Seleccionar el marco base y el eje terminal.
+ \end{enumerate}
+ \column{0.49\textwidth}
+ \begin{enumerate}
+  \setcounter{enumi}{4}
+  \item Comparar ejes $z$ y construir los $x_i$.
+  \item Colocar $O_i$ y completar $y_i$.
+  \item Construir la tabla y multiplicar matrices.
+  \item Verificar la pose contra la geometría física.
+ \end{enumerate}
+ \end{columns}
+ \vspace{0.28cm}
+ \[
+ \boxed{\text{Geometría}\ \longrightarrow\ \text{Marcos}
+ \ \longrightarrow\ \text{Tabla DH}\ \longrightarrow\ {}^0T_n}
+ \]
+\end{frame}
+
+\begin{frame}[t]{Lo que debemos recordar de esta clase}
+ \small
+ \[
+ \boxed{\text{Articulación }i\longleftrightarrow z_{i-1}}
+ \]
+ \pause
+ \[
+ \boxed{\theta_i,d_i:\text{ alrededor/sobre }z_{i-1}}
+ \]
+ \pause
+ \[
+ \boxed{a_i,\alpha_i:\text{ sobre/alrededor de }x_i}
+ \]
+ \pause
+ \[
+ \boxed{{}^{i-1}T_i=R_z(\theta_i)T_z(d_i)T_x(a_i)R_x(\alpha_i)}
+ \]
+ \small
+ La verificación geométrica es tan importante como el cálculo matricial.
+\end{frame}
+
+\begin{frame}{¿Qué sigue?}
+ \centering\vspace{0.30cm}
+ {\Large Ya podemos pasar de un mecanismo a una tabla DH
+ y de la tabla a la cinemática directa.}
+ \vspace{0.37cm}
+ \[
+ \boxed{\text{Siguiente clase: modelos de manipuladores
+ espaciales y validación numérica.}}
+ \]
+ \vspace{0.20cm}
+ \small Primero comprenderemos sus ejes; después resolveremos sus matrices.
+\end{frame}
+
+\begin{frame}
+ \centering
+ \smartimage[0.8\linewidth]{Template/gracias.png}
+\end{frame}
+\end{document}

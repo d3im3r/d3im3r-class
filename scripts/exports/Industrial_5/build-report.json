@@ -1,0 +1,23 @@
+{
+  "schemaVersion": "1.1.0",
+  "generator": "3.0.0-beta",
+  "documentType": "lesson",
+  "source": "Industrial_5.tex",
+  "createdAt": "2026-11-18T16:21:49.918670+00:00",
+  "counts": {
+    "section": 10,
+    "frame": 37,
+    "academic_block": 46,
+    "paragraph": 144,
+    "text": 233,
+    "list": 7,
+    "figure": 6,
+    "math": 65,
+    "math_inline": 89,
+    "code": 5
+  },
+  "assets": {
+    "pending": 6
+  },
+  "diagnostics": []
+}

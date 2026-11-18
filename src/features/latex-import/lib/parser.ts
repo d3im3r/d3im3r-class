@@ -1,4 +1,5 @@
 import type { Block, Frame } from '../../catalog/model/types';
+import { detectLanguage } from '../../reader/lib/parser-utils';
 const codeLanguages: Record<string, string> = {
   bash: 'bash',
   console: 'text',
@@ -34,7 +35,10 @@ export function cleanLayout(input: string) {
     .replace(/\\column\s*(?:\[[^\]]*\])?\s*\{[^}]*\}/g, '')
     .replace(/\\column\b/g, '')
     .replace(/\\(?:vspace|hspace)\*?\{[^}]*\}/g, '')
-    .replace(/\\(?:begin|end)\{(?:center|columns|column|minipage)\}(?:\[[^\]]*\])?(?:\{[^}]*\})?/g, '')
+    .replace(
+      /\\(?:begin|end)\{(?:center|columns|column|minipage)\}(?:\[[^\]]*\])?(?:\{[^}]*\})?/g,
+      ''
+    )
     .replace(
       /\\(?:centering|tiny|small|large|Large|LARGE|huge|Huge|footnotesize|scriptsize|normalsize|medskip|bigskip|smallskip|pause)\b/g,
       ''
@@ -109,7 +113,7 @@ export function parseBlocks(source: string, diagnostics: Set<string>): Block[] {
   let cursor = 0;
   // Inline $...$ remains in its paragraph; only display math becomes a standalone block.
   const token =
-    /\\begin\{([a-zA-Z]+code(?:dark)?|minted|tikzpicture|block|alertblock|exampleblock|itemize|enumerate|tabular|algorithm|algorithmic|align\*?|gather\*?|equation\*?|multline\*?|alignat\*?)\}|\\(Idea|Practice|DefBlock|Result|Warning|Compare|Question|ExampleBlock)\b|\\\[|\$\$|\\(?:smartimage|includegraphics)\b/g;
+    /\\begin\{([a-zA-Z]+code(?:dark)?|minted|lstlisting|tikzpicture|block|alertblock|exampleblock|itemize|enumerate|tabular|algorithm|algorithmic|align\*?|gather\*?|equation\*?|multline\*?|alignat\*?)\}|\\(Idea|Practice|DefBlock|Result|Warning|Compare|Question|ExampleBlock)\b|\\\[|\$\$|\\(?:smartimage|includegraphics)\b/g;
   let m;
   const addText = (s: string) => {
     const content = cleanLayout(s);
@@ -132,7 +136,10 @@ export function parseBlocks(source: string, diagnostics: Set<string>): Block[] {
       if (env === 'tikzpicture')
         blocks.push({ type: 'diagram', content: source.slice(m.index, stop.end) });
       else if (mathEnvs.has(env)) {
-        const mathContent = source.slice(m.index, stop.end).replace(/\\pause\b/g, '').trim();
+        const mathContent = source
+          .slice(m.index, stop.end)
+          .replace(/\\pause\b/g, '')
+          .trim();
         blocks.push({ type: 'math', content: mathContent, variant: 'display' });
       } else if (env === 'algorithm' || env === 'algorithmic') {
         body = body.replace(/^\s*\[[^\]]*\]/, '');
@@ -206,7 +213,14 @@ export function parseBlocks(source: string, diagnostics: Set<string>): Block[] {
             language = g.value;
             body = body.slice(g.end);
           }
+        } else if (env === 'lstlisting' || env === 'code') {
+          const opt = body.match(/^\s*\[(?:[^\]]*language\s*=\s*([a-zA-Z0-9#+]+)[^\]]*)\]/i);
+          if (opt) {
+            language = opt[1].toLowerCase();
+            body = body.slice(opt[0].length);
+          }
         }
+        language = detectLanguage(body, language);
         const lines = body.replace(/^\n|\s+$/g, '').split('\n');
         const indent = Math.min(
           ...lines.filter((l) => l.trim()).map((l) => l.match(/^\s*/)![0].length)
@@ -257,7 +271,10 @@ export function parseBlocks(source: string, diagnostics: Set<string>): Block[] {
       const closing = m[0] === '\\[' ? '\\]' : m[0],
         stop = source.indexOf(closing, end);
       if (stop >= 0) {
-        const mathContent = source.slice(end, stop).replace(/\\pause\b/g, '').trim();
+        const mathContent = source
+          .slice(end, stop)
+          .replace(/\\pause\b/g, '')
+          .trim();
         blocks.push({ type: 'math', content: mathContent, variant: 'display' });
         end = stop + closing.length;
       }
@@ -273,7 +290,7 @@ export function parseLatex(source: string) {
   const diagnostics = new Set<string>();
   let section = 'Introducción';
   const protectedSource = source.replace(
-    /\\begin\{([a-zA-Z]+code(?:dark)?|minted|tikzpicture)\}[\s\S]*?\\end\{\1\}|(?<!\\)%[^\n]*/g,
+    /\\begin\{([a-zA-Z]+code(?:dark)?|minted|lstlisting|tikzpicture)\}[\s\S]*?\\end\{\1\}|(?<!\\)%[^\n]*/g,
     (m) => (m.startsWith('%') ? ' '.repeat(m.length) : m)
   );
   const token = /\\section\*?(?:\[[^\]]*\])?\s*\{|\\begin\{frame\}(?:\[[^\]]*\])?/g;

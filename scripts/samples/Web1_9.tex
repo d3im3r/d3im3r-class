@@ -1,0 +1,1730 @@
+\documentclass[aspectratio=169,11pt]{beamer}
+
+% =========================================================
+% TEMPLATE MAESTRO
+% =========================================================
+\input{~/Dropbox/Latex/TemplateSlides/template-slide.tex}
+
+% =========================================================
+% INFORMACIÓN INSTITUCIONAL
+% =========================================================
+
+\renewcommand{\CourseName}{Diseño Web 1}
+\renewcommand{\CourseCode}{ADSO-CTMA}
+\renewcommand{\Faculty}{Análisis y Desarrollo de Software}
+\renewcommand{\Institution}{Servicio Nacional de Aprendizaje SENA}
+\renewcommand{\Instructor}{Deimer Miranda Montoya, MSc.(c).}
+\renewcommand{\Email}{damiranda@sena.edu.co}
+\renewcommand{\InstitutionLogo}{Template/LogoSena.png}
+
+\begin{document}
+
+    \TitleSlide
+    \NormasSlide
+
+    \SectionSlide
+    {Diseño web responsivo}
+    {Interfaces que se adaptan al espacio disponible}
+
+    % =========================================================
+    \section{Punto de partida}
+    % =========================================================
+
+    \begin{frame}{¿Qué aprenderemos?}
+        Al finalizar la clase podrá:
+
+        \begin{itemize}
+            \item Explicar por qué una página debe adaptarse a distintos anchos.
+            \item Configurar correctamente el \textit{viewport}.
+            \item Construir distribuciones fluidas.
+            \item Adaptar imágenes y contenido multimedia.
+            \item Crear media queries a partir del contenido.
+            \item Aplicar un enfoque \textit{mobile first}.
+            \item Combinar diseño responsivo con Flexbox y Grid.
+            \item Verificar el resultado mediante las herramientas del navegador.
+        \end{itemize}
+    \end{frame}
+
+    \begin{frame}{Una página no tiene un único tamaño}
+        El mismo sitio puede visitarse desde:
+
+        \begin{itemize}
+            \item un teléfono sostenido verticalmente;
+            \item una tableta;
+            \item un computador portátil;
+            \item una pantalla de escritorio amplia;
+            \item una ventana que ocupa solo una parte del monitor.
+        \end{itemize}
+
+        \Idea{
+            No diseñamos para una lista cerrada de dispositivos.
+            Diseñamos para el espacio disponible.
+        }
+    \end{frame}
+
+    \begin{frame}{El problema de un diseño rígido}
+        \begin{center}
+            \begin{tikzpicture}[
+                pantalla/.style={draw=BrandBlue, very thick, rounded corners},
+                bloque/.style={draw=PracticeTitle, fill=PracticeBody, thick,
+                    rounded corners=2pt}
+                ]
+                \draw[pantalla] (0,0) rectangle (6.7,3.6);
+                \node[font=\bfseries] at (3.35,3.95) {Pantalla amplia};
+                \draw[bloque] (0.35,2.65) rectangle (6.35,3.25);
+                \draw[bloque] (0.35,0.45) rectangle (2.1,2.35);
+                \draw[bloque] (2.35,0.45) rectangle (6.35,2.35);
+
+                \draw[pantalla] (8.5,0) rectangle (10.7,3.6);
+                \node[font=\bfseries] at (9.6,3.95) {Pantalla estrecha};
+                \draw[bloque] (8.8,2.65) rectangle (14.8,3.25);
+                \draw[bloque] (8.8,0.45) rectangle (10.55,2.35);
+                \draw[bloque] (10.8,0.45) rectangle (14.8,2.35);
+                \draw[->, very thick, WarnTitle] (10.9,1.3) -- (12.1,1.3)
+                node[right] {desbordamiento};
+            \end{tikzpicture}
+        \end{center}
+
+        \Warning{
+            Si todos los tamaños son fijos, el contenido puede salir de la pantalla
+            y obligar al usuario a desplazarse horizontalmente.
+        }
+    \end{frame}
+
+    \begin{frame}{¿Qué significa responsivo?}
+        \DefBlock[Diseño web responsivo]{
+            Es una estrategia de diseño y desarrollo que permite que una interfaz
+            reorganice, redimensione o simplifique su contenido según el espacio disponible.
+        }
+
+        No consiste únicamente en ``hacer todo más pequeño''.
+
+        \begin{itemize}
+            \item El contenido conserva su legibilidad.
+            \item La estructura puede cambiar.
+            \item Los controles siguen siendo utilizables.
+            \item La información importante mantiene su prioridad.
+        \end{itemize}
+    \end{frame}
+
+    \begin{frame}{Tres bases del diseño responsivo}
+        \begin{center}
+            \begin{tikzpicture}[
+                base/.style={draw=BrandBlue, thick, rounded corners,
+                    minimum width=3.2cm, minimum height=1.2cm, align=center}
+                ]
+                \node[base, fill=IdeaBody] at (1.8,2) {Distribución\\flexible};
+                \node[base, fill=PracticeBody] at (6,2) {Imágenes y medios\\adaptables};
+                \node[base, fill=ResultBody] at (10.2,2) {Reglas según\\el espacio};
+                \draw[->, >=Latex, thick] (3.45,2) -- (4.35,2);
+                \draw[->, >=Latex, thick] (7.65,2) -- (8.55,2);
+            \end{tikzpicture}
+        \end{center}
+
+        \Result{
+            Las medidas relativas aportan fluidez; las media queries permiten
+            cambiar la composición cuando esa fluidez deja de ser suficiente.
+        }
+    \end{frame}
+
+    % =========================================================
+    \section{Proyecto de prueba}
+    % =========================================================
+
+    \SectionSlide
+    {Proyecto de prueba}
+    {Una reserva natural que crecerá paso a paso}
+
+    \begin{frame}[fragile]{Estructura inicial}
+        Cree la siguiente estructura:
+
+        \begin{bashcodedark}
+            reserva-andina/
+            ├── index.html
+            ├── css/
+            │   └── styles.css
+            └── img/
+                ├── portada.jpg
+                ├── sendero.jpg
+                └── aves.jpg
+        \end{bashcodedark}
+
+        \Practice{
+            Utilice imágenes propias o libres. Los nombres pueden cambiar,
+            siempre que las rutas del HTML también se actualicen.
+        }
+    \end{frame}
+
+    \begin{frame}[fragile]{HTML básico: encabezado}
+        \begin{htmlcodedark}
+        <!DOCTYPE html>
+        <html lang="es">
+            <head>
+                <meta charset="UTF-8">
+                <meta name="viewport"
+                content="width=device-width, initial-scale=1.0">
+                <title>Reserva Andina</title>
+                <link rel="stylesheet" href="css/styles.css">
+            </head>
+            <body>
+                <header class="encabezado">
+                    <h1>Reserva Andina</h1>
+                    <p>Naturaleza, senderos y conservación</p>
+                </header>
+        \end{htmlcodedark}
+    \end{frame}
+
+    \begin{frame}[fragile]{HTML básico: navegación y portada}
+        Continúe dentro de \texttt{body}:
+
+        \begin{htmlcodedark}
+            <nav class="navegacion">
+                <a href="#inicio">Inicio</a>
+                <a href="#rutas">Rutas</a>
+                <a href="#visita">Visita</a>
+            </nav>
+
+            <main id="inicio">
+                <section class="portada">
+                    <img src="img/portada.jpg"
+                        alt="Montañas de la reserva">
+                    <div>
+                        <h2>Explore el bosque altoandino</h2>
+                        <p>Planee una visita responsable.</p>
+                    </div>
+                </section>
+        \end{htmlcodedark}
+    \end{frame}
+
+    \begin{frame}[fragile]{HTML básico: tarjetas}
+        \begin{htmlcodedark}
+            <section id="rutas" class="rutas">
+                <article class="tarjeta">
+                    <img src="img/sendero.jpg" alt="Sendero del agua">
+                    <h3>Sendero del agua</h3>
+                    <p>Recorrido de dificultad baja.</p>
+                </article>
+
+                <article class="tarjeta">
+                    <img src="img/aves.jpg" alt="Ave sobre una rama">
+                    <h3>Ruta de las aves</h3>
+                    <p>Observación guiada al amanecer.</p>
+                </article>
+            </section>
+        </main>
+        </body>
+    </html>
+        \end{htmlcodedark}
+    \end{frame}
+
+    \begin{frame}[fragile]{CSS inicial}
+        \begin{csscodedark}
+            * {
+                box-sizing: border-box;
+            }
+
+            body {
+                margin: 0;
+                font-family: Arial, sans-serif;
+                color: #18332b;
+                background-color: #f4f7f5;
+            }
+
+            img {
+                display: block;
+            }
+        \end{csscodedark}
+
+        Primero construiremos una versión funcional para espacios pequeños.
+    \end{frame}
+
+    % =========================================================
+    \section{Viewport}
+    % =========================================================
+
+    \SectionSlide
+    {Viewport}
+    {El área visible de la página}
+
+    \begin{frame}{La pantalla y el viewport no son lo mismo}
+        \begin{center}
+            \begin{tikzpicture}[
+                marco/.style={draw=BrandBlue, very thick, rounded corners=8pt},
+                pagina/.style={draw=PracticeTitle, thick, fill=PracticeBody}
+                ]
+                \draw[marco] (0,0) rectangle (4.2,5.4);
+                \draw[pagina] (0.35,0.55) rectangle (3.85,4.85);
+                \node at (2.1,4.45) {contenido visible};
+                \draw[<->, >=Latex, thick] (0.35,0.25) -- (3.85,0.25)
+               node[midway, below=5mm] {ancho del viewport};
+
+                \node[align=left, text width=6.1cm] at (8.2,3.2) {
+                    El \textit{viewport} es la región del navegador donde
+                    se representa la página.\\[0.4cm]
+                    CSS toma decisiones a partir de ese espacio disponible,
+                    no del tamaño físico total del dispositivo.
+                };
+            \end{tikzpicture}
+        \end{center}
+    \end{frame}
+
+    \begin{frame}[fragile]{Configurar el viewport}
+        Esta etiqueta debe estar dentro de \texttt{head}:
+
+        \begin{htmlcodedark}
+            <meta name="viewport"
+            content="width=device-width, initial-scale=1.0">
+        \end{htmlcodedark}
+
+        \begin{description}
+            \item[\texttt{width=device-width}:]
+            relaciona el ancho del documento con el viewport del dispositivo.
+
+            \item[\texttt{initial-scale=1.0}:]
+            establece la escala inicial normal.
+        \end{description}
+
+        \Warning{
+            Sin esta configuración, un teléfono puede simular un viewport amplio
+            y reducir visualmente toda la página.
+        }
+    \end{frame}
+
+    \begin{frame}{No bloquee el zoom}
+        Evite configuraciones como:
+
+        \begin{center}
+            \texttt{user-scalable=no}
+        \end{center}
+
+        También conviene evitar límites innecesarios sobre la escala máxima.
+
+        \Idea{
+            Algunas personas necesitan ampliar la interfaz para leerla.
+            Impedir el zoom crea una barrera de accesibilidad.
+        }
+    \end{frame}
+
+    % =========================================================
+    \section{Distribuciones fluidas}
+    % =========================================================
+
+    \SectionSlide
+    {Distribuciones fluidas}
+    {Tamaños que aprovechan el espacio sin desbordarse}
+
+    \begin{frame}{Tamaño fijo frente a tamaño flexible}
+        \begin{center}
+            \small
+            \begin{tabular}{p{4.3cm}p{5.3cm}}
+                \toprule
+                \textbf{Tamaño fijo} & \textbf{Tamaño flexible} \\
+                \midrule
+                \texttt{width: 1000px} & \texttt{width: 90\%} \\
+                Conserva el mismo ancho & Depende del contenedor \\
+                Puede desbordarse & Puede crecer o reducirse \\
+                Útil en casos concretos & Útil para la estructura general \\
+                \bottomrule
+            \end{tabular}
+        \end{center}
+
+        \Compare{
+            Las medidas fijas no son incorrectas. El problema aparece cuando
+            se aplican sin considerar el espacio realmente disponible.
+        }
+    \end{frame}
+
+    \begin{frame}[fragile]{Un contenedor flexible con límite}
+        \begin{csscodedark}
+            main {
+                width: min(92%, 1100px);
+                margin-inline: auto;
+            }
+        \end{csscodedark}
+
+        Esta declaración combina dos necesidades:
+
+        \begin{itemize}
+            \item en pantallas estrechas utiliza aproximadamente el 92\%;
+            \item en pantallas amplias no supera los 1100px;
+            \item los márgenes automáticos centran el contenido.
+        \end{itemize}
+
+        \Result{
+            El contenido puede adaptarse sin formar líneas de texto excesivamente largas.
+        }
+    \end{frame}
+
+    \begin{frame}[fragile]{Alternativa con width y max-width}
+        La misma idea puede expresarse de forma más tradicional:
+
+        \begin{csscodedark}
+            main {
+                width: 92%;
+                max-width: 1100px;
+                margin-left: auto;
+                margin-right: auto;
+            }
+        \end{csscodedark}
+
+        \Idea{
+            \texttt{max-width} establece un límite, pero permite que el elemento
+            sea más estrecho cuando el contenedor no ofrece suficiente espacio.
+        }
+    \end{frame}
+
+    \begin{frame}{Unidades que conviene reconocer}
+        \begin{center}
+            \small
+            \begin{tabular}{p{2.2cm}p{3.8cm}p{7cm}}
+                \toprule
+                \textbf{Unidad} & \textbf{Referencia} & \textbf{Uso habitual} \\
+                \midrule
+                \texttt{px} & unidad CSS & bordes y medidas controladas \\
+                \texttt{\%} & contenedor & anchos fluidos \\
+                \texttt{rem} & tamaño raíz & texto y espacios consistentes \\
+                \texttt{vw} & ancho del viewport & tamaños ligados a la ventana \\
+                \texttt{vh} & alto del viewport & secciones relacionadas con la altura \\
+                \texttt{fr} & espacio de Grid & distribución de columnas y filas \\
+                \bottomrule
+            \end{tabular}
+        \end{center}
+    \end{frame}
+
+    \begin{frame}[fragile]{Espaciado relativo}
+        \begin{csscodedark}
+            .encabezado,
+            .navegacion,
+            .portada,
+            .rutas {
+                padding: 1rem;
+            }
+
+            .rutas {
+                display: grid;
+                gap: 1rem;
+            }
+        \end{csscodedark}
+
+        \DefBlock[La unidad rem]{
+            \texttt{1rem} corresponde al tamaño de fuente del elemento raíz.
+            Normalmente equivale a 16px si el usuario no ha cambiado la configuración.
+        }
+    \end{frame}
+
+    \begin{frame}{Cuidado con 100vw}
+        \texttt{width: 100vw} representa todo el ancho del viewport.
+
+        En algunos navegadores puede incluir el espacio de la barra de desplazamiento,
+        lo que genera un pequeño desbordamiento horizontal.
+
+        \Warning{
+            Para un bloque normal que debe ocupar el ancho de su contenedor,
+            generalmente es más seguro utilizar \texttt{width: 100\%}.
+        }
+    \end{frame}
+
+    % =========================================================
+    \section{Imágenes adaptables}
+    % =========================================================
+
+    \SectionSlide
+    {Imágenes adaptables}
+    {Evitar desbordamientos y recortes accidentales}
+
+    \begin{frame}[fragile]{La regla base para las imágenes}
+        \begin{csscodedark}
+            img {
+                display: block;
+                max-width: 100%;
+                height: auto;
+            }
+        \end{csscodedark}
+
+        \begin{description}
+            \item[\texttt{max-width: 100\%}:]
+            impide que la imagen supere el ancho de su contenedor.
+
+            \item[\texttt{height: auto}:]
+            conserva la proporción original.
+
+            \item[\texttt{display: block}:]
+            elimina el espacio inferior propio de las imágenes en línea.
+        \end{description}
+    \end{frame}
+
+    \begin{frame}{Conservar la proporción evita deformaciones}
+        \begin{center}
+            \begin{tikzpicture}[
+                foto/.style={draw=BrandBlue, thick, fill=IdeaBody},
+                flecha/.style={->, >=Latex, thick}
+                ]
+                \draw[foto] (0,0.6) rectangle (4,3.1);
+                \node at (2,1.85) {imagen original};
+                \draw[flecha] (4.4,1.85) -- (5.5,1.85);
+                \draw[foto] (5.9,1.05) rectangle (9.1,3.05);
+                \node at (7.5,2.05) {proporción};
+                \draw[flecha, WarnTitle] (9.5,1.85) -- (10.6,1.85);
+                \draw[draw=WarnTitle, thick, fill=WarnBody]
+                (11,0.3) rectangle (12.8,3.4);
+                \node[rotate=90] at (11.9,1.85) {deformada};
+            \end{tikzpicture}
+        \end{center}
+
+        \Idea{
+            Si se fija el ancho, permita que el navegador calcule el alto;
+            si se fija el alto, controle el recorte conscientemente.
+        }
+    \end{frame}
+
+    \begin{frame}[fragile]{Imágenes uniformes en tarjetas}
+        Cuando todas las tarjetas deben conservar la misma altura visual:
+
+        \begin{csscodedark}
+            .tarjeta img {
+                width: 100%;
+                height: 220px;
+                object-fit: cover;
+            }
+        \end{csscodedark}
+
+        \DefBlock[object-fit: cover]{
+            La imagen cubre el área asignada sin deformarse. Si las proporciones
+            no coinciden, una parte de la imagen puede recortarse.
+        }
+
+        Use un texto alternativo que describa el contenido importante de la imagen.
+    \end{frame}
+
+    \begin{frame}{cover frente a contain}
+        \begin{center}
+\begin{tikzpicture}[
+    marco/.style={
+        draw=BrandBlue,
+        very thick,
+        fill=gray!5
+    },
+    imagen/.style={
+        draw=PracticeTitle,
+        thick,
+        fill=PracticeBody
+    }
+    ]
+
+    % =====================================================
+    % OBJECT-FIT: COVER
+    % =====================================================
+
+    \node[font=\bfseries] at (2.6,3.7) {cover};
+
+    % Parte visible de la imagen
+    \draw[imagen]
+    (0,0.7) rectangle (5.2,3.2);
+
+    % Tamaño completo que tendría la imagen
+    \draw[
+    PracticeTitle,
+    thick,
+    dashed
+    ]
+    (-0.65,0.7) rectangle (5.85,3.2);
+
+    % Contenedor
+    \draw[marco, fill=none]
+    (0,0.7) rectangle (5.2,3.2);
+
+    \node[align=center] at (2.6,1.95)
+    {cubre todo el espacio\\y recorta los extremos};
+
+    \node[
+    font=\scriptsize,
+    text=WarnTitle
+    ] at (2.6,0.3)
+    {parte de la imagen queda fuera};
+
+   % =====================================================
+   % OBJECT-FIT: CONTAIN
+   % =====================================================
+
+   \begin{scope}[xshift=0.5cm]
+
+       \node[font=\bfseries] at (8.5,3.7) {contain};
+
+       % Contenedor
+       \draw[marco]
+       (5.9,0.7) rectangle (11.1,3.2);
+
+       % Imagen completa dentro del contenedor
+       \draw[imagen]
+       (6.7,0.7) rectangle (10.3,3.2);
+
+       \node[align=center] at (8.5,1.95)
+       {muestra toda la imagen\\
+           y deja espacio libre};
+
+   \end{scope}
+
+\end{tikzpicture}
+        \end{center}
+    \end{frame}
+
+    % =========================================================
+    \section{Media queries}
+    % =========================================================
+
+    \SectionSlide
+    {Media queries}
+    {Aplicar reglas cuando cambia el espacio disponible}
+
+    \begin{frame}{¿Cuándo necesitamos una media query?}
+        Primero permita que el diseño sea flexible.
+
+        Después reduzca o amplíe la ventana y observe:
+
+        \begin{itemize}
+            \item ¿el texto deja de ser legible?;
+            \item ¿las tarjetas quedan demasiado estrechas?;
+            \item ¿la navegación ya no cabe?;
+            \item ¿se desperdicia demasiado espacio?;
+            \item ¿el orden visual sigue siendo claro?
+        \end{itemize}
+
+        \Idea{
+            Una media query se justifica cuando el contenido necesita una nueva composición.
+        }
+    \end{frame}
+
+    \begin{frame}[fragile]{Estructura de una media query}
+        \begin{csscodedark}
+            @media (min-width: 700px) {
+                .rutas {
+                    grid-template-columns: repeat(2, 1fr);
+                }
+            }
+        \end{csscodedark}
+
+        \begin{description}
+            \item[\texttt{@media}:] inicia la consulta.
+            \item[\texttt{min-width: 700px}:] expresa la condición.
+            \item[Las llaves externas:] contienen las reglas condicionadas.
+            \item[La regla interna:] solo se aplica cuando se cumple la condición.
+        \end{description}
+    \end{frame}
+
+    \begin{frame}{Leer min-width correctamente}
+        \begin{center}
+            \begin{tikzpicture}[x=0.012cm]
+                \draw[very thick, ->, >=Latex] (320,0) -- (1200,0);
+                \foreach \x/\t in {360/360,700/700,1000/1000}{
+                    \draw[thick] (\x,-0.18) -- (\x,0.18);
+                    \node[below] at (\x,-0.22) {\t px};
+                }
+                \draw[very thick, PracticeTitle] (700,0.45) -- (1180,0.45);
+                \node[above, PracticeTitle] at (940,0.45)
+                {se aplican las reglas de \texttt{min-width: 700px}};
+            \end{tikzpicture}
+        \end{center}
+
+        \Result{
+            La condición se cumple desde 700px en adelante, incluyendo exactamente 700px.
+        }
+    \end{frame}
+
+    \begin{frame}[fragile]{Leer max-width correctamente}
+        \begin{csscodedark}
+            @media (max-width: 699px) {
+                .navegacion {
+                    flex-direction: column;
+                }
+            }
+        \end{csscodedark}
+
+        La regla se aplica cuando el viewport mide 699px o menos.
+
+        \Compare{
+            \texttt{min-width} construye hacia espacios mayores.
+            \texttt{max-width} introduce cambios hacia espacios menores.
+        }
+    \end{frame}
+
+    \begin{frame}{Los breakpoints no son modelos de teléfono}
+        \DefBlock[Breakpoint]{
+            Es el punto a partir del cual el contenido requiere un cambio de composición.
+        }
+
+        Evite pensar únicamente en:
+
+        \begin{center}
+            móvil $\rightarrow$ tableta $\rightarrow$ computador
+        \end{center}
+
+        \Idea{
+            Pruebe el diseño con diferentes anchos y establezca el breakpoint
+            donde el contenido comienza a fallar, no donde empieza un dispositivo famoso.
+        }
+    \end{frame}
+
+    \begin{frame}[fragile]{Combinar condiciones}
+        Puede establecer un intervalo:
+
+        \begin{csscodedark}
+            @media (min-width: 700px) and (max-width: 999px) {
+                .portada {
+                    grid-template-columns: 1fr 1fr;
+                }
+            }
+        \end{csscodedark}
+
+        También existen consultas por orientación:
+
+        \begin{csscodedark}
+            @media (orientation: landscape) {
+                /* Reglas para una vista más ancha que alta */
+            }
+        \end{csscodedark}
+
+        Use condiciones adicionales solo cuando resuelvan una necesidad real.
+    \end{frame}
+
+    \begin{frame}{El orden de las reglas importa}
+        Cuando dos reglas tienen la misma especificidad y ambas se cumplen,
+        normalmente gana la que aparece después.
+
+        \begin{center}
+            \begin{tikzpicture}[
+                regla/.style={draw=BrandBlue, thick, rounded corners,
+                    minimum width=3.6cm, minimum height=0.85cm}
+                ]
+                \node[regla, fill=IdeaBody] (base) at (2.2,2.4) {regla base};
+                \node[regla, fill=PracticeBody] (media) at (8.2,2.4) {regla en media query};
+                \draw[->, >=Latex, very thick] (4.1,2.4) -- (6.0,2.4)
+                node[midway, above] {después};
+                \node[align=center] at (4.7,0.9)
+                {si la condición se cumple,\\la segunda puede sobrescribir la primera};
+            \end{tikzpicture}
+        \end{center}
+    \end{frame}
+
+    % =========================================================
+    \section{Mobile first}
+    % =========================================================
+
+    \SectionSlide
+    {Mobile first}
+    {Comenzar con lo esencial y ampliar progresivamente}
+
+    \begin{frame}{¿Qué significa mobile first?}
+        \DefBlock[Enfoque mobile first]{
+            Las reglas base resuelven primero los espacios estrechos.
+            Después se agregan mejoras para anchos mayores mediante \texttt{min-width}.
+        }
+
+        No significa que el escritorio sea menos importante.
+
+        \begin{itemize}
+            \item Obliga a priorizar el contenido.
+            \item Reduce la cantidad de sobrescrituras.
+            \item Produce una progresión CSS fácil de seguir.
+        \end{itemize}
+    \end{frame}
+
+    \begin{frame}{La progresión mobile first}
+        \begin{center}
+           \begin{tikzpicture}[
+               node distance=0.8cm,
+               etapa/.style={
+                   draw=BrandBlue,
+                   thick,
+                   rounded corners,
+                   text width=3.2cm,
+                   minimum height=1.1cm,
+                   inner sep=4pt,
+                   align=center,
+                   font=\small
+               },
+               flecha/.style={
+                   ->,
+                   >=Latex,
+                   very thick
+               }
+               ]
+
+               \node[
+               etapa,
+               fill=IdeaBody
+               ] (m) {
+                   Reglas base\\
+                   una columna
+               };
+
+               \node[
+               etapa,
+               fill=PracticeBody,
+               right=of m
+               ] (t) {
+                   \texttt{min-width: 700px}\\
+                   dos columnas
+               };
+
+               \node[
+               etapa,
+               fill=ResultBody,
+               right=of t
+               ] (d) {
+                   \texttt{min-width: 1000px}\\
+                   composición amplia
+               };
+
+               \draw[flecha] (m) -- (t);
+               \draw[flecha] (t) -- (d);
+
+           \end{tikzpicture}
+        \end{center}
+
+        Las reglas se acumulan: la vista amplia conserva la base y añade cambios.
+    \end{frame}
+
+    \begin{frame}[fragile]{Paso 1: navegación para poco espacio}
+        La regla base organiza los enlaces verticalmente:
+
+        \begin{csscodedark}
+            .navegacion {
+                display: flex;
+                flex-direction: column;
+                gap: 0.5rem;
+                padding: 1rem;
+                background-color: #dcebe3;
+            }
+
+            .navegacion a {
+                padding: 0.75rem;
+                color: #18332b;
+                text-decoration: none;
+            }
+        \end{csscodedark}
+    \end{frame}
+
+    \begin{frame}[fragile]{Paso 2: navegación horizontal}
+        Cuando existe suficiente ancho:
+
+        \begin{csscodedark}
+            @media (min-width: 700px) {
+                .navegacion {
+                    flex-direction: row;
+                    justify-content: center;
+                }
+            }
+        \end{csscodedark}
+
+        \Result{
+            No fue necesario repetir colores, espacios ni tipografía.
+            La media query cambia únicamente la dirección y la distribución.
+        }
+    \end{frame}
+
+    \begin{frame}[fragile]{Paso 3: portada en una columna}
+        Para el ancho menor:
+
+        \begin{csscodedark}
+            .portada {
+                display: grid;
+                gap: 1rem;
+                margin-block: 1rem;
+                background-color: white;
+            }
+
+            .portada > div {
+                padding: 1rem;
+            }
+        \end{csscodedark}
+
+        La imagen aparece primero y el texto después, siguiendo el orden del HTML.
+    \end{frame}
+
+    \begin{frame}[fragile]{Paso 4: portada en dos columnas}
+        \begin{csscodedark}
+            @media (min-width: 700px) {
+                .portada {
+                    grid-template-columns: 1.2fr 1fr;
+                    align-items: center;
+                }
+            }
+        \end{csscodedark}
+
+        \begin{center}
+            \begin{tikzpicture}[
+                bloque/.style={draw=PracticeTitle, thick, fill=PracticeBody,
+                    minimum height=1.3cm}
+                ]
+                \node[bloque, minimum width=5cm] at (3.2,1.2) {imagen};
+                \node[bloque, minimum width=4cm] at (8,1.2) {texto};
+            \end{tikzpicture}
+        \end{center}
+    \end{frame}
+
+    \begin{frame}[fragile]{Paso 5: tarjetas que cambian de columnas}
+        Regla base:
+
+        \begin{csscodedark}
+            .rutas {
+                display: grid;
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+        \end{csscodedark}
+
+        Para espacios mayores:
+
+        \begin{csscodedark}
+            @media (min-width: 700px) {
+                .rutas {
+                    grid-template-columns: repeat(2, 1fr);
+                }
+            }
+        \end{csscodedark}
+    \end{frame}
+
+    \begin{frame}{Resultado conceptual}
+        \begin{center}
+            \begin{tikzpicture}[
+                scale=0.8,
+                transform shape,
+                marco/.style={draw=BrandBlue, very thick, rounded corners=5pt},
+                bloque/.style={draw=PracticeTitle, fill=PracticeBody, thick,
+                    rounded corners=2pt}
+                ]
+                \node[font=\bfseries] at (2,5.4) {Vista estrecha};
+                \draw[marco] (0,0) rectangle (4,5);
+                \draw[bloque] (0.3,4.2) rectangle (3.7,4.7);
+                \draw[bloque] (0.3,3.35) rectangle (3.7,3.95);
+                \draw[bloque] (0.3,2.05) rectangle (3.7,3.1);
+                \draw[bloque] (0.3,1.1) rectangle (3.7,1.8);
+                \draw[bloque] (0.3,0.25) rectangle (3.7,0.95);
+
+                \node[font=\bfseries] at (9.4,5.4) {Vista amplia};
+                \draw[marco] (5.1,0) rectangle (13.7,5);
+                \draw[bloque] (5.4,4.2) rectangle (13.4,4.7);
+                \draw[bloque] (5.4,3.5) rectangle (13.4,4);
+                \draw[bloque] (5.4,1.9) rectangle (10,3.25);
+                \draw[bloque] (10.2,1.9) rectangle (13.4,3.25);
+                \draw[bloque] (5.4,0.35) rectangle (9.2,1.6);
+                \draw[bloque] (9.6,0.35) rectangle (13.4,1.6);
+            \end{tikzpicture}
+        \end{center}
+
+        El contenido no desaparece: cambia su organización.
+    \end{frame}
+
+    \begin{frame}{Mobile first frente a desktop first}
+        \begin{center}
+            \small
+            \begin{tabular}{p{4.5cm}p{4.5cm}}
+                \toprule
+                \textbf{Mobile first} & \textbf{Desktop first} \\
+                \midrule
+                Base para poco espacio & Base para espacio amplio \\
+                Crece con \texttt{min-width} & Reduce con \texttt{max-width} \\
+                Prioriza lo esencial desde el inicio & Puede partir de una composición rica \\
+                Suele requerir menos correcciones & Puede necesitar más sobrescrituras \\
+                \bottomrule
+            \end{tabular}
+        \end{center}
+
+        \Idea{
+            Ambos enfoques son válidos. En esta clase utilizamos mobile first
+            porque facilita una progresión acumulativa.
+        }
+    \end{frame}
+
+    % =========================================================
+    \section{Patrones responsivos}
+    % =========================================================
+
+    \SectionSlide
+    {Patrones responsivos}
+    {Flexbox y Grid como aliados}
+
+    \begin{frame}[fragile]{Patrón Grid sin breakpoint explícito}
+        Algunas cuadrículas pueden adaptarse con una sola regla:
+
+        \begin{csscodedark}
+            .rutas {
+                display: grid;
+                grid-template-columns:
+                repeat(auto-fit, minmax(min(100%, 260px), 1fr));
+                gap: 1rem;
+            }
+        \end{csscodedark}
+
+        \begin{itemize}
+            \item Cada tarjeta intenta conservar una base de 260px.
+            \item Nunca supera el ancho disponible.
+            \item Grid crea tantas columnas como puedan caber.
+        \end{itemize}
+    \end{frame}
+
+    \begin{frame}{¿Por qué aparece min(100\%, 260px)?}
+        Si el contenedor mide menos de 260px, un mínimo rígido de 260px
+        podría producir desbordamiento.
+
+        \begin{center}
+            \Large
+            \texttt{min(100\%, 260px)}
+        \end{center}
+
+        selecciona el valor más pequeño entre:
+
+        \begin{itemize}
+            \item todo el ancho disponible;
+            \item la base deseada de 260px.
+        \end{itemize}
+
+        \Result{La tarjeta cabe incluso dentro de un contenedor muy estrecho.}
+    \end{frame}
+
+    \begin{frame}[fragile]{Patrón Flexbox con ajuste de línea}
+        \begin{csscodedark}
+            .lista-datos {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 1rem;
+            }
+
+            .dato {
+                flex: 1 1 220px;
+            }
+        \end{csscodedark}
+
+        Cada elemento parte de 220px, puede crecer y también cambiar de línea.
+
+        \Compare{
+            Flexbox funciona muy bien cuando domina una dirección.
+            Grid resulta útil cuando las columnas deben permanecer relacionadas.
+        }
+    \end{frame}
+
+    \begin{frame}{¿Media query o cuadrícula automática?}
+        Utilice una cuadrícula automática cuando:
+
+        \begin{itemize}
+            \item solo cambia la cantidad de columnas;
+            \item todas las tarjetas siguen el mismo patrón;
+            \item no es necesario reorganizar otras partes de la página.
+        \end{itemize}
+
+        Utilice una media query cuando:
+
+        \begin{itemize}
+            \item cambia la composición general;
+            \item la navegación necesita otro comportamiento;
+            \item se modifican alineación, orden o proporciones;
+            \item varios elementos deben cambiar de manera coordinada.
+        \end{itemize}
+    \end{frame}
+
+    \begin{frame}[fragile]{Contenido que nunca debe desbordarse}
+        Palabras extensas, enlaces y fragmentos técnicos pueden romper la composición:
+
+        \begin{csscodedark}
+            .tarjeta,
+            .contenido {
+                min-width: 0;
+            }
+
+            .contenido p,
+            .contenido a {
+                overflow-wrap: anywhere;
+            }
+        \end{csscodedark}
+
+        \Warning{
+            No oculte el problema indiscriminadamente con \texttt{overflow: hidden}.
+            El contenido debe seguir disponible para el usuario.
+        }
+    \end{frame}
+
+    % =========================================================
+    \section{Tipografía y controles}
+    % =========================================================
+
+    \SectionSlide
+    {Tipografía y controles}
+    {Leer y utilizar la interfaz en cualquier tamaño}
+
+    \begin{frame}[fragile]{Tipografía fluida con clamp}
+        \begin{csscodedark}
+            h1 {
+                font-size: clamp(2rem, 5vw, 4rem);
+            }
+        \end{csscodedark}
+
+        \texttt{clamp()} recibe tres valores:
+
+        \begin{center}
+            \texttt{clamp(mínimo, preferido, máximo)}
+        \end{center}
+
+        \begin{itemize}
+            \item Nunca será menor de 2rem.
+            \item Puede crecer con el viewport.
+            \item Nunca será mayor de 4rem.
+        \end{itemize}
+    \end{frame}
+
+    \begin{frame}{No reduzca demasiado el texto}
+        Un sitio puede caber perfectamente y seguir siendo difícil de utilizar.
+
+        \begin{itemize}
+            \item Mantenga tamaños de lectura cómodos.
+            \item Evite párrafos demasiado anchos.
+            \item Use suficiente interlineado.
+            \item Conserve contraste entre texto y fondo.
+            \item No dependa únicamente del color para comunicar estados.
+        \end{itemize}
+
+        \Idea{
+            Responsivo también significa conservar la legibilidad y la interacción,
+            no únicamente evitar el desplazamiento horizontal.
+        }
+    \end{frame}
+
+    \begin{frame}[fragile]{Botones y enlaces fáciles de utilizar}
+        \begin{csscodedark}
+            .accion {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                min-height: 44px;
+                padding: 0.75rem 1rem;
+            }
+        \end{csscodedark}
+
+        En pantallas táctiles, los controles demasiado pequeños o muy cercanos
+        dificultan la selección.
+
+        \Practice{
+            Revise no solo cómo se ve la página, sino también qué tan fácil
+            resulta pulsar sus enlaces y botones.
+        }
+    \end{frame}
+
+    \begin{frame}{Ocultar contenido requiere una razón}
+        Cambiar de tamaño no significa eliminar automáticamente información.
+
+        Antes de utilizar \texttt{display: none}, pregunte:
+
+        \begin{itemize}
+            \item ¿el contenido sigue siendo necesario?;
+            \item ¿puede reorganizarse?;
+            \item ¿puede resumirse sin perder significado?;
+            \item ¿existe otra manera de acceder a él?
+        \end{itemize}
+
+        \Warning{
+            La versión móvil no debe convertirse en una versión incompleta del sitio.
+        }
+    \end{frame}
+
+    % =========================================================
+    \section{Preferencias del usuario}
+    % =========================================================
+
+    \SectionSlide
+    {Preferencias del usuario}
+    {El diseño también responde a necesidades personales}
+
+    \begin{frame}[fragile]{Reducir movimiento}
+        Algunas personas prefieren menos animaciones:
+
+        \begin{csscodedark}
+            @media (prefers-reduced-motion: reduce) {
+                *,
+                *::before,
+                *::after {
+                    scroll-behavior: auto;
+                    animation-duration: 0.01ms;
+                    animation-iteration-count: 1;
+                    transition-duration: 0.01ms;
+                }
+            }
+        \end{csscodedark}
+
+        \Idea{
+            Las media queries también pueden responder a preferencias de accesibilidad,
+            no solo al ancho de la ventana.
+        }
+    \end{frame}
+
+    \begin{frame}[fragile]{Esquema de color preferido}
+        Un sitio puede reconocer el modo oscuro del sistema:
+
+        \begin{csscodedark}
+            @media (prefers-color-scheme: dark) {
+                body {
+                    color: #eef7f2;
+                    background-color: #10221c;
+                }
+
+                .tarjeta {
+                    background-color: #19372d;
+                }
+            }
+        \end{csscodedark}
+
+        Esto es opcional y requiere verificar cuidadosamente el contraste.
+    \end{frame}
+
+    % =========================================================
+    \section{Depuración}
+    % =========================================================
+
+    \SectionSlide
+    {Probar y depurar}
+    {Encontrar el ancho donde la interfaz deja de funcionar}
+
+    \begin{frame}{Probar solo tres tamaños no es suficiente}
+        No revise únicamente una vista móvil, una tableta y un escritorio.
+
+        \begin{enumerate}
+            \item Abra las herramientas de desarrollo.
+            \item Active la vista adaptable.
+            \item Cambie el ancho lentamente.
+            \item Observe cada punto intermedio.
+            \item Corrija donde el contenido realmente falla.
+        \end{enumerate}
+
+        \Practice{
+            También cambie manualmente el tamaño de la ventana del navegador.
+            Una página puede abrirse en una ventana estrecha dentro de un monitor grande.
+        }
+    \end{frame}
+
+    \begin{frame}{Qué debemos observar}
+        \begin{itemize}
+            \item Desplazamiento horizontal inesperado.
+            \item Texto cortado o demasiado estrecho.
+            \item Imágenes deformadas.
+            \item Controles que se superponen.
+            \item Espacios excesivos o insuficientes.
+            \item Cambios bruscos cerca de los breakpoints.
+            \item Orden de lectura incoherente.
+        \end{itemize}
+
+        \Question[Comprobación]{
+            ¿La página sigue siendo comprensible con zoom del navegador al 200\%?
+        }
+    \end{frame}
+
+    \begin{frame}[fragile]{Encontrar el elemento que desborda}
+        Durante la depuración puede aplicar temporalmente:
+
+        \begin{csscodedark}
+            * {
+                outline: 1px solid red;
+            }
+        \end{csscodedark}
+
+        Los contornos ayudan a reconocer qué elemento supera el ancho disponible.
+
+        \Warning{
+            Esta regla es temporal. Retírela cuando termine la revisión.
+            No resuelva el problema ocultando todo el desbordamiento del documento.
+        }
+    \end{frame}
+
+    \begin{frame}{Revise el HTML antes de culpar al CSS}
+        Algunos problemas responsivos nacen en la estructura:
+
+        \begin{itemize}
+            \item imágenes sin contenedor adecuado;
+            \item navegación sin agrupación semántica;
+            \item elementos cerrados incorrectamente;
+            \item contenido importante ubicado en un orden poco lógico;
+            \item tablas utilizadas para construir la distribución.
+        \end{itemize}
+
+        \Idea{
+            Un HTML ordenado facilita que la interfaz pueda reorganizarse sin perder sentido.
+        }
+    \end{frame}
+
+    % =========================================================
+    \section{Práctica guiada}
+    % =========================================================
+
+    \SectionSlide
+    {Práctica guiada}
+    {Biblioteca itinerante}
+
+    \begin{frame}{Situación}
+        Una biblioteca necesita una página para anunciar sus próximas visitas.
+
+        La página debe incluir:
+
+        \begin{itemize}
+            \item encabezado e introducción;
+            \item navegación interna;
+            \item próximas paradas en tarjetas;
+            \item una sección de inscripción;
+            \item pie de página.
+        \end{itemize}
+
+        \Result{
+            La información aparecerá en una columna cuando el espacio sea estrecho
+            y se reorganizará progresivamente en anchos mayores.
+        }
+    \end{frame}
+
+    \begin{frame}[fragile]{Estructura del proyecto}
+        \begin{bashcodedark}
+            biblioteca-itinerante/
+            ├── index.html
+            ├── css/
+            │   └── styles.css
+            └── img/
+            ├── biblioteca.jpg
+            ├── parque.jpg
+            └── colegio.jpg
+        \end{bashcodedark}
+
+        \Practice{
+            Construya primero la estructura y compruebe las rutas antes de aplicar estilos.
+        }
+    \end{frame}
+
+    \begin{frame}[fragile]{Paso 1: configuración inicial}
+        \begin{htmlcodedark}
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport"
+                content="width=device-width, initial-scale=1.0">
+            <title>Biblioteca itinerante</title>
+            <link rel="stylesheet" href="css/styles.css">
+        </head>
+        \end{htmlcodedark}
+
+        \begin{csscodedark}
+            * { box-sizing: border-box; }
+            body { margin: 0; font-family: Arial, sans-serif; }
+            img { display: block; max-width: 100%; height: auto; }
+        \end{csscodedark}
+    \end{frame}
+
+    \begin{frame}[fragile]{Paso 2: estructura principal}
+        \begin{htmlcodedark}
+        <header class="cabecera">
+            <h1>Biblioteca itinerante</h1>
+            <p>Los libros llegan a su comunidad.</p>
+        </header>
+
+        <nav class="menu">
+            <a href="#paradas">Paradas</a>
+            <a href="#inscripcion">Inscripción</a>
+        </nav>
+
+        <main class="contenido">
+            <section class="presentacion">
+                <img src="img/biblioteca.jpg" alt="Biblioteca móvil">
+                <div><h2>Una biblioteca en movimiento</h2></div>
+            </section>
+        \end{htmlcodedark}
+    \end{frame}
+
+    \begin{frame}[fragile]{Paso 3: tarjetas}
+        \begin{htmlcodedark}
+        <section id="paradas" class="paradas">
+            <article class="parada">
+                <img src="img/parque.jpg" alt="Parque del barrio">
+                <h3>Parque Central</h3>
+                <p>Sábado, 9:00 a. m.</p>
+            </article>
+
+            <article class="parada">
+                <img src="img/colegio.jpg" alt="Institución educativa">
+                <h3>Colegio Horizonte</h3>
+                <p>Miércoles, 2:00 p. m.</p>
+            </article>
+    </section>
+    </main>
+        \end{htmlcodedark}
+    \end{frame}
+
+    \begin{frame}[fragile]{Paso 4: versión para poco espacio}
+        \vspace{-0.45cm}
+        \begin{csscodedark}
+            .contenido {
+                width: min(92%, 1100px);
+                margin-inline: auto;
+            }
+
+            .menu {
+                display: flex;
+                flex-direction: column;
+                gap: 0.5rem;
+                padding: 1rem;
+            }
+
+            .presentacion,
+            .paradas {
+                display: grid;
+                gap: 1rem;
+            }
+        \end{csscodedark}
+    \end{frame}
+
+    \begin{frame}[fragile]{Paso 5: mejorar las tarjetas}
+        \vspace{-0.45cm}
+        \begin{csscodedark}
+            .parada {
+                overflow: hidden;
+                border: 1px solid #b8c7bf;
+                border-radius: 0.75rem;
+                background-color: white;
+            }
+
+            .parada h3,
+            .parada p {
+                margin-inline: 1rem;
+            }
+
+            .parada img {
+                width: 100%;
+                height: 220px;
+                object-fit: cover;
+            }
+        \end{csscodedark}
+    \end{frame}
+
+    \begin{frame}[fragile]{Paso 6: primer breakpoint}
+        \begin{csscodedark}
+            @media (min-width: 700px) {
+                .menu {
+                    flex-direction: row;
+                    justify-content: center;
+                }
+
+                .presentacion {
+                    grid-template-columns: 1.2fr 1fr;
+                    align-items: center;
+                }
+
+                .paradas {
+                    grid-template-columns: repeat(2, 1fr);
+                }
+            }
+        \end{csscodedark}
+    \end{frame}
+
+    \begin{frame}[fragile]{Paso 7: ampliar el catálogo}
+        Si se agregan más paradas, puede utilizar:
+
+        \begin{csscodedark}
+            @media (min-width: 1000px) {
+                .paradas {
+                    grid-template-columns: repeat(3, 1fr);
+                }
+            }
+        \end{csscodedark}
+
+        O reemplazar los breakpoints de las tarjetas por:
+
+        \begin{csscodedark}
+            .paradas {
+                grid-template-columns:
+                repeat(auto-fit, minmax(min(100%, 250px), 1fr));
+            }
+        \end{csscodedark}
+    \end{frame}
+
+    \begin{frame}{Verificación de la práctica}
+        Revise la página en los siguientes escenarios:
+
+        \begin{itemize}
+            \item 360px: contenido en una columna y sin desbordamiento.
+            \item 699px: comportamiento inmediatamente antes del breakpoint.
+            \item 700px: aplicación correcta de la nueva composición.
+            \item 999px y 1000px: transición hacia tres columnas, si existe.
+            \item Ventana libre: arrastre el borde lentamente.
+            \item Zoom al 200\%: el contenido continúa disponible.
+        \end{itemize}
+
+        \Question[Explique]{
+            ¿Qué reglas son base y cuáles solo se aplican cuando existe más espacio?
+        }
+    \end{frame}
+
+    % =========================================================
+    \section{Ejercicio autónomo}
+    % =========================================================
+
+    \SectionSlide
+    {Ejercicio autónomo}
+    {Guía de mercados locales}
+
+    \begin{frame}{Situación propuesta}
+        Construya una página para presentar mercados y emprendimientos locales.
+
+        Debe incluir como mínimo:
+
+        \begin{itemize}
+            \item encabezado y navegación;
+            \item una presentación principal con imagen;
+            \item cuatro tarjetas de mercados o emprendimientos;
+            \item horario, ubicación y descripción breve;
+            \item un llamado a la acción;
+            \item pie de página.
+        \end{itemize}
+
+        El ejercicio es individual.
+    \end{frame}
+
+    \begin{frame}{Requisitos técnicos}
+        Utilice como mínimo:
+
+        \begin{itemize}
+            \item etiqueta \texttt{meta viewport};
+            \item imágenes con \texttt{max-width: 100\%};
+            \item un contenedor con ancho flexible y límite máximo;
+            \item Flexbox o Grid en la navegación;
+            \item Grid para organizar las tarjetas;
+            \item enfoque mobile first;
+            \item al menos dos media queries con \texttt{min-width};
+            \item textos alternativos en las imágenes.
+        \end{itemize}
+    \end{frame}
+
+    \begin{frame}[fragile]{Estructura de entrega}
+        \begin{bashcodedark}
+            mercados-nombre-apellido/
+            ├── index.html
+            ├── css/
+            │   └── styles.css
+            └── img/
+            ├── portada.jpg
+            ├── mercado-1.jpg
+            ├── mercado-2.jpg
+            ├── mercado-3.jpg
+            └── mercado-4.jpg
+        \end{bashcodedark}
+
+        Todos los archivos deben abrirse correctamente desde la carpeta entregada.
+    \end{frame}
+
+    \begin{frame}{Orden recomendado de trabajo}
+        \begin{enumerate}
+            \item Construya un HTML semántico y ordenado.
+            \item Conecte la hoja de estilos y compruebe las rutas.
+            \item Termine primero la versión de menor ancho.
+            \item Identifique dónde el contenido necesita reorganizarse.
+            \item Agregue las media queries.
+            \item Pruebe anchos intermedios y corrija desbordamientos.
+            \item Añada mejoras visuales únicamente cuando lo básico funcione.
+        \end{enumerate}
+
+        \Warning{
+            Los elementos adicionales no reemplazan ninguno de los requisitos mínimos.
+        }
+    \end{frame}
+
+    \begin{frame}{Lista de comprobación}
+        Antes de entregar, confirme:
+
+        \begin{itemize}
+            \item No existe desplazamiento horizontal accidental.
+            \item El contenido se comprende en una sola columna.
+            \item Las imágenes no se deforman.
+            \item La navegación cambia correctamente.
+            \item Las tarjetas aprovechan el espacio disponible.
+            \item Los breakpoints responden a necesidades del contenido.
+            \item El texto sigue siendo legible.
+            \item Puede explicar cada regla utilizada.
+        \end{itemize}
+    \end{frame}
+
+    % =========================================================
+    \section{Errores frecuentes}
+    % =========================================================
+
+    \SectionSlide
+    {Errores frecuentes}
+    {Problemas que impiden una adaptación correcta}
+
+    \begin{frame}{Diseñar únicamente para tamaños conocidos}
+        Una interfaz puede verse bien a 375px y 1024px, pero fallar a 620px.
+
+        \Warning{
+            Los tamaños predeterminados de las herramientas del navegador
+            son puntos de prueba, no una garantía de funcionamiento responsivo.
+        }
+
+        Cambie el ancho de manera continua para descubrir los estados intermedios.
+    \end{frame}
+
+    \begin{frame}{Crear demasiados breakpoints}
+        No agregue una media query cada vez que cambia unos pocos píxeles.
+
+        Esto produce:
+
+        \begin{itemize}
+            \item reglas difíciles de mantener;
+            \item sobrescrituras contradictorias;
+            \item comportamiento impredecible;
+            \item dependencia de dispositivos específicos.
+        \end{itemize}
+
+        \Idea{
+            Comience con una estructura flexible y añada un breakpoint
+            solamente cuando el contenido lo necesite.
+        }
+    \end{frame}
+
+    \begin{frame}{Usar anchos fijos en toda la página}
+        Una declaración como \texttt{width: 1200px} puede funcionar en una pantalla amplia,
+        pero no tiene espacio suficiente dentro de un viewport de 360px.
+
+        Prefiera combinaciones como:
+
+        \begin{center}
+            \texttt{width: 92\%; max-width: 1200px;}
+        \end{center}
+
+        Los tamaños fijos siguen siendo útiles para iconos, bordes o límites concretos.
+    \end{frame}
+
+    \begin{frame}{Confundir responsivo con ocultar}
+        Ocultar navegación, texto o acciones puede hacer que la interfaz parezca limpia,
+        pero también puede impedir que el usuario complete una tarea.
+
+        \Compare{
+            Reorganizar conserva el contenido y cambia su presentación.
+            Ocultar elimina su disponibilidad en ese contexto.
+        }
+    \end{frame}
+
+    \begin{frame}{Cambiar el orden visual sin revisar la lectura}
+        Grid y Flexbox pueden modificar el orden visual de los elementos.
+
+        Sin embargo:
+
+        \begin{itemize}
+            \item el teclado normalmente sigue el orden del HTML;
+            \item los lectores de pantalla interpretan la estructura del documento;
+            \item el orden semántico debe conservar sentido sin CSS.
+        \end{itemize}
+
+        \Warning{
+            No utilice \texttt{order} para corregir una estructura HTML mal organizada.
+        }
+    \end{frame}
+
+    \begin{frame}{Corregir todo con overflow hidden}
+        Aplicar \texttt{overflow-x: hidden} al documento puede ocultar la evidencia,
+        pero no corrige el elemento que causa el desbordamiento.
+
+        \Practice{
+            Active contornos temporales, inspeccione tamaños calculados
+            y localice el elemento responsable.
+        }
+
+        La corrección puede requerir \texttt{max-width}, \texttt{min-width: 0},
+        ajuste de línea o una distribución diferente.
+    \end{frame}
+
+    % =========================================================
+    \section{Cierre}
+    % =========================================================
+
+    \SectionSlide
+    {Cierre}
+    {Decidir qué debe fluir y qué debe cambiar}
+
+    \begin{frame}{Mapa de decisiones}
+        \begin{center}
+            \begin{tikzpicture}[
+                scale=0.88,
+                transform shape,
+                nodo/.style={draw=BrandBlue, thick, rounded corners,
+                    minimum width=3.4cm, minimum height=0.85cm, align=center},
+                flecha/.style={->, >=Latex, thick}
+                ]
+                \node[nodo, fill=IdeaBody] (p) at (5.5,5.3) {¿El contenido se desborda?};
+                \node[nodo, fill=PracticeBody] (f) at (2.2,2.6) {Use medidas flexibles\\e imágenes adaptables};
+                \node[nodo, fill=PracticeBody] (c) at (8.8,2.6) {¿La composición deja\\de ser clara?};
+                \node[nodo, fill=ResultBody] (m) at (8.8,0.8) {Agregue una media query};
+                \draw[flecha] (p) -- (f) node[midway, above left] {sí};
+                \draw[flecha] (p) -- (c) node[midway, above right] {no};
+                \draw[flecha] (c) -- (m) node[midway, right] {sí};
+            \end{tikzpicture}
+        \end{center}
+
+        Primero permita que la interfaz fluya; después cambie la composición
+        solo cuando resulte necesario.
+    \end{frame}
+
+    \begin{frame}{Consulta rápida}
+        \begin{center}
+            \small
+            \begin{tabular}{p{5.0cm}p{7.5cm}}
+                \toprule
+                \textbf{Recurso} & \textbf{Propósito} \\
+                \midrule
+                \texttt{meta viewport} & usar el ancho real del viewport \\
+                \texttt{max-width: 100\%} & limitar imágenes y otros elementos \\
+                \texttt{max-width} & impedir un crecimiento excesivo \\
+                \texttt{@media (min-width: ...)} & mejorar la composición al ganar espacio \\
+                \texttt{flex-wrap} & permitir varias líneas en Flexbox \\
+                \texttt{auto-fit + minmax()} & crear columnas automáticas en Grid \\
+                \texttt{clamp()} & establecer tamaño mínimo, flexible y máximo \\
+                \bottomrule
+            \end{tabular}
+        \end{center}
+    \end{frame}
+
+    \begin{frame}{Preguntas de comprensión}
+        \begin{enumerate}
+            \item ¿Qué diferencia existe entre viewport y pantalla física?
+            \item ¿Por qué \texttt{max-width} ayuda a construir interfaces fluidas?
+            \item ¿Cuándo se justifica crear un breakpoint?
+            \item ¿Cómo se interpreta \texttt{min-width: 700px}?
+            \item ¿Qué caracteriza al enfoque mobile first?
+            \item ¿Cuándo puede Grid adaptarse sin una media query?
+            \item ¿Por qué no conviene bloquear el zoom?
+        \end{enumerate}
+    \end{frame}
+
+    \begin{frame}{Lo esencial de esta clase}
+        \begin{itemize}
+            \item El diseño responsivo se basa en el espacio disponible.
+            \item El viewport debe configurarse desde el HTML.
+            \item Las medidas flexibles resuelven gran parte de la adaptación.
+            \item Las imágenes deben respetar el ancho de su contenedor.
+            \item Los breakpoints nacen de las necesidades del contenido.
+            \item Mobile first construye desde una base sencilla hacia espacios mayores.
+            \item Flexbox y Grid permiten reorganizar la interfaz.
+            \item La verificación debe incluir anchos intermedios, zoom e interacción.
+        \end{itemize}
+
+        \Result{
+            Una página responsiva no intenta adivinar el dispositivo:
+            conserva su utilidad mientras cambia el espacio disponible.
+        }
+    \end{frame}
+
+    \begin{frame}{Aplicación en el proyecto intermedio}
+        En el proyecto del concierto deberán comprobar que:
+
+        \begin{itemize}
+            \item las dos páginas funcionan en anchos estrechos y amplios;
+            \item cada hoja CSS conserva una organización clara;
+            \item la navegación permite pasar entre las páginas;
+            \item las imágenes no generan desbordamiento;
+            \item Flexbox, Grid y las media queries se utilizan con una finalidad explicable.
+        \end{itemize}
+
+        \Warning{
+            Primero aseguren el cumplimiento de lo solicitado.
+            Después pueden incorporar elementos adicionales sin sustituir los requisitos básicos.
+        }
+    \end{frame}
+
+\end{document}

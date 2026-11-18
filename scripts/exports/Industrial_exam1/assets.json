@@ -1,0 +1,34 @@
+{
+  "schemaVersion": "1.1.0",
+  "documentId": "industrial-exam1",
+  "assets": [
+    {
+      "id": "asset-4e4d64b78392",
+      "origin": "tikz",
+      "source": "\\begin{tikzpicture}[scale=0.78,>=Latex,every node/.style={font=\\scriptsize}]\n                    \\draw[->,thick] (-0.2,0) -- (2.5,0) node[right] {$x$};\n                    \\draw[->,thick] (0,-2.1) -- (0,1.8) node[above] {$y$};\n\n                    \\draw[->,very thick,BrandBlue]\n                    (0,0) -- (1.7,0)\n                    node[above right] {$\\mathbf{e}_x$};\n\n                    \\draw[->,very thick,BrandGreen]\n                    (0,0) -- ({1.7*cos(-60)},{1.7*sin(-60)})\n                    node[below right] {$\\mathbf{p}_f$};\n\n                    \\draw[->,gray,thick]\n                    (0.75,0) arc[start angle=0,end angle=-60,radius=0.75];\n                    \\node[gray] at (1.2,-0.38) {$-60^\\circ$};\n                \\end{tikzpicture}",
+      "status": "resolved",
+      "src": "assets/asset-4e4d64b78392.svg",
+      "background": "white",
+      "format": "svg"
+    },
+    {
+      "id": "asset-5df1ccef4381",
+      "origin": "tikz",
+      "source": "\\begin{tikzpicture}[scale=0.78,>=Latex,every node/.style={font=\\scriptsize}]\n                    \\coordinate (O) at (0,0);\n\n                    \\draw[->,very thick,BrandBlue]\n                    (O) -- (2.5,0) node[right] {$x_A$};\n                    \\draw[->,very thick,BrandBlue]\n                    (O) -- (0,2.5) node[above] {$y_A$};\n\n                    \\draw[->,very thick,BrandGreen]\n                    (O) -- (0,2.0) node[right] {$x_B$};\n                    \\draw[->,very thick,BrandGreen]\n                    (O) -- (-2.0,0) node[above] {$y_B$};\n\n                    \\draw[->,gray,thick]\n                    (0.65,0) arc[start angle=0,end angle=90,radius=0.65];\n                    \\node[gray] at (1.0,0.5) {$90^\\circ$};\n                \\end{tikzpicture}",
+      "status": "resolved",
+      "src": "assets/asset-5df1ccef4381.svg",
+      "background": "white",
+      "format": "svg"
+    },
+    {
+      "id": "asset-1461476e1ba3",
+      "origin": "external",
+      "source": "Template/LogoPoli.png",
+      "status": "missing",
+      "src": null,
+      "background": "white",
+      "format": "svg",
+      "error": "SOURCE_NOT_FOUND"
+    }
+  ]
+}

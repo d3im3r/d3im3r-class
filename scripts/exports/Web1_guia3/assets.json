@@ -1,0 +1,70 @@
+{
+  "schemaVersion": "1.1.0",
+  "documentId": "web1-guia3",
+  "assets": [
+    {
+      "id": "asset-545234500b74",
+      "origin": "tikz",
+      "source": "\\begin{tikzpicture}[\n    pantalla/.style={draw=BrandBlue, very thick, rounded corners, fill=white},\n    bloque/.style={fill=PracticeBody, draw=PracticeTitle, thick}\n]\n    \\node[font=\\bfseries] at (1.8,4.5) {Móvil};\n    \\draw[pantalla] (0,0) rectangle (3.6,4.1);\n    \\draw[bloque] (0.35,3.25) rectangle (3.25,3.7);\n    \\draw[bloque] (0.35,2.15) rectangle (3.25,3.0);\n    \\draw[bloque] (0.35,1.05) rectangle (3.25,1.9);\n    \\draw[bloque] (0.35,0.3) rectangle (3.25,0.8);\n\n    \\node[font=\\bfseries] at (8.1,4.5) {Pantalla amplia};\n    \\draw[pantalla] (4.5,0) rectangle (11.7,4.1);\n    \\draw[bloque] (4.85,3.25) rectangle (11.35,3.7);\n    \\draw[bloque] (4.85,1.15) rectangle (6.8,3.0);\n    \\draw[bloque] (7.15,1.15) rectangle (9.1,3.0);\n    \\draw[bloque] (9.45,1.15) rectangle (11.35,3.0);\n    \\draw[bloque] (4.85,0.3) rectangle (11.35,0.8);\n\\end{tikzpicture}",
+      "status": "resolved",
+      "src": "assets/asset-545234500b74.svg",
+      "background": "white",
+      "format": "svg"
+    },
+    {
+      "id": "asset-4652f06ef9f4",
+      "origin": "tikz",
+      "source": "\\begin{tikzpicture}[\n    marco/.style={draw=BrandBlue, very thick, fill=gray!5},\n    imagen/.style={draw=PracticeTitle, thick, fill=PracticeBody}\n]\n    \\node[font=\\bfseries] at (2.6,3.5) {\\texttt{cover}};\n    \\draw[marco] (0,0.5) rectangle (5.2,3);\n    \\draw[imagen] (0,0.5) rectangle (5.2,3);\n    \\draw[dashed, thick] (0.8,0.5) rectangle (4.4,3);\n    \\node[align=center] at (2.6,1.75) {cubre el marco\\\\y puede recortar};\n\n    \\node[font=\\bfseries] at (8.7,3.5) {\\texttt{contain}};\n    \\draw[marco] (6.0,0.5) rectangle (11.2,3);\n    \\draw[imagen] (6.8,0.5) rectangle (10.4,3);\n    \\node[align=center] at (8.6,1.75) {muestra todo\\\\y puede dejar espacio};\n\\end{tikzpicture}",
+      "status": "resolved",
+      "src": "assets/asset-4652f06ef9f4.svg",
+      "background": "white",
+      "format": "svg"
+    },
+    {
+      "id": "asset-927876cbc608",
+      "origin": "tikz",
+      "source": "\\begin{tikzpicture}[\n    etapa/.style={draw=BrandBlue, thick, rounded corners, minimum width=3cm,\n        minimum height=1.1cm, align=center},\n    flecha/.style={->, >=Latex, very thick}\n]\n    \\node[etapa, fill=IdeaBody] (m) at (1.8,2) {Reglas base\\\\una columna};\n    \\node[etapa, fill=PracticeBody] (t) at (6.2,2)\n        {\\texttt{min-width: 700px}\\\\dos columnas};\n    \\node[etapa, fill=ResultBody] (d) at (10.6,2)\n        {\\texttt{min-width: 1000px}\\\\composición amplia};\n    \\draw[flecha] (m.east) -- (t.west);\n    \\draw[flecha] (t.east) -- (d.west);\n\\end{tikzpicture}",
+      "status": "resolved",
+      "src": "assets/asset-927876cbc608.svg",
+      "background": "white",
+      "format": "svg"
+    },
+    {
+      "id": "asset-2040a0d496da",
+      "origin": "tikz",
+      "source": "\\begin{tikzpicture}[\n    node distance=1.3cm,\n    estado/.style={draw=BrandBlue, thick, rounded corners, minimum width=3cm,\n        minimum height=0.8cm, fill=IdeaBody, align=center},\n    flecha/.style={-{Latex[length=3mm]}, thick}\n]\n    \\node[estado] (normal) {estado normal};\n    \\node[estado, right=of normal] (hover) {\\texttt{:hover}};\n    \\node[estado, right=of hover] (focus) {\\texttt{:focus}};\n    \\draw[flecha] (normal) -- node[above]{puntero} (hover);\n    \\draw[flecha] (normal) to[bend right=22] node[below]{teclado} (focus);\n\\end{tikzpicture}",
+      "status": "resolved",
+      "src": "assets/asset-2040a0d496da.svg",
+      "background": "white",
+      "format": "svg"
+    },
+    {
+      "id": "asset-2f1d53e18913",
+      "origin": "tikz",
+      "source": "\\begin{tikzpicture}[\n    estado/.style={draw=BrandBlue, thick, rounded corners, minimum width=3.4cm,\n        minimum height=1.2cm, align=center},\n    flecha/.style={<->, >=Latex, very thick}\n]\n    \\node[estado, fill=IdeaBody] (a) at (0,0) {estado inicial\\\\\\texttt{translateY(0)}};\n    \\node[estado, fill=ResultBody] (b) at (6,0) {estado final\\\\\\texttt{translateY(-6px)}};\n    \\draw[flecha] (a) -- node[above]{220 ms · \\texttt{ease}} (b);\n\\end{tikzpicture}",
+      "status": "resolved",
+      "src": "assets/asset-2f1d53e18913.svg",
+      "background": "white",
+      "format": "svg"
+    },
+    {
+      "id": "asset-764a31149cc1",
+      "origin": "tikz",
+      "source": "\\begin{tikzpicture}[\n    estado/.style={draw=BrandBlue, thick, rounded corners, minimum width=2.5cm,\n        minimum height=1cm, align=center},\n    flecha/.style={->, >=Latex, thick}\n]\n    \\node[estado, fill=WarnBody] (a) at (0,0) {0\\%\\\\oculto y abajo};\n    \\node[estado, fill=IdeaBody] (b) at (4.3,0) {50\\%\\\\en movimiento};\n    \\node[estado, fill=ResultBody] (c) at (8.6,0) {100\\%\\\\visible y ubicado};\n    \\draw[flecha] (a.east) -- (b.west);\n    \\draw[flecha] (b.east) -- (c.west);\n\\end{tikzpicture}",
+      "status": "resolved",
+      "src": "assets/asset-764a31149cc1.svg",
+      "background": "white",
+      "format": "svg"
+    },
+    {
+      "id": "asset-47e258b49483",
+      "origin": "external",
+      "source": "Template/LogoSena.png",
+      "status": "missing",
+      "src": null,
+      "background": "white",
+      "format": "svg",
+      "error": "SOURCE_NOT_FOUND"
+    }
+  ]
+}

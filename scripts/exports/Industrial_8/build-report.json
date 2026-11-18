@@ -1,0 +1,32 @@
+{
+  "schemaVersion": "1.1.0",
+  "generator": "3.0.0-beta",
+  "documentType": "lesson",
+  "source": "Industrial_8.tex",
+  "createdAt": "2026-11-18T16:21:50.765287+00:00",
+  "counts": {
+    "section": 1,
+    "frame": 127,
+    "paragraph": 508,
+    "text": 882,
+    "academic_block": 53,
+    "math_inline": 530,
+    "math": 120,
+    "list": 27,
+    "emphasis": 19,
+    "table": 11,
+    "strong": 25,
+    "figure": 46
+  },
+  "assets": {
+    "pending": 43,
+    "missing": 1
+  },
+  "diagnostics": [
+    {
+      "severity": "warning",
+      "code": "ASSET",
+      "message": "Imagen no encontrada: Template/gracias.png"
+    }
+  ]
+}

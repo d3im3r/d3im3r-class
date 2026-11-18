@@ -1,0 +1,989 @@
+% =========================================================
+% template-guide.tex
+% Plantilla general para guías de apoyo — versión depurada
+%
+% Este archivo NO contiene:
+% \documentclass
+% \begin{document}
+    % \end{document}
+% =========================================================
+
+% =========================================================
+% CONFIGURACIÓN POR DEFECTO
+% Puede sobrescribirse en cada guía con \renewcommand
+% =========================================================
+
+\newcommand{\CourseName}{Nombre del curso}
+\newcommand{\CourseCode}{Código del curso}
+\newcommand{\Faculty}{Programa de formación}
+\newcommand{\Institution}{Servicio Nacional de Aprendizaje SENA}
+\newcommand{\Instructor}{Deimer Miranda Montoya, MSc.(c).}
+\newcommand{\Email}{damiranda@sena.edu.co}
+
+\newcommand{\GuideTitle}{Guía de Apoyo}
+\newcommand{\ClassName}{Nombre de la clase}
+\newcommand{\AcademicPeriod}{Proyecto Formativo 2026-2T}
+
+% Ruta del logo institucional
+\newcommand{\InstitutionLogo}{Template/LogoSena.png}
+
+% 1 = mostrar imágenes
+% 0 = no cargar imágenes
+\newcommand{\UseImages}{1}
+
+   % -------------------------
+% MOTOR Y FUENTES (ROBUSTO)
+% -------------------------
+\usepackage{iftex}
+\ifPDFTeX
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\else
+\usepackage{fontspec}
+\usepackage[sfdefault]{noto}
+\fi
+
+% =========================================================
+% PAQUETES GENERALES
+% =========================================================
+
+\usepackage[
+margin=2cm,
+top=2.7cm,
+bottom=2.2cm,
+headheight=1.4cm
+]{geometry}
+
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{fancyhdr}
+\usepackage{lastpage}
+\usepackage{fontawesome5}
+\usepackage{xparse}
+\usepackage{enumitem}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{longtable}
+\usepackage{tabularx}
+\usepackage{multicol}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{tikz}
+\usepackage{minted}
+\usepackage{tcolorbox}
+\usepackage[hidelinks]{hyperref}
+
+% =========================================================
+% PAQUETES ADICIONALES PARA TABLAS
+% =========================================================
+
+% array, tabularx y booktabs ya se cargan en PAQUETES GENERALES.
+\usepackage{colortbl}
+
+\tcbuselibrary{
+    minted,
+    skins,
+    breakable,
+    theorems
+}
+
+\usetikzlibrary{
+    positioning,
+    arrows.meta,
+    calc,
+    shapes.geometric
+}
+
+% =========================================================
+% COLORES INSTITUCIONALES
+% =========================================================
+
+\definecolor{BrandGreen}{RGB}{20,160,90}
+\definecolor{BrandBlue}{RGB}{30,60,120}
+\definecolor{BrandYellow}{RGB}{255,185,62}
+
+\definecolor{SoftGray}{RGB}{245,246,248}
+\definecolor{MediumGray}{RGB}{210,213,218}
+\definecolor{DarkGray}{RGB}{45,47,52}
+
+% =========================================================
+% COLORES PARA BLOQUES
+% =========================================================
+
+\definecolor{IdeaTitle}{RGB}{30,60,120}
+\definecolor{IdeaBody}{RGB}{235,241,255}
+
+\definecolor{PracticeTitle}{RGB}{20,120,90}
+\definecolor{PracticeBody}{RGB}{232,250,245}
+
+\definecolor{DefTitle}{RGB}{90,70,160}
+\definecolor{DefBody}{RGB}{240,236,255}
+
+\definecolor{ResultTitle}{RGB}{0,120,0}
+\definecolor{ResultBody}{RGB}{235,250,235}
+
+\definecolor{WarnTitle}{RGB}{160,30,30}
+\definecolor{WarnBody}{RGB}{255,235,235}
+
+% Comparación
+\definecolor{CompareTitle}{RGB}{28,92,145}
+\definecolor{CompareBody}{RGB}{235,245,252}
+
+% Pregunta
+\definecolor{QuestionTitle}{RGB}{176,112,20}
+\definecolor{QuestionBody}{RGB}{255,247,229}
+
+% Ejemplo
+\definecolor{ExampleTitle}{RGB}{84,78,150}
+\definecolor{ExampleBody}{RGB}{243,241,255}
+
+% =========================================================
+% COLORES PARA CÓDIGO
+% =========================================================
+
+\definecolor{CodigoClaroFondo}{HTML}{F7F7F7}
+\definecolor{CodigoClaroBorde}{HTML}{D0D0D0}
+
+\definecolor{CodigoOscuroFondo}{HTML}{1E1E1E}
+\definecolor{CodigoOscuroBorde}{HTML}{444444}
+
+% Alias específicos para HTML, por compatibilidad
+\colorlet{HtmlClaroFondo}{CodigoClaroFondo}
+\colorlet{HtmlClaroBorde}{CodigoClaroBorde}
+\colorlet{HtmlOscuroFondo}{CodigoOscuroFondo}
+\colorlet{HtmlOscuroBorde}{CodigoOscuroBorde}
+
+% =========================================================
+% CONFIGURACIÓN GENERAL DEL DOCUMENTO
+% =========================================================
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.45em}
+
+\setcounter{secnumdepth}{2}
+\setcounter{tocdepth}{2}
+
+\setlist[itemize]{
+    topsep=0.25em,
+    itemsep=0.15em,
+    parsep=0em,
+    partopsep=0em
+}
+
+\setlist[enumerate]{
+    topsep=0.25em,
+    itemsep=0.15em,
+    parsep=0em,
+    partopsep=0em
+}
+
+
+
+% Mejora el comportamiento de tablas
+\renewcommand{\arraystretch}{1.25}
+
+% =========================================================
+% IMÁGENES Y LOGOS ROBUSTOS
+% =========================================================
+
+\graphicspath{
+    {Template/}
+    {Images/}
+    {Images2/}
+    {Logos/}
+}
+
+\newcommand{\smartimage}[2][0.9\linewidth]{%
+    \ifnum\UseImages=1
+    \IfFileExists{#2}{%
+        \begin{center}
+            \includegraphics[width=#1]{#2}
+        \end{center}
+    }{%
+        \begin{center}
+            \fbox{%
+                \parbox{#1}{%
+                    \centering
+                    \scriptsize
+                    Imagen no encontrada:\\
+                    \texttt{#2}
+                }
+            }
+        \end{center}
+    }%
+    \fi
+}
+
+\newcommand{\smartlogo}[2][1.2cm]{%
+    \ifnum\UseImages=1
+    \IfFileExists{#2}{%
+        \includegraphics[height=#1]{#2}
+    }{%
+        \fbox{%
+            \parbox[c][#1][c]{2cm}{%
+                \centering
+                \scriptsize
+                Logo no encontrado
+            }
+        }
+    }%
+    \fi
+}
+
+% =========================================================
+% ICONOS DE CONTROL
+% =========================================================
+
+\newcommand{\ok}{\textcolor{green!70!black}{\faCheck}}
+\newcommand{\fail}{\textcolor{red!75!black}{\faTimes}}
+\newcommand{\warningicon}{\textcolor{orange!80!black}{\faExclamationTriangle}}
+\newcommand{\infoicon}{\textcolor{BrandBlue}{\faInfoCircle}}
+
+% =========================================================
+% CONFIGURACIÓN GLOBAL DE MINTED
+% =========================================================
+
+\setminted{
+    fontsize=\small,
+    breaklines=true,
+    autogobble=true,
+    stripnl=true,
+    tabsize=4,
+    encoding=utf8,
+    obeytabs=true
+}
+
+% =========================================================
+% ESTILOS GENERALES PARA CÓDIGO
+% =========================================================
+
+\tcbset{
+    codeclaro/.style={
+        listing engine=minted,
+        colback=CodigoClaroFondo,
+        colframe=CodigoClaroBorde,
+        coltext=black,
+        boxrule=0.6pt,
+        arc=2mm,
+        boxsep=0pt,
+        left=2mm,
+        right=2mm,
+        top=0.6mm,
+        bottom=0.6mm,
+        listing only,
+        enhanced,
+        breakable
+    },
+    codeoscuro/.style={
+        listing engine=minted,
+        colback=CodigoOscuroFondo,
+        colframe=CodigoOscuroBorde,
+        coltext=white,
+        boxrule=0.6pt,
+        arc=2mm,
+        boxsep=0pt,
+        left=2mm,
+        right=2mm,
+        top=0.6mm,
+        bottom=0.6mm,
+        listing only,
+        enhanced,
+        breakable
+    }
+}
+
+% =========================================================
+% HTML
+% =========================================================
+
+\newtcblisting{htmlcode}{
+    codeclaro,
+    minted language=html,
+    minted style=friendly,
+    minted options={
+        fontsize=\small,
+        breaklines=true,
+        autogobble=true,
+        tabsize=4,
+        encoding=utf8
+    }
+}
+
+\newtcblisting{htmlcodedark}{
+    codeoscuro,
+    minted language=html,
+    minted style=monokai,
+    minted options={
+        fontsize=\small,
+        breaklines=true,
+        autogobble=true,
+        tabsize=4,
+        encoding=utf8
+    }
+}
+
+% =========================================================
+% PYTHON
+% =========================================================
+
+\newtcblisting{pythoncode}{
+    codeclaro,
+    minted language=python,
+    minted style=friendly,
+    minted options={
+        fontsize=\small,
+        breaklines=true,
+        autogobble=true,
+        tabsize=4,
+        encoding=utf8
+    }
+}
+
+\newtcblisting{pythoncodedark}{
+    codeoscuro,
+    minted language=python,
+    minted style=monokai,
+    minted options={
+        fontsize=\small,
+        breaklines=true,
+        autogobble=true,
+        tabsize=4,
+        encoding=utf8
+    }
+}
+
+% =========================================================
+% C++
+% =========================================================
+
+\newtcblisting{cppcode}{
+    codeclaro,
+    minted language=cpp,
+    minted style=friendly,
+    minted options={
+        fontsize=\small,
+        breaklines=true,
+        autogobble=true,
+        tabsize=4,
+        encoding=utf8
+    }
+}
+
+\newtcblisting{cppcodedark}{
+    codeoscuro,
+    minted language=cpp,
+    minted style=monokai,
+    minted options={
+        fontsize=\small,
+        breaklines=true,
+        autogobble=true,
+        tabsize=4,
+        encoding=utf8
+    }
+}
+
+% =========================================================
+% CSS
+% =========================================================
+
+% CSS con fondo claro
+\newtcblisting{csscode}{
+    codeclaro,
+    minted language=css,
+    minted style=friendly,
+    minted options={
+        fontsize=\small,
+        breaklines=true,
+        autogobble=true,
+        tabsize=4,
+        encoding=utf8
+    }
+}
+
+% CSS con fondo oscuro
+\newtcblisting{csscodedark}{
+    codeoscuro,
+    minted language=css,
+    minted style=monokai,
+    minted options={
+        fontsize=\small,
+        breaklines=true,
+        autogobble=true,
+        tabsize=4,
+        encoding=utf8
+    }
+}
+
+% =========================================================
+% JAVA
+% =========================================================
+
+\newtcblisting{javacode}{
+    codeclaro,
+    minted language=java,
+    minted style=friendly,
+    minted options={
+        fontsize=\small,
+        breaklines=true,
+        autogobble=true,
+        tabsize=4,
+        encoding=utf8
+    }
+}
+
+\newtcblisting{javacodedark}{
+    codeoscuro,
+    minted language=java,
+    minted style=monokai,
+    minted options={
+        fontsize=\small,
+        breaklines=true,
+        autogobble=true,
+        tabsize=4,
+        encoding=utf8
+    }
+}
+
+% =========================================================
+% JAVASCRIPT
+% =========================================================
+\newtcblisting{javascriptcode}{
+    listing engine=minted,
+    minted language=javascript,
+    minted style=friendly,
+    minted options={
+        fontsize=\small,
+        breaklines=true,
+        autogobble=true,
+        stripnl=true,
+        tabsize=4,
+        encoding=utf8
+    },
+    colback=CodigoClaroFondo,
+    colframe=CodigoClaroBorde,
+    coltext=black,
+    boxrule=0.6pt,
+    arc=2mm,
+    left=2mm,
+    right=2mm,
+    top=0.0mm,
+    bottom=0.0mm,
+    listing only,
+    enhanced,
+    breakable
+}
+
+\newtcblisting{javascriptcodedark}{
+    listing engine=minted,
+    minted language=javascript,
+    minted style=monokai,
+    minted options={
+        fontsize=\small,
+        breaklines=true,
+        autogobble=true,
+        stripnl=true,
+        tabsize=4,
+        encoding=utf8
+    },
+    colback=CodigoOscuroFondo,
+    colframe=CodigoOscuroBorde,
+    coltext=white,
+    boxrule=0.6pt,
+    arc=2mm,
+    left=2mm,
+    right=2mm,
+    top=0.0mm,
+    bottom=0.0mm,
+    listing only,
+    enhanced,
+    breakable
+}
+
+% =========================================================
+% SQL
+% =========================================================
+
+\newtcblisting{sqlcode}{
+    codeclaro,
+    minted language=sql,
+    minted style=friendly,
+    minted options={
+        fontsize=\small,
+        breaklines=true,
+        autogobble=true,
+        tabsize=2,
+        encoding=utf8
+    }
+}
+
+\newtcblisting{sqlcodedark}{
+    codeoscuro,
+    minted language=sql,
+    minted style=monokai,
+    minted options={
+        fontsize=\small,
+        breaklines=true,
+        autogobble=true,
+        tabsize=2,
+        encoding=utf8
+    }
+}
+
+% =========================================================
+% BASH / TERMINAL
+% =========================================================
+
+\newtcblisting{bashcode}{
+    codeclaro,
+    minted language=bash,
+    minted style=friendly,
+    minted options={
+        fontsize=\small,
+        breaklines=true,
+        autogobble=true,
+        tabsize=4,
+        encoding=utf8
+    }
+}
+
+\newtcblisting{bashcodedark}{
+    codeoscuro,
+    minted language=bash,
+    minted style=monokai,
+    minted options={
+        fontsize=\small,
+        breaklines=true,
+        autogobble=true,
+        tabsize=4,
+        encoding=utf8
+    }
+}
+
+
+
+
+% =========================================================
+% TEXTO PLANO / CONSOLA
+% =========================================================
+
+\newtcblisting{consolecode}{
+    codeoscuro,
+    minted language=text,
+    minted style=monokai,
+    minted options={
+        fontsize=\small,
+        breaklines=true,
+        autogobble=true,
+        tabsize=4,
+        encoding=utf8
+    }
+}
+
+% =========================================================
+% ENTORNOS CON NOMBRE DE ARCHIVO
+% Uso:
+% \begin{htmlfile}{index.html}
+    % ...
+    % \end{htmlfile}
+% =========================================================
+
+\newtcblisting{htmlfile}[1]{
+    codeclaro,
+    minted language=html,
+    minted style=friendly,
+    minted options={
+        fontsize=\small,
+        breaklines=true,
+        autogobble=true,
+        tabsize=4,
+        encoding=utf8
+    },
+    title=\texttt{#1},
+    fonttitle=\bfseries,
+    coltitle=black,
+    colbacktitle=CodigoClaroBorde
+}
+
+\newtcblisting{pythonfile}[1]{
+    codeclaro,
+    minted language=python,
+    minted style=friendly,
+    minted options={
+        fontsize=\small,
+        breaklines=true,
+        autogobble=true,
+        tabsize=4,
+        encoding=utf8
+    },
+    title=\texttt{#1},
+    fonttitle=\bfseries,
+    coltitle=black,
+    colbacktitle=CodigoClaroBorde
+}
+
+\newtcblisting{cppfile}[1]{
+    codeclaro,
+    minted language=cpp,
+    minted style=friendly,
+    minted options={
+        fontsize=\small,
+        breaklines=true,
+        autogobble=true,
+        tabsize=4,
+        encoding=utf8
+    },
+    title=\texttt{#1},
+    fonttitle=\bfseries,
+    coltitle=black,
+    colbacktitle=CodigoClaroBorde
+}
+
+\newtcblisting{javafile}[1]{
+    codeclaro,
+    minted language=java,
+    minted style=friendly,
+    minted options={
+        fontsize=\small,
+        breaklines=true,
+        autogobble=true,
+        tabsize=4,
+        encoding=utf8
+    },
+    title=\texttt{#1},
+    fonttitle=\bfseries,
+    coltitle=black,
+    colbacktitle=CodigoClaroBorde
+}
+
+\newtcblisting{sqlfile}[1]{
+    codeclaro,
+    minted language=sql,
+    minted style=friendly,
+    minted options={
+        fontsize=\small,
+        breaklines=true,
+        autogobble=true,
+        tabsize=2,
+        encoding=utf8
+    },
+    title=\texttt{#1},
+    fonttitle=\bfseries,
+    coltitle=black,
+    colbacktitle=CodigoClaroBorde
+}
+
+\newtcblisting{bashfile}[1]{
+    codeclaro,
+    minted language=bash,
+    minted style=friendly,
+    minted options={
+        fontsize=\small,
+        breaklines=true,
+        autogobble=true,
+        tabsize=4,
+        encoding=utf8
+    },
+    title=\texttt{#1},
+    fonttitle=\bfseries,
+    coltitle=black,
+    colbacktitle=CodigoClaroBorde
+}
+
+% =========================================================
+% MONGODB / MONGOSH
+% =========================================================
+
+\newtcblisting{mongodbcode}{
+    codeclaro,
+    minted language=javascript,
+    minted style=friendly,
+    minted options={
+        fontsize=\small,
+        breaklines=true,
+        autogobble=true,
+        tabsize=4,
+        encoding=utf8
+    }
+}
+
+\newtcblisting{mongodbcodedark}{
+    codeoscuro,
+    minted language=javascript,
+    minted style=monokai,
+    minted options={
+        fontsize=\small,
+        breaklines=true,
+        autogobble=true,
+        tabsize=4,
+        encoding=utf8
+    }
+}
+
+% =========================================================
+% BLOQUES DOCENTES
+% El argumento +m permite varios párrafos
+% =========================================================
+
+\NewDocumentCommand{\Idea}{O{Idea clave} +m}{%
+    \begin{tcolorbox}[
+        title={\faLightbulb\ #1},
+        colback=IdeaBody,
+        colframe=IdeaTitle,
+        coltitle=white,
+        fonttitle=\bfseries,
+        boxrule=0.7pt,
+        arc=2mm,
+        breakable,
+        enhanced
+        ]
+        #2
+    \end{tcolorbox}
+}
+
+\NewDocumentCommand{\Practice}{O{Actividad práctica} +m}{%
+    \begin{tcolorbox}[
+        title={\faLaptopCode\ #1},
+        colback=PracticeBody,
+        colframe=PracticeTitle,
+        coltitle=white,
+        fonttitle=\bfseries,
+        boxrule=0.7pt,
+        arc=2mm,
+        breakable,
+        enhanced
+        ]
+        #2
+    \end{tcolorbox}
+}
+
+\NewDocumentCommand{\DefBlock}{O{Definición} +m}{%
+    \begin{tcolorbox}[
+        title={\faBook\ #1},
+        colback=DefBody,
+        colframe=DefTitle,
+        coltitle=white,
+        fonttitle=\bfseries,
+        boxrule=0.7pt,
+        arc=2mm,
+        breakable,
+        enhanced
+        ]
+        #2
+    \end{tcolorbox}
+}
+
+\NewDocumentCommand{\Result}{O{Resultado} +m}{%
+    \begin{tcolorbox}[
+        title={\faCheckCircle\ #1},
+        colback=ResultBody,
+        colframe=ResultTitle,
+        coltitle=white,
+        fonttitle=\bfseries,
+        boxrule=0.7pt,
+        arc=2mm,
+        breakable,
+        enhanced
+        ]
+        #2
+    \end{tcolorbox}
+}
+
+\NewDocumentCommand{\Warning}{O{Atención} +m}{%
+    \begin{tcolorbox}[
+        title={\faExclamationTriangle\ #1},
+        colback=WarnBody,
+        colframe=WarnTitle,
+        coltitle=white,
+        fonttitle=\bfseries,
+        boxrule=0.7pt,
+        arc=2mm,
+        breakable,
+        enhanced
+        ]
+        #2
+    \end{tcolorbox}
+}
+
+% Comparación: \Compare[Mi título]{Contenido}
+\NewDocumentCommand{\Compare}{O{Comparación} +m}{%
+    \begin{tcolorbox}[
+        title={\faBalanceScale\ #1},
+        colback=CompareBody,
+        colframe=CompareTitle,
+        coltitle=white,
+        fonttitle=\bfseries,
+        boxrule=0.7pt,
+        arc=2mm,
+        breakable,
+        enhanced
+        ]
+        #2
+    \end{tcolorbox}
+}
+
+% Pregunta: \Question[Mi título]{Contenido}
+\NewDocumentCommand{\Question}{O{Pregunta guía} +m}{%
+    \begin{tcolorbox}[
+        title={\faQuestionCircle\ #1},
+        colback=QuestionBody,
+        colframe=QuestionTitle,
+        coltitle=white,
+        fonttitle=\bfseries,
+        boxrule=0.7pt,
+        arc=2mm,
+        breakable,
+        enhanced
+        ]
+        #2
+    \end{tcolorbox}
+}
+
+% Ejemplo: \ExampleBlock[Mi título]{Contenido}
+% Se evita \Example para no generar posibles conflictos con otras clases/paquetes.
+\NewDocumentCommand{\ExampleBlock}{O{Ejemplo} +m}{%
+    \begin{tcolorbox}[
+        title={\faPuzzlePiece\ #1},
+        colback=ExampleBody,
+        colframe=ExampleTitle,
+        coltitle=white,
+        fonttitle=\bfseries,
+        boxrule=0.7pt,
+        arc=2mm,
+        breakable,
+        enhanced
+        ]
+        #2
+    \end{tcolorbox}
+}
+
+
+
+
+% =========================================================
+% ENCABEZADO Y PIE DE PÁGINA
+% =========================================================
+
+\pagestyle{fancy}
+\fancyhf{}
+
+\fancyhead[L]{%
+    \smartlogo[1.1cm]{\InstitutionLogo}
+}
+
+\fancyhead[R]{%
+    \begin{minipage}{0.72\textwidth}
+        \raggedleft
+        \small
+        \textbf{\Institution}\\
+        \textbf{\CourseName\ -- \CourseCode}\\
+        Profesor: \Instructor
+    \end{minipage}
+}
+
+\fancyfoot[L]{%
+    \footnotesize
+    \ClassName
+}
+
+\fancyfoot[C]{%
+    \footnotesize
+    \thepage/\pageref{LastPage}
+}
+
+\fancyfoot[R]{%
+    \footnotesize
+    \Email
+}
+
+\renewcommand{\headrulewidth}{0.3pt}
+\renewcommand{\footrulewidth}{0.2pt}
+
+\fancypagestyle{firstpage}{
+    \fancyhf{}
+
+    % Sin encabezado
+    \fancyhead[L]{}
+    \fancyhead[C]{}
+    \fancyhead[R]{}
+
+    % Conservar el pie
+    \fancyfoot[L]{%
+        \footnotesize
+        \ClassName
+    }
+
+    \fancyfoot[C]{%
+        \footnotesize
+        \thepage/\pageref{LastPage}
+    }
+
+    \fancyfoot[R]{%
+        \footnotesize
+        \Email
+    }
+
+    \renewcommand{\headrulewidth}{0pt}
+    \renewcommand{\footrulewidth}{0.2pt}
+}
+
+
+% =========================================================
+% PORTADA DE LA GUÍA
+% Uso: \GuideHeader
+% =========================================================
+
+\newcommand{\GuideHeader}{%
+    \begin{center}
+
+        \smartlogo[1.8cm]{\InstitutionLogo}
+
+        \vspace{0.25cm}
+
+        {\Large\bfseries \GuideTitle}\\[0.15cm]
+
+        {\large\bfseries \ClassName}\\[0.15cm]
+
+        {\CourseName\ -- \CourseCode}\\[0.1cm]
+
+        \Institution
+
+        \vspace{0.25cm}
+
+        \textcolor{BrandGreen}{\rule{0.92\textwidth}{0.8pt}}
+
+    \end{center}
+
+    \vspace{0.3cm}
+}
+
+% =========================================================
+% INFORMACIÓN GENERAL DE LA GUÍA
+% Uso:
+% \GuideInfo{Duración}{Modalidad}{Evidencia}
+% =========================================================
+
+\newcommand{\GuideInfo}[3]{%
+    \begin{tcolorbox}[
+        colback=SoftGray,
+        colframe=MediumGray,
+        boxrule=0.5pt,
+        arc=2mm
+        ]
+        \begin{tabularx}{\textwidth}{>{\bfseries}p{4.0cm}X}
+            Duración estimada: & #1 \\
+            Modalidad: & #2 \\
+            Evidencia: & #3
+        \end{tabularx}
+    \end{tcolorbox}
+}
+
+% =========================================================
+% TABLA DE LISTA DE VERIFICACIÓN
+% Uso:
+% \ChecklistItem{Texto}
+% =========================================================
+
+\newcommand{\ChecklistItem}[1]{%
+    \item[$\square$] #1
+}

@@ -1,12 +1,6 @@
 'use client';
 
-import {
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-  useMemo,
-} from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ChevronLeft,
   ChevronRight,
@@ -14,11 +8,13 @@ import {
   Minimize,
   X,
   List,
+  BookOpen,
+  Sparkles,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { BrandSignature } from '@/features/theme/brand-signature';
 import { ThemeControls } from '@/features/theme/theme-toggle';
-import type { Block, Frame, Institution, Lesson, Subject } from '@/features/catalog/model/types';
+import type { Block, Institution, Lesson, Subject } from '@/features/catalog/model/types';
 import { ContentBlock } from './content-block';
 import { InlineText } from './rich-text';
 import { institutionLogo } from '@/features/catalog/model/institution-logo';
@@ -61,82 +57,6 @@ function filterVisibleBlocks(blocks: Block[] = []): Block[] {
   });
 }
 
-/**
- * Estima la altura en píxeles de un bloque dentro del espacio de presentación
- */
-function estimateBlockHeight(block: Block): number {
-  switch (block.type) {
-    case 'text': {
-      const len = (block.content || '').length;
-      return Math.max(48, Math.ceil(len / 75) * 32);
-    }
-    case 'math':
-      return 110;
-    case 'callout': {
-      const content = block.content || '';
-      const hasMath = /\$\$|\\\[|\\begin\{(equation|align|gather)\}/.test(content);
-      const textLen = content.length;
-      const lines = Math.ceil(textLen / 65) + (hasMath ? 3 : 1);
-      return Math.max(120, lines * 28 + 48);
-    }
-    case 'list': {
-      const itemsCount = block.items?.length || (block.content ? block.content.split('\n').length : 3);
-      return Math.max(80, itemsCount * 42 + 25);
-    }
-    case 'diagram':
-    case 'image':
-      return 320;
-    case 'code': {
-      const lines = (block.content || '').split('\n').length;
-      return Math.max(130, Math.min(450, lines * 26 + 65));
-    }
-    case 'table':
-      return 220;
-    default:
-      return 80;
-  }
-}
-
-/**
- * Pagina de forma natural los bloques de un frame si exceden la altura segura de la diapositiva (~480px)
- * para garantizar que el 100% del contenido sea visible sin cortes ni desbordes.
- */
-function paginateBlocks(blocks: Block[]): Block[][] {
-  if (blocks.length <= 1) return [blocks];
-
-  const MAX_SLIDE_HEIGHT = 480;
-  const totalHeight = blocks.reduce((sum, b) => sum + estimateBlockHeight(b), 0);
-
-  // Si todo el contenido cabe cómodamente en una sola página:
-  if (totalHeight <= MAX_SLIDE_HEIGHT) {
-    return [blocks];
-  }
-
-  // Si supera la altura visible, repartir en páginas secuenciales
-  const pages: Block[][] = [];
-  let currentPage: Block[] = [];
-  let currentHeight = 0;
-
-  for (const block of blocks) {
-    const h = estimateBlockHeight(block);
-
-    if (currentPage.length > 0 && currentHeight + h > MAX_SLIDE_HEIGHT) {
-      pages.push(currentPage);
-      currentPage = [block];
-      currentHeight = h;
-    } else {
-      currentPage.push(block);
-      currentHeight += h;
-    }
-  }
-
-  if (currentPage.length > 0) {
-    pages.push(currentPage);
-  }
-
-  return pages.length > 0 ? pages : [blocks];
-}
-
 export function SlideDeck({
   lesson,
   subject,
@@ -148,24 +68,78 @@ export function SlideDeck({
   onToggleFullscreen,
 }: SlideDeckProps) {
   const [indexOpen, setIndexOpen] = useState(false);
+  const [activeSlide, setActiveSlide] = useState(current);
+  const stageRef = useRef<HTMLDivElement>(null);
+  const isProgrammaticScroll = useRef(false);
+  const scrollTimeout = useRef<NodeJS.Timeout | null>(null);
   const preloaded = useRef(new Set<string>());
 
-  const frame: Frame | undefined = lesson.frames[current];
-  const visibleBlocks = useMemo(() => filterVisibleBlocks(frame?.blocks), [frame]);
-  const pages = useMemo(() => paginateBlocks(visibleBlocks), [visibleBlocks]);
-  const [subPageIndex, setSubPageIndex] = useState(0);
+  // Desplazamiento suave y sin cortes hacia cualquier tema de la clase
+  const scrollToSlide = useCallback(
+    (index: number, smooth: boolean = true) => {
+      const safeIndex = Math.max(0, Math.min(index, lesson.frames.length - 1));
+      const el = document.getElementById(`presentation-frame-${safeIndex}`);
+      if (el) {
+        isProgrammaticScroll.current = true;
+        el.scrollIntoView({ behavior: smooth ? 'smooth' : 'auto', block: 'start' });
+        setActiveSlide(safeIndex);
+        onFrameChange(safeIndex);
 
-  // Reiniciar la sub-página al cambiar de diapositiva
+        if (scrollTimeout.current) clearTimeout(scrollTimeout.current);
+        scrollTimeout.current = setTimeout(() => {
+          isProgrammaticScroll.current = false;
+        }, 700);
+      }
+    },
+    [lesson.frames.length, onFrameChange]
+  );
+
+  // Posicionar en la diapositiva inicial al montar
   useEffect(() => {
-    setSubPageIndex(0);
-  }, [current]);
+    scrollToSlide(current, false);
+  }, []);
 
-  const totalPages = pages.length;
-  const safeSubPageIndex = Math.min(subPageIndex, Math.max(0, totalPages - 1));
-  const currentBlocks = pages[safeSubPageIndex] || visibleBlocks;
-  const isMultiPage = totalPages > 1;
+  // Detectar la diapositiva visible durante el scroll continuo manual
+  useEffect(() => {
+    const stage = stageRef.current;
+    if (!stage) return;
 
-  // Precargar imágenes de diapositivas adyacentes
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (isProgrammaticScroll.current) return;
+
+        let mostVisible: IntersectionObserverEntry | null = null;
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            if (!mostVisible || entry.intersectionRatio > mostVisible.intersectionRatio) {
+              mostVisible = entry;
+            }
+          }
+        }
+
+        if (mostVisible) {
+          const idx = Number(mostVisible.target.getAttribute('data-frame-index'));
+          if (!Number.isNaN(idx) && idx !== activeSlide) {
+            setActiveSlide(idx);
+            onFrameChange(idx);
+          }
+        }
+      },
+      {
+        root: stage,
+        threshold: [0.2, 0.5, 0.8],
+      }
+    );
+
+    const frames = stage.querySelectorAll('.presentation-reading-frame');
+    frames.forEach((frame) => observer.observe(frame));
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [activeSlide, onFrameChange, lesson.frames.length]);
+
+  // Precargar imágenes de la lección
   useEffect(() => {
     function walk(blocks: Block[]) {
       for (const b of blocks) {
@@ -178,55 +152,47 @@ export function SlideDeck({
         for (const item of b.items ?? []) walk(item);
       }
     }
-    for (const idx of [current, current + 1, current - 1]) {
-      const target = lesson.frames[idx];
-      if (target) walk(target.blocks);
+    for (const f of lesson.frames) {
+      walk(f.blocks);
     }
-  }, [current, lesson.frames]);
+  }, [lesson.frames]);
 
   const nextSlide = useCallback(() => {
-    if (safeSubPageIndex < totalPages - 1) {
-      setSubPageIndex((p) => p + 1);
-    } else if (current < lesson.frames.length - 1) {
-      onFrameChange(current + 1);
-      setSubPageIndex(0);
+    if (activeSlide < lesson.frames.length - 1) {
+      scrollToSlide(activeSlide + 1);
     }
-  }, [safeSubPageIndex, totalPages, current, lesson.frames.length, onFrameChange]);
+  }, [activeSlide, lesson.frames.length, scrollToSlide]);
 
   const previousSlide = useCallback(() => {
-    if (safeSubPageIndex > 0) {
-      setSubPageIndex((p) => p - 1);
-    } else if (current > 0) {
-      onFrameChange(current - 1);
-      setSubPageIndex(0);
+    if (activeSlide > 0) {
+      scrollToSlide(activeSlide - 1);
     }
-  }, [safeSubPageIndex, current, onFrameChange]);
+  }, [activeSlide, scrollToSlide]);
 
-  // Manejo de atajos de teclado
+  // Atajos de teclado
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (
         (e.target as HTMLElement)?.closest(
           'input,textarea,select,[contenteditable="true"],.cm-editor'
-        )
+        ) ||
+        document.querySelector('.image-lightbox-dialog')
       ) {
         return;
       }
 
-      if (['ArrowRight', 'PageDown', ' '].includes(e.key)) {
+      if (['ArrowRight', 'PageDown', 'ArrowDown', ' '].includes(e.key)) {
         e.preventDefault();
         nextSlide();
-      } else if (['ArrowLeft', 'PageUp'].includes(e.key)) {
+      } else if (['ArrowLeft', 'PageUp', 'ArrowUp'].includes(e.key)) {
         e.preventDefault();
         previousSlide();
       } else if (e.key === 'Home') {
         e.preventDefault();
-        onFrameChange(0);
-        setSubPageIndex(0);
+        scrollToSlide(0);
       } else if (e.key === 'End') {
         e.preventDefault();
-        onFrameChange(lesson.frames.length - 1);
-        setSubPageIndex(0);
+        scrollToSlide(lesson.frames.length - 1);
       } else if (e.key.toLowerCase() === 'f') {
         e.preventDefault();
         onToggleFullscreen();
@@ -247,9 +213,16 @@ export function SlideDeck({
 
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [nextSlide, previousSlide, onFrameChange, lesson.frames.length, onToggleFullscreen, fullscreen, onClose, indexOpen]);
-
-  const isReflection = frame && /reflexi|pensamiento|cita|frase|inspiraci/i.test(frame.title);
+  }, [
+    nextSlide,
+    previousSlide,
+    scrollToSlide,
+    lesson.frames.length,
+    onToggleFullscreen,
+    fullscreen,
+    onClose,
+    indexOpen,
+  ]);
 
   return (
     <div className={`slide-deck-container ${fullscreen ? 'is-fullscreen' : ''}`}>
@@ -293,80 +266,78 @@ export function SlideDeck({
         </div>
       </header>
 
-      {/* Escenario de presentación a pantalla completa (100% de la pantalla) */}
-      <main className="presentation-stage">
-        <article
-          className={`presentation-slide ${isReflection ? 'is-reflection-slide' : ''}`}
-          key={`${frame?.id}-${safeSubPageIndex}`}
-        >
-          {/* Cabecera del slide */}
-          <header className="slide-heading">
-            <div>
-              <span>{frame?.section}</span>
-              <h2>
-                <InlineText text={frame?.title || ''} />
-                {isMultiPage && (
-                  <span
-                    style={{
-                      marginLeft: '12px',
-                      fontSize: '0.65em',
-                      opacity: 0.8,
-                      fontWeight: 500,
-                      verticalAlign: 'middle',
-                    }}
-                  >
-                    (Parte {safeSubPageIndex + 1}/{totalPages})
-                  </span>
-                )}
-              </h2>
-            </div>
+      {/* Escenario de presentación: Lectura continua a pantalla completa */}
+      <main className="presentation-stage" ref={stageRef}>
+        <div className="presentation-reading-document">
+          {/* Tarjeta heroica de portada/encabezado de la presentación */}
+          <header className="presentation-document-header">
             {institutionLogo(institution) && (
-              <img src={institutionLogo(institution)!} alt={institution.shortName} />
+              <div className="presentation-header-logo-badge">
+                <img src={institutionLogo(institution)!} alt={institution.name} />
+              </div>
             )}
+            <div className="presentation-header-info">
+              <div className="presentation-header-eyebrow">
+                <span className="institution-tag-name">{institution.name}</span>
+                <span className="eyebrow-sep">/</span>
+                <span className="subject-tag-name">{subject.name}</span>
+              </div>
+              <h1 className="presentation-header-title">{lesson.title}</h1>
+              <div className="presentation-header-badges">
+                <span className="meta-badge">
+                  <BookOpen size={13} /> {lesson.frames.length} temas de clase
+                </span>
+                <span className="meta-badge">
+                  <Sparkles size={13} /> Modo Presentación Continua
+                </span>
+              </div>
+            </div>
           </header>
 
-          {/* Contenido del slide: flujo continuo unificado */}
-          <div className="slide-content">
-            <div className="slide-single-flow">
-              {currentBlocks.map((b, i) => (
-                <div className="slide-unit" key={i}>
-                  <ContentBlock block={b} />
-                </div>
-              ))}
-            </div>
-          </div>
+          {/* Temas desplegados como tarjetas escénicas continuas */}
+          {lesson.frames.map((frame, index) => {
+            const visibleBlocks = filterVisibleBlocks(frame.blocks);
+            const isReflection = /reflexi|pensamiento|cita|frase|inspiraci/i.test(frame.title);
 
-          {/* Pie del slide */}
-          <footer className="slide-footer">
-            <span>
-              {institution.shortName} · {lesson.title}
-            </span>
-            <div className="slide-footer-right">
-              {fullscreen && (
-                <button
-                  type="button"
-                  className="presentation-fullscreen-exit"
-                  onClick={onToggleFullscreen}
-                  aria-label="Salir de pantalla completa"
-                  title="Salir de pantalla completa (Esc)"
-                >
-                  <Minimize size={13} />
-                  <span>Salir de pantalla completa</span>
-                </button>
-              )}
-              <span>
-                {current + 1} / {lesson.frames.length}
-                {isMultiPage && ` · (${safeSubPageIndex + 1}/${totalPages})`}
-              </span>
-            </div>
-          </footer>
-        </article>
+            return (
+              <article
+                id={`presentation-frame-${index}`}
+                data-frame-index={index}
+                key={frame.id || index}
+                className={`presentation-reading-frame ${
+                  isReflection ? 'is-reflection-frame' : ''
+                }`}
+              >
+                {/* Cabecera limpia del tema */}
+                <header className="presentation-frame-header">
+                  <div className="presentation-frame-meta">
+                    <span className="presentation-frame-section">{frame.section}</span>
+                    <span className="presentation-frame-badge">
+                      Tema {index + 1} de {lesson.frames.length}
+                    </span>
+                  </div>
+                  <h2 className="presentation-frame-title">
+                    <InlineText text={frame.title || ''} />
+                  </h2>
+                </header>
+
+                {/* Contenido completo del tema */}
+                <div className="presentation-frame-content">
+                  {visibleBlocks.map((b, bIdx) => (
+                    <ContentBlock key={bIdx} block={b} />
+                  ))}
+                </div>
+              </article>
+            );
+          })}
+        </div>
       </main>
 
       {/* Barra de controles inferiores de navegación */}
       <footer className="presentation-controls">
         <div className="slide-shortcuts">
-          ← → Navegar <span>·</span> I Índice <span>·</span> F Pantalla completa <span>·</span> Esc Volver
+          ← → / Espacio Navegar <span>·</span> I Índice <span>·</span> F Pantalla completa{' '}
+          <span>·</span> Esc Volver
         </div>
         <div className="presentation-nav-group">
           <Button
@@ -381,9 +352,9 @@ export function SlideDeck({
           </Button>
           <Button
             variant="ghost"
-            disabled={current === 0 && safeSubPageIndex === 0}
+            disabled={activeSlide === 0}
             onClick={previousSlide}
-            aria-label="Diapositiva anterior"
+            aria-label="Tema anterior"
           >
             <ChevronLeft size={18} />
             Anterior
@@ -392,14 +363,13 @@ export function SlideDeck({
             Diapositiva
             <select
               aria-label="Ir a diapositiva"
-              value={current}
+              value={activeSlide}
               onChange={(e) => {
-                onFrameChange(Number(e.target.value));
-                setSubPageIndex(0);
+                scrollToSlide(Number(e.target.value));
               }}
             >
               {lesson.frames.map((f, i) => (
-                <option key={f.id} value={i}>
+                <option key={f.id || i} value={i}>
                   {i + 1} · {f.title.replace(/\$([^\$]+)\$/g, '$1')}
                 </option>
               ))}
@@ -407,9 +377,9 @@ export function SlideDeck({
           </label>
           <Button
             variant="ghost"
-            disabled={current === lesson.frames.length - 1 && safeSubPageIndex === totalPages - 1}
+            disabled={activeSlide === lesson.frames.length - 1}
             onClick={nextSlide}
-            aria-label="Diapositiva siguiente"
+            aria-label="Tema siguiente"
           >
             Siguiente
             <ChevronRight size={18} />
@@ -421,12 +391,12 @@ export function SlideDeck({
       <div className="presentation-progress">
         <i
           style={{
-            width: `${((current + (safeSubPageIndex + 1) / totalPages) / lesson.frames.length) * 100}%`,
+            width: `${((activeSlide + 1) / lesson.frames.length) * 100}%`,
           }}
         />
       </div>
 
-      {/* Cajón / Modal de índice interactivo de diapositivas */}
+      {/* Cajón lateral interactivo de índice */}
       {indexOpen && (
         <div
           className="presentation-index-overlay"
@@ -439,9 +409,9 @@ export function SlideDeck({
           <aside className="presentation-index-drawer">
             <header className="presentation-index-header">
               <div>
-                <span>ÍNDICE DE DIAPOSITIVAS</span>
+                <span>ÍNDICE DE CONTENIDOS</span>
                 <h3>{lesson.title}</h3>
-                <small>{lesson.frames.length} diapositivas en total</small>
+                <small>{lesson.frames.length} temas en total</small>
               </div>
               <button
                 type="button"
@@ -457,17 +427,18 @@ export function SlideDeck({
             <div className="presentation-index-scroll">
               <div className="presentation-index-grid">
                 {lesson.frames.map((f, i) => {
-                  const isCurrent = i === current;
+                  const isCurrent = i === activeSlide;
                   const hasCode = f.blocks.some((b) => b.type === 'code');
-                  const hasDiagram = f.blocks.some((b) => b.type === 'diagram' || b.type === 'image');
+                  const hasDiagram = f.blocks.some(
+                    (b) => b.type === 'diagram' || b.type === 'image'
+                  );
                   return (
                     <button
-                      key={f.id}
+                      key={f.id || i}
                       type="button"
                       className={`presentation-index-card ${isCurrent ? 'is-current' : ''}`}
                       onClick={() => {
-                        onFrameChange(i);
-                        setSubPageIndex(0);
+                        scrollToSlide(i);
                         setIndexOpen(false);
                       }}
                     >
@@ -489,7 +460,9 @@ export function SlideDeck({
             </div>
 
             <footer className="presentation-index-footer">
-              <span>Navega haciendo clic en cualquier diapositiva o presiona <kbd>I</kbd> / <kbd>Esc</kbd> para cerrar.</span>
+              <span>
+                Haz clic en cualquier tema o presiona <kbd>I</kbd> / <kbd>Esc</kbd> para cerrar.
+              </span>
             </footer>
           </aside>
         </div>

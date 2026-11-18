@@ -1,0 +1,121 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://d3im3r-class.local/schema/document-1.0.0.json",
+  "title": "d3im3r-class Lesson Document",
+  "type": "object",
+  "required": ["schemaVersion", "id", "type", "title", "metadata", "source", "structure"],
+  "properties": {
+    "schemaVersion": {"const": "1.0.0"},
+    "id": {"type": "string", "minLength": 1},
+    "type": {"const": "lesson"},
+    "title": {"type": "string"},
+    "metadata": {"type": "object", "additionalProperties": {"type": "string"}},
+    "source": {
+      "type": "object",
+      "required": ["file", "template"],
+      "properties": {"file": {"type": "string"}, "template": {"const": "beamer"}},
+      "additionalProperties": false
+    },
+    "structure": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/section"}
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "section": {
+      "type": "object",
+      "required": ["id", "type", "title", "children"],
+      "properties": {
+        "id": {"type": "string"}, "type": {"const": "section"},
+        "title": {"type": "string"}, "implicit": {"type": "boolean"},
+        "introTitle": {"type": "string"}, "introSubtitle": {"type": "string"},
+        "children": {"type": "array", "items": {"oneOf": [
+          {"$ref": "#/$defs/subsection"}, {"$ref": "#/$defs/frame"}
+        ]}}
+      },
+      "additionalProperties": false
+    },
+    "subsection": {
+      "type": "object",
+      "required": ["id", "type", "title", "children"],
+      "properties": {
+        "id": {"type": "string"}, "type": {"const": "subsection"},
+        "title": {"type": "string"},
+        "children": {"type": "array", "items": {"$ref": "#/$defs/frame"}}
+      },
+      "additionalProperties": false
+    },
+    "frame": {
+      "type": "object",
+      "required": ["id", "type", "title", "blocks"],
+      "properties": {
+        "id": {"type": "string"}, "type": {"const": "frame"},
+        "title": {"type": "string"}, "label": {"type": "string"},
+        "sourceLine": {"type": "integer", "minimum": 1},
+        "blocks": {"type": "array", "items": {"$ref": "#/$defs/block"}}
+      },
+      "additionalProperties": false
+    },
+    "inline": {
+      "oneOf": [
+        {"type": "object", "required": ["type", "value"], "properties": {"type": {"const": "text"}, "value": {"type": "string"}}, "additionalProperties": false},
+        {"type": "object", "required": ["type", "latex"], "properties": {"type": {"const": "math_inline"}, "latex": {"type": "string"}}, "additionalProperties": false},
+        {"type": "object", "required": ["type"], "properties": {"type": {"const": "line_break"}}, "additionalProperties": false},
+        {"type": "object", "required": ["type", "children"], "properties": {
+          "type": {"enum": ["strong", "emphasis", "underline", "code_inline", "small_caps", "span"]},
+          "href": {"type": ["string", "null"]},
+          "children": {"type": "array", "items": {"$ref": "#/$defs/inline"}}
+        }, "additionalProperties": false},
+        {"type": "object", "required": ["type", "href", "children"], "properties": {
+          "type": {"const": "link"}, "href": {"type": "string"},
+          "children": {"type": "array", "items": {"$ref": "#/$defs/inline"}}
+        }, "additionalProperties": false}
+      ]
+    },
+    "block": {
+      "oneOf": [
+        {"type": "object", "required": ["type", "children"], "properties": {
+          "type": {"const": "paragraph"}, "children": {"type": "array", "items": {"$ref": "#/$defs/inline"}}
+        }, "additionalProperties": false},
+        {"type": "object", "required": ["type", "latex", "display"], "properties": {
+          "type": {"const": "math"}, "latex": {"type": "string"}, "display": {"const": true},
+          "label": {"type": "string"}
+        }, "additionalProperties": false},
+        {"type": "object", "required": ["type", "variant", "children"], "properties": {
+          "type": {"const": "academic_block"}, "variant": {"type": "string"},
+          "title": {"type": ["string", "null"]},
+          "children": {"type": "array", "items": {"$ref": "#/$defs/block"}}
+        }, "additionalProperties": false},
+        {"type": "object", "required": ["type", "assetId"], "properties": {
+          "type": {"const": "figure"}, "assetId": {"type": "string"}
+        }, "additionalProperties": false},
+        {"type": "object", "required": ["type", "language", "value"], "properties": {
+          "type": {"const": "code"}, "language": {"type": "string"}, "value": {"type": "string"}
+        }, "additionalProperties": false},
+        {"type": "object", "required": ["type", "variant", "items"], "properties": {
+          "type": {"const": "list"}, "variant": {"enum": ["itemize", "enumerate", "description"]},
+          "items": {"type": "array", "items": {"type": "object", "required": ["blocks"], "properties": {
+            "label": {"type": "string"}, "blocks": {"type": "array", "items": {"$ref": "#/$defs/block"}}
+          }, "additionalProperties": false}}
+        }, "additionalProperties": false},
+        {"type": "object", "required": ["type", "rows"], "properties": {
+          "type": {"const": "table"}, "columnSpec": {"type": ["string", "null"]},
+          "rows": {"type": "array", "items": {"type": "array", "items": {
+            "type": "object", "required": ["colspan", "rowspan", "children"],
+            "properties": {
+              "colspan": {"type": "integer", "minimum": 1},
+              "rowspan": {"type": "integer", "minimum": 1},
+              "children": {"type": "array", "items": {"$ref": "#/$defs/block"}}
+            }, "additionalProperties": false
+          }}}
+        }, "additionalProperties": false},
+        {"type": "object", "required": ["type", "reason", "latex"], "properties": {
+          "type": {"const": "unsupported"}, "reason": {"type": "string"},
+          "env": {"type": "string"}, "latex": {"type": "string"},
+          "children": {"type": "array", "items": {"$ref": "#/$defs/block"}}
+        }, "additionalProperties": false}
+      ]
+    }
+  }
+}
