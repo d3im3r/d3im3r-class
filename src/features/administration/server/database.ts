@@ -54,13 +54,18 @@ export function getPgPool(): Pool | undefined {
 }
 
 let lastSyncTime = 0;
-export async function syncFromPostgres(force = false) {
+let inFlightSync: Promise<void> | null = null;
+
+export async function syncFromPostgres(force = false): Promise<void> {
   const pool = getPgPool();
   if (!pool) return;
   const now = Date.now();
-  if (!force && now - lastSyncTime < 2000) return;
-  try {
-    const res = await pool.query(`
+  if (!force && now - lastSyncTime < 30000) return;
+  if (inFlightSync) return inFlightSync;
+
+  inFlightSync = (async () => {
+    try {
+      const res = await pool.query(`
     SELECT json_build_object(
       'users', COALESCE((SELECT json_agg(u) FROM users u), '[]'::json),
       'sessions', COALESCE((SELECT json_agg(s) FROM sessions s), '[]'::json),
@@ -114,6 +119,14 @@ export async function syncFromPostgres(force = false) {
               usr.banReason,
               usr.banExpires
             );
+          // Asegurar registro puente en 'users' para evitar fallos de Foreign Key en enrollments/progress
+          const r = usr.role === 'admin' ? 'admin' : usr.role === 'teacher' ? 'teacher' : 'student';
+          const uName = usr.username || (usr.email ? usr.email.split('@')[0] : usr.id);
+          sql
+            .prepare(
+              'INSERT INTO users(id,name,username,password,role) VALUES (?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET name=excluded.name,role=excluded.role'
+            )
+            .run(usr.id, usr.name, uName, 'managed-by-better-auth', r);
         }
       }
       if (Array.isArray(state.account)) {
@@ -190,10 +203,11 @@ export async function syncFromPostgres(force = false) {
       }
       if (Array.isArray(state.subjects)) {
         const pgSubIds = state.subjects.map((s: any) => s.id);
+        const localSubCount = (sql.prepare('SELECT COUNT(*) as c FROM subjects').get() as any)?.c ?? 0;
         if (pgSubIds.length > 0) {
           const placeholders = pgSubIds.map(() => '?').join(',');
           sql.prepare(`DELETE FROM subjects WHERE id NOT IN (${placeholders})`).run(...pgSubIds);
-        } else {
+        } else if (localSubCount === 0) {
           sql.prepare('DELETE FROM subjects').run();
         }
         for (const sub of state.subjects) {
@@ -207,19 +221,38 @@ export async function syncFromPostgres(force = false) {
       }
       if (Array.isArray(state.lessons)) {
         const pgLessonIds = state.lessons.map((l: any) => l.id);
+        const localLessonCount = (sql.prepare('SELECT COUNT(*) as c FROM lessons').get() as any)?.c ?? 0;
         if (pgLessonIds.length > 0) {
           const placeholders = pgLessonIds.map(() => '?').join(',');
           sql.prepare(`DELETE FROM lessons WHERE id NOT IN (${placeholders})`).run(...pgLessonIds);
-        } else {
+          for (const les of state.lessons) {
+            const dataStr = typeof les.data === 'string' ? les.data : JSON.stringify(les.data);
+            sql
+              .prepare(
+                'INSERT INTO lessons(id,subject_id,status,revision,reviewed,data) VALUES (?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET subject_id=excluded.subject_id,status=excluded.status,revision=excluded.revision,reviewed=excluded.reviewed,data=excluded.data'
+              )
+              .run(les.id, les.subject_id, les.status, les.revision, les.reviewed, dataStr);
+          }
+        } else if (localLessonCount > 0 && pool) {
+          // Postgres está vacío (primera conexión): poblar Postgres desde el seed local sin borrar SQLite
+          for (const l of sql.prepare('SELECT * FROM lessons').all() as any[]) {
+            pool
+              .query(
+                'INSERT INTO lessons(id,subject_id,status,revision,reviewed,data) VALUES ($1,$2,$3,$4,$5,$6) ON CONFLICT(id) DO NOTHING',
+                [l.id, l.subject_id, l.status, l.revision, l.reviewed, l.data]
+              )
+              .catch(console.error);
+          }
+          for (const s of sql.prepare('SELECT * FROM subjects').all() as any[]) {
+            pool
+              .query(
+                'INSERT INTO subjects(id,institution_id,data) VALUES ($1,$2,$3) ON CONFLICT(id) DO NOTHING',
+                [s.id, s.institution_id, s.data]
+              )
+              .catch(console.error);
+          }
+        } else if (localLessonCount === 0) {
           sql.prepare('DELETE FROM lessons').run();
-        }
-        for (const les of state.lessons) {
-          const dataStr = typeof les.data === 'string' ? les.data : JSON.stringify(les.data);
-          sql
-            .prepare(
-              'INSERT INTO lessons(id,subject_id,status,revision,reviewed,data) VALUES (?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET subject_id=excluded.subject_id,status=excluded.status,revision=excluded.revision,reviewed=excluded.reviewed,data=excluded.data'
-            )
-            .run(les.id, les.subject_id, les.status, les.revision, les.reviewed, dataStr);
         }
       }
       if (Array.isArray(state.enrollments)) {
@@ -294,7 +327,12 @@ export async function syncFromPostgres(force = false) {
     }
   } catch (err) {
     console.error('Failed to sync from Postgres:', err);
+  } finally {
+    inFlightSync = null;
   }
+  })();
+
+  return inFlightSync;
 }
 export function db() {
   if (connection) return connection;

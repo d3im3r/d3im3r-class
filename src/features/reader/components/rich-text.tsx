@@ -1,6 +1,6 @@
 import { Fragment, type ReactNode } from 'react';
 import katex from 'katex';
-import { group } from '@/features/latex-import/lib/parser';
+import { group } from '../lib/parser-utils';
 function MathInline({ source }: { source: string }) {
   const clean = (source || '')
     .replace(/\\pause(\[[^\]]*\])?/g, '')

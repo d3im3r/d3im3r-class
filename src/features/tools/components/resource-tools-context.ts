@@ -1,3 +1,2 @@
 'use client';
-import { createContext } from 'react';
-export const ResourceToolsContext = createContext(false);
+export { ResourceToolsContext } from '@/shared/context/resource-tools-context';

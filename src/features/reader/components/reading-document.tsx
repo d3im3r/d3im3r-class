@@ -20,7 +20,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { Frame, Institution, Lesson, Subject } from '@/features/catalog/model/types';
-import { ResourceToolsContext } from '@/features/tools/components/resource-tools-context';
+import { ResourceToolsContext } from '@/shared/context/resource-tools-context';
 import { ContentBlock } from './content-block';
 import { InlineText } from './rich-text';
 import { institutionLogo } from '@/features/catalog/model/institution-logo';
@@ -121,14 +121,16 @@ export function ReadingDocument({
 
   useEffect(() => {
     const element = indexDialog.current;
-    if (indexOpen && !element?.open) element?.showModal();
-    if (!indexOpen && element?.open) element.close();
-    if (!indexOpen) return;
-    const previous = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    return () => {
-      document.body.style.overflow = previous;
-    };
+    if (indexOpen && !element?.open) {
+      element?.showModal();
+      requestAnimationFrame(() => {
+        const active = element?.querySelector('.outline-item-btn.current');
+        active?.scrollIntoView({ block: 'nearest' });
+      });
+    }
+    if (!indexOpen && element?.open) {
+      element.close();
+    }
   }, [indexOpen]);
 
   return (
@@ -246,51 +248,16 @@ export function ReadingDocument({
             </footer>
           </div>
         </div>
-
-        {/* Barra lateral de índice de lectura */}
-        <aside className="lesson-outline">
-          <div className="outline-sticky">
-            <header>
-              <span>ÍNDICE DE LA CLASE</span>
-              <strong>{sections.length} secciones</strong>
-            </header>
-            <nav className="outline-nav">
-              {sections.map((section, idx) => (
-                <div key={idx} className="outline-section">
-                  <span className="outline-section-name">{section.name}</span>
-                  <ul>
-                    {section.frames.map(({ frame: f, index }) => (
-                      <li key={f.id}>
-                        <button
-                          type="button"
-                          className={`outline-item ${frameIndex === index ? 'active' : ''} ${
-                            completed.includes(f.id) ? 'completed' : ''
-                          }`}
-                          onClick={() => jump(index)}
-                        >
-                          <span className="outline-dot" />
-                          <span className="outline-title">
-                            {f.title.replace(/\$([^\$]+)\$/g, '$1')}
-                          </span>
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ))}
-            </nav>
-          </div>
-        </aside>
       </div>
 
-      {/* Botón flotante para abrir índice en móviles */}
+      {/* Botón flotante para abrir/cerrar índice */}
       <div className="reader-floating-actions">
         <Button
           ref={indexToggle}
           variant="outline"
           size="sm"
-          onClick={() => setIndexOpen(true)}
-          aria-label="Abrir índice de contenidos"
+          onClick={() => setIndexOpen((open) => !open)}
+          aria-label={indexOpen ? 'Cerrar índice' : 'Abrir índice de contenidos'}
         >
           <ListTree size={16} />
           <span>Índice</span>
@@ -301,51 +268,77 @@ export function ReadingDocument({
         </Button>
       </div>
 
-      {/* Diálogo modal de índice para pantallas pequeñas */}
+      {/* Diálogo modal de índice interactivo */}
       <dialog
         ref={indexDialog}
         className="reading-index-dialog"
-        onClose={() => setIndexOpen(false)}
         aria-label="Índice de contenidos de la clase"
+        onCancel={(e) => {
+          e.preventDefault();
+          closeIndex();
+        }}
+        onClick={(event) => {
+          const rect = event.currentTarget.getBoundingClientRect();
+          if (
+            event.target === event.currentTarget &&
+            (event.clientX < rect.left ||
+              event.clientX > rect.right ||
+              event.clientY < rect.top ||
+              event.clientY > rect.bottom)
+          ) {
+            closeIndex();
+          }
+        }}
       >
-        <div className="reading-index-modal">
+        <aside className="reading-index-aside">
           <header className="reading-index-header">
             <div>
-              <span>ÍNDICE DE CONTENIDOS</span>
+              <span>ÍNDICE DE LA CLASE</span>
               <h3>{lesson.title}</h3>
+              <small>{lesson.frames.length} bloques · {sections.length} secciones</small>
             </div>
             <button
               type="button"
               className="index-close-btn"
               onClick={closeIndex}
               aria-label="Cerrar índice"
+              title="Cerrar índice (Esc)"
             >
               <X size={18} />
             </button>
           </header>
-          <div className="reading-index-body">
+
+          <nav className="outline-scroll" aria-label="Bloques de la clase">
             {sections.map((section, idx) => (
-              <div key={idx} className="index-modal-section">
-                <h4>{section.name}</h4>
-                <ul>
-                  {section.frames.map(({ frame: f, index }) => (
-                    <li key={f.id}>
+              <div key={idx} className="outline-section-group">
+                <span className="outline-section-name">{section.name}</span>
+                <div className="outline-section-items">
+                  {section.frames.map(({ frame: f, index }) => {
+                    const isCurrent = frameIndex === index;
+                    return (
                       <button
+                        key={f.id}
                         type="button"
-                        className={`index-modal-item ${frameIndex === index ? 'current' : ''}`}
+                        className={`outline-item-btn ${isCurrent ? 'current' : ''}`}
                         onClick={() => jump(index)}
+                        aria-current={isCurrent ? 'true' : undefined}
                       >
-                        <span>{index + 1}.</span>
-                        <span>{f.title.replace(/\$([^\$]+)\$/g, '$1')}</span>
-                        {completed.includes(f.id) && <Check size={14} className="text-emerald-500" />}
+                        <span className="outline-item-num">{index + 1}</span>
+                        <span className="outline-item-title">
+                          {f.title.replace(/\$([^\$]+)\$/g, '$1')}
+                        </span>
+                        {isCurrent && <span className="outline-current-badge">Actual</span>}
+                        {completed.includes(f.id) && !isCurrent && (
+                          <Check size={14} className="outline-check-icon text-emerald-500" />
+                        )}
                       </button>
-                    </li>
-                  ))}
-                </ul>
+                    );
+                  })}
+                </div>
               </div>
             ))}
-          </div>
-        </div>
+          </nav>
+        </aside>
       </dialog>
     </main>
   );

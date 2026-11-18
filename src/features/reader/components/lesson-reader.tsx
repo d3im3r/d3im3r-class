@@ -3,7 +3,6 @@
 import {
   useCallback,
   useEffect,
-  useRef,
   useState,
 } from 'react';
 import type { Institution, Lesson, Subject } from '@/features/catalog/model/types';
@@ -31,20 +30,6 @@ export function LessonReader({
 }) {
   const [presenting, setPresenting] = useState(false);
   const [fullscreen, setFullscreen] = useState(false);
-  const dialogRef = useRef<HTMLDialogElement>(null);
-
-  // Abrir y cerrar el modal nativo de presentación
-  useEffect(() => {
-    const el = dialogRef.current;
-    if (presenting && !el?.open) {
-      try {
-        el?.showModal();
-      } catch {}
-    }
-    if (!presenting && el?.open) {
-      el.close();
-    }
-  }, [presenting]);
 
   // Escuchar cambios de pantalla completa del navegador
   useEffect(() => {
@@ -110,27 +95,14 @@ export function LessonReader({
         frameIndex={frameIndex}
       />
 
-      {/* Diálogo modal de modo presentación */}
-      <dialog
-        ref={dialogRef}
-        className={`presentation-dialog ${fullscreen ? 'is-fullscreen' : ''}`}
-        onCancel={(e) => {
-          e.preventDefault();
-          if (document.fullscreenElement) {
-            document.exitFullscreen().catch(() => {});
-          } else if (fullscreen) {
-            setFullscreen(false);
-          } else {
-            closePresentation();
-          }
-        }}
-        onClose={() => {
-          setFullscreen(false);
-          setPresenting(false);
-        }}
-        aria-label={`Presentación: ${lesson.title}`}
-      >
-        {presenting && (
+      {/* Vista modal de modo presentación */}
+      {presenting && (
+        <div
+          className={`presentation-dialog is-open ${fullscreen ? 'is-fullscreen' : ''}`}
+          role="dialog"
+          aria-modal="true"
+          aria-label={`Presentación: ${lesson.title}`}
+        >
           <SlideDeck
             lesson={lesson}
             subject={subject}
@@ -141,8 +113,8 @@ export function LessonReader({
             fullscreen={fullscreen}
             onToggleFullscreen={toggleFullscreen}
           />
-        )}
-      </dialog>
+        </div>
+      )}
     </>
   );
 }

@@ -32,7 +32,7 @@ import { ThemeControls } from '@/features/theme/theme-toggle';
 import dynamic from 'next/dynamic';
 import { toast } from 'sonner';
 import { fireCelebration } from '@/lib/confetti';
-import { ResourceToolsContext } from '@/features/tools/components/resource-tools-context';
+import { ResourceToolsContext } from '@/shared/context/resource-tools-context';
 const ToolsPanel = dynamic(
   () => import('@/features/tools/components/tools-panel').then((m) => m.ToolsPanel),
   { loading: () => <p className="p-8">Cargando herramientas…</p> }
@@ -55,6 +55,7 @@ export function Workspace({
   initialProgress: Progress;
 }) {
   const [toolSeed, setToolSeed] = useState<string | undefined>(),
+    [toolLanguage, setToolLanguage] = useState<string | undefined>(),
     [toolVersion, setToolVersion] = useState(0);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false),
     [compact, setCompact] = useState(false);
@@ -285,9 +286,18 @@ export function Workspace({
   useEffect(() => {
     if (!canUseTools) return;
     const open = (event: Event) => {
-      const source = (event as CustomEvent<string>).detail;
-      if (typeof source !== 'string') return;
+      const detail = (event as CustomEvent).detail;
+      let source = '';
+      let lang = '';
+      if (typeof detail === 'string') {
+        source = detail;
+      } else if (detail && typeof detail === 'object') {
+        source = detail.code || '';
+        lang = detail.language || '';
+      }
+      if (!source) return;
       setToolSeed(source);
+      setToolLanguage(lang);
       setToolVersion((v) => v + 1);
       setLessonId(null);
       setView('tools');
@@ -656,7 +666,12 @@ export function Workspace({
             </div>
           )}
           {view === 'tools' && canUseTools ? (
-            <ToolsPanel key={toolVersion} catalog={catalog} seed={toolSeed} />
+            <ToolsPanel
+              key={toolVersion}
+              catalog={catalog}
+              seed={toolSeed}
+              initialLanguage={toolLanguage}
+            />
           ) : lesson && frame ? (
             <LessonReader
               key={lesson.id}

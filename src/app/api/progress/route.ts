@@ -6,9 +6,10 @@ import {
   text,
 } from '@/features/auth/server/auth';
 import { canReadLesson, userProgress } from '@/features/learning/server/access';
-import { db, readLesson, getPgPool, flushPg } from '@/features/administration/server/database';
+import { db, readLesson, getPgPool, flushPg, syncFromPostgres } from '@/features/administration/server/database';
 export async function GET() {
   try {
+    await syncFromPostgres();
     return Response.json(userProgress(await requirePermission({ progress: ['read'] })), {
       headers: { 'Cache-Control': 'no-store' },
     });

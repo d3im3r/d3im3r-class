@@ -23,9 +23,6 @@ import { ContentBlock } from './content-block';
 import { InlineText } from './rich-text';
 import { institutionLogo } from '@/features/catalog/model/institution-logo';
 
-const CANVAS_WIDTH = 1600;
-const CANVAS_HEIGHT = 900;
-
 export interface SlideDeckProps {
   lesson: Lesson;
   subject: Subject;
@@ -65,55 +62,79 @@ function filterVisibleBlocks(blocks: Block[] = []): Block[] {
 }
 
 /**
- * Si la diapositiva tiene medios visuales o alta densidad de bloques,
- * distribuye inteligentemente en 2 columnas para no desbordar verticalmente.
+ * Estima la altura en píxeles de un bloque dentro del espacio de presentación
  */
-function splitBlocksIntoColumns(blocks: Block[]): {
-  left: Block[];
-  right: Block[];
-  isSplit: boolean;
-} {
-  if (blocks.length <= 1) {
-    return { left: blocks, right: [], isSplit: false };
-  }
-
-  // 1. Caso con Medios visuales o interactivos (diagrama, imagen, código)
-  const mediaIndices = blocks
-    .map((b, i) => (b.type === 'diagram' || b.type === 'image' || b.type === 'code' ? i : -1))
-    .filter((i) => i !== -1);
-
-  if (mediaIndices.length > 0 && blocks.length > 1) {
-    const mediaSet = new Set(mediaIndices);
-    const mediaBlocks = blocks.filter((_, i) => mediaSet.has(i));
-    const nonMedia = blocks.filter((_, i) => !mediaSet.has(i));
-
-    // El medio visual (código o diagrama) ocupa la columna derecha completa
-    return { left: nonMedia, right: mediaBlocks, isSplit: true };
-  }
-
-  // 2. Diapositivas densas sin medios: si tienen callouts o >= 5 bloques
-  const callouts = blocks.filter((b) => b.type === 'callout');
-  const nonCallouts = blocks.filter((b) => b.type !== 'callout');
-
-  if (blocks.length >= 5) {
-    if (callouts.length >= 2) {
-      if (nonCallouts.length > 0) {
-        return { left: nonCallouts, right: callouts, isSplit: true };
-      }
-      const mid = Math.ceil(blocks.length / 2);
-      return { left: blocks.slice(0, mid), right: blocks.slice(mid), isSplit: true };
+function estimateBlockHeight(block: Block): number {
+  switch (block.type) {
+    case 'text': {
+      const len = (block.content || '').length;
+      return Math.max(48, Math.ceil(len / 75) * 32);
     }
-
-    if (callouts.length === 1 && nonCallouts.length >= 4) {
-      const mid = Math.ceil(blocks.length / 2);
-      return { left: blocks.slice(0, mid), right: blocks.slice(mid), isSplit: true };
+    case 'math':
+      return 110;
+    case 'callout': {
+      const content = block.content || '';
+      const hasMath = /\$\$|\\\[|\\begin\{(equation|align|gather)\}/.test(content);
+      const textLen = content.length;
+      const lines = Math.ceil(textLen / 65) + (hasMath ? 3 : 1);
+      return Math.max(120, lines * 28 + 48);
     }
+    case 'list': {
+      const itemsCount = block.items?.length || (block.content ? block.content.split('\n').length : 3);
+      return Math.max(80, itemsCount * 42 + 25);
+    }
+    case 'diagram':
+    case 'image':
+      return 320;
+    case 'code': {
+      const lines = (block.content || '').split('\n').length;
+      return Math.max(130, Math.min(450, lines * 26 + 65));
+    }
+    case 'table':
+      return 220;
+    default:
+      return 80;
+  }
+}
 
-    const mid = Math.ceil(blocks.length / 2);
-    return { left: blocks.slice(0, mid), right: blocks.slice(mid), isSplit: true };
+/**
+ * Pagina de forma natural los bloques de un frame si exceden la altura segura de la diapositiva (~480px)
+ * para garantizar que el 100% del contenido sea visible sin cortes ni desbordes.
+ */
+function paginateBlocks(blocks: Block[]): Block[][] {
+  if (blocks.length <= 1) return [blocks];
+
+  const MAX_SLIDE_HEIGHT = 480;
+  const totalHeight = blocks.reduce((sum, b) => sum + estimateBlockHeight(b), 0);
+
+  // Si todo el contenido cabe cómodamente en una sola página:
+  if (totalHeight <= MAX_SLIDE_HEIGHT) {
+    return [blocks];
   }
 
-  return { left: blocks, right: [], isSplit: false };
+  // Si supera la altura visible, repartir en páginas secuenciales
+  const pages: Block[][] = [];
+  let currentPage: Block[] = [];
+  let currentHeight = 0;
+
+  for (const block of blocks) {
+    const h = estimateBlockHeight(block);
+
+    if (currentPage.length > 0 && currentHeight + h > MAX_SLIDE_HEIGHT) {
+      pages.push(currentPage);
+      currentPage = [block];
+      currentHeight = h;
+    } else {
+      currentPage.push(block);
+      currentHeight += h;
+    }
+  }
+
+  if (currentPage.length > 0) {
+    pages.push(currentPage);
+  }
+
+  return pages.length > 0 ? pages : [blocks];
 }
 
 export function SlideDeck({
@@ -126,14 +147,23 @@ export function SlideDeck({
   fullscreen,
   onToggleFullscreen,
 }: SlideDeckProps) {
-  const stageRef = useRef<HTMLDivElement>(null);
-  const [scale, setScale] = useState(1);
   const [indexOpen, setIndexOpen] = useState(false);
   const preloaded = useRef(new Set<string>());
 
   const frame: Frame | undefined = lesson.frames[current];
   const visibleBlocks = useMemo(() => filterVisibleBlocks(frame?.blocks), [frame]);
-  const splitLayout = useMemo(() => splitBlocksIntoColumns(visibleBlocks), [visibleBlocks]);
+  const pages = useMemo(() => paginateBlocks(visibleBlocks), [visibleBlocks]);
+  const [subPageIndex, setSubPageIndex] = useState(0);
+
+  // Reiniciar la sub-página al cambiar de diapositiva
+  useEffect(() => {
+    setSubPageIndex(0);
+  }, [current]);
+
+  const totalPages = pages.length;
+  const safeSubPageIndex = Math.min(subPageIndex, Math.max(0, totalPages - 1));
+  const currentBlocks = pages[safeSubPageIndex] || visibleBlocks;
+  const isMultiPage = totalPages > 1;
 
   // Precargar imágenes de diapositivas adyacentes
   useEffect(() => {
@@ -154,50 +184,23 @@ export function SlideDeck({
     }
   }, [current, lesson.frames]);
 
-  // Cálculo del factor de escala del Canvas Virtual 16:9
-  const updateScale = useCallback(() => {
-    const stage = stageRef.current;
-    if (!stage) return;
-    const { clientWidth, clientHeight } = stage;
-    if (clientWidth <= 0 || clientHeight <= 0) return;
-
-    // Margen de seguridad visual de 16px alrededor del canvas
-    const availW = Math.max(100, clientWidth - 24);
-    const availH = Math.max(100, clientHeight - 24);
-
-    const scaleX = availW / CANVAS_WIDTH;
-    const scaleY = availH / CANVAS_HEIGHT;
-    const newScale = Math.min(scaleX, scaleY);
-    setScale(Math.max(0.2, newScale));
-  }, []);
-
-  useEffect(() => {
-    updateScale();
-    const stage = stageRef.current;
-    if (!stage) return;
-
-    const observer = new ResizeObserver(updateScale);
-    observer.observe(stage);
-    window.addEventListener('resize', updateScale);
-
-    const timer1 = setTimeout(updateScale, 50);
-    const timer2 = setTimeout(updateScale, 200);
-
-    return () => {
-      observer.disconnect();
-      window.removeEventListener('resize', updateScale);
-      clearTimeout(timer1);
-      clearTimeout(timer2);
-    };
-  }, [updateScale, fullscreen]);
-
   const nextSlide = useCallback(() => {
-    if (current < lesson.frames.length - 1) onFrameChange(current + 1);
-  }, [current, lesson.frames.length, onFrameChange]);
+    if (safeSubPageIndex < totalPages - 1) {
+      setSubPageIndex((p) => p + 1);
+    } else if (current < lesson.frames.length - 1) {
+      onFrameChange(current + 1);
+      setSubPageIndex(0);
+    }
+  }, [safeSubPageIndex, totalPages, current, lesson.frames.length, onFrameChange]);
 
   const previousSlide = useCallback(() => {
-    if (current > 0) onFrameChange(current - 1);
-  }, [current, onFrameChange]);
+    if (safeSubPageIndex > 0) {
+      setSubPageIndex((p) => p - 1);
+    } else if (current > 0) {
+      onFrameChange(current - 1);
+      setSubPageIndex(0);
+    }
+  }, [safeSubPageIndex, current, onFrameChange]);
 
   // Manejo de atajos de teclado
   useEffect(() => {
@@ -219,9 +222,11 @@ export function SlideDeck({
       } else if (e.key === 'Home') {
         e.preventDefault();
         onFrameChange(0);
+        setSubPageIndex(0);
       } else if (e.key === 'End') {
         e.preventDefault();
         onFrameChange(lesson.frames.length - 1);
+        setSubPageIndex(0);
       } else if (e.key.toLowerCase() === 'f') {
         e.preventDefault();
         onToggleFullscreen();
@@ -288,90 +293,75 @@ export function SlideDeck({
         </div>
       </header>
 
-      {/* Escenario de presentación con Canvas Virtual 16:9 */}
-      <div className="presentation-stage" ref={stageRef}>
-        <div
-          className="slide-canvas-scaler"
-          style={{
-            width: `${CANVAS_WIDTH}px`,
-            height: `${CANVAS_HEIGHT}px`,
-            transform: `scale(${scale})`,
-            transformOrigin: 'center center',
-          }}
+      {/* Escenario de presentación a pantalla completa (100% de la pantalla) */}
+      <main className="presentation-stage">
+        <article
+          className={`presentation-slide ${isReflection ? 'is-reflection-slide' : ''}`}
+          key={`${frame?.id}-${safeSubPageIndex}`}
         >
-          <article
-            className={`presentation-slide ${isReflection ? 'is-reflection-slide' : ''}`}
-            key={frame?.id}
-          >
-            {/* Cabecera del slide */}
-            <header className="slide-heading">
-              <div>
-                <span>{frame?.section}</span>
-                <h2>
-                  <InlineText text={frame?.title || ''} />
-                </h2>
-              </div>
-              {institutionLogo(institution) && (
-                <img src={institutionLogo(institution)!} alt={institution.shortName} />
-              )}
-            </header>
-
-            {/* Contenido del slide: 2 columnas inteligentes o 1 columna centrada */}
-            <div className="slide-content">
-              {splitLayout.isSplit ? (
-                <div className="slide-split-grid">
-                  <div className="slide-col slide-col-left">
-                    {splitLayout.left.map((b, i) => (
-                      <div className="slide-unit" key={`l-${i}`}>
-                        <ContentBlock block={b} />
-                      </div>
-                    ))}
-                  </div>
-                  <div className="slide-col slide-col-right">
-                    {splitLayout.right.map((b, i) => (
-                      <div className="slide-unit" key={`r-${i}`}>
-                        <ContentBlock block={b} />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ) : (
-                <div className="slide-single-flow">
-                  {visibleBlocks.map((b, i) => (
-                    <div className="slide-unit" key={i}>
-                      <ContentBlock block={b} />
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Pie del slide */}
-            <footer className="slide-footer">
-              <span>
-                {institution.shortName} · {lesson.title}
-              </span>
-              <div className="slide-footer-right">
-                {fullscreen && (
-                  <button
-                    type="button"
-                    className="presentation-fullscreen-exit"
-                    onClick={onToggleFullscreen}
-                    aria-label="Salir de pantalla completa"
-                    title="Salir de pantalla completa (Esc)"
+          {/* Cabecera del slide */}
+          <header className="slide-heading">
+            <div>
+              <span>{frame?.section}</span>
+              <h2>
+                <InlineText text={frame?.title || ''} />
+                {isMultiPage && (
+                  <span
+                    style={{
+                      marginLeft: '12px',
+                      fontSize: '0.65em',
+                      opacity: 0.8,
+                      fontWeight: 500,
+                      verticalAlign: 'middle',
+                    }}
                   >
-                    <Minimize size={13} />
-                    <span>Salir de pantalla completa</span>
-                  </button>
+                    (Parte {safeSubPageIndex + 1}/{totalPages})
+                  </span>
                 )}
-                <span>
-                  {current + 1} / {lesson.frames.length}
-                </span>
-              </div>
-            </footer>
-          </article>
-        </div>
-      </div>
+              </h2>
+            </div>
+            {institutionLogo(institution) && (
+              <img src={institutionLogo(institution)!} alt={institution.shortName} />
+            )}
+          </header>
+
+          {/* Contenido del slide: flujo continuo unificado */}
+          <div className="slide-content">
+            <div className="slide-single-flow">
+              {currentBlocks.map((b, i) => (
+                <div className="slide-unit" key={i}>
+                  <ContentBlock block={b} />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Pie del slide */}
+          <footer className="slide-footer">
+            <span>
+              {institution.shortName} · {lesson.title}
+            </span>
+            <div className="slide-footer-right">
+              {fullscreen && (
+                <button
+                  type="button"
+                  className="presentation-fullscreen-exit"
+                  onClick={onToggleFullscreen}
+                  aria-label="Salir de pantalla completa"
+                  title="Salir de pantalla completa (Esc)"
+                >
+                  <Minimize size={13} />
+                  <span>Salir de pantalla completa</span>
+                </button>
+              )}
+              <span>
+                {current + 1} / {lesson.frames.length}
+                {isMultiPage && ` · (${safeSubPageIndex + 1}/${totalPages})`}
+              </span>
+            </div>
+          </footer>
+        </article>
+      </main>
 
       {/* Barra de controles inferiores de navegación */}
       <footer className="presentation-controls">
@@ -391,7 +381,7 @@ export function SlideDeck({
           </Button>
           <Button
             variant="ghost"
-            disabled={current === 0}
+            disabled={current === 0 && safeSubPageIndex === 0}
             onClick={previousSlide}
             aria-label="Diapositiva anterior"
           >
@@ -403,7 +393,10 @@ export function SlideDeck({
             <select
               aria-label="Ir a diapositiva"
               value={current}
-              onChange={(e) => onFrameChange(Number(e.target.value))}
+              onChange={(e) => {
+                onFrameChange(Number(e.target.value));
+                setSubPageIndex(0);
+              }}
             >
               {lesson.frames.map((f, i) => (
                 <option key={f.id} value={i}>
@@ -414,7 +407,7 @@ export function SlideDeck({
           </label>
           <Button
             variant="ghost"
-            disabled={current === lesson.frames.length - 1}
+            disabled={current === lesson.frames.length - 1 && safeSubPageIndex === totalPages - 1}
             onClick={nextSlide}
             aria-label="Diapositiva siguiente"
           >
@@ -428,7 +421,7 @@ export function SlideDeck({
       <div className="presentation-progress">
         <i
           style={{
-            width: `${((current + 1) / lesson.frames.length) * 100}%`,
+            width: `${((current + (safeSubPageIndex + 1) / totalPages) / lesson.frames.length) * 100}%`,
           }}
         />
       </div>
@@ -474,6 +467,7 @@ export function SlideDeck({
                       className={`presentation-index-card ${isCurrent ? 'is-current' : ''}`}
                       onClick={() => {
                         onFrameChange(i);
+                        setSubPageIndex(0);
                         setIndexOpen(false);
                       }}
                     >

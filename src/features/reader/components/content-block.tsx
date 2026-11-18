@@ -2,7 +2,7 @@
 import { useState, useEffect, useContext } from 'react';
 import { createPortal } from 'react-dom';
 import katex from 'katex';
-import { ResourceToolsContext } from '@/features/tools/components/resource-tools-context';
+import { ResourceToolsContext } from '@/shared/context/resource-tools-context';
 import {
   Lightbulb,
   BookOpen,
@@ -114,7 +114,10 @@ function Figure({ block }: { block: Block }) {
     <button
       type="button"
       className="figure-enlarge-hint"
-      onClick={() => setLightbox(true)}
+      onClick={(e) => {
+        e.stopPropagation();
+        setLightbox(true);
+      }}
       title="Ampliar imagen"
     >
       <Maximize2 size={12} />
@@ -242,7 +245,8 @@ function Figure({ block }: { block: Block }) {
             </div>
           </div>
         </div>,
-        document.body
+        (typeof document !== 'undefined' &&
+          (document.querySelector('.presentation-dialog') || document.body)) as HTMLElement
       )
     : null;
 
@@ -255,7 +259,10 @@ function Figure({ block }: { block: Block }) {
             alt={alt}
             loading="eager"
             onError={() => setFailed(true)}
-            onClick={() => setLightbox(true)}
+            onClick={(e) => {
+              e.stopPropagation();
+              setLightbox(true);
+            }}
             title="Clic para ampliar diagrama"
           />
           {enlargeBtn}
@@ -268,7 +275,10 @@ function Figure({ block }: { block: Block }) {
       return (
         <figure className="lesson-figure diagram-figure">
           <div
-            onClick={() => setLightbox(true)}
+            onClick={(e) => {
+              e.stopPropagation();
+              setLightbox(true);
+            }}
             style={{ cursor: 'zoom-in', width: '100%' }}
             title="Clic para ampliar diagrama"
           >
@@ -310,7 +320,10 @@ function Figure({ block }: { block: Block }) {
         alt={alt}
         loading="eager"
         onError={() => setFailed(true)}
-        onClick={() => setLightbox(true)}
+        onClick={(e) => {
+          e.stopPropagation();
+          setLightbox(true);
+        }}
         title="Clic para ampliar ilustración"
       />
       {enlargeBtn}

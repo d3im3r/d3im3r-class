@@ -122,6 +122,8 @@ export async function GET(
         let svg = row.path;
         if (svg.startsWith('data:image/svg+xml;utf8,')) {
           svg = decodeURIComponent(svg.slice('data:image/svg+xml;utf8,'.length));
+        } else if (svg.startsWith('data:image/svg+xml;base64,')) {
+          svg = Buffer.from(svg.slice('data:image/svg+xml;base64,'.length), 'base64').toString('utf8');
         }
         if (!canReadResource(user, lessonId, row))
           throw new AppError('Recurso no encontrado.', 404);
@@ -137,6 +139,32 @@ export async function GET(
         if (request.headers.get('if-none-match') === etag)
           return new Response(null, { status: 304, headers });
         return new Response(svg, { headers });
+      }
+    }
+
+    // 1b. Si el recurso es cualquier binario (PNG, JPG, PDF) almacenado como data URI en la base de datos
+    if (row && row.path.startsWith('data:')) {
+      const commaIdx = row.path.indexOf(',');
+      if (commaIdx !== -1) {
+        if (!canReadResource(user, lessonId, row))
+          throw new AppError('Recurso no encontrado.', 404);
+        const headerPart = row.path.slice(0, commaIdx);
+        const dataPart = row.path.slice(commaIdx + 1);
+        const isBase64 = headerPart.includes(';base64');
+        const bytes = isBase64
+          ? Buffer.from(dataPart, 'base64')
+          : Buffer.from(decodeURIComponent(dataPart), 'utf8');
+        const etag = `"${key}-${createHash('sha256').update(bytes).digest('hex').slice(0, 16)}"`;
+        const headers = {
+          'Content-Type': row.mime || 'application/octet-stream',
+          'Content-Disposition': `${row.mime.startsWith('text/') ? 'attachment' : 'inline'}; filename*=UTF-8''${encodeURIComponent(row.name)}`,
+          'Cache-Control': 'public, max-age=31536000, immutable',
+          ETag: etag,
+          'X-Content-Type-Options': 'nosniff',
+        };
+        if (request.headers.get('if-none-match') === etag)
+          return new Response(null, { status: 304, headers });
+        return new Response(bytes, { headers });
       }
     }
 

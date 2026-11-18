@@ -391,7 +391,7 @@ export async function importLesson(form: FormData, actor?: User) {
         db()
           .prepare('SELECT key,name,path,mime FROM resources WHERE lesson_id=?')
           .all(id) as Resource[]
-      ).filter((r) => existsSync(r.path))
+      ).filter((r) => r.path.startsWith('data:') || r.path.startsWith('<svg') || existsSync(r.path))
     : [];
   async function register(file: File) {
     const name = path.basename(file.name.replace(/\\/g, '/')),
@@ -403,10 +403,18 @@ export async function importLesson(form: FormData, actor?: User) {
       .update(bytes)
       .digest('hex')
       .slice(0, 24);
-    const reused = previousResources.find((r) => r.key === key && existsSync(r.path));
+    const reused = previousResources.find((r) => r.key === key && (r.path.startsWith('data:') || existsSync(r.path)));
     const dest = reused ? reused.path : path.join(folder, key + ext);
-    if (!reused) await writeFile(dest, bytes, { mode: 0o600 });
-    const resource = { key, name, path: dest, mime: types[ext] };
+    if (!reused && !dest.startsWith('data:')) {
+      try {
+        await writeFile(dest, bytes, { mode: 0o600 });
+      } catch {}
+    }
+    const storedPath =
+      bytes.length <= 4 * 1024 * 1024 && (types[ext]?.startsWith('image/') || ext === '.tex')
+        ? `data:${types[ext]};base64,${bytes.toString('base64')}`
+        : dest;
+    const resource = { key, name, path: storedPath, mime: types[ext] };
     resources.push(resource);
     return `/api/materials/${id}/${key}`;
   }

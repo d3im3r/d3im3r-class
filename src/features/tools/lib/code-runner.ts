@@ -1,6 +1,7 @@
 /**
  * code-runner.ts
- * Motores de ejecución en el navegador para JavaScript, Python (Pyodide WASM) y HTML/CSS.
+ * Motores de ejecución en el navegador para JavaScript, Python (Pyodide WASM) y HTML/CSS
+ * diseñados para la suite de Herramientas / Laboratorio interactivo.
  */
 
 export interface RunResult {
@@ -17,7 +18,6 @@ export async function runJavaScript(code: string): Promise<RunResult> {
   const start = performance.now();
   const output: string[] = [];
 
-  // Crear consola virtual para capturar logs
   const formatArg = (arg: unknown): string => {
     if (arg === null) return 'null';
     if (arg === undefined) return 'undefined';
@@ -40,11 +40,9 @@ export async function runJavaScript(code: string): Promise<RunResult> {
   };
 
   try {
-    // Si el código no tiene return ni console.log y es una sola expresión, evaluar su resultado
     const trimmed = code.trim();
-    let runnableCode = code;
+    const runnableCode = code;
 
-    // Detectar si termina en una expresión evaluable para mostrar su valor si no hubo logs
     const isSingleExpression =
       !trimmed.includes('\n') &&
       !trimmed.startsWith('const ') &&
@@ -62,7 +60,6 @@ export async function runJavaScript(code: string): Promise<RunResult> {
       })();
     `;
 
-    // Ejecutar con AsyncFunction
     const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
     const fn = new AsyncFunction('console', wrappedCode);
     const result = await fn(customConsole);
@@ -118,7 +115,6 @@ async function getPyodide(onProgress?: (status: string) => void): Promise<any> {
   window.__pyodidePromise = (async () => {
     onProgress?.('Descargando entorno Python WebAssembly...');
 
-    // Inyectar el script de Pyodide si no está presente
     if (!window.loadPyodide) {
       await new Promise<void>((resolve, reject) => {
         const script = document.createElement('script');
@@ -159,7 +155,6 @@ export async function runPython(
     onStatusChange?.('Cargando Python...');
     const pyodide = await getPyodide(onStatusChange);
 
-    // Cargar NumPy automáticamente si el código lo requiere o usa matrices
     const needsNumpy = /\b(np|numpy|Rx|Ry|Rz|linalg)\b/.test(code);
     if (needsNumpy) {
       onStatusChange?.('Cargando librería científica NumPy...');
@@ -167,12 +162,11 @@ export async function runPython(
         try {
           await pyodide.loadPackage('numpy');
         } catch (e) {
-          console.warn('No se pudo cargar numpy desde CDN:', e);
+          console.warn('No se pudo cargar numpy:', e);
         }
       }
     }
 
-    // Inyectar utilidades de rotación robótica y NumPy si el código las invoca
     const needsRotations = /\b(Rx|Ry|Rz)\s*\(/.test(code);
     let finalCode = code;
 
@@ -202,7 +196,6 @@ def Rz(theta_deg):
 
     onStatusChange?.('Ejecutando script Python...');
 
-    // Redirigir stdout y stderr a nuestro capturador
     pyodide.setStdout({
       batched: (text: string) => {
         if (text.trim().length > 0 || text === '\n') {
@@ -237,7 +230,6 @@ def Rz(theta_deg):
     const elapsed = Math.round(performance.now() - start);
     let message = err instanceof Error ? err.message : String(err);
 
-    // Limpiar traza interna de WebAssembly si existe
     if (message.includes('PythonError:')) {
       const parts = message.split('PythonError:');
       message = parts[parts.length - 1].trim();
@@ -255,7 +247,7 @@ def Rz(theta_deg):
 // ==========================================
 // 3. UTILIDADES DE LENGUAJE
 // ==========================================
-export type LanguageCategory = 'javascript' | 'python' | 'html' | 'unsupported';
+export type LanguageCategory = 'javascript' | 'python' | 'html' | 'tikz' | 'unsupported';
 
 export function getLanguageCategory(lang: string = ''): LanguageCategory {
   const normalized = lang.toLowerCase().trim();
@@ -267,6 +259,9 @@ export function getLanguageCategory(lang: string = ''): LanguageCategory {
   }
   if (['html', 'htm', 'xml', 'css'].includes(normalized)) {
     return 'html';
+  }
+  if (['tikz', 'latex', 'tex'].includes(normalized)) {
+    return 'tikz';
   }
   return 'unsupported';
 }
