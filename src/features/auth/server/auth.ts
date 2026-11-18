@@ -130,7 +130,7 @@ export async function currentUser(): Promise<User | null> {
   if (token) {
     const hashed = digest(token),
       nowIso = new Date().toISOString();
-    const baRow = db()
+    let baRow = db()
       .prepare(
         'SELECT u.id,u.name,u.username,u.role,u.banned FROM session s JOIN user u ON u.id=s.userId WHERE s.token=? AND s.expiresAt>?'
       )
@@ -143,15 +143,62 @@ export async function currentUser(): Promise<User | null> {
           banned: number;
         }
       | undefined;
+
+    let row = !baRow
+      ? (db()
+          .prepare(
+            'SELECT u.id,u.name,u.username,u.role,u.password FROM sessions s JOIN users u ON u.id=s.user_id WHERE s.token=? AND s.expires>?'
+          )
+          .get(hashed, Date.now()) as (User & { password: string }) | undefined)
+      : undefined;
+
+    // Fallback a Postgres si el contenedor local SQLite no tiene la sesión aún
+    if (!baRow && !row) {
+      const pool = getPgPool();
+      if (pool) {
+        try {
+          const pgSesRes = await pool.query(
+            'SELECT u.id,u.name,u.username,u.role,u.banned FROM "session" s JOIN "user" u ON u.id=s."userId" WHERE s.token=$1 AND s."expiresAt">$2',
+            [hashed, nowIso]
+          );
+          if (pgSesRes.rows.length > 0) {
+            const r = pgSesRes.rows[0];
+            baRow = {
+              id: r.id,
+              name: r.name,
+              username: r.username,
+              role: r.role,
+              banned: r.banned ? 1 : 0,
+            };
+            db()
+              .prepare(
+                'INSERT OR IGNORE INTO user(id,name,email,emailVerified,createdAt,updatedAt,username,displayUsername,role,banned) VALUES (?,?,?,1,?,?,?,?,?,?)'
+              )
+              .run(r.id, r.name, r.username, nowIso, nowIso, r.username, r.username, r.role, r.banned ? 1 : 0);
+            db()
+              .prepare(
+                'INSERT OR IGNORE INTO session(id,expiresAt,token,createdAt,updatedAt,userId) VALUES (?,?,?,?,?,?)'
+              )
+              .run(randomUUID(), new Date(Date.now() + 7 * 86400000).toISOString(), hashed, nowIso, nowIso, r.id);
+          } else {
+            const pgOldSesRes = await pool.query(
+              'SELECT u.id,u.name,u.username,u.role,u.password FROM sessions s JOIN users u ON u.id=s.user_id WHERE s.token=$1 AND s.expires>$2',
+              [hashed, Date.now()]
+            );
+            if (pgOldSesRes.rows.length > 0) {
+              row = pgOldSesRes.rows[0];
+            }
+          }
+        } catch (e) {
+          console.error('PG session fallback err:', e);
+        }
+      }
+    }
+
     if (baRow) {
       if (baRow.banned) return null;
       return { id: baRow.id, name: baRow.name, username: baRow.username, role: baRow.role };
     }
-    const row = db()
-      .prepare(
-        'SELECT u.id,u.name,u.username,u.role,u.password FROM sessions s JOIN users u ON u.id=s.user_id WHERE s.token=? AND s.expires>?'
-      )
-      .get(hashed, Date.now()) as (User & { password: string }) | undefined;
     if (row) {
       syncBetterAuthUser(row.id, row.name, row.username, row.password, row.role);
       const expiresIso = new Date(Date.now() + 7 * 86400000).toISOString();
@@ -286,10 +333,14 @@ export async function startSession(user: User) {
       console.error('PG session err:', e instanceof Error ? e.message : e);
     }
   }
+  const isSecure =
+    process.env.AULA_SECURE_COOKIES === '1' ||
+    process.env.NODE_ENV === 'production' ||
+    process.env.VERCEL === '1';
   jar?.set(cookieName, token, {
     httpOnly: true,
     sameSite: 'lax',
-    secure: process.env.AULA_SECURE_COOKIES === '1',
+    secure: isSecure,
     path: '/',
     maxAge: 7 * 86400,
   });
@@ -316,7 +367,11 @@ export async function endSession() {
       }
     }
   }
-  jar?.delete(cookieName);
+  try {
+    jar?.delete(cookieName);
+    jar?.delete('better-auth.session_token');
+    jar?.delete('__Secure-better-auth.session_token');
+  } catch {}
 }
 
 export function login(input: Record<string, unknown>) {

@@ -20,7 +20,7 @@ export const aulaStatements = {
   catalog: ['readAll', 'readAssigned'],
   lesson: ['readPublished', 'readDraft', 'downloadSource', 'downloadMaterial'],
   progress: ['read', 'write'],
-  user: ['resetPasswordStudent', 'resetPasswordTeacher', 'createTeacher'],
+  user: ['resetPasswordStudent', 'resetPasswordTeacher', 'createTeacher', 'deleteStudent'],
 } as const;
 
 export const ac = createAccessControl(aulaStatements);
@@ -44,7 +44,7 @@ export const roles = {
     catalog: ['readAll', 'readAssigned'],
     lesson: ['readPublished', 'readDraft', 'downloadSource', 'downloadMaterial'],
     progress: ['read', 'write'],
-    user: ['resetPasswordStudent', 'resetPasswordTeacher', 'createTeacher'],
+    user: ['resetPasswordStudent', 'resetPasswordTeacher', 'createTeacher', 'deleteStudent'],
   }),
   teacher: ac.newRole({
     ...adminAc.statements,
@@ -53,7 +53,7 @@ export const roles = {
     catalog: ['readAssigned'],
     lesson: ['readPublished', 'readDraft', 'downloadSource', 'downloadMaterial'],
     progress: ['read', 'write'],
-    user: ['resetPasswordStudent'],
+    user: ['resetPasswordStudent', 'deleteStudent'],
   }),
   student: ac.newRole({
     ...userAc.statements,

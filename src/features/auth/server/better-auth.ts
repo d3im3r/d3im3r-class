@@ -54,7 +54,7 @@ function createAuth() {
     trustedOrigins: getTrustedOrigins(),
     emailAndPassword: {
       enabled: true,
-      minPasswordLength: 10,
+      minPasswordLength: 6,
       maxPasswordLength: 256,
       password: {
         hash: async (password) => passwordHash(password),

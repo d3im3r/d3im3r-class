@@ -588,3 +588,34 @@ test('permite a administradores asignar nuevas materias a docentes existentes', 
     .all(teacherSena.id) as { subject_id: string }[];
   assert.ok(enrollments.some((e) => e.subject_id === newSub.id));
 });
+
+test('permite eliminar alumnos individuales y seleccionados con limpieza en cascada', async () => {
+  const adminActor = { id: 'admin-del', name: 'Admin', username: 'admin.del', role: 'admin' as const };
+  const s1Id = 'student-del-1';
+  const s2Id = 'student-del-2';
+  const sampleSubj = userCatalog(teacher).subjects[0];
+
+  db().prepare('INSERT INTO users(id, name, username, password, role) VALUES (?, ?, ?, ?, ?)').run(adminActor.id, adminActor.name, adminActor.username, 'hash', adminActor.role);
+  db().prepare('INSERT INTO users(id, name, username, password, role) VALUES (?, ?, ?, ?, ?)').run(s1Id, 'Alumno 1', 'alumno1@test.com', 'hash', 'student');
+  db().prepare('INSERT INTO users(id, name, username, password, role) VALUES (?, ?, ?, ?, ?)').run(s2Id, 'Alumno 2', 'alumno2@test.com', 'hash', 'student');
+  db().prepare('INSERT INTO enrollments(user_id, subject_id) VALUES (?, ?)').run(s1Id, sampleSubj.id);
+  db().prepare('INSERT INTO enrollments(user_id, subject_id) VALUES (?, ?)').run(s2Id, sampleSubj.id);
+
+  // Eliminar un alumno individual
+  manage({ action: 'deleteStudent', userId: s1Id }, adminActor);
+  const check1 = db().prepare('SELECT id FROM users WHERE id=?').get(s1Id);
+  assert.equal(check1, undefined);
+  const checkEnr1 = db().prepare('SELECT * FROM enrollments WHERE user_id=?').get(s1Id);
+  assert.equal(checkEnr1, undefined);
+
+  // Eliminar alumnos en lote
+  manage({ action: 'deleteStudents', userIds: [s2Id] }, adminActor);
+  const check2 = db().prepare('SELECT id FROM users WHERE id=?').get(s2Id);
+  assert.equal(check2, undefined);
+
+  // No permite eliminar administradores
+  assert.throws(
+    () => manage({ action: 'deleteStudent', userId: adminActor.id }, adminActor),
+    /No se puede eliminar a un administrador/
+  );
+});

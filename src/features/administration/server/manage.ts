@@ -175,6 +175,47 @@ function removeLessonCascade(rowId: string) {
     pool.query('DELETE FROM lessons WHERE id=$1', [rowId]).catch(console.error);
   }
 }
+
+function removeStudentCascade(userId: string) {
+  const target = db()
+    .prepare('SELECT id, name, username, role FROM users WHERE id=?')
+    .get(userId) as User | undefined;
+  if (!target) return;
+  if (target.role === 'admin') {
+    throw new AppError('No se puede eliminar a un administrador.');
+  }
+
+  // Limpiar relaciones en SQLite
+  db().prepare('DELETE FROM progress WHERE user_id=?').run(userId);
+  db().prepare('DELETE FROM enrollments WHERE user_id=?').run(userId);
+  db().prepare('DELETE FROM subject_bans WHERE user_id=?').run(userId);
+  db().prepare('DELETE FROM subject_join_requests WHERE user_id=?').run(userId);
+  db().prepare('DELETE FROM class_join_requests WHERE user_id=?').run(userId);
+  db().prepare('DELETE FROM institution_members WHERE user_id=?').run(userId);
+  db().prepare('DELETE FROM sessions WHERE user_id=?').run(userId);
+  db().prepare('DELETE FROM session WHERE userId=?').run(userId);
+  db().prepare('DELETE FROM account WHERE userId=?').run(userId);
+  db().prepare('DELETE FROM user WHERE id=?').run(userId);
+  db().prepare('DELETE FROM users WHERE id=?').run(userId);
+  db().prepare('DELETE FROM login_attempts WHERE username=?').run(target.username);
+
+  // Limpiar relaciones en PostgreSQL
+  const pool = getPgPool();
+  if (pool) {
+    pool.query('DELETE FROM progress WHERE user_id=$1', [userId]).catch(() => {});
+    pool.query('DELETE FROM enrollments WHERE user_id=$1', [userId]).catch(() => {});
+    pool.query('DELETE FROM subject_bans WHERE user_id=$1', [userId]).catch(() => {});
+    pool.query('DELETE FROM subject_join_requests WHERE user_id=$1', [userId]).catch(() => {});
+    pool.query('DELETE FROM class_join_requests WHERE user_id=$1', [userId]).catch(() => {});
+    pool.query('DELETE FROM institution_members WHERE user_id=$1', [userId]).catch(() => {});
+    pool.query('DELETE FROM sessions WHERE user_id=$1', [userId]).catch(() => {});
+    pool.query('DELETE FROM "session" WHERE "userId"=$1', [userId]).catch(() => {});
+    pool.query('DELETE FROM account WHERE "userId"=$1', [userId]).catch(() => {});
+    pool.query('DELETE FROM "user" WHERE id=$1', [userId]).catch(() => {});
+    pool.query('DELETE FROM users WHERE id=$1', [userId]).catch(() => {});
+    pool.query('DELETE FROM login_attempts WHERE username=$1', [target.username]).catch(() => {});
+  }
+}
 export function manage(input: Record<string, unknown>, actor?: User) {
   return transaction(() => {
     switch (input.action) {
@@ -897,6 +938,70 @@ export function manage(input: Record<string, unknown>, actor?: User) {
             .query('DELETE FROM subject_join_requests WHERE subject_id=$1', [s.id])
             .catch(console.error);
           pool.query('DELETE FROM subjects WHERE id=$1', [s.id]).catch(console.error);
+        }
+        break;
+      }
+      case 'deleteStudent': {
+        const userId = text(input.userId, 'Alumno');
+        const target = db()
+          .prepare('SELECT id, name, username, role FROM users WHERE id=?')
+          .get(userId) as User | undefined;
+        if (!target) throw new AppError('Alumno no encontrado.', 404);
+        if (target.role === 'admin')
+          throw new AppError('No se puede eliminar a un administrador.', 403);
+        if (target.role === 'teacher' && actor?.role !== 'admin')
+          throw new AppError('Solo los administradores pueden eliminar a un docente.', 403);
+        if (actor?.role === 'teacher' && target.role === 'student') {
+          const teacherSubjects = userAccessibleSubjectIds(actor);
+          const isEnrolled = db()
+            .prepare(
+              `SELECT 1 FROM enrollments WHERE user_id=? AND subject_id IN (${teacherSubjects && teacherSubjects.size > 0 ? [...teacherSubjects].map(() => '?').join(',') : "''"})`
+            )
+            .get(target.id, ...(teacherSubjects ? [...teacherSubjects] : []));
+          if (!isEnrolled) {
+            throw new AppError(
+              'No tienes permiso para eliminar alumnos que no pertenecen a tus materias.',
+              403
+            );
+          }
+        }
+        removeStudentCascade(userId);
+        break;
+      }
+      case 'deleteStudents': {
+        const rawIds = input.userIds;
+        if (!Array.isArray(rawIds) || rawIds.length === 0) {
+          throw new AppError('Selecciona al menos un alumno para eliminar.');
+        }
+        const userIds = rawIds.map((id) => String(id));
+        for (const userId of userIds) {
+          const target = db()
+            .prepare('SELECT id, name, username, role FROM users WHERE id=?')
+            .get(userId) as User | undefined;
+          if (!target || target.role === 'admin') continue;
+          if (target.role === 'teacher' && actor?.role !== 'admin') continue;
+          if (actor?.role === 'teacher' && target.role === 'student') {
+            const teacherSubjects = userAccessibleSubjectIds(actor);
+            const isEnrolled = db()
+              .prepare(
+                `SELECT 1 FROM enrollments WHERE user_id=? AND subject_id IN (${teacherSubjects && teacherSubjects.size > 0 ? [...teacherSubjects].map(() => '?').join(',') : "''"})`
+              )
+              .get(target.id, ...(teacherSubjects ? [...teacherSubjects] : []));
+            if (!isEnrolled) continue;
+          }
+          removeStudentCascade(userId);
+        }
+        break;
+      }
+      case 'cleanAllStudents': {
+        if (!actor || actor.role !== 'admin') {
+          throw new AppError('Solo los administradores pueden realizar una limpieza masiva de alumnos.', 403);
+        }
+        const students = db()
+          .prepare("SELECT id FROM users WHERE role='student'")
+          .all() as { id: string }[];
+        for (const s of students) {
+          removeStudentCascade(s.id);
         }
         break;
       }

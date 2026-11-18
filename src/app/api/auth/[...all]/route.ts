@@ -20,6 +20,23 @@ export async function GET(request: Request, { params }: { params: Promise<{ all?
     const action = all?.[0] ?? '';
     const fullPath = all?.join('/') ?? '';
     if (
+      action === 'logout' ||
+      action === 'sign-out' ||
+      fullPath === 'logout' ||
+      fullPath === 'sign-out'
+    ) {
+      await endSession();
+      const cookieName = process.env.AULA_SESSION_COOKIE ?? 'aula_session';
+      const baseOpts = 'Path=/; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT; HttpOnly; SameSite=Lax';
+      const res = Response.redirect(new URL('/', request.url), 302);
+      res.headers.append('Set-Cookie', `${cookieName}=; ${baseOpts}`);
+      res.headers.append('Set-Cookie', `${cookieName}=; ${baseOpts}; Secure`);
+      res.headers.append('Set-Cookie', `better-auth.session_token=; ${baseOpts}`);
+      res.headers.append('Set-Cookie', `better-auth.session_token=; ${baseOpts}; Secure`);
+      res.headers.append('Set-Cookie', `__Secure-better-auth.session_token=; ${baseOpts}; Secure`);
+      return res;
+    }
+    if (
       action === 'session' ||
       action === 'get-session' ||
       fullPath === 'session' ||
@@ -59,10 +76,12 @@ export async function POST(request: Request, { params }: { params: Promise<{ all
       await endSession();
       const response = Response.json({ ok: true });
       const cookieName = process.env.AULA_SESSION_COOKIE ?? 'aula_session';
-      response.headers.append(
-        'Set-Cookie',
-        `${cookieName}=; Path=/; Max-Age=0; HttpOnly; SameSite=Lax`
-      );
+      const baseOpts = 'Path=/; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT; HttpOnly; SameSite=Lax';
+      response.headers.append('Set-Cookie', `${cookieName}=; ${baseOpts}`);
+      response.headers.append('Set-Cookie', `${cookieName}=; ${baseOpts}; Secure`);
+      response.headers.append('Set-Cookie', `better-auth.session_token=; ${baseOpts}`);
+      response.headers.append('Set-Cookie', `better-auth.session_token=; ${baseOpts}; Secure`);
+      response.headers.append('Set-Cookie', `__Secure-better-auth.session_token=; ${baseOpts}; Secure`);
       return response;
     }
     if (action === 'setup' || action === 'login') {

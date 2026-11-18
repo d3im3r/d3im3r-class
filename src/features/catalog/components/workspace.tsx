@@ -33,6 +33,7 @@ import dynamic from 'next/dynamic';
 import { toast } from 'sonner';
 import { fireCelebration } from '@/lib/confetti';
 import { ResourceToolsContext } from '@/shared/context/resource-tools-context';
+import { authClient } from '@/features/auth/client';
 const ToolsPanel = dynamic(
   () => import('@/features/tools/components/tools-panel').then((m) => m.ToolsPanel),
   { loading: () => <p className="p-8">Cargando herramientas…</p> }
@@ -87,9 +88,17 @@ export function Workspace({
     }
   }
   async function logout() {
-    const response = await fetch('/api/auth/logout', { method: 'POST' });
-    if (response.ok) window.location.assign('/');
-    else setSaveError('No se pudo cerrar la sesión. Inténtalo nuevamente.');
+    try {
+      if (typeof window !== 'undefined') {
+        sessionStorage.clear();
+        localStorage.clear();
+      }
+      await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
+      try {
+        await authClient.signOut();
+      } catch {}
+    } catch {}
+    window.location.href = '/';
   }
   const [institution, setInstitution] = useState('all'),
     [query, setQuery] = useState(''),

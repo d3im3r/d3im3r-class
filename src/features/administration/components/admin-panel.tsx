@@ -119,6 +119,7 @@ export function AdminPanel({
     [copiedSubject, setCopiedSubject] = useState(''),
     [resetUserId, setResetUserId] = useState(''),
     [newPassword, setNewPassword] = useState(''),
+    [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]),
     [teacherInstitution, setTeacherInstitution] = useState(''),
     [teacherSubjectIds, setTeacherSubjectIds] = useState<string[]>([]),
     [selectedTeacherForAssign, setSelectedTeacherForAssign] = useState(''),
@@ -1808,11 +1809,95 @@ export function AdminPanel({
                 Selecciona un alumno para definir qué materias puede consultar.
               </p>
             )}
+            <div className="flex flex-wrap items-center justify-between gap-3 py-2 px-1 border-b text-xs mb-2 mt-4">
+              <label className="flex items-center gap-2 cursor-pointer font-medium select-none">
+                <input
+                  type="checkbox"
+                  checked={students.length > 0 && selectedStudentIds.length === students.length}
+                  onChange={(e) => {
+                    if (e.target.checked) setSelectedStudentIds(students.map((s) => s.id));
+                    else setSelectedStudentIds([]);
+                  }}
+                  className="rounded border w-3.5 h-3.5 accent-primary cursor-pointer"
+                />
+                <span>Seleccionar todos ({students.length})</span>
+              </label>
+              <div className="flex items-center gap-2">
+                {selectedStudentIds.length > 0 && (
+                  <>
+                    <span className="text-muted-foreground">{selectedStudentIds.length} seleccionados</span>
+                    <Button
+                      variant="default"
+                      className="bg-red-600 hover:bg-red-700 text-white"
+                      size="sm"
+                      disabled={busy}
+                      onClick={async () => {
+                        if (
+                          !window.confirm(
+                            `¿Estás seguro de eliminar a los ${selectedStudentIds.length} alumnos seleccionados? Esta acción borrará permanentemente sus cuentas, progresos y asignaciones.`
+                          )
+                        )
+                          return;
+                        if (
+                          await mutate(
+                            { action: 'deleteStudents', userIds: selectedStudentIds },
+                            `${selectedStudentIds.length} alumnos eliminados correctamente.`
+                          )
+                        ) {
+                          setSelectedStudentIds([]);
+                          if (selectedStudentIds.includes(student)) setStudent('');
+                        }
+                      }}
+                    >
+                      <Trash2 size={13} />
+                      Eliminar ({selectedStudentIds.length})
+                    </Button>
+                  </>
+                )}
+                {currentUser?.role === 'admin' && students.length > 0 && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 text-xs"
+                    disabled={busy}
+                    onClick={async () => {
+                      if (
+                        !window.confirm(
+                          '¿RESTABLECER TODOS LOS ALUMNOS? Esta acción eliminará a TODOS los alumnos del aula, dejándola limpia para un nuevo periodo académico. Las materias, docentes y clases se mantendrán intactos.'
+                        )
+                      )
+                        return;
+                      if (
+                        await mutate(
+                          { action: 'cleanAllStudents' },
+                          'Base de alumnos restablecida exitosamente.'
+                        )
+                      ) {
+                        setSelectedStudentIds([]);
+                        setStudent('');
+                      }
+                    }}
+                  >
+                    <Trash2 size={13} />
+                    Limpiar todos los alumnos
+                  </Button>
+                )}
+              </div>
+            </div>
             <div className="admin-list student-list">
               {students.map((u) => {
                 const userBans = (data.bans ?? []).filter((b) => b.userId === u.id);
                 return (
                   <div key={u.id} className={student === u.id ? 'is-active' : ''}>
+                    <input
+                      type="checkbox"
+                      checked={selectedStudentIds.includes(u.id)}
+                      onChange={(e) => {
+                        if (e.target.checked) setSelectedStudentIds((prev) => [...prev, u.id]);
+                        else setSelectedStudentIds((prev) => prev.filter((id) => id !== u.id));
+                      }}
+                      className="rounded border w-3.5 h-3.5 accent-primary cursor-pointer mr-1"
+                    />
                     <span className="stat-icon sage">
                       <Users size={16} />
                     </span>
@@ -1856,6 +1941,32 @@ export function AdminPanel({
                       >
                         <KeyRound size={14} />
                         Clave
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30"
+                        disabled={busy}
+                        onClick={async () => {
+                          if (
+                            !window.confirm(
+                              `¿Eliminar al alumno "${u.name}" (${u.username})? Se borrará su progreso y accesos.`
+                            )
+                          )
+                            return;
+                          if (
+                            await mutate(
+                              { action: 'deleteStudent', userId: u.id },
+                              `Alumno "${u.name}" eliminado correctamente.`
+                            )
+                          ) {
+                            setSelectedStudentIds((prev) => prev.filter((id) => id !== u.id));
+                            if (student === u.id) setStudent('');
+                          }
+                        }}
+                        title="Eliminar alumno"
+                      >
+                        <Trash2 size={14} />
                       </Button>
                     </div>
                   </div>

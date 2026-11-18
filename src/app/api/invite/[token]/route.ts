@@ -13,22 +13,38 @@ export async function GET(request: Request, { params }: { params: Promise<{ toke
   try {
     await syncFromPostgres();
     const { token } = await params;
-    const invite = db()
+    const row = db()
       .prepare(
-        'SELECT i.token,i.subject_id,s.name AS subject_name,s.code AS subject_code,s.description,inst.name AS institution_name,inst.shortName AS institution_short_name FROM subject_invites i JOIN subjects s ON s.id=i.subject_id JOIN institutions inst ON inst.id=s.institution_id WHERE i.token=?'
+        'SELECT i.token,i.subject_id,s.data AS subject_data,inst.data AS inst_data FROM subject_invites i JOIN subjects s ON s.id=i.subject_id JOIN institutions inst ON inst.id=s.institution_id WHERE i.token=?'
       )
       .get(token) as
       | {
           token: string;
           subject_id: string;
-          subject_name: string;
-          subject_code: string;
-          description: string;
-          institution_name: string;
-          institution_short_name: string;
+          subject_data: string;
+          inst_data: string;
         }
       | undefined;
-    if (!invite) throw new AppError('Enlace de inscripción no válido o expirado.', 404);
+    if (!row) throw new AppError('Enlace de inscripción no válido o expirado.', 404);
+
+    let subjectObj: any = {};
+    let instObj: any = {};
+    try {
+      subjectObj = typeof row.subject_data === 'string' ? JSON.parse(row.subject_data) : row.subject_data || {};
+    } catch {}
+    try {
+      instObj = typeof row.inst_data === 'string' ? JSON.parse(row.inst_data) : row.inst_data || {};
+    } catch {}
+
+    const invite = {
+      token: row.token,
+      subject_id: row.subject_id,
+      subject_name: subjectObj.name ?? 'Materia',
+      subject_code: subjectObj.code ?? '',
+      description: subjectObj.description ?? '',
+      institution_name: instObj.name ?? '',
+      institution_short_name: instObj.shortName ?? '',
+    };
 
     const user = await currentUser();
     if (!user) {
