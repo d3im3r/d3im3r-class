@@ -96,6 +96,13 @@ export async function syncFromPostgres(force = false): Promise<void> {
               'INSERT INTO users(id,name,username,password,role) VALUES (?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET name=excluded.name,username=excluded.username,password=excluded.password,role=excluded.role'
             )
             .run(u.id, u.name, u.username, u.password, u.role);
+          const now = new Date().toISOString();
+          const email = u.username.includes('@') ? u.username : `${u.username}@aula.local`;
+          sql
+            .prepare(
+              'INSERT INTO user(id,name,email,emailVerified,createdAt,updatedAt,username,displayUsername,role,banned) VALUES (?,?,?,1,?,?,?,?,?,0) ON CONFLICT(id) DO UPDATE SET name=excluded.name,email=excluded.email,updatedAt=excluded.updatedAt,username=excluded.username,displayUsername=excluded.displayUsername,role=excluded.role'
+            )
+            .run(u.id, u.name, email, now, now, u.username, u.username, u.role);
         }
       }
       if (Array.isArray(state.user)) {
@@ -374,20 +381,25 @@ export function syncBetterAuthUser(
     now = new Date().toISOString(),
     email = username.includes('@') ? username : `${username}@aula.local`;
 
-  // Comprobar si ya existe un usuario por correo o username para reutilizar su ID y evitar violación de UNIQUE
-  const existingUser = sql
-    .prepare('SELECT id FROM user WHERE email=? OR username=?')
-    .get(email, username) as { id: string } | undefined;
-  const targetId = existingUser?.id ?? id;
+  // Si existe un usuario en 'user' con este correo o username pero con otro id, unificarlo a 'id'
+  const oldUser = sql
+    .prepare('SELECT id FROM user WHERE (email=? OR username=?) AND id!=?')
+    .get(email, username, id) as { id: string } | undefined;
+  if (oldUser) {
+    sql.prepare('DELETE FROM session WHERE userId=?').run(oldUser.id);
+    sql.prepare('DELETE FROM account WHERE userId=?').run(oldUser.id);
+    sql.prepare('DELETE FROM user WHERE id=?').run(oldUser.id);
+  }
 
   sql
     .prepare(
       'INSERT INTO user(id,name,email,emailVerified,createdAt,updatedAt,username,displayUsername,role,banned) VALUES (?,?,?,1,?,?,?,?,?,0) ON CONFLICT(id) DO UPDATE SET name=excluded.name,email=excluded.email,updatedAt=excluded.updatedAt,username=excluded.username,displayUsername=excluded.displayUsername,role=excluded.role'
     )
-    .run(targetId, name, email, now, now, username, username, role);
+    .run(id, name, email, now, now, username, username, role);
+
   const existingAcc = sql
     .prepare("SELECT id FROM account WHERE userId=? AND providerId='credential'")
-    .get(targetId) as { id: string } | undefined;
+    .get(id) as { id: string } | undefined;
   if (existingAcc)
     sql
       .prepare('UPDATE account SET password=?,updatedAt=? WHERE id=?')
@@ -397,20 +409,25 @@ export function syncBetterAuthUser(
       .prepare(
         "INSERT INTO account(id,accountId,providerId,userId,password,createdAt,updatedAt) VALUES (?,?,'credential',?,?,?,?)"
       )
-      .run(randomUUID(), targetId, targetId, password, now, now);
+      .run(randomUUID(), id, id, password, now, now);
 
   const pool = getPgPool();
   if (pool) {
+    if (oldUser) {
+      pool.query('DELETE FROM "session" WHERE "userId"=$1', [oldUser.id]).catch(() => {});
+      pool.query('DELETE FROM account WHERE "userId"=$1', [oldUser.id]).catch(() => {});
+      pool.query('DELETE FROM "user" WHERE id=$1', [oldUser.id]).catch(() => {});
+    }
     queuePg(
       pool
         .query(
           'INSERT INTO "user"(id,name,email,"emailVerified","createdAt","updatedAt",username,"displayUsername",role,banned) VALUES ($1,$2,$3,true,$4,$4,$5,$5,$6,false) ON CONFLICT(id) DO UPDATE SET name=EXCLUDED.name,email=EXCLUDED.email,"updatedAt"=EXCLUDED."updatedAt",username=EXCLUDED.username,"displayUsername"=EXCLUDED."displayUsername",role=EXCLUDED.role',
-          [targetId, name, email, now, username, role]
+          [id, name, email, now, username, role]
         )
         .then(() =>
           pool.query(
             'INSERT INTO account(id,"accountId","providerId","userId",password,"createdAt","updatedAt") VALUES ($1,$2,\'credential\',$2,$3,$4,$4) ON CONFLICT(id) DO UPDATE SET password=EXCLUDED.password,"updatedAt"=EXCLUDED."updatedAt"',
-            [randomUUID(), targetId, password, now]
+            [randomUUID(), id, password, now]
           )
         )
     );

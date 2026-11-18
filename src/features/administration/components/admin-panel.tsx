@@ -1876,13 +1876,13 @@ export function AdminPanel({
                         type="password"
                         value={newPassword}
                         onChange={(e) => setNewPassword(e.target.value)}
-                        placeholder="Nueva contraseña (mínimo 10 caracteres)"
+                        placeholder="Nueva contraseña (mínimo 6 caracteres)"
                         className="text-xs p-2 border rounded flex-1 bg-background"
-                        minLength={10}
+                        minLength={6}
                       />
                       <Button
                         size="sm"
-                        disabled={busy || newPassword.length < 10}
+                        disabled={busy || newPassword.length < 6}
                         onClick={async () => {
                           if (
                             await mutate(
@@ -2104,13 +2104,13 @@ export function AdminPanel({
                     name="password"
                     type="password"
                     required
-                    minLength={10}
+                    minLength={6}
                     maxLength={256}
                     autoComplete="new-password"
-                    placeholder="Mínimo 10 caracteres"
+                    placeholder="Mínimo 6 caracteres (ej. documento de identidad)"
                   />
                   <small>
-                    Mínimo 10 caracteres. Comunica las credenciales al alumno por tu canal habitual.
+                    Mínimo 6 caracteres (ej. documento de identidad). Comunica las credenciales al alumno por tu canal habitual.
                   </small>
                 </label>
                 <label>
@@ -2414,13 +2414,13 @@ export function AdminPanel({
                         type="password"
                         value={newPassword}
                         onChange={(e) => setNewPassword(e.target.value)}
-                        placeholder="Nueva contraseña (mínimo 10 caracteres)"
+                        placeholder="Nueva contraseña (mínimo 6 caracteres)"
                         className="text-xs p-2 border rounded flex-1 bg-background"
-                        minLength={10}
+                        minLength={6}
                       />
                       <Button
                         size="sm"
-                        disabled={busy || newPassword.length < 10}
+                        disabled={busy || newPassword.length < 6}
                         onClick={async () => {
                           if (
                             await mutate(

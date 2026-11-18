@@ -37,8 +37,8 @@ export function text(value: unknown, label: string, max = 200) {
   return value.trim();
 }
 export function validatePassword(value: unknown) {
-  if (typeof value !== 'string' || value.length < 10 || value.length > 256)
-    throw new AppError('La contraseña debe tener entre 10 y 256 caracteres.');
+  if (typeof value !== 'string' || value.length < 6 || value.length > 256)
+    throw new AppError('La contraseña debe tener entre 6 y 256 caracteres.');
   return value;
 }
 export function createUser(
@@ -242,9 +242,16 @@ export async function startSession(user: User) {
     nowIso = new Date(now).toISOString(),
     expiresIso = new Date(expires).toISOString();
   const sessionId = randomUUID();
-  const dbUser = db().prepare('SELECT password FROM users WHERE id=?').get(user.id) as
-    { password: string } | undefined;
-  if (dbUser) syncBetterAuthUser(user.id, user.name, user.username, dbUser.password, user.role);
+  const dbUser = (db().prepare('SELECT id, password FROM users WHERE id=?').get(user.id) ||
+    db().prepare('SELECT id, password FROM users WHERE username=?').get(user.username)) as
+    { id: string; password: string } | undefined;
+  syncBetterAuthUser(
+    user.id,
+    user.name,
+    user.username,
+    dbUser?.password || 'managed-credentials',
+    user.role
+  );
   db().prepare('DELETE FROM sessions WHERE expires<?').run(now);
   db().prepare('DELETE FROM session WHERE expiresAt<?').run(nowIso);
   db()
