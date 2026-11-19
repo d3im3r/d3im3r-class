@@ -8,6 +8,7 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
+  Code2,
   FileText,
   GraduationCap,
   Layers3,
@@ -568,21 +569,34 @@ export function Workspace({
             </nav>
           </div>
 
-          {/* Sección 3: Recursos y herramientas interactivas */}
+          {/* Sección 3: Recursos y entornos interactivos */}
           {canUseTools && (
             <div className="sidebar-section">
               <div className="workspace-label">RECURSOS</div>
               <nav>
                 <button
-                  className={view === 'tools' ? 'active' : ''}
+                  className={view === 'tools' && (toolLanguage === 'python' || !toolLanguage) ? 'active' : ''}
                   onClick={() => {
                     setToolSeed(undefined);
+                    setToolLanguage('python');
                     setToolVersion((v) => v + 1);
                     home('tools');
                   }}
                 >
-                  <Workflow size={18} />
-                  Laboratorio TikZ
+                  <Terminal size={18} />
+                  Entorno Python
+                </button>
+                <button
+                  className={view === 'tools' && toolLanguage === 'javascript' ? 'active' : ''}
+                  onClick={() => {
+                    setToolSeed(undefined);
+                    setToolLanguage('javascript');
+                    setToolVersion((v) => v + 1);
+                    home('tools');
+                  }}
+                >
+                  <Code2 size={18} />
+                  Entorno Web (JS / HTML / CSS)
                 </button>
               </nav>
             </div>
@@ -685,7 +699,9 @@ export function Workspace({
                   : view === 'admin'
                     ? 'Gestión docente'
                     : view === 'tools'
-                      ? 'Herramientas'
+                      ? toolLanguage === 'javascript'
+                        ? 'Entorno Web (JS / HTML / CSS)'
+                        : 'Entorno Python'
                       : view === 'course'
                         ? selectedSubject?.name
                         : view === 'institutions'

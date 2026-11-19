@@ -76,18 +76,20 @@ function Figure({ block }: { block: Block }) {
           justifyContent: 'center',
         }}
       >
-        <button
-          type="button"
-          className="resource-inspect"
-          onClick={(event) => {
-            event.currentTarget.closest('dialog')?.close();
-            window.dispatchEvent(
-              new CustomEvent('aula:inspect-resource', { detail: block.content })
-            );
-          }}
-        >
-          Abrir en herramientas
-        </button>
+        {!isDiagram && (
+          <button
+            type="button"
+            className="resource-inspect"
+            onClick={(event) => {
+              event.currentTarget.closest('dialog')?.close();
+              window.dispatchEvent(
+                new CustomEvent('aula:inspect-resource', { detail: block.content })
+              );
+            }}
+          >
+            Abrir en herramientas
+          </button>
+        )}
         {isDiagram && (
           <a
             href="https://tikz.dev/"
