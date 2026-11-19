@@ -6,6 +6,7 @@ import {
   BookOpen,
   Check,
   CheckCircle2,
+  Circle,
   ChevronLeft,
   FileText,
   MonitorPlay,
@@ -26,7 +27,7 @@ export interface ReadingDocumentProps {
   subject: Subject;
   institution: Institution;
   completed: string[];
-  onToggle: (id: string) => void;
+  onToggle: (id: string, forceCompleted?: boolean) => void;
   onBack: () => void;
   onStartPresentation: () => void;
   onFrameChange: (index: number) => void;
@@ -95,6 +96,51 @@ export function ReadingDocument({
     document.querySelectorAll('[data-reading-frame]').forEach((el) => observer.observe(el));
     return () => observer.disconnect();
   }, [lesson, onFrameChange]);
+
+  // Marcado automático de lectura al desplazarse por los bloques de la clase
+  useEffect(() => {
+    const readingTimers = new Map<string, NodeJS.Timeout>();
+
+    const readObserver = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          const target = entry.target as HTMLElement;
+          const frameId = target.id.replace(/^reading-/, '');
+          if (!frameId) return;
+
+          if (entry.isIntersecting) {
+            // Si el bloque entra en el campo de lectura y aún no está marcado,
+            // marcarlo automáticamente tras permanecer 600ms visible
+            if (!completed.includes(frameId) && !readingTimers.has(frameId)) {
+              const timer = setTimeout(() => {
+                onToggle(frameId, true);
+                readingTimers.delete(frameId);
+              }, 600);
+              readingTimers.set(frameId, timer);
+            }
+          } else {
+            // Si el alumno hace scroll rápido y sale antes de 600ms, cancelar temporizador
+            const existing = readingTimers.get(frameId);
+            if (existing) {
+              clearTimeout(existing);
+              readingTimers.delete(frameId);
+            }
+          }
+        });
+      },
+      {
+        threshold: 0.15,
+        rootMargin: '0px 0px -10% 0px',
+      }
+    );
+
+    document.querySelectorAll('[data-reading-frame]').forEach((el) => readObserver.observe(el));
+    return () => {
+      readObserver.disconnect();
+      readingTimers.forEach((t) => clearTimeout(t));
+      readingTimers.clear();
+    };
+  }, [lesson, completed, onToggle]);
 
   const closeIndex = useCallback(() => {
     setIndexOpen(false);
@@ -235,17 +281,21 @@ export function ReadingDocument({
                         <InlineText text={f.title} />
                       </h3>
                       <button
+                        type="button"
                         className={`read-marker ${completed.includes(f.id) ? 'is-read' : ''}`}
-                        aria-label={`${completed.includes(f.id) ? 'Desmarcar' : 'Marcar como leído'}: ${f.title}`}
+                        aria-label={`${completed.includes(f.id) ? 'Marcar como no leído' : 'Marcar como leído'}: ${f.title}`}
                         aria-pressed={completed.includes(f.id)}
                         onClick={() => onToggle(f.id)}
+                        title={completed.includes(f.id) ? 'Hacer clic para desmarcar' : 'Hacer clic para marcar como leído'}
                       >
                         {completed.includes(f.id) ? (
-                          <CheckCircle2 size={17} />
+                          <CheckCircle2 size={16} className="read-marker-icon" />
                         ) : (
-                          <Check size={17} />
+                          <Circle size={16} className="read-marker-icon" />
                         )}
-                        <span>{completed.includes(f.id) ? 'Leído' : 'Marcar leído'}</span>
+                        <span className="read-marker-label">
+                          {completed.includes(f.id) ? 'Leído' : 'Marcar leído'}
+                        </span>
                       </button>
                     </div>
                     <div className="frame-content">

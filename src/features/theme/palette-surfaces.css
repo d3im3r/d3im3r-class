@@ -41,14 +41,63 @@
 :root[data-palette][data-theme] :is(.lesson-text,.lesson-list,.presentation-frame-content .lesson-text){color:var(--card-foreground)}
 :root[data-palette][data-theme] :is(.lesson-text strong,.presentation-frame-content .lesson-text strong){color:var(--card-foreground)}
 :root[data-palette][data-theme] :is(.lesson-text code,.lesson-list code,.lesson-table code){background:var(--muted);color:var(--foreground);border-color:var(--border)}
-:root[data-palette][data-theme] :is(.lesson-text a,.math-block,.read-marker,.diagram-source,.presentation-frame-content .math-block){color:var(--foreground)}
+:root[data-palette][data-theme] :is(.lesson-text a,.math-block,.diagram-source,.presentation-frame-content .math-block){color:var(--foreground)}
 :root[data-palette][data-theme] .teaching-block{background:color-mix(in srgb,var(--callout) 10%,var(--card));border-color:color-mix(in srgb,var(--callout) 28%,var(--border))}
 :root[data-palette][data-theme] .teaching-title{background:color-mix(in srgb,var(--callout) 15%,var(--card));color:var(--callout);border-color:color-mix(in srgb,var(--callout) 28%,var(--border))}
-:root[data-palette][data-theme] .teaching-body .lesson-text{color:var(--card-foreground)}
-:root[data-palette][data-theme] :is(.read-marker,.presentation-frame-badge){background:var(--muted);color:var(--muted-foreground);border:1px solid var(--border)}
-:root[data-palette][data-theme] .read-marker:hover{background:var(--accent);color:var(--accent-foreground)}
-:root[data-palette][data-theme] :is(.read-marker.is-read,.document-end>svg){color:var(--primary)}
-:root[data-palette][data-theme] .read-marker.is-read{background:color-mix(in srgb,var(--primary) 14%,var(--card));border-color:color-mix(in srgb,var(--primary) 32%,var(--border))}
+:root[data-palette][data-theme] .teaching-body .lesson-text{color:var(--card-foreground);font-size:18px}
+:root[data-palette][data-theme] .presentation-frame-badge{background:var(--muted);color:var(--muted-foreground);border:1px solid var(--border)}
+:root[data-palette][data-theme] .read-marker{
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 14px;
+  border-radius: 9999px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+  background: var(--card);
+  color: var(--foreground);
+  border: 1.5px solid var(--border);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+:root[data-palette][data-theme] .read-marker:hover{
+  background: color-mix(in srgb, var(--primary) 12%, var(--card));
+  border-color: var(--primary);
+  color: var(--foreground);
+}
+:root[data-palette][data-theme] .read-marker-icon{
+  flex-shrink: 0;
+  color: var(--muted-foreground);
+  transition: color 0.2s ease;
+}
+:root[data-palette][data-theme] .read-marker:hover .read-marker-icon{
+  color: var(--primary);
+}
+:root[data-palette][data-theme] .read-marker.is-read{
+  background: color-mix(in srgb, #10b981 16%, var(--card));
+  color: #059669;
+  border-color: #10b981;
+  box-shadow: 0 0 12px rgba(16, 185, 129, 0.2);
+}
+:root[data-palette][data-theme="dark"] .read-marker.is-read{
+  background: color-mix(in srgb, #10b981 22%, var(--card));
+  color: #34d399;
+  border-color: #059669;
+  box-shadow: 0 0 12px rgba(16, 185, 129, 0.25);
+}
+:root[data-palette][data-theme] .read-marker.is-read .read-marker-icon{
+  color: #10b981;
+}
+:root[data-palette][data-theme="dark"] .read-marker.is-read .read-marker-icon{
+  color: #34d399;
+}
+:root[data-palette][data-theme] .read-marker.is-read:hover{
+  background: color-mix(in srgb, #10b981 26%, var(--card));
+  border-color: #059669;
+}
+:root[data-palette][data-theme] .document-end>svg{color:var(--primary)}
 :root[data-palette][data-theme] :is(.reading-section-heading>span,.presentation-frame-section,.presentation-header-badges .meta-badge){background:color-mix(in srgb,var(--primary) 14%,var(--card));color:var(--primary);border:1px solid color-mix(in srgb,var(--primary) 28%,var(--border))}
 :root[data-palette][data-theme] .presentation-header-logo-badge{background:var(--card);border-color:var(--border)}
 :root[data-palette][data-theme] .presentation-reading-frame.is-reflection-frame{background:color-mix(in srgb,var(--primary) 8%,var(--card));border-color:color-mix(in srgb,var(--primary) 28%,var(--border));border-left:5px solid var(--primary)}

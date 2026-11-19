@@ -257,13 +257,17 @@ export function Workspace({
     setFrameIndex(next < 0 ? 0 : next);
     setMobile(false);
   }
-  async function toggle(id: string) {
+  async function toggle(id: string, forceCompleted?: boolean) {
     if (!lesson) return;
     const lessonId = lesson.id,
       key = lessonId + id;
     if (pending.current.has(key)) return;
+    const isCurrentlyDone = (progress[lessonId] ?? []).includes(id);
+    if (forceCompleted !== undefined && isCurrentlyDone === forceCompleted) {
+      return;
+    }
+    const completed = forceCompleted !== undefined ? forceCompleted : !isCurrentlyDone;
     pending.current.add(key);
-    const completed = !(progress[lessonId] ?? []).includes(id);
     try {
       const response = await fetch('/api/progress', {
         method: 'POST',

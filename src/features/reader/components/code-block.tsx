@@ -32,22 +32,22 @@ export function CodeBlock({ content, language = 'text' }: { content: string; lan
   const [highlighted, setHighlighted] = useState(() => highlightCache.get(cacheKey) ?? '');
   const container = useRef<HTMLDivElement>(null);
 
-  // Control de tamaño de fuente del código sincronizado
+  // Control de tamaño de fuente del código sincronizado (predeterminado 20px)
   const [fontSize, setFontSize] = useState<number>(() => {
     if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('d3im3r_code_font_size');
+      const saved = localStorage.getItem('d3im3r_code_font_size_v20');
       if (saved) {
         const parsed = parseInt(saved, 10);
-        if (!isNaN(parsed) && parsed >= 10 && parsed <= 26) return parsed;
+        if (!isNaN(parsed) && parsed >= 12 && parsed <= 34) return parsed;
       }
     }
-    return 13;
+    return 20;
   });
 
   useEffect(() => {
     const handleSizeSync = (e: Event) => {
       const size = (e as CustomEvent<number>).detail;
-      if (size && size >= 10 && size <= 26) {
+      if (size && size >= 12 && size <= 34) {
         setFontSize(size);
       }
     };
@@ -57,9 +57,9 @@ export function CodeBlock({ content, language = 'text' }: { content: string; lan
 
   const adjustFontSize = (delta: number) => {
     setFontSize((prev) => {
-      const next = Math.min(26, Math.max(10, prev + delta));
+      const next = Math.min(34, Math.max(12, prev + delta));
       if (typeof window !== 'undefined') {
-        localStorage.setItem('d3im3r_code_font_size', String(next));
+        localStorage.setItem('d3im3r_code_font_size_v20', String(next));
         window.dispatchEvent(new CustomEvent('d3im3r:code-size-change', { detail: next }));
       }
       return next;
@@ -67,10 +67,10 @@ export function CodeBlock({ content, language = 'text' }: { content: string; lan
   };
 
   const resetFontSize = () => {
-    setFontSize(13);
+    setFontSize(20);
     if (typeof window !== 'undefined') {
-      localStorage.setItem('d3im3r_code_font_size', '13');
-      window.dispatchEvent(new CustomEvent('d3im3r:code-size-change', { detail: 13 }));
+      localStorage.setItem('d3im3r_code_font_size_v20', '20');
+      window.dispatchEvent(new CustomEvent('d3im3r:code-size-change', { detail: 20 }));
     }
   };
 
@@ -158,7 +158,7 @@ export function CodeBlock({ content, language = 'text' }: { content: string; lan
               variant="ghost"
               size="sm"
               onClick={() => adjustFontSize(-1)}
-              disabled={fontSize <= 10}
+              disabled={fontSize <= 12}
               className="code-zoom-btn"
               title="Disminuir tamaño del código (A-)"
               aria-label="Disminuir tamaño del código"
@@ -169,7 +169,7 @@ export function CodeBlock({ content, language = 'text' }: { content: string; lan
             <button
               type="button"
               onClick={resetFontSize}
-              title="Restablecer tamaño predeterminado (13px)"
+              title="Restablecer tamaño predeterminado (20px)"
               style={{
                 background: 'transparent',
                 border: 'none',
@@ -187,7 +187,7 @@ export function CodeBlock({ content, language = 'text' }: { content: string; lan
               variant="ghost"
               size="sm"
               onClick={() => adjustFontSize(1)}
-              disabled={fontSize >= 26}
+              disabled={fontSize >= 34}
               className="code-zoom-btn"
               title="Aumentar tamaño del código (A+)"
               aria-label="Aumentar tamaño del código"

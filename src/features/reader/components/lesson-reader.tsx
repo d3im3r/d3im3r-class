@@ -28,7 +28,7 @@ export function LessonReader({
   frameIndex: number;
   onFrameChange: (index: number) => void;
   completed: string[];
-  onToggle: (id: string) => void;
+  onToggle: (id: string, forceCompleted?: boolean) => void;
   onBack: () => void;
   canPresent?: boolean;
 }) {
@@ -157,7 +157,7 @@ export function LessonReader({
         onFrameChange={onFrameChange}
         frameIndex={frameIndex}
         toolsEnabled={toolsEnabled}
-        onToggleTools={toggleTools}
+        onToggleTools={canPresent ? toggleTools : undefined}
         canPresent={canPresent}
       />
 
@@ -179,7 +179,7 @@ export function LessonReader({
             fullscreen={fullscreen}
             onToggleFullscreen={toggleFullscreen}
             toolsEnabled={toolsEnabled}
-            onToggleTools={toggleTools}
+            onToggleTools={canPresent ? toggleTools : undefined}
           />
         </div>
       )}
