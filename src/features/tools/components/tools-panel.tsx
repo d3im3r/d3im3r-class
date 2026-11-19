@@ -1,5 +1,5 @@
 'use client';
-import { useMemo, useState, useEffect, useRef, useCallback } from 'react';
+import { useMemo, useState, useEffect, useRef } from 'react';
 import dynamic from 'next/dynamic';
 import {
   Wrench,
@@ -9,18 +9,15 @@ import {
   Terminal,
   Code2,
   Trash2,
-  LayoutTemplate,
-  Eye,
-  FileCode,
   RotateCcw,
+  Maximize,
+  Minimize,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/sonner';
 import type { Catalog } from '@/features/catalog/model/types';
 import {
   runPython,
-  buildSandboxDocument,
-  DEFAULT_JS_DOM_TEMPLATE,
   getLanguageCategory,
   type RunResult,
 } from '../lib/code-runner';
@@ -68,32 +65,21 @@ print("Vector pB resultante:", pB)
 print("¿Son iguales RA y RB?", np.allclose(RA, RB))
 `;
 
-const exampleJs = `// Laboratorio interactivo JavaScript
-const button = document.getElementById('miBoton');
-const output = document.getElementById('salida');
-
-console.log('Laboratorio JS iniciado correctamente.');
-
-if (button && output) {
-  let contador = 0;
-  button.onclick = () => {
-    contador++;
-    output.innerText = \`¡Clic número \${contador} registrado con éxito!\`;
-    console.log(\`Evento de clic registrado: \${contador}\`);
-  };
-}
-`;
-
-function CodePenInteractive() {
+function CodePenInteractive({
+  fullscreen,
+  onToggleFullscreen,
+}: {
+  fullscreen: boolean;
+  onToggleFullscreen: () => void;
+}) {
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (containerRef.current) {
+      const height = fullscreen ? '100%' : '750';
       containerRef.current.innerHTML = `
-<p class="codepen" data-height="520" data-pen-title="Untitled" data-version="2" data-default-tab="html,result" data-slug-hash="dPWYOay" data-user="Deimer-Miranda" style="height: 520px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; border: 2px solid var(--border); margin: 0; padding: 1em; border-radius: 8px;">
-  <span>See the Pen <a href="https://codepen.io/editor/Deimer-Miranda/pen/01a1f3e2-8283-7ca7-ab31-a2a6fa2a5d5a">
-  Untitled</a> by Deimer Miranda (<a href="https://codepen.io/Deimer-Miranda">@Deimer-Miranda</a>)
-  on <a href="https://codepen.io">CodePen</a>.</span>
+<p class="codepen" data-height="${height}" data-pen-title="Untitled" data-version="2" data-theme-id="dark" data-default-tab="html,result" data-slug-hash="dPWYOay" data-user="Deimer-Miranda" style="height: ${fullscreen ? '100%' : '750px'}; box-sizing: border-box; display: flex; align-items: center; justify-content: center; border: 1px solid var(--border); margin: 0; padding: 1em; border-radius: 8px; background: #131417; color: #fff;">
+  <span>Ver proyecto en <a href="https://codepen.io/editor/Deimer-Miranda/pen/01a1f3e2-8283-7ca7-ab31-a2a6fa2a5d5a">CodePen</a> por Deimer Miranda (<a href="https://codepen.io/Deimer-Miranda">@Deimer-Miranda</a>).</span>
 </p>
       `;
     }
@@ -108,18 +94,76 @@ function CodePenInteractive() {
     } else if (typeof (window as any).__CPEmbed === 'function') {
       (window as any).__CPEmbed();
     }
-  }, []);
+  }, [fullscreen]);
+
+  // Soporte para salir con tecla Escape
+  useEffect(() => {
+    if (!fullscreen) return;
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onToggleFullscreen();
+    };
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
+  }, [fullscreen, onToggleFullscreen]);
 
   return (
-    <div style={{ marginTop: '14px', width: '100%' }}>
+    <div
+      style={
+        fullscreen
+          ? {
+              position: 'fixed',
+              inset: 0,
+              zIndex: 9999,
+              background: '#131417',
+              display: 'flex',
+              flexDirection: 'column',
+              padding: '10px 16px',
+            }
+          : { marginTop: '14px', width: '100%' }
+      }
+    >
+      {fullscreen && (
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '4px 6px 12px',
+            borderBottom: '1px solid #2d3748',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#e2e8f0', fontSize: '13px', fontWeight: 600 }}>
+            <Code2 size={16} />
+            <span>CodePen · Modo Pantalla Completa</span>
+          </div>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <Button variant="outline" size="sm" asChild>
+              <a
+                href="https://codepen.io/editor/Deimer-Miranda/pen/01a1f3e2-8283-7ca7-ab31-a2a6fa2a5d5a"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}
+              >
+                <ExternalLink size={13} />
+                Abrir en CodePen nativo
+              </a>
+            </Button>
+            <Button variant="default" size="sm" onClick={onToggleFullscreen}>
+              <Minimize size={14} />
+              Salir de pantalla completa (Esc)
+            </Button>
+          </div>
+        </div>
+      )}
       <div
         ref={containerRef}
         style={{
           width: '100%',
-          minHeight: '520px',
-          borderRadius: '8px',
+          height: fullscreen ? 'calc(100vh - 65px)' : '750px',
+          minHeight: fullscreen ? 'calc(100vh - 65px)' : '750px',
+          borderRadius: fullscreen ? '0' : '8px',
           overflow: 'hidden',
-          background: 'var(--card)',
+          background: '#131417',
         }}
       />
     </div>
@@ -154,6 +198,7 @@ export function ToolsPanel({
   }, [seed, initialLanguage]);
 
   const [activeTab, setActiveTab] = useState<'python' | 'javascript'>(initialCategory);
+  const [codepenFullscreen, setCodepenFullscreen] = useState(false);
 
   // ----------------------------------------
   // Estado: Entorno Python
@@ -191,65 +236,6 @@ export function ToolsPanel({
     }
   };
 
-  // ----------------------------------------
-  // Estado: Entorno JavaScript, HTML y CSS
-  // ----------------------------------------
-  const [jsCode, setJsCode] = useState(
-    initialCategory === 'javascript' && seed ? seed : exampleJs
-  );
-  const [jsDom, setJsDom] = useState(DEFAULT_JS_DOM_TEMPLATE);
-  const [jsSubTab, setJsSubTab] = useState<'codepen' | 'js' | 'dom' | 'preview'>(
-    seed && initialCategory === 'javascript' ? 'js' : 'codepen'
-  );
-  const [jsResult, setJsResult] = useState<RunResult | null>(null);
-  const sandboxId = useRef(`sb-tool-${Math.random().toString(36).slice(2, 8)}`);
-  const [compiledJsDoc, setCompiledJsDoc] = useState('');
-
-  // Escuchar logs del iframe de JS
-  useEffect(() => {
-    const handleMsg = (e: MessageEvent) => {
-      if (
-        e.data &&
-        typeof e.data === 'object' &&
-        e.data.type === 'aula-runner-log' &&
-        e.data.sandboxId === sandboxId.current
-      ) {
-        const prefix = e.data.level === 'error' ? '✖ ' : e.data.level === 'warn' ? '⚠ ' : '';
-        const line = `${prefix}${e.data.message}`;
-        setJsResult((prev) => {
-          const currentOutputs = prev?.output ?? [];
-          return {
-            success: prev ? prev.success && e.data.level !== 'error' : e.data.level !== 'error',
-            output: [...currentOutputs, line],
-            error: e.data.level === 'error' ? e.data.message : prev?.error,
-          };
-        });
-      }
-    };
-    window.addEventListener('message', handleMsg);
-    return () => window.removeEventListener('message', handleMsg);
-  }, []);
-
-  const runJsCode = useCallback(() => {
-    const start = performance.now();
-    setJsResult({ success: true, output: [] });
-    const doc = buildSandboxDocument({
-      html: jsDom,
-      js: jsCode,
-      sandboxId: sandboxId.current,
-    });
-    setCompiledJsDoc('');
-    setTimeout(() => {
-      setCompiledJsDoc(doc);
-      setJsResult((prev) => ({
-        success: prev?.success ?? true,
-        output: prev?.output ?? [],
-        executionTimeMs: Math.round(performance.now() - start),
-      }));
-      toast.success('Entorno web recargado.');
-    }, 50);
-  }, [jsDom, jsCode]);
-
   return (
     <main className="dashboard tools-page">
       <div className="eyebrow">ESPACIO DE HERRAMIENTAS Y ENTORNOS</div>
@@ -259,10 +245,10 @@ export function ToolsPanel({
       </h1>
       <p>
         Entornos dedicados para ejecutar algoritmos científicos en Python y proyectos interactivos
-        en JavaScript, HTML y CSS.
+        en JavaScript, HTML y CSS mediante CodePen.
       </p>
 
-      {/* Selector de Entornos */}
+      {/* Selector de Entornos principales */}
       <div
         style={{
           display: 'flex',
@@ -423,7 +409,7 @@ export function ToolsPanel({
       )}
 
       {/* ------------------------------------------------------------------ */}
-      {/* PESTAÑA 2: ENTORNO WEB (JAVASCRIPT, HTML Y CSS) */}
+      {/* PESTAÑA 2: ENTORNO WEB (JAVASCRIPT, HTML Y CSS - CODEPEN) */}
       {/* ------------------------------------------------------------------ */}
       {activeTab === 'javascript' && (
         <section className="admin-card">
@@ -439,208 +425,40 @@ export function ToolsPanel({
             <div>
               <h2 style={{ display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
                 <Code2 size={18} />
-                Entorno Web: JavaScript, HTML y CSS
+                Entorno Web: JavaScript, HTML y CSS (CodePen)
               </h2>
               <p style={{ margin: '4px 0 0', fontSize: '13px', color: 'var(--muted)' }}>
-                Editor interactivo CodePen integrado y entorno de pruebas JavaScript en tiempo real.
+                Editor interactivo completo con pestañas para HTML, CSS, JavaScript y resultado en tiempo real.
               </p>
             </div>
-            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
               <Button
-                variant={jsSubTab === 'codepen' ? 'default' : 'outline'}
+                variant="outline"
                 size="sm"
-                onClick={() => setJsSubTab('codepen')}
+                onClick={() => setCodepenFullscreen((prev) => !prev)}
+                title="Alternar modo pantalla completa"
               >
-                <Code2 size={14} />
-                CodePen Interactivo
+                {codepenFullscreen ? <Minimize size={14} /> : <Maximize size={14} />}
+                <span>{codepenFullscreen ? 'Reducir' : 'Pantalla Completa'}</span>
               </Button>
-              <Button
-                variant={jsSubTab === 'js' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setJsSubTab('js')}
-              >
-                <FileCode size={14} />
-                JavaScript Local
-              </Button>
-              <Button
-                variant={jsSubTab === 'dom' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setJsSubTab('dom')}
-              >
-                <LayoutTemplate size={14} />
-                HTML (DOM)
-              </Button>
-              <Button
-                variant={jsSubTab === 'preview' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => {
-                  setJsSubTab('preview');
-                  runJsCode();
-                }}
-              >
-                <Eye size={14} />
-                Vista Previa Sandbox
+              <Button variant="outline" size="sm" asChild>
+                <a
+                  href="https://codepen.io/editor/Deimer-Miranda/pen/01a1f3e2-8283-7ca7-ab31-a2a6fa2a5d5a"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}
+                >
+                  <ExternalLink size={13} />
+                  Abrir en CodePen nativo
+                </a>
               </Button>
             </div>
           </div>
 
-          <div style={{ marginTop: '14px' }}>
-            {jsSubTab === 'codepen' && (
-              <div>
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    flexWrap: 'wrap',
-                    gap: '8px',
-                    marginBottom: '8px',
-                  }}
-                >
-                  <span style={{ fontSize: '13px', color: 'var(--muted)' }}>
-                    Espacio de programación interactivo con soporte completo para HTML, CSS y JS.
-                  </span>
-                  <Button variant="outline" size="sm" asChild>
-                    <a
-                      href="https://codepen.io/editor/Deimer-Miranda/pen/01a1f3e2-8283-7ca7-ab31-a2a6fa2a5d5a"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}
-                    >
-                      <ExternalLink size={13} />
-                      Abrir en CodePen
-                    </a>
-                  </Button>
-                </div>
-                <CodePenInteractive />
-              </div>
-            )}
-
-            {jsSubTab === 'js' && (
-              <>
-                <div className="tools-editor-heading">
-                  <label>Código JavaScript</label>
-                </div>
-                <CodeEditor initial={jsCode} language="javascript" onChange={setJsCode} />
-              </>
-            )}
-
-            {jsSubTab === 'dom' && (
-              <>
-                <div className="tools-editor-heading">
-                  <label>Estructura HTML (DOM)</label>
-                </div>
-                <CodeEditor initial={jsDom} language="html" onChange={setJsDom} />
-              </>
-            )}
-
-            {jsSubTab === 'preview' && (
-              <div style={{ marginTop: '14px' }}>
-                <div className="tools-editor-heading">
-                  <label>Vista previa interactiva del Sandbox</label>
-                </div>
-                <iframe
-                  title="JavaScript Sandbox"
-                  srcDoc={compiledJsDoc}
-                  sandbox="allow-scripts"
-                  style={{
-                    width: '100%',
-                    height: '320px',
-                    border: '1px solid var(--border)',
-                    borderRadius: '8px',
-                    background: '#fff',
-                  }}
-                />
-              </div>
-            )}
-          </div>
-
-          {jsSubTab !== 'codepen' && (
-            <>
-              <div className="tools-actions" style={{ marginTop: '14px' }}>
-                <Button onClick={runJsCode}>
-                  <Play size={15} />
-                  Ejecutar / Recargar Sandbox
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={async () => {
-                    try {
-                      await navigator.clipboard.writeText(jsCode);
-                      toast.success('Código JavaScript copiado.');
-                    } catch {
-                      toast.error('No se pudo copiar.');
-                    }
-                  }}
-                >
-                  <Copy size={14} />
-                  Copiar JS
-                </Button>
-                {jsResult && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setJsResult(null)}
-                    title="Limpiar consola"
-                  >
-                    <Trash2 size={14} />
-                    Limpiar logs
-                  </Button>
-                )}
-              </div>
-
-              {jsResult && (
-                <div
-                  style={{
-                    marginTop: '16px',
-                    borderRadius: '8px',
-                    background: 'var(--card-bg, #0f172a)',
-                    color: '#f8fafc',
-                    padding: '16px',
-                    border: '1px solid var(--border)',
-                    fontFamily: 'monospace',
-                    fontSize: '13px',
-                  }}
-                >
-                  <div
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      marginBottom: '8px',
-                      borderBottom: '1px solid rgba(255,255,255,0.1)',
-                      paddingBottom: '8px',
-                      fontSize: '12px',
-                      color: '#94a3b8',
-                    }}
-                  >
-                    <span>CONSOLA JAVASCRIPT</span>
-                    {jsResult.executionTimeMs !== undefined && (
-                      <span>{jsResult.executionTimeMs}ms</span>
-                    )}
-                  </div>
-                  {jsResult.output.length > 0 ? (
-                    jsResult.output.map((line, idx) => (
-                      <pre
-                        key={idx}
-                        style={{
-                          margin: '2px 0',
-                          whiteSpace: 'pre-wrap',
-                          overflowWrap: 'anywhere',
-                          color: line.startsWith('✖') ? '#f87171' : line.startsWith('⚠') ? '#facc15' : '#e2e8f0',
-                        }}
-                      >
-                        {line}
-                      </pre>
-                    ))
-                  ) : (
-                    <p style={{ margin: 0, color: '#94a3b8' }}>Sin logs de consola registrados.</p>
-                  )}
-                </div>
-              )}
-            </>
-          )}
+          <CodePenInteractive
+            fullscreen={codepenFullscreen}
+            onToggleFullscreen={() => setCodepenFullscreen(false)}
+          />
         </section>
       )}
     </main>
