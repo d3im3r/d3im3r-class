@@ -499,50 +499,72 @@ export function Workspace({
             </span>
             {showCampusResource && <ChevronDown size={15} />}
           </button>
-          <nav>
-            {canManageCampus && (
-              <button className={view === 'admin' ? 'active' : ''} onClick={() => home('admin')}>
-                <Settings2 size={18} />
-                Gestión docente
-              </button>
-            )}
-            {canUseTools && (
+
+          {/* Sección 1: Administración académica (docentes / admins) */}
+          {canManageCampus && (
+            <div className="sidebar-section">
+              <div className="workspace-label">ADMINISTRACIÓN</div>
+              <nav>
+                <button
+                  className={view === 'admin' ? 'active' : ''}
+                  onClick={() => home('admin')}
+                >
+                  <Settings2 size={18} />
+                  Gestión docente
+                </button>
+              </nav>
+            </div>
+          )}
+
+          {/* Sección 2: Espacio de aprendizaje y progreso del usuario */}
+          <div className="sidebar-section">
+            <div className="workspace-label">APRENDIZAJE</div>
+            <nav>
               <button
-                className={view === 'tools' ? 'active' : ''}
-                onClick={() => {
-                  setToolSeed(undefined);
-                  setToolVersion((v) => v + 1);
-                  home('tools');
-                }}
+                className={!lesson && view === 'subjects' ? 'active' : ''}
+                onClick={() => home()}
               >
-                <Workflow size={18} />
-                Herramientas
+                <LayoutGrid size={18} />
+                Mis asignaturas<span className="nav-count">{catalog.subjects.length}</span>
               </button>
-            )}
-            <button
-              className={!lesson && view === 'subjects' ? 'active' : ''}
-              onClick={() => home()}
-            >
-              <LayoutGrid size={18} />
-              Mis asignaturas<span className="nav-count">{catalog.subjects.length}</span>
-            </button>
-            {showCampusResource && (
+              {showCampusResource && (
+                <button
+                  className={!lesson && view === 'institutions' ? 'active' : ''}
+                  onClick={() => home('institutions')}
+                >
+                  <Building2 size={18} />
+                  Instituciones
+                </button>
+              )}
               <button
-                className={!lesson && view === 'institutions' ? 'active' : ''}
-                onClick={() => home('institutions')}
+                className={!lesson && view === 'progress' ? 'active' : ''}
+                onClick={() => home('progress')}
               >
-                <Building2 size={18} />
-                Instituciones
+                <CheckCircle2 size={18} />
+                Mi progreso
               </button>
-            )}
-            <button
-              className={!lesson && view === 'progress' ? 'active' : ''}
-              onClick={() => home('progress')}
-            >
-              <CheckCircle2 size={18} />
-              Mi progreso
-            </button>
-          </nav>
+            </nav>
+          </div>
+
+          {/* Sección 3: Recursos y herramientas interactivas */}
+          {canUseTools && (
+            <div className="sidebar-section">
+              <div className="workspace-label">RECURSOS</div>
+              <nav>
+                <button
+                  className={view === 'tools' ? 'active' : ''}
+                  onClick={() => {
+                    setToolSeed(undefined);
+                    setToolVersion((v) => v + 1);
+                    home('tools');
+                  }}
+                >
+                  <Workflow size={18} />
+                  Laboratorio TikZ
+                </button>
+              </nav>
+            </div>
+          )}
           {showCampusResource && (
             <>
               <div className="sidebar-divider" />

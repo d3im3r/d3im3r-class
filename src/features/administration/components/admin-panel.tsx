@@ -352,24 +352,24 @@ export function AdminPanel({
     if (!showInstitutionsTab && t === 'institutions' && currentInstitution) {
       t = 'subjects';
     }
-    if (t === 'lessons' && !currentTopic) {
-      return currentSubject
-        ? 'topics'
-        : currentInstitution
-          ? 'subjects'
-          : showInstitutionsTab
-            ? 'institutions'
-            : 'subjects';
-    }
-    if (t === 'topics' && !currentSubject) {
-      return currentInstitution ? 'subjects' : showInstitutionsTab ? 'institutions' : 'subjects';
-    }
-    if (t === 'subjects' && !currentInstitution && showInstitutionsTab) {
-      return 'institutions';
-    }
     return t;
   })();
   function goTab(next: string) {
+    if (next === 'topics') {
+      if (!selectedSubject && institutionSubjects.length > 0) {
+        const first = institutionSubjects[0];
+        setSelectedSubject(first.id);
+        if (first.topics[0]) setSelectedTopic(first.topics[0].id);
+      }
+    } else if (next === 'lessons') {
+      const activeSub = currentSubject || institutionSubjects[0];
+      if (activeSub) {
+        if (!selectedSubject) setSelectedSubject(activeSub.id);
+        if (!selectedTopic && activeSub.topics.length > 0) {
+          setSelectedTopic(activeSub.topics[0].id);
+        }
+      }
+    }
     setTab(next);
     setError('');
     setMessage('');
@@ -417,49 +417,113 @@ export function AdminPanel({
           {isAdmin ? 'Super Administrador' : 'Docente'}
         </span>
       </div>
-      <div className="admin-steps">
-        {showInstitutionsTab && (
-          <>
-            <button
-              type="button"
-              className={activeTab === 'institutions' ? 'active' : ''}
-              onClick={() => goTab('institutions')}
+      {/* Barra de navegación y selección rápida de contexto */}
+      <div className="admin-context-bar flex flex-wrap items-center justify-between gap-3 p-3 mb-4 rounded-xl border bg-card/60 backdrop-blur shadow-xs">
+        <div className="flex flex-wrap items-center gap-3 text-xs">
+          <span className="font-semibold text-muted-foreground flex items-center gap-1.5 uppercase tracking-wider text-[11px]">
+            <Sparkles size={13} className="text-amber-500 shrink-0" />
+            Navegación rápida:
+          </span>
+
+          {showInstitutionsTab && (
+            <div className="flex items-center gap-1.5">
+              <label htmlFor="context-inst-select" className="text-muted-foreground font-medium">
+                Institución:
+              </label>
+              <select
+                id="context-inst-select"
+                value={currentInstitution?.id ?? ''}
+                onChange={(e) => {
+                  const newId = e.target.value;
+                  setSelectedInstitution(newId);
+                  const subs = data.subjects.filter((s) => s.institutionId === newId);
+                  const firstSub = subs[0];
+                  setSelectedSubject(firstSub ? firstSub.id : '');
+                  setSelectedTopic(firstSub && firstSub.topics[0] ? firstSub.topics[0].id : '');
+                }}
+                className="text-xs py-1 px-2.5 rounded-md border bg-background font-medium focus:outline-none focus:ring-1 focus:ring-primary"
+              >
+                {data.institutions.map((i) => (
+                  <option key={i.id} value={i.id}>
+                    {i.shortName}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          <div className="flex items-center gap-1.5">
+            <label htmlFor="context-subj-select" className="text-muted-foreground font-medium">
+              Materia:
+            </label>
+            <select
+              id="context-subj-select"
+              value={currentSubject?.id ?? ''}
+              onChange={(e) => {
+                const newId = e.target.value;
+                setSelectedSubject(newId);
+                const sub = data.subjects.find((s) => s.id === newId);
+                setSelectedTopic(sub && sub.topics[0] ? sub.topics[0].id : '');
+              }}
+              className="text-xs py-1 px-2.5 rounded-md border bg-background font-medium focus:outline-none focus:ring-1 focus:ring-primary max-w-[220px] truncate"
             >
-              1. Institución{currentInstitution ? `: ${currentInstitution.shortName}` : ''}
-            </button>
-            <ArrowRight size={13} />
-          </>
+              {institutionSubjects.length === 0 ? (
+                <option value="">(Sin materias)</option>
+              ) : (
+                institutionSubjects.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name} ({s.code})
+                  </option>
+                ))
+              )}
+            </select>
+          </div>
+
+          <div className="flex items-center gap-1.5">
+            <label htmlFor="context-topic-select" className="text-muted-foreground font-medium">
+              Tema:
+            </label>
+            <select
+              id="context-topic-select"
+              value={currentTopic?.id ?? ''}
+              disabled={!currentSubject || subjectTopics.length === 0}
+              onChange={(e) => setSelectedTopic(e.target.value)}
+              className="text-xs py-1 px-2.5 rounded-md border bg-background font-medium focus:outline-none focus:ring-1 focus:ring-primary max-w-[220px] truncate disabled:opacity-50"
+            >
+              {subjectTopics.length === 0 ? (
+                <option value="">(Sin temas en esta materia)</option>
+              ) : (
+                subjectTopics.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.name}
+                  </option>
+                ))
+              )}
+            </select>
+          </div>
+        </div>
+
+        {currentSubject && (
+          <div className="flex items-center gap-2 ml-auto">
+            <Button
+              variant="outline"
+              size="sm"
+              className="text-xs h-7 gap-1.5"
+              onClick={() => copyInviteLink(currentSubject.id)}
+              title="Copiar enlace de inscripción de la materia actual"
+            >
+              {copiedSubject === currentSubject.id ? (
+                <Check size={12} className="text-emerald-500" />
+              ) : (
+                <LinkIcon size={12} />
+              )}
+              <span>Inscripción</span>
+            </Button>
+          </div>
         )}
-        <button
-          type="button"
-          className={activeTab === 'subjects' ? 'active' : ''}
-          disabled={!currentInstitution}
-          onClick={() => currentInstitution && goTab('subjects')}
-        >
-          {showInstitutionsTab ? '2. Materia' : '1. Materias'}
-          {currentSubject ? `: ${currentSubject.name}` : ''}
-        </button>
-        <ArrowRight size={13} />
-        <button
-          type="button"
-          className={activeTab === 'topics' ? 'active' : ''}
-          disabled={!currentSubject}
-          onClick={() => currentSubject && goTab('topics')}
-        >
-          {showInstitutionsTab ? '3. Tema' : '2. Temas'}
-          {currentTopic ? `: ${currentTopic.name}` : ''}
-        </button>
-        <ArrowRight size={13} />
-        <button
-          type="button"
-          className={activeTab === 'lessons' ? 'active' : ''}
-          disabled={!currentTopic}
-          onClick={() => currentTopic && goTab('lessons')}
-        >
-          {showInstitutionsTab ? '4. Clases' : '3. Clases'}
-          {currentTopic ? ` (${topicLessons.length})` : ''}
-        </button>
       </div>
+
+      {/* Pestañas fijas y limpias */}
       <nav className="admin-tabs" aria-label="Gestión docente">
         {showInstitutionsTab && (
           <button
@@ -472,40 +536,37 @@ export function AdminPanel({
         )}
         <button
           className={activeTab === 'subjects' ? 'selected' : ''}
-          disabled={!currentInstitution}
-          onClick={() => currentInstitution && goTab('subjects')}
+          onClick={() => goTab('subjects')}
         >
           <BookOpen size={16} />
-          {currentInstitution ? `Materias · ${currentInstitution.shortName}` : 'Materias'}
-          <span>{currentInstitution ? institutionSubjects.length : data.subjects.length}</span>
+          Materias
+          <span>{institutionSubjects.length}</span>
         </button>
         <button
           className={activeTab === 'topics' ? 'selected' : ''}
-          disabled={!currentSubject}
-          onClick={() => currentSubject && goTab('topics')}
+          onClick={() => goTab('topics')}
         >
           <FolderOpen size={16} />
-          {currentSubject ? `Temas · ${currentSubject.code}` : 'Temas'}
-          <span>{currentSubject ? subjectTopics.length : 0}</span>
+          Temas
+          <span>{subjectTopics.length}</span>
         </button>
         <button
           className={activeTab === 'lessons' ? 'selected' : ''}
-          disabled={!currentTopic}
-          onClick={() => currentTopic && goTab('lessons')}
+          onClick={() => goTab('lessons')}
         >
           <Layers3 size={16} />
-          {currentTopic ? `Clases · ${currentTopic.name}` : 'Clases'}
-          <span>{currentTopic ? topicLessons.length : 0}</span>
+          Clases
+          <span>{topicLessons.length}</span>
         </button>
         <button
           className={activeTab === 'students' ? 'selected' : ''}
           onClick={() => goTab('students')}
         >
           <Users size={16} />
-          Alumnos y asignaciones
+          Alumnos
           <span>
             {students.length}
-            {pendingRequests.length > 0 ? ` (${pendingRequests.length} pendientes)` : ''}
+            {pendingRequests.length > 0 ? ` (${pendingRequests.length} pend.)` : ''}
           </span>
         </button>
         {isAdmin && (
@@ -514,7 +575,7 @@ export function AdminPanel({
             onClick={() => goTab('teachers')}
           >
             <GraduationCap size={16} />
-            Profesores y equipo<span>{teachers.length}</span>
+            Docentes<span>{teachers.length}</span>
           </button>
         )}
       </nav>
@@ -897,31 +958,46 @@ export function AdminPanel({
           </div>
         </>
       )}
-      {activeTab === 'topics' && currentInstitution && currentSubject && (
+      {activeTab === 'topics' && (
         <>
-          <button type="button" className="back-link" onClick={() => goTab('subjects')}>
-            <ChevronLeft size={15} />
-            Volver a materias de {currentInstitution.shortName}
-          </button>
-          <div className="admin-two-columns">
-            <section className="admin-card admin-established admin-topic-manager">
-              <div className="admin-card-header">
-                <div>
-                  <span className="eyebrow">TEMAS ESTABLECIDOS · {currentSubject.code}</span>
-                  <h2>
-                    <FolderOpen size={20} />
-                    Temas de {currentSubject.name}
-                  </h2>
-                </div>
-                <span className="admin-count-badge">
-                  {subjectTopics.length} {subjectTopics.length === 1 ? 'tema' : 'temas'}
-                </span>
-              </div>
-              <p className="admin-help">
-                Selecciona un tema para ver o importar únicamente las clases que pertenecen a ese
-                tema.
+          {currentInstitution && (
+            <button type="button" className="back-link" onClick={() => goTab('subjects')}>
+              <ChevronLeft size={15} />
+              Volver a materias de {currentInstitution.shortName}
+            </button>
+          )}
+          {!currentSubject ? (
+            <div className="admin-card p-8 text-center max-w-lg mx-auto my-8">
+              <FolderOpen size={36} className="mx-auto mb-3 text-muted-foreground opacity-60" />
+              <h3 className="text-base font-semibold mb-1">Selecciona una materia</h3>
+              <p className="text-xs text-muted-foreground mb-4">
+                Elige una materia en el selector rápido superior para ver y gestionar sus temas.
               </p>
-              {subjectTopics.length ? (
+              <Button onClick={() => goTab('subjects')}>
+                <BookOpen size={14} />
+                Ir a Materias
+              </Button>
+            </div>
+          ) : (
+            <div className="admin-two-columns">
+              <section className="admin-card admin-established admin-topic-manager">
+                <div className="admin-card-header">
+                  <div>
+                    <span className="eyebrow">TEMAS ESTABLECIDOS · {currentSubject.code}</span>
+                    <h2>
+                      <FolderOpen size={20} />
+                      Temas de {currentSubject.name}
+                    </h2>
+                  </div>
+                  <span className="admin-count-badge">
+                    {subjectTopics.length} {subjectTopics.length === 1 ? 'tema' : 'temas'}
+                  </span>
+                </div>
+                <p className="admin-help">
+                  Selecciona un tema para ver o importar únicamente las clases que pertenecen a ese
+                  tema.
+                </p>
+                {subjectTopics.length ? (
                 <div className="topic-chips">
                   {subjectTopics.map((t, i) => {
                     const count = data.lessons.filter(
@@ -1081,27 +1157,47 @@ export function AdminPanel({
               </form>
             </section>
           </div>
+          )}
         </>
       )}
-      {activeTab === 'lessons' && currentInstitution && currentSubject && currentTopic && (
+      {activeTab === 'lessons' && (
         <>
-          <button type="button" className="back-link" onClick={() => goTab('topics')}>
-            <ChevronLeft size={15} />
-            Volver a temas de {currentSubject.name}
-          </button>
-          <div className="admin-two-columns">
-            <section className="admin-card admin-established">
-              <div className="admin-card-header">
-                <div>
-                  <span className="eyebrow">
-                    {currentInstitution.shortName} · {currentSubject.code}
-                  </span>
-                  <h2>
-                    <Layers3 size={20} />
-                    Clases de «{currentTopic.name}»
-                  </h2>
-                </div>
-                <span className="admin-count-badge">
+          {currentSubject && (
+            <button type="button" className="back-link" onClick={() => goTab('topics')}>
+              <ChevronLeft size={15} />
+              Volver a temas de {currentSubject.name}
+            </button>
+          )}
+          {!currentSubject || !currentTopic ? (
+            <div className="admin-card p-8 text-center max-w-lg mx-auto my-8">
+              <Layers3 size={36} className="mx-auto mb-3 text-muted-foreground opacity-60" />
+              <h3 className="text-base font-semibold mb-1">
+                {!currentSubject ? 'Selecciona una materia' : 'Materia sin temas'}
+              </h3>
+              <p className="text-xs text-muted-foreground mb-4">
+                {!currentSubject
+                  ? 'Elige una materia en el selector rápido superior para ver y gestionar sus clases.'
+                  : `La materia «${currentSubject.name}» aún no tiene temas creados. Añade un tema primero para poder registrar clases.`}
+              </p>
+              <Button onClick={() => goTab(!currentSubject ? 'subjects' : 'topics')}>
+                {!currentSubject ? <BookOpen size={14} /> : <FolderOpen size={14} />}
+                {!currentSubject ? 'Ir a Materias' : 'Crear un tema'}
+              </Button>
+            </div>
+          ) : (
+            <div className="admin-two-columns">
+              <section className="admin-card admin-established">
+                <div className="admin-card-header">
+                  <div>
+                    <span className="eyebrow">
+                      {currentInstitution?.shortName} · {currentSubject.code}
+                    </span>
+                    <h2>
+                      <Layers3 size={20} />
+                      Clases de «{currentTopic.name}»
+                    </h2>
+                  </div>
+                  <span className="admin-count-badge">
                   {topicLessons.length} {topicLessons.length === 1 ? 'clase' : 'clases'}
                 </span>
               </div>
@@ -1651,6 +1747,7 @@ export function AdminPanel({
               )}
             </section>
           </div>
+          )}
         </>
       )}
       {activeTab === 'students' && (
