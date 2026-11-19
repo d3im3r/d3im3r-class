@@ -187,7 +187,23 @@ export function ReadingDocument({
           <div className="reading-document">
             <header className="document-cover">
               {institutionLogo(institution) && (
-                <img src={institutionLogo(institution)!} alt={institution.name} />
+                <img
+                  src={institutionLogo(institution)!}
+                  alt={institution.name}
+                  onError={(e) => {
+                    const fallback =
+                      institution.id === 'sena'
+                        ? '/assets/teaching/logoSena.png'
+                        : institution.id === 'politecnico'
+                          ? '/assets/teaching/LogoPoli.png'
+                          : null;
+                    if (fallback && !e.currentTarget.src.endsWith(fallback)) {
+                      e.currentTarget.src = fallback;
+                    } else {
+                      e.currentTarget.style.display = 'none';
+                    }
+                  }}
+                />
               )}
               <div>
                 <span>{institution.name}</span>

@@ -362,7 +362,25 @@ export function Workspace({
         <div className="card-art">
           <div className="art-grid" />
           <span className="institution-tag">
-            {institutionLogo(institution) && <img src={institutionLogo(institution)!} alt="" />}
+            {institutionLogo(institution) && (
+              <img
+                src={institutionLogo(institution)!}
+                alt=""
+                onError={(e) => {
+                  const fallback =
+                    institution.id === 'sena'
+                      ? '/assets/teaching/logoSena.png'
+                      : institution.id === 'politecnico'
+                        ? '/assets/teaching/LogoPoli.png'
+                        : null;
+                  if (fallback && !e.currentTarget.src.endsWith(fallback)) {
+                    e.currentTarget.src = fallback;
+                  } else {
+                    e.currentTarget.style.display = 'none';
+                  }
+                }}
+              />
+            )}
             {institution.shortName}
           </span>
           {s.icon === 'robot' ? (
@@ -1037,7 +1055,23 @@ export function Workspace({
                       >
                         <span className={`institution-monogram ${i.color}`}>
                           {institutionLogo(i) ? (
-                            <img src={institutionLogo(i)!} alt={i.shortName} />
+                            <img
+                              src={institutionLogo(i)!}
+                              alt={i.shortName}
+                              onError={(e) => {
+                                const fallback =
+                                  i.id === 'sena'
+                                    ? '/assets/teaching/logoSena.png'
+                                    : i.id === 'politecnico'
+                                      ? '/assets/teaching/LogoPoli.png'
+                                      : null;
+                                if (fallback && !e.currentTarget.src.endsWith(fallback)) {
+                                  e.currentTarget.src = fallback;
+                                } else {
+                                  e.currentTarget.style.display = 'none';
+                                }
+                              }}
+                            />
                           ) : (
                             <Building2 size={30} />
                           )}{' '}

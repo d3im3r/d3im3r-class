@@ -290,7 +290,23 @@ export function SlideDeck({
           <header className="presentation-document-header">
             {institutionLogo(institution) && (
               <div className="presentation-header-logo-badge">
-                <img src={institutionLogo(institution)!} alt={institution.name} />
+                <img
+                  src={institutionLogo(institution)!}
+                  alt={institution.name}
+                  onError={(e) => {
+                    const fallback =
+                      institution.id === 'sena'
+                        ? '/assets/teaching/logoSena.png'
+                        : institution.id === 'politecnico'
+                          ? '/assets/teaching/LogoPoli.png'
+                          : null;
+                    if (fallback && !e.currentTarget.src.endsWith(fallback)) {
+                      e.currentTarget.src = fallback;
+                    } else {
+                      e.currentTarget.style.display = 'none';
+                    }
+                  }}
+                />
               </div>
             )}
             <div className="presentation-header-info">

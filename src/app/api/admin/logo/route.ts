@@ -38,16 +38,13 @@ export async function POST(request: Request) {
           : null;
     if (!mime) throw new AppError('El archivo no es una imagen PNG, JPG o WebP válida.');
     const version = createHash('sha256').update(bytes).digest('hex').slice(0, 12);
-    const folder = path.join(dataDirectory(), 'logos');
-    await mkdir(folder, { recursive: true });
-    const dest = path.join(folder, randomUUID());
-    await writeFile(dest, bytes, { mode: 0o600 });
+    const base64Data = bytes.toString('base64');
     transaction(() => {
       db()
         .prepare(
-          'INSERT INTO institution_logos VALUES (?,?,?) ON CONFLICT(id) DO UPDATE SET path=excluded.path,mime=excluded.mime'
+          'INSERT INTO institution_logos(id,mime,data) VALUES (?,?,?) ON CONFLICT(id) DO UPDATE SET mime=excluded.mime,data=excluded.data'
         )
-        .run(id, dest, mime);
+        .run(id, mime, base64Data);
       const data = JSON.parse(row.data as string);
       data.logo = `/api/logos/${id}?v=${version}`;
       db().prepare('UPDATE institutions SET data=? WHERE id=?').run(JSON.stringify(data), id);
@@ -56,6 +53,12 @@ export async function POST(request: Request) {
     if (pool) {
       const data = JSON.parse(row.data as string);
       data.logo = `/api/logos/${id}?v=${version}`;
+      pool
+        .query(
+          'INSERT INTO institution_logos(id,mime,data) VALUES ($1,$2,$3) ON CONFLICT(id) DO UPDATE SET mime=EXCLUDED.mime,data=EXCLUDED.data',
+          [id, mime, base64Data]
+        )
+        .catch(console.error);
       pool
         .query('UPDATE institutions SET data=$1 WHERE id=$2', [JSON.stringify(data), id])
         .catch(console.error);

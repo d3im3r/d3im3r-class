@@ -90,6 +90,7 @@ export async function syncFromPostgres(force = false): Promise<void> {
       'subject_bans', COALESCE((SELECT json_agg(b) FROM subject_bans b), '[]'::json),
       'subject_invites', COALESCE((SELECT json_agg(si) FROM subject_invites si), '[]'::json),
       'subject_join_requests', COALESCE((SELECT json_agg(sjr) FROM subject_join_requests sjr), '[]'::json),
+      'institution_logos', COALESCE((SELECT json_agg(il) FROM institution_logos il), '[]'::json),
       'progress', COALESCE((SELECT json_agg(p) FROM progress p), '[]'::json),
       'resources', COALESCE((SELECT json_agg(r) FROM resources r), '[]'::json)
     ) as state;
@@ -328,6 +329,16 @@ export async function syncFromPostgres(force = false): Promise<void> {
             .run(p.user_id, p.lesson_id, p.frame_id);
         }
       }
+      if (Array.isArray(state.institution_logos)) {
+        for (const il of state.institution_logos) {
+          if (!il.data) continue;
+          sql
+            .prepare(
+              'INSERT INTO institution_logos(id,mime,data) VALUES (?,?,?) ON CONFLICT(id) DO UPDATE SET mime=excluded.mime,data=excluded.data'
+            )
+            .run(il.id, il.mime, il.data);
+        }
+      }
       if (Array.isArray(state.resources)) {
         for (const r of state.resources) {
           sql
@@ -377,9 +388,15 @@ export function db() {
  CREATE TABLE IF NOT EXISTS resources(lesson_id TEXT REFERENCES lessons(id) ON DELETE CASCADE,key TEXT,name TEXT,path TEXT NOT NULL,mime TEXT NOT NULL,PRIMARY KEY(lesson_id,key));
  CREATE TABLE IF NOT EXISTS progress(user_id TEXT REFERENCES users(id) ON DELETE CASCADE,lesson_id TEXT REFERENCES lessons(id) ON DELETE CASCADE,frame_id TEXT NOT NULL,PRIMARY KEY(user_id,lesson_id,frame_id));
  CREATE TABLE IF NOT EXISTS login_attempts(username TEXT PRIMARY KEY,count INTEGER NOT NULL,until INTEGER NOT NULL);
- CREATE TABLE IF NOT EXISTS institution_logos(id TEXT PRIMARY KEY REFERENCES institutions(id),path TEXT NOT NULL,mime TEXT NOT NULL);
+ CREATE TABLE IF NOT EXISTS institution_logos(id TEXT PRIMARY KEY REFERENCES institutions(id) ON DELETE CASCADE,mime TEXT NOT NULL,data TEXT NOT NULL,path TEXT);
  CREATE TABLE IF NOT EXISTS institution_members(user_id TEXT REFERENCES users(id) ON DELETE CASCADE, institution_id TEXT REFERENCES institutions(id) ON DELETE CASCADE, PRIMARY KEY(user_id, institution_id));
  CREATE TABLE IF NOT EXISTS metadata(key TEXT PRIMARY KEY,value TEXT NOT NULL);`);
+  try {
+    const cols = connection.prepare('PRAGMA table_info(institution_logos)').all() as any[];
+    if (!cols.some((c) => c.name === 'data')) {
+      connection.exec('ALTER TABLE institution_logos ADD COLUMN data TEXT;');
+    }
+  } catch {}
   if (!connection.prepare("SELECT key FROM metadata WHERE key='seed-v1'").get()) seed(connection);
   return connection;
 }
@@ -513,6 +530,20 @@ function seed(sql: DatabaseSync) {
       l.source = resource(`/resources/${l.id}.tex`, path.basename(l.source));
       for (const f of l.frames) walk(f.blocks);
       sql.prepare('UPDATE lessons SET data=? WHERE id=?').run(JSON.stringify(l), l.id);
+    }
+    const senaPath = path.join(process.cwd(), 'public/assets/teaching/logoSena.png');
+    if (existsSync(senaPath)) {
+      const bytes = readFileSync(senaPath);
+      sql
+        .prepare('INSERT OR IGNORE INTO institution_logos(id,mime,data) VALUES (?,?,?)')
+        .run('sena', 'image/png', bytes.toString('base64'));
+    }
+    const poliPath = path.join(process.cwd(), 'public/assets/teaching/LogoPoli.png');
+    if (existsSync(poliPath)) {
+      const bytes = readFileSync(poliPath);
+      sql
+        .prepare('INSERT OR IGNORE INTO institution_logos(id,mime,data) VALUES (?,?,?)')
+        .run('politecnico', 'image/png', bytes.toString('base64'));
     }
     sql.prepare('INSERT INTO metadata VALUES (?,?)').run('seed-v1', new Date().toISOString());
     sql.exec('COMMIT');
