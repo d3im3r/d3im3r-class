@@ -65,6 +65,16 @@ export async function syncFromPostgres(force = false): Promise<void> {
 
   inFlightSync = (async () => {
     try {
+      try {
+        await pool.query(`
+          INSERT INTO users(id, name, username, password, role)
+          SELECT u.id, u.name, COALESCE(u.username, u.email), 'managed-by-better-auth', 
+            CASE WHEN u.role='admin' THEN 'admin' WHEN u.role='teacher' THEN 'teacher' ELSE 'student' END
+          FROM "user" u
+          ON CONFLICT (id) DO UPDATE SET name=EXCLUDED.name, role=EXCLUDED.role;
+        `);
+      } catch {}
+
       const res = await pool.query(`
     SELECT json_build_object(
       'users', COALESCE((SELECT json_agg(u) FROM users u), '[]'::json),
@@ -87,6 +97,7 @@ export async function syncFromPostgres(force = false): Promise<void> {
     const state = res.rows[0]?.state;
     if (!state) return;
     const sql = db();
+    sql.exec('PRAGMA foreign_keys=OFF;');
     sql.exec('BEGIN IMMEDIATE');
     try {
       if (Array.isArray(state.users)) {
@@ -331,6 +342,8 @@ export async function syncFromPostgres(force = false): Promise<void> {
     } catch (err) {
       sql.exec('ROLLBACK');
       console.error('Failed to apply sync state to SQLite:', err);
+    } finally {
+      sql.exec('PRAGMA foreign_keys=ON;');
     }
   } catch (err) {
     console.error('Failed to sync from Postgres:', err);
@@ -381,6 +394,13 @@ export function syncBetterAuthUser(
     now = new Date().toISOString(),
     email = username.includes('@') ? username : `${username}@aula.local`;
 
+  // Asegurar registro puente en 'users' PRIMERO con el mismo id
+  sql
+    .prepare(
+      'INSERT INTO users(id,name,username,password,role) VALUES (?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET name=excluded.name,username=excluded.username,password=excluded.password,role=excluded.role'
+    )
+    .run(id, name, username, password, role);
+
   // Si existe un usuario en 'user' con este correo o username pero con otro id, unificarlo a 'id'
   const oldUser = sql
     .prepare('SELECT id FROM user WHERE (email=? OR username=?) AND id!=?')
@@ -421,8 +441,14 @@ export function syncBetterAuthUser(
     queuePg(
       pool
         .query(
-          'INSERT INTO "user"(id,name,email,"emailVerified","createdAt","updatedAt",username,"displayUsername",role,banned) VALUES ($1,$2,$3,true,$4,$4,$5,$5,$6,false) ON CONFLICT(id) DO UPDATE SET name=EXCLUDED.name,email=EXCLUDED.email,"updatedAt"=EXCLUDED."updatedAt",username=EXCLUDED.username,"displayUsername"=EXCLUDED."displayUsername",role=EXCLUDED.role',
-          [id, name, email, now, username, role]
+          'INSERT INTO users(id,name,username,password,role) VALUES ($1,$2,$3,$4,$5) ON CONFLICT(id) DO UPDATE SET name=EXCLUDED.name,username=EXCLUDED.username,password=EXCLUDED.password,role=EXCLUDED.role',
+          [id, name, username, password, role]
+        )
+        .then(() =>
+          pool.query(
+            'INSERT INTO "user"(id,name,email,"emailVerified","createdAt","updatedAt",username,"displayUsername",role,banned) VALUES ($1,$2,$3,true,$4,$4,$5,$5,$6,false) ON CONFLICT(id) DO UPDATE SET name=EXCLUDED.name,email=EXCLUDED.email,"updatedAt"=EXCLUDED."updatedAt",username=EXCLUDED.username,"displayUsername"=EXCLUDED."displayUsername",role=EXCLUDED.role',
+            [id, name, email, now, username, role]
+          )
         )
         .then(() =>
           pool.query(

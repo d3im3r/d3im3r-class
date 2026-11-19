@@ -382,35 +382,35 @@ export async function importRoster(
         if (u) user = u;
       }
       if (row.status === 'ready') {
-        if (!user) {
-          const id = randomUUID(),
-            hashed = hashes.get(row.row)!;
-          db()
-            .prepare(
-              "INSERT INTO users(id,name,username,password,role) VALUES (?,?,?,?,'student') ON CONFLICT(username) DO UPDATE SET name=excluded.name,password=excluded.password"
+        const id = user?.id ?? randomUUID(),
+          hashed = hashes.get(row.row)!;
+        db()
+          .prepare(
+            "INSERT INTO users(id,name,username,password,role) VALUES (?,?,?,?,'student') ON CONFLICT(id) DO UPDATE SET name=excluded.name,password=excluded.password"
+          )
+          .run(id, row.name, row.email, hashed);
+        syncBetterAuthUser(id, row.name, row.email, hashed, 'student');
+        const pool = getPgPool();
+        if (pool) {
+          pool
+            .query(
+              'INSERT INTO users(id,name,username,password,role) VALUES ($1,$2,$3,$4,$5) ON CONFLICT(id) DO UPDATE SET name=EXCLUDED.name,password=EXCLUDED.password,role=EXCLUDED.role',
+              [id, row.name, row.email, hashed, 'student']
             )
-            .run(id, row.name, row.email, hashed);
-          syncBetterAuthUser(id, row.name, row.email, hashed, 'student');
-          const pool = getPgPool();
-          if (pool) {
-            pool
-              .query(
-                'INSERT INTO users(id,name,username,password,role) VALUES ($1,$2,$3,$4,$5) ON CONFLICT(username) DO UPDATE SET name=EXCLUDED.name,password=EXCLUDED.password,role=EXCLUDED.role',
-                [id, row.name, row.email, hashed, 'student']
-              )
-              .catch(console.error);
-          }
-          user = { id, role: 'student' };
-          created++;
-        } else {
-          // Ya existía en user o users: actualizar contraseña si vino en el archivo
-          const hashed = hashes.get(row.row);
-          if (hashed) {
-            db().prepare('UPDATE users SET password=? WHERE id=?').run(hashed, user.id);
-            syncBetterAuthUser(user.id, row.name, row.email, hashed, 'student');
-          }
+            .catch(console.error);
         }
-      } else if (!input.enrollExisting) continue;
+        user = { id, role: 'student' };
+        created++;
+      } else if (!input.enrollExisting) {
+        continue;
+      } else if (user) {
+        // Asegurar que el alumno existente tenga registro espejo en 'users' para evitar error de FK en enrollments sin sobreescribir su nombre/clave
+        db()
+          .prepare(
+            "INSERT INTO users(id,name,username,password,role) VALUES (?,?,?,?,'student') ON CONFLICT(id) DO NOTHING"
+          )
+          .run(user.id, row.name, row.email, 'managed-credentials');
+      }
       if (!user || user.role !== 'student')
         throw new AppError(
           'Una cuenta cambió durante la importación. Revisa el archivo nuevamente.',

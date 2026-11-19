@@ -383,8 +383,32 @@ export function login(input: Record<string, unknown>) {
     .get(username) as { count: number; until: number } | undefined;
   if (attempt && attempt.until > Date.now() && attempt.count >= 5)
     throw new AppError('Demasiados intentos. Intenta nuevamente en 15 minutos.', 429);
-  const row = db().prepare('SELECT * FROM users WHERE username=?').get(username) as
+  let row = db().prepare('SELECT * FROM users WHERE username=?').get(username) as
     (User & { password: string }) | undefined;
+  if (!row) {
+    const u = db()
+      .prepare('SELECT * FROM user WHERE email=? OR username=?')
+      .get(username, username) as any;
+    if (u) {
+      const acc = db()
+        .prepare("SELECT password FROM account WHERE userId=? AND providerId='credential'")
+        .get(u.id) as any;
+      if (acc && acc.password) {
+        row = {
+          id: u.id,
+          name: u.name,
+          username: u.username || u.email,
+          role: u.role,
+          password: acc.password,
+        };
+        db()
+          .prepare(
+            'INSERT INTO users(id, name, username, password, role) VALUES (?, ?, ?, ?, ?) ON CONFLICT(id) DO UPDATE SET name=excluded.name, password=excluded.password'
+          )
+          .run(u.id, u.name, u.username || u.email, acc.password, u.role);
+      }
+    }
+  }
   const valid = passwordMatches(password, row?.password ?? '0'.repeat(32) + ':' + '0'.repeat(128));
   if (!row || !valid) {
     db()
@@ -465,12 +489,18 @@ export function errorResponse(error: unknown) {
     return Response.json({ error: appErr.message }, { status: appErr.status });
   }
   console.error('Aula:', error instanceof Error ? error.stack || error.message : 'Error interno');
+  const message =
+    error instanceof Error && error.message
+      ? error.message
+      : typeof error === 'object' &&
+          error !== null &&
+          'message' in error &&
+          typeof (error as any).message === 'string'
+        ? (error as any).message
+        : 'No se pudo completar la operación. Revisa los datos e inténtalo de nuevo.';
   return Response.json(
     {
-      error:
-        error instanceof Error && error.message
-          ? error.message
-          : 'No se pudo completar la operación. Revisa los datos e inténtalo de nuevo.',
+      error: message,
     },
     { status: 500 }
   );
