@@ -27,6 +27,7 @@ import {
   Copy,
   Check,
   Clock,
+  Calendar,
   KeyRound,
   GraduationCap,
   Shield,
@@ -53,6 +54,8 @@ type LessonInfo = {
   reviewed: number;
   frames: number;
   diagnostics: string[];
+  order?: number;
+  publishAt?: string | null;
 };
 type Snapshot = {
   institutions: Institution[];
@@ -124,6 +127,8 @@ export function AdminPanel({
     [bulkAssignOpen, setBulkAssignOpen] = useState(false),
     [bulkSubjectIds, setBulkSubjectIds] = useState<string[]>([]),
     [bulkAssignMode, setBulkAssignMode] = useState<'add' | 'replace'>('add'),
+    [schedulingLessonId, setSchedulingLessonId] = useState<string | null>(null),
+    [scheduleDate, setScheduleDate] = useState(''),
     [teacherInstitution, setTeacherInstitution] = useState(''),
     [teacherSubjectIds, setTeacherSubjectIds] = useState<string[]>([]),
     [selectedTeacherForAssign, setSelectedTeacherForAssign] = useState(''),
@@ -343,9 +348,9 @@ export function AdminPanel({
   const currentTopic = subjectTopics.find((t) => t.id === selectedTopic) ?? null;
   const topicLessons =
     currentSubject && currentTopic
-      ? data.lessons.filter(
-          (l) => l.subjectId === currentSubject.id && l.topicId === currentTopic.id
-        )
+      ? data.lessons
+          .filter((l) => l.subjectId === currentSubject.id && l.topicId === currentTopic.id)
+          .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
       : [];
   const students = data.users.filter((u) => u.role === 'student');
   const teachers = data.users.filter((u) => u.role === 'teacher');
@@ -1211,185 +1216,328 @@ export function AdminPanel({
                 </p>
                 {topicLessons.length ? (
                   <div className="admin-lesson-list">
-                    {topicLessons.map((l) => (
-                      <article key={l.id}>
-                        <div className="admin-lesson-heading">
-                          <div>
-                            <span className={`status-badge ${l.status}`}>
-                              {l.status === 'published' ? 'Publicada' : 'Borrador'}
-                            </span>
-                            <h3>{l.title}</h3>
-                            <p>
-                              {l.subtitle ? `${l.subtitle} · ` : ''}
-                              {l.frames} bloques · Versión {l.revision}
-                            </p>
-                          </div>
-                          <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              onClick={() => {
-                                if (onPreviewLesson) {
-                                  onPreviewLesson(l.id);
-                                } else {
-                                  window.location.href = `/?class=${l.id}`;
-                                }
+                    {topicLessons.map((l, index) => {
+                      const isScheduled =
+                        Boolean(l.publishAt) && new Date(l.publishAt!).getTime() > Date.now();
+                      return (
+                        <article key={l.id}>
+                          <div className="admin-lesson-heading">
+                            <div>
+                              <div className="flex items-center gap-2 flex-wrap mb-1">
+                                {isScheduled ? (
+                                  <span className="status-badge draft bg-amber-100 text-amber-900 dark:bg-amber-950/40 dark:text-amber-300 border border-amber-300 dark:border-amber-800">
+                                    <Clock size={12} className="inline mr-1" />
+                                    Programada:{' '}
+                                    {new Date(l.publishAt!).toLocaleDateString('es-ES', {
+                                      day: 'numeric',
+                                      month: 'short',
+                                      hour: '2-digit',
+                                      minute: '2-digit',
+                                    })}
+                                  </span>
+                                ) : (
+                                  <span className={`status-badge ${l.status}`}>
+                                    {l.status === 'published' ? 'Publicada' : 'Borrador'}
+                                  </span>
+                                )}
+                              </div>
+                              <h3>{l.title}</h3>
+                              <p>
+                                {l.subtitle ? `${l.subtitle} · ` : ''}
+                                {l.frames} bloques · Versión {l.revision}
+                              </p>
+                            </div>
+                            <div
+                              style={{
+                                display: 'flex',
+                                gap: '6px',
+                                flexWrap: 'wrap',
+                                alignItems: 'center',
                               }}
-                              title="Previsualizar clase en esta pestaña"
                             >
-                              <Eye size={14} />
-                              Vista previa
-                            </Button>
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              onClick={async () => {
-                                try {
-                                  setBusy(true);
-                                  const res = await fetch('/api/catalog');
-                                  const cat = await res.json();
-                                  const full = (cat.lessons || []).find((x: any) => x.id === l.id);
-                                  if (!full)
-                                    throw new Error('No se pudo cargar el contenido de la clase.');
-                                  setEditingLesson({
-                                    lessonId: l.id,
-                                    title: full.title,
-                                    subtitle: full.subtitle || '',
-                                    frames: full.frames || [],
-                                    subjectId: currentSubject.id,
-                                    topicId: currentTopic.id,
-                                    topicName: currentTopic.name,
-                                  });
-                                } catch (err) {
-                                  toast.error(
-                                    err instanceof Error
-                                      ? err.message
-                                      : 'Error al cargar la clase para edición.'
-                                  );
-                                } finally {
-                                  setBusy(false);
-                                }
-                              }}
-                              title="Editar diapositivas, textos y diagramas en vivo"
-                            >
-                              <Edit3 size={14} />
-                              Editar
-                            </Button>
-                          </div>
-                        </div>
-                        {l.diagnostics.length > 0 && (
-                          <details className="review-warnings">
-                            <summary>
-                              <AlertTriangle size={14} />
-                              {l.diagnostics.length} avisos de importación
-                            </summary>
-                            {l.diagnostics.map((d, i) => (
-                              <p key={i}>{d}</p>
-                            ))}
-                          </details>
-                        )}
-                        <div className="publication-actions">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            disabled={busy}
-                            onClick={() => repairResources(l.id)}
-                          >
-                            <RefreshCw size={14} />
-                            Reparar recursos
-                          </Button>
-                          {l.reviewed !== l.revision ? (
-                            <>
-                              <label className="checkbox-label">
-                                <input
-                                  type="checkbox"
-                                  checked={!!review[l.id]}
-                                  onChange={(e) =>
-                                    setReview((v) => ({ ...v, [l.id]: e.target.checked }))
+                              <div className="flex items-center border rounded bg-background p-0.5 mr-1">
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  disabled={busy || index === 0}
+                                  onClick={() =>
+                                    mutate(
+                                      { action: 'moveLesson', lessonId: l.id, direction: 'up' },
+                                      'Clase movida hacia arriba.'
+                                    )
                                   }
-                                />
-                                He revisado la vista previa y los avisos
-                              </label>
+                                  title="Subir clase"
+                                  className="h-7 w-7 p-0"
+                                >
+                                  <ChevronUp size={14} />
+                                </Button>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  disabled={busy || index === topicLessons.length - 1}
+                                  onClick={() =>
+                                    mutate(
+                                      { action: 'moveLesson', lessonId: l.id, direction: 'down' },
+                                      'Clase movida hacia abajo.'
+                                    )
+                                  }
+                                  title="Bajar clase"
+                                  className="h-7 w-7 p-0"
+                                >
+                                  <ChevronDown size={14} />
+                                </Button>
+                              </div>
                               <Button
-                                size="sm"
+                                type="button"
                                 variant="outline"
-                                disabled={busy || !review[l.id]}
-                                onClick={() =>
-                                  mutate(
-                                    {
-                                      action: 'review',
-                                      lessonId: l.id,
-                                      acknowledged: review[l.id],
-                                    },
-                                    'Revisión completada. Ya puedes publicar la clase.'
-                                  )
-                                }
+                                size="sm"
+                                onClick={() => {
+                                  if (onPreviewLesson) {
+                                    onPreviewLesson(l.id);
+                                  } else {
+                                    window.location.href = `/?class=${l.id}`;
+                                  }
+                                }}
+                                title="Previsualizar clase en esta pestaña"
                               >
-                                <CheckCircle2 size={14} />
-                                Completar revisión
+                                <Eye size={14} />
+                                Vista previa
                               </Button>
-                            </>
-                          ) : (
-                            <span className="reviewed-label">
-                              <CheckCircle2 size={14} />
-                              Versión revisada
-                            </span>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={async () => {
+                                  try {
+                                    setBusy(true);
+                                    const res = await fetch('/api/catalog');
+                                    const cat = await res.json();
+                                    const full = (cat.lessons || []).find(
+                                      (x: any) => x.id === l.id
+                                    );
+                                    if (!full)
+                                      throw new Error(
+                                        'No se pudo cargar el contenido de la clase.'
+                                      );
+                                    setEditingLesson({
+                                      lessonId: l.id,
+                                      title: full.title,
+                                      subtitle: full.subtitle || '',
+                                      frames: full.frames || [],
+                                      subjectId: currentSubject.id,
+                                      topicId: currentTopic.id,
+                                      topicName: currentTopic.name,
+                                    });
+                                  } catch (err) {
+                                    toast.error(
+                                      err instanceof Error
+                                        ? err.message
+                                        : 'Error al cargar la clase para edición.'
+                                    );
+                                  } finally {
+                                    setBusy(false);
+                                  }
+                                }}
+                                title="Editar diapositivas, textos y diagramas en vivo"
+                              >
+                                <Edit3 size={14} />
+                                Editar
+                              </Button>
+                            </div>
+                          </div>
+                          {l.diagnostics.length > 0 && (
+                            <details className="review-warnings">
+                              <summary>
+                                <AlertTriangle size={14} />
+                                {l.diagnostics.length} avisos de importación
+                              </summary>
+                              {l.diagnostics.map((d, i) => (
+                                <p key={i}>{d}</p>
+                              ))}
+                            </details>
                           )}
-                          {l.status === 'published' ? (
+                          <div className="publication-actions">
                             <Button
                               size="sm"
                               variant="outline"
                               disabled={busy}
-                              onClick={() =>
-                                mutate(
-                                  { action: 'unpublish', lessonId: l.id },
-                                  'Clase retirada de la vista del alumno.'
-                                )
-                              }
+                              onClick={() => repairResources(l.id)}
                             >
-                              Volver a borrador
+                              <RefreshCw size={14} />
+                              Reparar recursos
                             </Button>
-                          ) : (
                             <Button
                               size="sm"
-                              disabled={busy || l.reviewed !== l.revision}
-                              onClick={() =>
-                                mutate(
-                                  { action: 'publish', lessonId: l.id },
-                                  'Clase publicada para los alumnos asignados a la materia.'
-                                )
-                              }
+                              variant="outline"
+                              disabled={busy}
+                              onClick={() => {
+                                if (schedulingLessonId === l.id) {
+                                  setSchedulingLessonId(null);
+                                } else {
+                                  setSchedulingLessonId(l.id);
+                                  setScheduleDate(
+                                    l.publishAt
+                                      ? new Date(l.publishAt).toISOString().slice(0, 16)
+                                      : new Date(Date.now() + 86400000).toISOString().slice(0, 16)
+                                  );
+                                }
+                              }}
+                              title="Programar fecha y hora para publicación automática"
                             >
-                              <Globe size={14} />
-                              Publicar clase
+                              <Calendar size={14} />
+                              {l.publishAt ? 'Cambiar fecha' : 'Programar fecha'}
                             </Button>
+                            {l.reviewed !== l.revision ? (
+                              <>
+                                <label className="checkbox-label">
+                                  <input
+                                    type="checkbox"
+                                    checked={!!review[l.id]}
+                                    onChange={(e) =>
+                                      setReview((v) => ({ ...v, [l.id]: e.target.checked }))
+                                    }
+                                  />
+                                  He revisado la vista previa y los avisos
+                                </label>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  disabled={busy || !review[l.id]}
+                                  onClick={() =>
+                                    mutate(
+                                      {
+                                        action: 'review',
+                                        lessonId: l.id,
+                                        acknowledged: review[l.id],
+                                      },
+                                      'Revisión completada. Ya puedes publicar la clase.'
+                                    )
+                                  }
+                                >
+                                  <CheckCircle2 size={14} />
+                                  Completar revisión
+                                </Button>
+                              </>
+                            ) : (
+                              <span className="reviewed-label">
+                                <CheckCircle2 size={14} />
+                                Versión revisada
+                              </span>
+                            )}
+                            {l.status === 'published' ? (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                disabled={busy}
+                                onClick={() =>
+                                  mutate(
+                                    { action: 'unpublish', lessonId: l.id },
+                                    'Clase retirada de la vista del alumno.'
+                                  )
+                                }
+                              >
+                                Volver a borrador
+                              </Button>
+                            ) : (
+                              <Button
+                                size="sm"
+                                disabled={busy || l.reviewed !== l.revision}
+                                onClick={() =>
+                                  mutate(
+                                    { action: 'publish', lessonId: l.id },
+                                    'Clase publicada para los alumnos asignados a la materia.'
+                                  )
+                                }
+                              >
+                                <Globe size={14} />
+                                Publicar clase
+                              </Button>
+                            )}
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="btn-danger-action"
+                              disabled={busy}
+                              onClick={() => {
+                                if (
+                                  window.confirm(
+                                    `¿Seguro que deseas eliminar la clase «${l.title}»? Esta acción no se puede deshacer.`
+                                  )
+                                ) {
+                                  mutate(
+                                    { action: 'deleteLesson', lessonId: l.id },
+                                    'Clase eliminada correctamente.'
+                                  );
+                                }
+                              }}
+                            >
+                              <Trash2 size={14} />
+                              Eliminar clase
+                            </Button>
+                          </div>
+                          {schedulingLessonId === l.id && (
+                            <div className="mt-3 p-3 rounded bg-stone-50 dark:bg-stone-900 border border-stone-200 dark:border-stone-800 text-xs flex flex-wrap items-center gap-2">
+                              <span className="font-semibold flex items-center gap-1.5 text-foreground">
+                                <Calendar size={14} className="text-primary" />
+                                Publicar automáticamente el:
+                              </span>
+                              <input
+                                type="datetime-local"
+                                className="p-1.5 text-xs rounded border bg-background"
+                                value={scheduleDate}
+                                onChange={(e) => setScheduleDate(e.target.value)}
+                              />
+                              <Button
+                                size="sm"
+                                disabled={busy || !scheduleDate}
+                                onClick={async () => {
+                                  const ok = await mutate(
+                                    {
+                                      action: 'setLessonPublishDate',
+                                      lessonId: l.id,
+                                      publishAt: new Date(scheduleDate).toISOString(),
+                                    },
+                                    'Fecha de publicación programada guardada con éxito.'
+                                  );
+                                  if (ok) setSchedulingLessonId(null);
+                                }}
+                              >
+                                Guardar fecha
+                              </Button>
+                              {l.publishAt && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  disabled={busy}
+                                  onClick={async () => {
+                                    const ok = await mutate(
+                                      {
+                                        action: 'setLessonPublishDate',
+                                        lessonId: l.id,
+                                        publishAt: null,
+                                      },
+                                      'Programación por fecha cancelada.'
+                                    );
+                                    if (ok) setSchedulingLessonId(null);
+                                  }}
+                                >
+                                  Quitar fecha
+                                </Button>
+                              )}
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => setSchedulingLessonId(null)}
+                              >
+                                Cancelar
+                              </Button>
+                            </div>
                           )}
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="btn-danger-action"
-                            disabled={busy}
-                            onClick={() => {
-                              if (
-                                window.confirm(
-                                  `¿Seguro que deseas eliminar la clase «${l.title}»? Esta acción no se puede deshacer.`
-                                )
-                              ) {
-                                mutate(
-                                  { action: 'deleteLesson', lessonId: l.id },
-                                  'Clase eliminada correctamente.'
-                                );
-                              }
-                            }}
-                          >
-                            <Trash2 size={14} />
-                            Eliminar clase
-                          </Button>
-                        </div>
-                      </article>
-                    ))}
+                        </article>
+                      );
+                    })}
                   </div>
                 ) : (
                   <p className="admin-help">

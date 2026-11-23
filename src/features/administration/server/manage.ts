@@ -59,8 +59,11 @@ export function snapshot(actor?: User) {
         reviewed: r.reviewed,
         frames: l.frames.length,
         diagnostics: l.diagnostics,
+        order: l.order ?? 0,
+        publishAt: l.publishAt ?? null,
       };
     });
+  lessons.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
   if (!isUnrestricted) {
     lessons = lessons.filter((l) => subjectIdSet.has(l.subjectId));
   }
@@ -630,11 +633,16 @@ export function manage(input: Record<string, unknown>, actor?: User) {
         }
         if (row.reviewed !== row.revision)
           throw new AppError('Revisa esta versión de la clase antes de publicarla.');
-        db().prepare("UPDATE lessons SET status='published' WHERE id=?").run(row.id);
+        const lData = JSON.parse(row.data) as Lesson;
+        delete lData.publishAt;
+        const newJson = JSON.stringify(lData);
+        db()
+          .prepare("UPDATE lessons SET status='published', data=? WHERE id=?")
+          .run(newJson, row.id);
         const pool = getPgPool();
         if (pool) {
           pool
-            .query("UPDATE lessons SET status='published' WHERE id=$1", [row.id])
+            .query("UPDATE lessons SET status='published', data=$1 WHERE id=$2", [newJson, row.id])
             .catch(console.error);
         }
         break;
@@ -647,11 +655,115 @@ export function manage(input: Record<string, unknown>, actor?: User) {
           if (!allowedSubs || !allowedSubs.has(row.subject_id))
             throw new AppError('No tienes permiso para gestionar clases de esta materia.', 403);
         }
-        db().prepare("UPDATE lessons SET status='draft' WHERE id=?").run(row.id);
+        const lData = JSON.parse(row.data) as Lesson;
+        delete lData.publishAt;
+        const newJson = JSON.stringify(lData);
+        db().prepare("UPDATE lessons SET status='draft', data=? WHERE id=?").run(newJson, row.id);
         const pool = getPgPool();
         if (pool) {
           pool
-            .query("UPDATE lessons SET status='draft' WHERE id=$1", [row.id])
+            .query("UPDATE lessons SET status='draft', data=$1 WHERE id=$2", [newJson, row.id])
+            .catch(console.error);
+        }
+        break;
+      }
+      case 'moveLesson': {
+        const lessonId = text(input.lessonId, 'Clase');
+        const direction = input.direction === 'up' ? 'up' : 'down';
+        const row = lessonRecord(lessonId);
+        if (!row) throw new AppError('Clase no encontrada.', 404);
+
+        if (actor && actor.role === 'teacher') {
+          const allowedSubs = userAccessibleSubjectIds(actor);
+          if (!allowedSubs || !allowedSubs.has(row.subject_id))
+            throw new AppError('No tienes permiso para ordenar clases de esta materia.', 403);
+        }
+
+        const currentData = JSON.parse(row.data) as Lesson;
+        const topicId = currentData.topicId;
+        const subjectId = row.subject_id;
+
+        const allLessonRows = db()
+          .prepare('SELECT id, data FROM lessons WHERE subject_id=?')
+          .all(subjectId) as Array<{ id: string; data: string }>;
+
+        const topicLessons: Array<{ id: string; data: Lesson }> = [];
+        for (const lr of allLessonRows) {
+          const lData = JSON.parse(lr.data) as Lesson;
+          if (lData.topicId === topicId) {
+            topicLessons.push({ id: lr.id, data: lData });
+          }
+        }
+
+        topicLessons.sort((a, b) => (a.data.order ?? 0) - (b.data.order ?? 0));
+
+        const index = topicLessons.findIndex((item) => item.id === lessonId);
+        const targetIndex = index + (direction === 'up' ? -1 : 1);
+        if (index < 0 || targetIndex < 0 || targetIndex >= topicLessons.length) {
+          throw new AppError('No se puede mover la clase.');
+        }
+
+        const temp = topicLessons[index];
+        topicLessons[index] = topicLessons[targetIndex];
+        topicLessons[targetIndex] = temp;
+
+        const pool = getPgPool();
+        for (let i = 0; i < topicLessons.length; i++) {
+          topicLessons[i].data.order = i;
+          const jsonStr = JSON.stringify(topicLessons[i].data);
+          db().prepare('UPDATE lessons SET data=? WHERE id=?').run(jsonStr, topicLessons[i].id);
+          if (pool) {
+            pool
+              .query('UPDATE lessons SET data=$1 WHERE id=$2', [jsonStr, topicLessons[i].id])
+              .catch(console.error);
+          }
+        }
+        break;
+      }
+      case 'setLessonPublishDate': {
+        const lessonId = text(input.lessonId, 'Clase');
+        const row = lessonRecord(lessonId);
+        if (!row) throw new AppError('Clase no encontrada.', 404);
+
+        if (actor && actor.role === 'teacher') {
+          const allowedSubs = userAccessibleSubjectIds(actor);
+          if (!allowedSubs || !allowedSubs.has(row.subject_id))
+            throw new AppError('No tienes permiso para programar fechas de esta materia.', 403);
+        }
+
+        const publishAt =
+          typeof input.publishAt === 'string' && input.publishAt.trim()
+            ? input.publishAt.trim()
+            : null;
+
+        const currentData = JSON.parse(row.data) as Lesson;
+        if (publishAt) {
+          currentData.publishAt = publishAt;
+        } else {
+          delete currentData.publishAt;
+        }
+
+        let newStatus = row.status;
+        let newReviewed = row.reviewed;
+        if (publishAt) {
+          newStatus = 'published';
+          newReviewed = row.revision;
+        }
+
+        const jsonStr = JSON.stringify(currentData);
+        db()
+          .prepare('UPDATE lessons SET data=?, status=?, reviewed=? WHERE id=?')
+          .run(jsonStr, newStatus, newReviewed, lessonId);
+
+        const pool = getPgPool();
+        if (pool) {
+          pool
+            .query('UPDATE lessons SET data=$1, status=$2, reviewed=$3 WHERE id=$4', [
+              jsonStr,
+              newStatus,
+              newReviewed,
+              lessonId,
+            ])
             .catch(console.error);
         }
         break;

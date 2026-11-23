@@ -24,6 +24,8 @@ export type Lesson = {
   diagnostics: string[];
   status?: 'draft' | 'published';
   toolsEnabled?: boolean;
+  order?: number;
+  publishAt?: string | null;
 };
 export type Institution = {
   id: string;

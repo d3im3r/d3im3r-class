@@ -25,6 +25,8 @@ import {
   FolderOpen,
   Plus,
   Upload,
+  Lock,
+  Clock,
 } from 'lucide-react';
 import type { Catalog, Lesson, Subject } from '../model/types';
 import { Button } from '@/components/ui/button';
@@ -528,10 +530,7 @@ export function Workspace({
             <div className="sidebar-section">
               <div className="workspace-label">ADMINISTRACIÓN</div>
               <nav>
-                <button
-                  className={view === 'admin' ? 'active' : ''}
-                  onClick={() => home('admin')}
-                >
+                <button className={view === 'admin' ? 'active' : ''} onClick={() => home('admin')}>
                   <Settings2 size={18} />
                   Gestión docente
                 </button>
@@ -575,7 +574,9 @@ export function Workspace({
               <div className="workspace-label">RECURSOS</div>
               <nav>
                 <button
-                  className={view === 'tools' && (toolLanguage === 'python' || !toolLanguage) ? 'active' : ''}
+                  className={
+                    view === 'tools' && (toolLanguage === 'python' || !toolLanguage) ? 'active' : ''
+                  }
                   onClick={() => {
                     setToolSeed(undefined);
                     setToolLanguage('python');
@@ -969,9 +970,11 @@ export function Workspace({
                           (topic) => activeTopicFilter === null || topic.id === activeTopicFilter
                         )
                         .map((topic, index) => {
-                          const topicLessons = catalog.lessons.filter(
-                            (l) => l.subjectId === selectedSubject.id && l.topicId === topic.id
-                          );
+                          const topicLessons = catalog.lessons
+                            .filter(
+                              (l) => l.subjectId === selectedSubject.id && l.topicId === topic.id
+                            )
+                            .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
                           return (
                             <section key={topic.id} className="topic-section">
                               <div className="topic-title">
@@ -1024,30 +1027,74 @@ export function Workspace({
                                   )}
                                 </div>
                               ) : (
-                                topicLessons.map((l) => (
-                                  <div className="topic-lesson" key={l.id}>
-                                    <span className="stat-icon sage">
-                                      <BookOpen size={20} />
-                                    </span>
-                                    <div>
-                                      <h4>{l.title}</h4>
-                                      <p>
-                                        {l.subtitle ? `${l.subtitle} · ` : ''}
-                                        {l.frames.length} bloques{' '}
-                                        {canReadDraft && l.status === 'draft' && (
-                                          <span className="status-badge draft">Borrador</span>
-                                        )}
-                                      </p>
-                                      <small>
-                                        {progress[l.id]?.length ?? 0} bloques completados
-                                      </small>
+                                topicLessons.map((l) => {
+                                  const isScheduledFuture =
+                                    Boolean(l.publishAt) &&
+                                    !isNaN(new Date(l.publishAt!).getTime()) &&
+                                    Date.now() < new Date(l.publishAt!).getTime();
+                                  const isLocked = !canReadDraft && isScheduledFuture;
+                                  return (
+                                    <div className="topic-lesson" key={l.id}>
+                                      <span className="stat-icon sage">
+                                        {isLocked ? <Lock size={20} /> : <BookOpen size={20} />}
+                                      </span>
+                                      <div>
+                                        <h4>{l.title}</h4>
+                                        <p>
+                                          {l.subtitle ? `${l.subtitle} · ` : ''}
+                                          {l.frames.length} bloques{' '}
+                                          {canReadDraft && l.status === 'draft' && (
+                                            <span className="status-badge draft">Borrador</span>
+                                          )}
+                                          {isScheduledFuture && (
+                                            <span className="status-badge draft text-[11px] bg-amber-100 text-amber-900 dark:bg-amber-950/40 dark:text-amber-300">
+                                              <Clock size={11} className="inline mr-1" />
+                                              Programada:{' '}
+                                              {new Date(l.publishAt!).toLocaleDateString('es-ES', {
+                                                day: 'numeric',
+                                                month: 'short',
+                                                hour: '2-digit',
+                                                minute: '2-digit',
+                                              })}
+                                            </span>
+                                          )}
+                                        </p>
+                                        <small>
+                                          {isLocked
+                                            ? 'Clase bloqueada temporalmente'
+                                            : `${progress[l.id]?.length ?? 0} bloques completados`}
+                                        </small>
+                                      </div>
+                                      {isLocked ? (
+                                        <Button
+                                          variant="outline"
+                                          disabled
+                                          className="opacity-80 cursor-not-allowed text-xs flex items-center gap-1.5"
+                                          title={`Disponible el ${new Date(l.publishAt!).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}`}
+                                        >
+                                          <Lock
+                                            size={13}
+                                            className="text-amber-600 dark:text-amber-400"
+                                          />
+                                          <span>
+                                            Disponible el{' '}
+                                            {new Date(l.publishAt!).toLocaleDateString('es-ES', {
+                                              day: 'numeric',
+                                              month: 'short',
+                                              hour: '2-digit',
+                                              minute: '2-digit',
+                                            })}
+                                          </span>
+                                        </Button>
+                                      ) : (
+                                        <Button variant="outline" onClick={() => openLesson(l)}>
+                                          Abrir clase
+                                          <ArrowRight size={15} />
+                                        </Button>
+                                      )}
                                     </div>
-                                    <Button variant="outline" onClick={() => openLesson(l)}>
-                                      Abrir clase
-                                      <ArrowRight size={15} />
-                                    </Button>
-                                  </div>
-                                ))
+                                  );
+                                })
                               )}
                             </section>
                           );

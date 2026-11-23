@@ -230,6 +230,123 @@ test('Acciones masivas: aprobación múltiple de solicitudes y asignación masiv
   );
 });
 
+test('Organización de clases: reordenamiento (moveLesson) y publicación programada por fecha (publishAt)', () => {
+  const snap = snapshot();
+  const sub = snap.subjects[0];
+  const topic = sub.topics[0];
+
+  // Crear dos clases en el mismo tema para probar reordenamiento
+  const lessonData1 = {
+    id: 'lesson-order-1',
+    title: 'Clase Alfa',
+    subtitle: 'Primera clase',
+    institutionId: sub.institutionId,
+    subjectId: sub.id,
+    topicId: topic.id,
+    source: '',
+    pdf: '',
+    frames: [{ id: 'f1', title: 'F1', section: 'S', line: 1, blocks: [] }],
+    diagnostics: [],
+    status: 'published',
+    order: 0,
+  };
+  const lessonData2 = {
+    id: 'lesson-order-2',
+    title: 'Clase Beta',
+    subtitle: 'Segunda clase',
+    institutionId: sub.institutionId,
+    subjectId: sub.id,
+    topicId: topic.id,
+    source: '',
+    pdf: '',
+    frames: [{ id: 'f2', title: 'F2', section: 'S', line: 1, blocks: [] }],
+    diagnostics: [],
+    status: 'published',
+    order: 1,
+  };
+
+  db()
+    .prepare(
+      'INSERT OR REPLACE INTO lessons(id,subject_id,status,revision,reviewed,data) VALUES (?,?,?,1,1,?)'
+    )
+    .run(lessonData1.id, sub.id, 'published', JSON.stringify(lessonData1));
+  db()
+    .prepare(
+      'INSERT OR REPLACE INTO lessons(id,subject_id,status,revision,reviewed,data) VALUES (?,?,?,1,1,?)'
+    )
+    .run(lessonData2.id, sub.id, 'published', JSON.stringify(lessonData2));
+
+  // Verificar orden inicial: Alfa (0) antes que Beta (1)
+  let snapLessons = snapshot().lessons.filter((l) => l.topicId === topic.id);
+  const idxAlfa = snapLessons.findIndex((l) => l.id === lessonData1.id);
+  const idxBeta = snapLessons.findIndex((l) => l.id === lessonData2.id);
+  assert.ok(idxAlfa < idxBeta, 'Clase Alfa aparece antes que Clase Beta');
+
+  // Mover Clase Beta hacia arriba (moveLesson direction: 'up')
+  manage({
+    action: 'moveLesson',
+    lessonId: lessonData2.id,
+    direction: 'up',
+  });
+
+  snapLessons = snapshot().lessons.filter((l) => l.topicId === topic.id);
+  const newIdxBeta = snapLessons.findIndex((l) => l.id === lessonData2.id);
+  const newIdxAlfa = snapLessons.findIndex((l) => l.id === lessonData1.id);
+  assert.ok(
+    newIdxBeta < newIdxAlfa,
+    'Clase Beta ahora aparece antes que Clase Alfa tras mover arriba'
+  );
+
+  // Probar publicación programada por fecha (publishAt futuro)
+  const futureIso = new Date(Date.now() + 7 * 86400 * 1000).toISOString();
+  manage({
+    action: 'setLessonPublishDate',
+    lessonId: lessonData1.id,
+    publishAt: futureIso,
+  });
+
+  const studentUser = login({ username: 'alumno.enrolado', password: 'Password-2026' });
+  const adminUser = teacher;
+
+  // Docente/Admin puede leer la clase programada
+  assert.equal(
+    canReadLesson(adminUser, lessonData1.id),
+    true,
+    'Docente puede ver clase programada'
+  );
+
+  // Alumno NO puede leer el contenido de la clase futura (bloqueada)
+  assert.equal(
+    canReadLesson(studentUser, lessonData1.id),
+    false,
+    'Alumno no puede leer clase programada a futuro'
+  );
+
+  // En el catálogo del alumno aparece con frames vacíos (bloqueada)
+  const studentCat = userCatalog(studentUser);
+  const scheduledInCat = studentCat.lessons.find((l) => l.id === lessonData1.id);
+  assert.ok(scheduledInCat, 'Clase programada aparece en el syllabus');
+  assert.equal(
+    scheduledInCat.frames.length,
+    0,
+    'Bloques vacíos para alumno mientras esté bloqueada'
+  );
+
+  // Probar fecha en el pasado (desbloqueada)
+  const pastIso = new Date(Date.now() - 3600 * 1000).toISOString();
+  manage({
+    action: 'setLessonPublishDate',
+    lessonId: lessonData1.id,
+    publishAt: pastIso,
+  });
+
+  assert.equal(
+    canReadLesson(studentUser, lessonData1.id),
+    true,
+    'Alumno puede leer clase tras llegar su fecha'
+  );
+});
+
 after(() => {
   db().close();
   rmSync(folder, { recursive: true, force: true });

@@ -19,6 +19,15 @@ export function canReadLesson(user: User, id: string) {
     .prepare('SELECT 1 FROM subject_bans WHERE user_id=? AND subject_id=?')
     .get(user.id, row.subject_id);
   if (isBanned) return false;
+
+  const data = JSON.parse(row.data) as Lesson;
+  if (data.publishAt) {
+    const pubTime = new Date(data.publishAt).getTime();
+    if (!isNaN(pubTime) && Date.now() < pubTime) {
+      return false;
+    }
+  }
+
   return true;
 }
 export function canReadResource(
@@ -57,6 +66,7 @@ export function studentLesson(lesson: Lesson): Lesson {
 }
 export function userCatalog(user: User): Catalog {
   const canReadAll = user.role === 'admin';
+  const canReadDraft = canReadAll || hasPermission(user, { lesson: ['readDraft'] });
   const subjects = (
     canReadAll
       ? db().prepare('SELECT data FROM subjects').all()
@@ -75,14 +85,52 @@ export function userCatalog(user: User): Catalog {
           .all(user.id, user.id, user.id)
   ).map((row) => JSON.parse(row.data as string) as Subject);
   const ids = new Set(subjects.map((s) => s.id));
-  const lessons = db()
+  const rawLessons = db()
     .prepare('SELECT id,subject_id,data,status FROM lessons')
     .all()
-    .filter((row) => ids.has(row.subject_id as string))
-    .filter((row) => canReadLesson(user, row.id as string))
-    .map((row) => ({ ...JSON.parse(row.data as string), status: row.status })) as Lesson[];
+    .filter((row) => ids.has(row.subject_id as string));
+
+  const lessons: Lesson[] = [];
+  for (const row of rawLessons) {
+    const isBanned = !!db()
+      .prepare('SELECT 1 FROM subject_bans WHERE user_id=? AND subject_id=?')
+      .get(user.id, row.subject_id);
+    if (isBanned) continue;
+
+    const data = JSON.parse(row.data as string) as Lesson;
+    const isScheduledFuture =
+      Boolean(data.publishAt) &&
+      !isNaN(new Date(data.publishAt!).getTime()) &&
+      Date.now() < new Date(data.publishAt!).getTime();
+
+    const status: 'draft' | 'published' = row.status === 'published' ? 'published' : 'draft';
+
+    if (row.status === 'published') {
+      if (isScheduledFuture && !canReadDraft) {
+        lessons.push({
+          ...data,
+          status: 'published',
+          pdf: '',
+          source: '',
+          diagnostics: [],
+          frames: [],
+        });
+      } else if (canReadLesson(user, row.id as string)) {
+        lessons.push({ ...data, status });
+      }
+    } else if (canReadDraft && canReadLesson(user, row.id as string)) {
+      lessons.push({ ...data, status });
+    }
+  }
+
   if (!hasPermission(user, { tools: ['inspectSource'] }))
-    for (let i = 0; i < lessons.length; i++) lessons[i] = studentLesson(lessons[i]);
+    for (let i = 0; i < lessons.length; i++) {
+      if (lessons[i].frames.length > 0) {
+        lessons[i] = studentLesson(lessons[i]);
+      }
+    }
+
+  lessons.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
   const institutionIds = new Set(subjects.map((s) => s.institutionId));
   if (!canReadAll) {
     for (const im of db()
