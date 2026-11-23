@@ -698,7 +698,7 @@ export function manage(input: Record<string, unknown>, actor?: User) {
 
         db()
           .prepare(
-            "INSERT INTO lessons(id,subject_id,status,revision,reviewed,data) VALUES (?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET status=excluded.status,revision=excluded.revision,reviewed=excluded.reviewed,data=excluded.data"
+            'INSERT INTO lessons(id,subject_id,status,revision,reviewed,data) VALUES (?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET status=excluded.status,revision=excluded.revision,reviewed=excluded.reviewed,data=excluded.data'
           )
           .run(id, subjectId, status, revision, reviewed, JSON.stringify(l));
 
@@ -708,7 +708,7 @@ export function manage(input: Record<string, unknown>, actor?: User) {
         if (pool) {
           pool
             .query(
-              "INSERT INTO lessons(id,subject_id,status,revision,reviewed,data) VALUES ($1,$2,$3,$4,$5,$6) ON CONFLICT(id) DO UPDATE SET status=EXCLUDED.status,revision=EXCLUDED.revision,reviewed=EXCLUDED.reviewed,data=EXCLUDED.data",
+              'INSERT INTO lessons(id,subject_id,status,revision,reviewed,data) VALUES ($1,$2,$3,$4,$5,$6) ON CONFLICT(id) DO UPDATE SET status=EXCLUDED.status,revision=EXCLUDED.revision,reviewed=EXCLUDED.reviewed,data=EXCLUDED.data',
               [id, subjectId, status, revision, reviewed, JSON.stringify(l)]
             )
             .catch(console.error);
@@ -833,6 +833,175 @@ export function manage(input: Record<string, unknown>, actor?: User) {
           pool
             .query("UPDATE subject_join_requests SET status='approved' WHERE id=$1", [req.id])
             .catch(console.error);
+        }
+        break;
+      }
+      case 'approveAllJoinRequests':
+      case 'approveJoinRequests': {
+        const allowedSubs =
+          actor && actor.role === 'teacher' ? userAccessibleSubjectIds(actor) : null;
+        let reqs: Array<{ id: string; subject_id: string; user_id: string }> = [];
+        if (Array.isArray(input.requestIds) && input.requestIds.length > 0) {
+          const placeholders = input.requestIds.map(() => '?').join(',');
+          reqs = db()
+            .prepare(
+              `SELECT id,subject_id,user_id FROM subject_join_requests WHERE id IN (${placeholders}) AND status='pending'`
+            )
+            .all(...input.requestIds) as any;
+        } else {
+          reqs = db()
+            .prepare(
+              "SELECT id,subject_id,user_id FROM subject_join_requests WHERE status='pending'"
+            )
+            .all() as any;
+        }
+        if (allowedSubs) {
+          reqs = reqs.filter((r) => allowedSubs.has(r.subject_id));
+        }
+        if (reqs.length === 0) break;
+
+        const pool = getPgPool();
+        for (const req of reqs) {
+          db()
+            .prepare('INSERT OR IGNORE INTO enrollments(user_id,subject_id) VALUES (?,?)')
+            .run(req.user_id, req.subject_id);
+          db()
+            .prepare('DELETE FROM subject_bans WHERE user_id=? AND subject_id=?')
+            .run(req.user_id, req.subject_id);
+          db().prepare("UPDATE subject_join_requests SET status='approved' WHERE id=?").run(req.id);
+
+          if (pool) {
+            pool
+              .query(
+                'INSERT INTO enrollments(user_id,subject_id) VALUES ($1,$2) ON CONFLICT DO NOTHING',
+                [req.user_id, req.subject_id]
+              )
+              .catch(console.error);
+            pool
+              .query('DELETE FROM subject_bans WHERE user_id=$1 AND subject_id=$2', [
+                req.user_id,
+                req.subject_id,
+              ])
+              .catch(console.error);
+            pool
+              .query("UPDATE subject_join_requests SET status='approved' WHERE id=$1", [req.id])
+              .catch(console.error);
+          }
+        }
+        break;
+      }
+      case 'rejectAllJoinRequests':
+      case 'rejectJoinRequests': {
+        const allowedSubs =
+          actor && actor.role === 'teacher' ? userAccessibleSubjectIds(actor) : null;
+        let reqs: Array<{ id: string; subject_id: string }> = [];
+        if (Array.isArray(input.requestIds) && input.requestIds.length > 0) {
+          const placeholders = input.requestIds.map(() => '?').join(',');
+          reqs = db()
+            .prepare(
+              `SELECT id,subject_id FROM subject_join_requests WHERE id IN (${placeholders}) AND status='pending'`
+            )
+            .all(...input.requestIds) as any;
+        } else {
+          reqs = db()
+            .prepare("SELECT id,subject_id FROM subject_join_requests WHERE status='pending'")
+            .all() as any;
+        }
+        if (allowedSubs) {
+          reqs = reqs.filter((r) => allowedSubs.has(r.subject_id));
+        }
+        if (reqs.length === 0) break;
+
+        const pool = getPgPool();
+        for (const req of reqs) {
+          db().prepare("UPDATE subject_join_requests SET status='rejected' WHERE id=?").run(req.id);
+          if (pool) {
+            pool
+              .query("UPDATE subject_join_requests SET status='rejected' WHERE id=$1", [req.id])
+              .catch(console.error);
+          }
+        }
+        break;
+      }
+      case 'bulkAssign':
+      case 'bulkAssignStudents': {
+        const userIds = Array.isArray(input.userIds) ? (input.userIds as string[]) : [];
+        if (userIds.length === 0) throw new AppError('Debes seleccionar al menos un alumno.', 400);
+        const subIds = subjectIds(input.subjectIds);
+        if (subIds.length === 0) throw new AppError('Debes seleccionar al menos una materia.', 400);
+        const mode = input.mode === 'replace' ? 'replace' : 'add';
+
+        if (actor && actor.role === 'teacher') {
+          const teacherSubjects = userAccessibleSubjectIds(actor);
+          if (!teacherSubjects) throw new AppError('No tienes materias asignadas.', 403);
+          for (const sId of subIds) {
+            if (!teacherSubjects.has(sId))
+              throw new AppError('No tienes permiso para asignar materias que no impartes.', 403);
+          }
+        }
+
+        const pool = getPgPool();
+        for (const uId of userIds) {
+          const targetUser = db()
+            .prepare('SELECT id, name, username, role FROM users WHERE id=?')
+            .get(uId) as User | undefined;
+          if (!targetUser || targetUser.role !== 'student') continue;
+
+          if (mode === 'replace') {
+            if (actor && actor.role === 'teacher') {
+              const teacherSubjects = userAccessibleSubjectIds(actor);
+              if (teacherSubjects) {
+                for (const sId of teacherSubjects) {
+                  db()
+                    .prepare('DELETE FROM enrollments WHERE user_id=? AND subject_id=?')
+                    .run(uId, sId);
+                  if (pool) {
+                    pool
+                      .query('DELETE FROM enrollments WHERE user_id=$1 AND subject_id=$2', [
+                        uId,
+                        sId,
+                      ])
+                      .catch(console.error);
+                  }
+                }
+              }
+            } else {
+              db().prepare('DELETE FROM enrollments WHERE user_id=?').run(uId);
+              if (pool) {
+                pool.query('DELETE FROM enrollments WHERE user_id=$1', [uId]).catch(console.error);
+              }
+            }
+          }
+
+          for (const sId of subIds) {
+            db()
+              .prepare('INSERT OR IGNORE INTO enrollments(user_id,subject_id) VALUES (?,?)')
+              .run(uId, sId);
+            db().prepare('DELETE FROM subject_bans WHERE user_id=? AND subject_id=?').run(uId, sId);
+            db()
+              .prepare(
+                "UPDATE subject_join_requests SET status='approved' WHERE user_id=? AND subject_id=?"
+              )
+              .run(uId, sId);
+
+            if (pool) {
+              pool
+                .query(
+                  'INSERT INTO enrollments(user_id,subject_id) VALUES ($1,$2) ON CONFLICT DO NOTHING',
+                  [uId, sId]
+                )
+                .catch(console.error);
+              pool
+                .query('DELETE FROM subject_bans WHERE user_id=$1 AND subject_id=$2', [uId, sId])
+                .catch(console.error);
+              pool
+                .query(
+                  "UPDATE subject_join_requests SET status='approved' WHERE user_id=$1 AND subject_id=$2",
+                  [uId, sId]
+                )
+                .catch(console.error);
+            }
+          }
         }
         break;
       }
@@ -995,11 +1164,14 @@ export function manage(input: Record<string, unknown>, actor?: User) {
       }
       case 'cleanAllStudents': {
         if (!actor || actor.role !== 'admin') {
-          throw new AppError('Solo los administradores pueden realizar una limpieza masiva de alumnos.', 403);
+          throw new AppError(
+            'Solo los administradores pueden realizar una limpieza masiva de alumnos.',
+            403
+          );
         }
-        const students = db()
-          .prepare("SELECT id FROM users WHERE role='student'")
-          .all() as { id: string }[];
+        const students = db().prepare("SELECT id FROM users WHERE role='student'").all() as {
+          id: string;
+        }[];
         for (const s of students) {
           removeStudentCascade(s.id);
         }

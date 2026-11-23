@@ -120,6 +120,10 @@ export function AdminPanel({
     [resetUserId, setResetUserId] = useState(''),
     [newPassword, setNewPassword] = useState(''),
     [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]),
+    [selectedRequestIds, setSelectedRequestIds] = useState<string[]>([]),
+    [bulkAssignOpen, setBulkAssignOpen] = useState(false),
+    [bulkSubjectIds, setBulkSubjectIds] = useState<string[]>([]),
+    [bulkAssignMode, setBulkAssignMode] = useState<'add' | 'replace'>('add'),
     [teacherInstitution, setTeacherInstitution] = useState(''),
     [teacherSubjectIds, setTeacherSubjectIds] = useState<string[]>([]),
     [selectedTeacherForAssign, setSelectedTeacherForAssign] = useState(''),
@@ -998,165 +1002,165 @@ export function AdminPanel({
                   tema.
                 </p>
                 {subjectTopics.length ? (
-                <div className="topic-chips">
-                  {subjectTopics.map((t, i) => {
-                    const count = data.lessons.filter(
-                      (l) => l.subjectId === currentSubject.id && l.topicId === t.id
-                    ).length;
-                    return (
-                      <form
-                        key={t.id}
-                        className={`topic-edit ${selectedTopic === t.id ? 'is-active' : ''}`}
-                        onSubmit={async (e) => {
-                          const input = form(e);
-                          await mutate(
-                            { ...input, action: 'topic', subjectId: currentSubject.id, id: t.id },
-                            'Tema actualizado.'
-                          );
-                        }}
-                      >
-                        <span>{String(i + 1).padStart(2, '0')}</span>
-                        <input
-                          aria-label={`Nombre del tema ${i + 1}`}
-                          name="name"
-                          required
-                          maxLength={120}
-                          defaultValue={t.name}
-                        />
-                        <Button size="sm" variant="outline" disabled={busy}>
-                          Guardar
-                        </Button>
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="ghost"
-                          aria-label={`Subir tema ${i + 1}`}
-                          disabled={busy || i === 0}
-                          onClick={() =>
-                            mutate(
-                              {
-                                action: 'moveTopic',
-                                subjectId: currentSubject.id,
-                                topicId: t.id,
-                                direction: 'up',
-                              },
-                              'Orden actualizado.'
-                            )
-                          }
-                        >
-                          <ChevronUp size={14} />
-                        </Button>
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="ghost"
-                          aria-label={`Bajar tema ${i + 1}`}
-                          disabled={busy || i === subjectTopics.length - 1}
-                          onClick={() =>
-                            mutate(
-                              {
-                                action: 'moveTopic',
-                                subjectId: currentSubject.id,
-                                topicId: t.id,
-                                direction: 'down',
-                              },
-                              'Orden actualizado.'
-                            )
-                          }
-                        >
-                          <ChevronDown size={14} />
-                        </Button>
-                        <Button
-                          type="button"
-                          size="sm"
-                          onClick={() => {
-                            setSelectedTopic(t.id);
-                            setReplace('');
-                            goTab('lessons');
-                          }}
-                        >
-                          Ver clases ({count})<ArrowRight size={14} />
-                        </Button>
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="outline"
-                          className="btn-danger-action"
-                          aria-label={`Eliminar tema ${t.name}`}
-                          title="Eliminar tema y sus clases asociadas"
-                          disabled={busy}
-                          onClick={async () => {
-                            const msg =
-                              count > 0
-                                ? `¿Eliminar el tema "${t.name}" y sus ${count} clase(s) asociada(s)? Esta acción no se puede deshacer.`
-                                : `¿Eliminar el tema "${t.name}"?`;
-                            if (!window.confirm(msg)) return;
-                            if (selectedTopic === t.id) setSelectedTopic('');
+                  <div className="topic-chips">
+                    {subjectTopics.map((t, i) => {
+                      const count = data.lessons.filter(
+                        (l) => l.subjectId === currentSubject.id && l.topicId === t.id
+                      ).length;
+                      return (
+                        <form
+                          key={t.id}
+                          className={`topic-edit ${selectedTopic === t.id ? 'is-active' : ''}`}
+                          onSubmit={async (e) => {
+                            const input = form(e);
                             await mutate(
-                              {
-                                action: 'deleteTopic',
-                                subjectId: currentSubject.id,
-                                topicId: t.id,
-                              },
-                              'Tema eliminado.'
+                              { ...input, action: 'topic', subjectId: currentSubject.id, id: t.id },
+                              'Tema actualizado.'
                             );
-                            await onCatalogChange();
                           }}
                         >
-                          <Trash2 size={14} />
-                        </Button>
-                      </form>
-                    );
-                  })}
+                          <span>{String(i + 1).padStart(2, '0')}</span>
+                          <input
+                            aria-label={`Nombre del tema ${i + 1}`}
+                            name="name"
+                            required
+                            maxLength={120}
+                            defaultValue={t.name}
+                          />
+                          <Button size="sm" variant="outline" disabled={busy}>
+                            Guardar
+                          </Button>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="ghost"
+                            aria-label={`Subir tema ${i + 1}`}
+                            disabled={busy || i === 0}
+                            onClick={() =>
+                              mutate(
+                                {
+                                  action: 'moveTopic',
+                                  subjectId: currentSubject.id,
+                                  topicId: t.id,
+                                  direction: 'up',
+                                },
+                                'Orden actualizado.'
+                              )
+                            }
+                          >
+                            <ChevronUp size={14} />
+                          </Button>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="ghost"
+                            aria-label={`Bajar tema ${i + 1}`}
+                            disabled={busy || i === subjectTopics.length - 1}
+                            onClick={() =>
+                              mutate(
+                                {
+                                  action: 'moveTopic',
+                                  subjectId: currentSubject.id,
+                                  topicId: t.id,
+                                  direction: 'down',
+                                },
+                                'Orden actualizado.'
+                              )
+                            }
+                          >
+                            <ChevronDown size={14} />
+                          </Button>
+                          <Button
+                            type="button"
+                            size="sm"
+                            onClick={() => {
+                              setSelectedTopic(t.id);
+                              setReplace('');
+                              goTab('lessons');
+                            }}
+                          >
+                            Ver clases ({count})<ArrowRight size={14} />
+                          </Button>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            className="btn-danger-action"
+                            aria-label={`Eliminar tema ${t.name}`}
+                            title="Eliminar tema y sus clases asociadas"
+                            disabled={busy}
+                            onClick={async () => {
+                              const msg =
+                                count > 0
+                                  ? `¿Eliminar el tema "${t.name}" y sus ${count} clase(s) asociada(s)? Esta acción no se puede deshacer.`
+                                  : `¿Eliminar el tema "${t.name}"?`;
+                              if (!window.confirm(msg)) return;
+                              if (selectedTopic === t.id) setSelectedTopic('');
+                              await mutate(
+                                {
+                                  action: 'deleteTopic',
+                                  subjectId: currentSubject.id,
+                                  topicId: t.id,
+                                },
+                                'Tema eliminado.'
+                              );
+                              await onCatalogChange();
+                            }}
+                          >
+                            <Trash2 size={14} />
+                          </Button>
+                        </form>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <p className="admin-help">
+                    Esta materia aún no tiene temas. Añade el primer tema desde el panel derecho.
+                  </p>
+                )}
+              </section>
+              <section className="admin-card admin-create">
+                <div className="admin-card-header">
+                  <div>
+                    <span className="eyebrow">AÑADIR A {currentSubject.code}</span>
+                    <h2>
+                      <Plus size={19} />
+                      Nuevo tema
+                    </h2>
+                  </div>
                 </div>
-              ) : (
                 <p className="admin-help">
-                  Esta materia aún no tiene temas. Añade el primer tema desde el panel derecho.
+                  Organiza las unidades o módulos temáticos de {currentSubject.name}.
                 </p>
-              )}
-            </section>
-            <section className="admin-card admin-create">
-              <div className="admin-card-header">
-                <div>
-                  <span className="eyebrow">AÑADIR A {currentSubject.code}</span>
-                  <h2>
-                    <Plus size={19} />
-                    Nuevo tema
-                  </h2>
-                </div>
-              </div>
-              <p className="admin-help">
-                Organiza las unidades o módulos temáticos de {currentSubject.name}.
-              </p>
-              <form
-                onSubmit={async (e) => {
-                  const node = e.currentTarget,
-                    input = form(e);
-                  if (
-                    await mutate(
-                      { ...input, action: 'topic', subjectId: currentSubject.id },
-                      'Tema creado.'
+                <form
+                  onSubmit={async (e) => {
+                    const node = e.currentTarget,
+                      input = form(e);
+                    if (
+                      await mutate(
+                        { ...input, action: 'topic', subjectId: currentSubject.id },
+                        'Tema creado.'
+                      )
                     )
-                  )
-                    node.reset();
-                }}
-              >
-                <label>
-                  Nombre del tema
-                  <input
-                    name="name"
-                    required
-                    maxLength={120}
-                    placeholder="Ej. Funciones y estructuras de datos"
-                  />
-                </label>
-                <Button disabled={busy}>
-                  <Plus size={15} />
-                  Añadir tema
-                </Button>
-              </form>
-            </section>
-          </div>
+                      node.reset();
+                  }}
+                >
+                  <label>
+                    Nombre del tema
+                    <input
+                      name="name"
+                      required
+                      maxLength={120}
+                      placeholder="Ej. Funciones y estructuras de datos"
+                    />
+                  </label>
+                  <Button disabled={busy}>
+                    <Plus size={15} />
+                    Añadir tema
+                  </Button>
+                </form>
+              </section>
+            </div>
           )}
         </>
       )}
@@ -1198,346 +1202,369 @@ export function AdminPanel({
                     </h2>
                   </div>
                   <span className="admin-count-badge">
-                  {topicLessons.length} {topicLessons.length === 1 ? 'clase' : 'clases'}
-                </span>
-              </div>
-              <p className="admin-help">
-                Revisa la vista previa, reprocesa recursos o publica las clases construidas en este
-                tema.
-              </p>
-              {topicLessons.length ? (
-                <div className="admin-lesson-list">
-                  {topicLessons.map((l) => (
-                    <article key={l.id}>
-                      <div className="admin-lesson-heading">
-                        <div>
-                          <span className={`status-badge ${l.status}`}>
-                            {l.status === 'published' ? 'Publicada' : 'Borrador'}
-                          </span>
-                          <h3>{l.title}</h3>
-                          <p>
-                            {l.subtitle ? `${l.subtitle} · ` : ''}
-                            {l.frames} bloques · Versión {l.revision}
-                          </p>
-                        </div>
-                        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={() => {
-                              if (onPreviewLesson) {
-                                onPreviewLesson(l.id);
-                              } else {
-                                window.location.href = `/?class=${l.id}`;
-                              }
-                            }}
-                            title="Previsualizar clase en esta pestaña"
-                          >
-                            <Eye size={14} />
-                            Vista previa
-                          </Button>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={async () => {
-                              try {
-                                setBusy(true);
-                                const res = await fetch('/api/catalog');
-                                const cat = await res.json();
-                                const full = (cat.lessons || []).find((x: any) => x.id === l.id);
-                                if (!full)
-                                  throw new Error('No se pudo cargar el contenido de la clase.');
-                                setEditingLesson({
-                                  lessonId: l.id,
-                                  title: full.title,
-                                  subtitle: full.subtitle || '',
-                                  frames: full.frames || [],
-                                  subjectId: currentSubject.id,
-                                  topicId: currentTopic.id,
-                                  topicName: currentTopic.name,
-                                });
-                              } catch (err) {
-                                toast.error(
-                                  err instanceof Error
-                                    ? err.message
-                                    : 'Error al cargar la clase para edición.'
-                                );
-                              } finally {
-                                setBusy(false);
-                              }
-                            }}
-                            title="Editar diapositivas, textos y diagramas en vivo"
-                          >
-                            <Edit3 size={14} />
-                            Editar
-                          </Button>
-                        </div>
-                      </div>
-                      {l.diagnostics.length > 0 && (
-                        <details className="review-warnings">
-                          <summary>
-                            <AlertTriangle size={14} />
-                            {l.diagnostics.length} avisos de importación
-                          </summary>
-                          {l.diagnostics.map((d, i) => (
-                            <p key={i}>{d}</p>
-                          ))}
-                        </details>
-                      )}
-                      <div className="publication-actions">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          disabled={busy}
-                          onClick={() => repairResources(l.id)}
-                        >
-                          <RefreshCw size={14} />
-                          Reparar recursos
-                        </Button>
-                        {l.reviewed !== l.revision ? (
-                          <>
-                            <label className="checkbox-label">
-                              <input
-                                type="checkbox"
-                                checked={!!review[l.id]}
-                                onChange={(e) =>
-                                  setReview((v) => ({ ...v, [l.id]: e.target.checked }))
-                                }
-                              />
-                              He revisado la vista previa y los avisos
-                            </label>
+                    {topicLessons.length} {topicLessons.length === 1 ? 'clase' : 'clases'}
+                  </span>
+                </div>
+                <p className="admin-help">
+                  Revisa la vista previa, reprocesa recursos o publica las clases construidas en
+                  este tema.
+                </p>
+                {topicLessons.length ? (
+                  <div className="admin-lesson-list">
+                    {topicLessons.map((l) => (
+                      <article key={l.id}>
+                        <div className="admin-lesson-heading">
+                          <div>
+                            <span className={`status-badge ${l.status}`}>
+                              {l.status === 'published' ? 'Publicada' : 'Borrador'}
+                            </span>
+                            <h3>{l.title}</h3>
+                            <p>
+                              {l.subtitle ? `${l.subtitle} · ` : ''}
+                              {l.frames} bloques · Versión {l.revision}
+                            </p>
+                          </div>
+                          <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
                             <Button
-                              size="sm"
+                              type="button"
                               variant="outline"
-                              disabled={busy || !review[l.id]}
-                              onClick={() =>
-                                mutate(
-                                  { action: 'review', lessonId: l.id, acknowledged: review[l.id] },
-                                  'Revisión completada. Ya puedes publicar la clase.'
-                                )
-                              }
+                              size="sm"
+                              onClick={() => {
+                                if (onPreviewLesson) {
+                                  onPreviewLesson(l.id);
+                                } else {
+                                  window.location.href = `/?class=${l.id}`;
+                                }
+                              }}
+                              title="Previsualizar clase en esta pestaña"
                             >
-                              <CheckCircle2 size={14} />
-                              Completar revisión
+                              <Eye size={14} />
+                              Vista previa
                             </Button>
-                          </>
-                        ) : (
-                          <span className="reviewed-label">
-                            <CheckCircle2 size={14} />
-                            Versión revisada
-                          </span>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={async () => {
+                                try {
+                                  setBusy(true);
+                                  const res = await fetch('/api/catalog');
+                                  const cat = await res.json();
+                                  const full = (cat.lessons || []).find((x: any) => x.id === l.id);
+                                  if (!full)
+                                    throw new Error('No se pudo cargar el contenido de la clase.');
+                                  setEditingLesson({
+                                    lessonId: l.id,
+                                    title: full.title,
+                                    subtitle: full.subtitle || '',
+                                    frames: full.frames || [],
+                                    subjectId: currentSubject.id,
+                                    topicId: currentTopic.id,
+                                    topicName: currentTopic.name,
+                                  });
+                                } catch (err) {
+                                  toast.error(
+                                    err instanceof Error
+                                      ? err.message
+                                      : 'Error al cargar la clase para edición.'
+                                  );
+                                } finally {
+                                  setBusy(false);
+                                }
+                              }}
+                              title="Editar diapositivas, textos y diagramas en vivo"
+                            >
+                              <Edit3 size={14} />
+                              Editar
+                            </Button>
+                          </div>
+                        </div>
+                        {l.diagnostics.length > 0 && (
+                          <details className="review-warnings">
+                            <summary>
+                              <AlertTriangle size={14} />
+                              {l.diagnostics.length} avisos de importación
+                            </summary>
+                            {l.diagnostics.map((d, i) => (
+                              <p key={i}>{d}</p>
+                            ))}
+                          </details>
                         )}
-                        {l.status === 'published' ? (
+                        <div className="publication-actions">
                           <Button
                             size="sm"
                             variant="outline"
                             disabled={busy}
-                            onClick={() =>
-                              mutate(
-                                { action: 'unpublish', lessonId: l.id },
-                                'Clase retirada de la vista del alumno.'
-                              )
-                            }
+                            onClick={() => repairResources(l.id)}
                           >
-                            Volver a borrador
+                            <RefreshCw size={14} />
+                            Reparar recursos
                           </Button>
-                        ) : (
+                          {l.reviewed !== l.revision ? (
+                            <>
+                              <label className="checkbox-label">
+                                <input
+                                  type="checkbox"
+                                  checked={!!review[l.id]}
+                                  onChange={(e) =>
+                                    setReview((v) => ({ ...v, [l.id]: e.target.checked }))
+                                  }
+                                />
+                                He revisado la vista previa y los avisos
+                              </label>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                disabled={busy || !review[l.id]}
+                                onClick={() =>
+                                  mutate(
+                                    {
+                                      action: 'review',
+                                      lessonId: l.id,
+                                      acknowledged: review[l.id],
+                                    },
+                                    'Revisión completada. Ya puedes publicar la clase.'
+                                  )
+                                }
+                              >
+                                <CheckCircle2 size={14} />
+                                Completar revisión
+                              </Button>
+                            </>
+                          ) : (
+                            <span className="reviewed-label">
+                              <CheckCircle2 size={14} />
+                              Versión revisada
+                            </span>
+                          )}
+                          {l.status === 'published' ? (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              disabled={busy}
+                              onClick={() =>
+                                mutate(
+                                  { action: 'unpublish', lessonId: l.id },
+                                  'Clase retirada de la vista del alumno.'
+                                )
+                              }
+                            >
+                              Volver a borrador
+                            </Button>
+                          ) : (
+                            <Button
+                              size="sm"
+                              disabled={busy || l.reviewed !== l.revision}
+                              onClick={() =>
+                                mutate(
+                                  { action: 'publish', lessonId: l.id },
+                                  'Clase publicada para los alumnos asignados a la materia.'
+                                )
+                              }
+                            >
+                              <Globe size={14} />
+                              Publicar clase
+                            </Button>
+                          )}
                           <Button
                             size="sm"
-                            disabled={busy || l.reviewed !== l.revision}
-                            onClick={() =>
-                              mutate(
-                                { action: 'publish', lessonId: l.id },
-                                'Clase publicada para los alumnos asignados a la materia.'
-                              )
-                            }
+                            variant="outline"
+                            className="btn-danger-action"
+                            disabled={busy}
+                            onClick={() => {
+                              if (
+                                window.confirm(
+                                  `¿Seguro que deseas eliminar la clase «${l.title}»? Esta acción no se puede deshacer.`
+                                )
+                              ) {
+                                mutate(
+                                  { action: 'deleteLesson', lessonId: l.id },
+                                  'Clase eliminada correctamente.'
+                                );
+                              }
+                            }}
                           >
-                            <Globe size={14} />
-                            Publicar clase
+                            <Trash2 size={14} />
+                            Eliminar clase
                           </Button>
-                        )}
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="btn-danger-action"
-                          disabled={busy}
-                          onClick={() => {
-                            if (
-                              window.confirm(
-                                `¿Seguro que deseas eliminar la clase «${l.title}»? Esta acción no se puede deshacer.`
-                              )
-                            ) {
-                              mutate(
-                                { action: 'deleteLesson', lessonId: l.id },
-                                'Clase eliminada correctamente.'
-                              );
-                            }
-                          }}
-                        >
-                          <Trash2 size={14} />
-                          Eliminar clase
-                        </Button>
-                      </div>
-                    </article>
-                  ))}
+                        </div>
+                      </article>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="admin-help">
+                    Aún no hay clases en este tema. Importa un archivo .tex desde el panel derecho
+                    para crear la primera clase.
+                  </p>
+                )}
+              </section>
+              <section className="admin-card admin-create">
+                <div className="admin-card-header">
+                  <div>
+                    <span className="eyebrow">
+                      AÑADIR O ACTUALIZAR EN «{currentTopic.name.toUpperCase()}»
+                    </span>
+                    <h2>
+                      <Upload size={19} />
+                      Gestión de clase
+                    </h2>
+                  </div>
                 </div>
-              ) : (
-                <p className="admin-help">
-                  Aún no hay clases en este tema. Importa un archivo .tex desde el panel derecho
-                  para crear la primera clase.
-                </p>
-              )}
-            </section>
-            <section className="admin-card admin-create">
-              <div className="admin-card-header">
-                <div>
-                  <span className="eyebrow">
-                    AÑADIR O ACTUALIZAR EN «{currentTopic.name.toUpperCase()}»
-                  </span>
-                  <h2>
-                    <Upload size={19} />
-                    Gestión de clase
-                  </h2>
-                </div>
-              </div>
 
-              {/* Selector de método de importación */}
-              <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
-                <button
-                  type="button"
-                  onClick={() => setImportMethod('json')}
-                  style={{
-                    flex: 1,
-                    padding: '8px 10px',
-                    borderRadius: '6px',
-                    fontSize: '11px',
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                    border: importMethod === 'json' ? '1px solid #2563eb' : '1px solid var(--border)',
-                    background: importMethod === 'json' ? '#2563eb' : 'transparent',
-                    color: importMethod === 'json' ? '#fff' : 'inherit',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '5px',
-                  }}
-                >
-                  <Sparkles size={13} />
-                  JSON / Editor en vivo (Recomendado)
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setImportMethod('latex')}
-                  style={{
-                    flex: 1,
-                    padding: '8px 10px',
-                    borderRadius: '6px',
-                    fontSize: '11px',
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                    border: importMethod === 'latex' ? '1px solid #2563eb' : '1px solid var(--border)',
-                    background: importMethod === 'latex' ? '#2563eb' : 'transparent',
-                    color: importMethod === 'latex' ? '#fff' : 'inherit',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '5px',
-                  }}
-                >
-                  <Upload size={13} />
-                  Directo .tex
-                </button>
-              </div>
-
-              {importMethod === 'json' ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                  <div
+                {/* Selector de método de importación */}
+                <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
+                  <button
+                    type="button"
+                    onClick={() => setImportMethod('json')}
                     style={{
-                      background: 'rgba(37, 99, 235, 0.08)',
-                      border: '1px solid rgba(37, 99, 235, 0.25)',
-                      borderRadius: '8px',
-                      padding: '12px 14px',
+                      flex: 1,
+                      padding: '8px 10px',
+                      borderRadius: '6px',
                       fontSize: '11px',
-                      lineHeight: 1.6,
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      border:
+                        importMethod === 'json' ? '1px solid #2563eb' : '1px solid var(--border)',
+                      background: importMethod === 'json' ? '#2563eb' : 'transparent',
+                      color: importMethod === 'json' ? '#fff' : 'inherit',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '5px',
                     }}
                   >
-                    <strong style={{ color: '#60a5fa', display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '4px' }}>
-                      <Sparkles size={14} /> Flujo sin errores de diagramas ni rutas:
-                    </strong>
-                    <ol style={{ margin: '4px 0 10px 16px', padding: 0 }}>
-                      <li>Exporta tu .tex localmente con el script de Python (convierte TikZ a SVG nativo).</li>
-                      <li>Sube aquí el <strong>clase.json</strong> generado para previsualizarlo y retocarlo en vivo.</li>
-                    </ol>
-                    <a
-                      href="/tools/export_lesson.py"
-                      download="export_lesson.py"
-                      className="ui-button"
-                      data-variant="outline"
+                    <Sparkles size={13} />
+                    JSON / Editor en vivo (Recomendado)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setImportMethod('latex')}
+                    style={{
+                      flex: 1,
+                      padding: '8px 10px',
+                      borderRadius: '6px',
+                      fontSize: '11px',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      border:
+                        importMethod === 'latex' ? '1px solid #2563eb' : '1px solid var(--border)',
+                      background: importMethod === 'latex' ? '#2563eb' : 'transparent',
+                      color: importMethod === 'latex' ? '#fff' : 'inherit',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '5px',
+                    }}
+                  >
+                    <Upload size={13} />
+                    Directo .tex
+                  </button>
+                </div>
+
+                {importMethod === 'json' ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                    <div
                       style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '6px',
-                        padding: '6px 12px',
+                        background: 'rgba(37, 99, 235, 0.08)',
+                        border: '1px solid rgba(37, 99, 235, 0.25)',
+                        borderRadius: '8px',
+                        padding: '12px 14px',
                         fontSize: '11px',
-                        fontWeight: 600,
-                        textDecoration: 'none',
+                        lineHeight: 1.6,
                       }}
                     >
-                      <Download size={13} /> Descargar exportador local (export_lesson.py)
-                    </a>
-                  </div>
-
-                  {topicLessons.length > 0 && (
-                    <label>
-                      Destino de la clase
-                      <select
-                        name="lessonId"
-                        value={replace}
-                        onChange={(e) => setReplace(e.target.value)}
+                      <strong
+                        style={{
+                          color: '#60a5fa',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '5px',
+                          marginBottom: '4px',
+                        }}
                       >
-                        <option value="">Crear nueva clase en este tema</option>
-                        {topicLessons.map((l) => (
-                          <option key={l.id} value={l.id}>
-                            Actualizar: {l.title}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                  )}
+                        <Sparkles size={14} /> Flujo sin errores de diagramas ni rutas:
+                      </strong>
+                      <ol style={{ margin: '4px 0 10px 16px', padding: 0 }}>
+                        <li>
+                          Exporta tu .tex localmente con el script de Python (convierte TikZ a SVG
+                          nativo).
+                        </li>
+                        <li>
+                          Sube aquí el <strong>clase.json</strong> generado para previsualizarlo y
+                          retocarlo en vivo.
+                        </li>
+                      </ol>
+                      <a
+                        href="/tools/export_lesson.py"
+                        download="export_lesson.py"
+                        className="ui-button"
+                        data-variant="outline"
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          padding: '6px 12px',
+                          fontSize: '11px',
+                          fontWeight: 600,
+                          textDecoration: 'none',
+                        }}
+                      >
+                        <Download size={13} /> Descargar exportador local (export_lesson.py)
+                      </a>
+                    </div>
 
-                  <label>
-                    Subir archivo clase.json o paquete .zip
-                    <input
-                      type="file"
-                      accept=".json,.zip,application/zip"
-                      onChange={async (e) => {
-                        const file = e.target.files?.[0];
-                        if (!file) return;
-                        try {
-                          let jsonContent = '';
-                          if (file.name.endsWith('.zip')) {
-                            const zip = await JSZip.loadAsync(file);
-                            const claseFile =
-                              zip.file('clase.json') || zip.file(/(?:^|\/)clase\.json$/)[0];
-                            const docFile =
-                              zip.file('document.json') || zip.file(/(?:^|\/)document\.json$/)[0];
-                            if (claseFile) {
-                              jsonContent = await claseFile.async('text');
-                            } else if (docFile) {
-                              jsonContent = await docFile.async('text');
+                    {topicLessons.length > 0 && (
+                      <label>
+                        Destino de la clase
+                        <select
+                          name="lessonId"
+                          value={replace}
+                          onChange={(e) => setReplace(e.target.value)}
+                        >
+                          <option value="">Crear nueva clase en este tema</option>
+                          {topicLessons.map((l) => (
+                            <option key={l.id} value={l.id}>
+                              Actualizar: {l.title}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    )}
+
+                    <label>
+                      Subir archivo clase.json o paquete .zip
+                      <input
+                        type="file"
+                        accept=".json,.zip,application/zip"
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          try {
+                            let jsonContent = '';
+                            if (file.name.endsWith('.zip')) {
+                              const zip = await JSZip.loadAsync(file);
+                              const claseFile =
+                                zip.file('clase.json') || zip.file(/(?:^|\/)clase\.json$/)[0];
+                              const docFile =
+                                zip.file('document.json') || zip.file(/(?:^|\/)document\.json$/)[0];
+                              if (claseFile) {
+                                jsonContent = await claseFile.async('text');
+                              } else if (docFile) {
+                                jsonContent = await docFile.async('text');
+                              } else {
+                                throw new Error(
+                                  'El archivo ZIP no contiene "clase.json" ni "document.json".'
+                                );
+                              }
                             } else {
-                              throw new Error(
-                                'El archivo ZIP no contiene "clase.json" ni "document.json".'
-                              );
+                              jsonContent = await file.text();
                             }
-                          } else {
-                            jsonContent = await file.text();
-                          }
-                          const json = JSON.parse(jsonContent);
+                            const json = JSON.parse(jsonContent);
                             let frames = json.frames;
-                            if ((!frames || !Array.isArray(frames)) && Array.isArray(json.structure)) {
+                            if (
+                              (!frames || !Array.isArray(frames)) &&
+                              Array.isArray(json.structure)
+                            ) {
                               // Compatibilidad nativa con d3im3r-class v2 (document.json)
                               frames = [];
                               const inlineToText = (inlines: any[]): string =>
@@ -1564,8 +1591,13 @@ export function AdminPanel({
                                 if (b.type === 'paragraph')
                                   return { type: 'text', content: inlineToText(b.children || []) };
                                 if (b.type === 'code')
-                                  return { type: 'code', language: b.language || 'text', content: b.value || '' };
-                                if (b.type === 'math') return { type: 'math', content: b.latex || '' };
+                                  return {
+                                    type: 'code',
+                                    language: b.language || 'text',
+                                    content: b.value || '',
+                                  };
+                                if (b.type === 'math')
+                                  return { type: 'math', content: b.latex || '' };
                                 if (b.type === 'academic_block')
                                   return {
                                     type: 'callout',
@@ -1610,9 +1642,14 @@ export function AdminPanel({
                                       title: child.title || '',
                                       section: parentTitle,
                                       line: child.sourceLine || 1,
-                                      blocks: (child.blocks || []).map(convertBlock).filter(Boolean),
+                                      blocks: (child.blocks || [])
+                                        .map(convertBlock)
+                                        .filter(Boolean),
                                     });
-                                  } else if (child.type === 'subsection' && Array.isArray(child.children)) {
+                                  } else if (
+                                    child.type === 'subsection' &&
+                                    Array.isArray(child.children)
+                                  ) {
                                     for (const sub of child.children) {
                                       processChild(sub, child.title || parentTitle);
                                     }
@@ -1649,104 +1686,118 @@ export function AdminPanel({
                               err instanceof Error ? err.message : 'Error al procesar el archivo.'
                             );
                           }
-                      }}
-                    />
-                    <small>Se abrirá de inmediato la ventana de edición y previsualización en vivo.</small>
-                  </label>
-
-                  <div style={{ textAlign: 'center', margin: '4px 0', fontSize: '11px', color: 'var(--muted)' }}>
-                    — o —
-                  </div>
-
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => {
-                      setEditingLesson({
-                        lessonId: replace || undefined,
-                        title: 'Nueva clase interactiva',
-                        subtitle: '',
-                        frames: [
-                          {
-                            id: 'frame-1',
-                            title: 'Introducción',
-                            section: currentTopic.name,
-                            line: 1,
-                            blocks: [
-                              {
-                                type: 'text',
-                                content: 'Escribe aquí el contenido introductorio de la clase...',
-                              },
-                            ],
-                          },
-                        ],
-                        subjectId: currentSubject.id,
-                        topicId: currentTopic.id,
-                        topicName: currentTopic.name,
-                      });
-                    }}
-                    style={{ gap: '6px' }}
-                  >
-                    <Plus size={14} />
-                    Crear clase desde cero en el editor
-                  </Button>
-                </div>
-              ) : (
-                <form onSubmit={importClass}>
-                  <input type="hidden" name="subjectId" value={currentSubject.id} />
-                  <input type="hidden" name="topicId" value={currentTopic.id} />
-                  <label>
-                    Documento LaTeX (.tex)
-                    <input type="file" name="source" accept=".tex" required />
-                    <small>Archivo .tex de la clase · hasta 2 MB</small>
-                  </label>
-                  <label>
-                    PDF e imágenes (opcional)
-                    <input type="file" name="images" accept=".pdf,.png,.jpg,.jpeg,.webp" multiple />
-                    <small>
-                      Opcional · PDF original y figuras (máx. 4 MB en Vercel; el .tex es lo único
-                      obligatorio)
-                    </small>
-                  </label>
-                  <label>
-                    Título de la clase (opcional)
-                    <input
-                      name="title"
-                      maxLength={150}
-                      placeholder="Opcional · se detecta del .tex"
-                    />
-                  </label>
-                  {topicLessons.length > 0 && (
-                    <label>
-                      Acción
-                      <select
-                        name="lessonId"
-                        value={replace}
-                        onChange={(e) => setReplace(e.target.value)}
-                      >
-                        <option value="">Crear nueva clase en este tema</option>
-                        {topicLessons.map((l) => (
-                          <option key={l.id} value={l.id}>
-                            Actualizar: {l.title}
-                          </option>
-                        ))}
-                      </select>
+                        }}
+                      />
+                      <small>
+                        Se abrirá de inmediato la ventana de edición y previsualización en vivo.
+                      </small>
                     </label>
-                  )}
-                  {replace && (
-                    <p className="admin-help">
-                      La versión anterior se sustituirá y la clase volverá a borrador hasta revisar y
-                      publicar esta versión.
-                    </p>
-                  )}
-                  <Button disabled={busy}>
-                    <Upload size={15} />
-                    {busy ? 'Importando y compilando…' : 'Importar como borrador'}
-                  </Button>
-                </form>
-              )}
-            </section>
-          </div>
+
+                    <div
+                      style={{
+                        textAlign: 'center',
+                        margin: '4px 0',
+                        fontSize: '11px',
+                        color: 'var(--muted)',
+                      }}
+                    >
+                      — o —
+                    </div>
+
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        setEditingLesson({
+                          lessonId: replace || undefined,
+                          title: 'Nueva clase interactiva',
+                          subtitle: '',
+                          frames: [
+                            {
+                              id: 'frame-1',
+                              title: 'Introducción',
+                              section: currentTopic.name,
+                              line: 1,
+                              blocks: [
+                                {
+                                  type: 'text',
+                                  content: 'Escribe aquí el contenido introductorio de la clase...',
+                                },
+                              ],
+                            },
+                          ],
+                          subjectId: currentSubject.id,
+                          topicId: currentTopic.id,
+                          topicName: currentTopic.name,
+                        });
+                      }}
+                      style={{ gap: '6px' }}
+                    >
+                      <Plus size={14} />
+                      Crear clase desde cero en el editor
+                    </Button>
+                  </div>
+                ) : (
+                  <form onSubmit={importClass}>
+                    <input type="hidden" name="subjectId" value={currentSubject.id} />
+                    <input type="hidden" name="topicId" value={currentTopic.id} />
+                    <label>
+                      Documento LaTeX (.tex)
+                      <input type="file" name="source" accept=".tex" required />
+                      <small>Archivo .tex de la clase · hasta 2 MB</small>
+                    </label>
+                    <label>
+                      PDF e imágenes (opcional)
+                      <input
+                        type="file"
+                        name="images"
+                        accept=".pdf,.png,.jpg,.jpeg,.webp"
+                        multiple
+                      />
+                      <small>
+                        Opcional · PDF original y figuras (máx. 4 MB en Vercel; el .tex es lo único
+                        obligatorio)
+                      </small>
+                    </label>
+                    <label>
+                      Título de la clase (opcional)
+                      <input
+                        name="title"
+                        maxLength={150}
+                        placeholder="Opcional · se detecta del .tex"
+                      />
+                    </label>
+                    {topicLessons.length > 0 && (
+                      <label>
+                        Acción
+                        <select
+                          name="lessonId"
+                          value={replace}
+                          onChange={(e) => setReplace(e.target.value)}
+                        >
+                          <option value="">Crear nueva clase en este tema</option>
+                          {topicLessons.map((l) => (
+                            <option key={l.id} value={l.id}>
+                              Actualizar: {l.title}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    )}
+                    {replace && (
+                      <p className="admin-help">
+                        La versión anterior se sustituirá y la clase volverá a borrador hasta
+                        revisar y publicar esta versión.
+                      </p>
+                    )}
+                    <Button disabled={busy}>
+                      <Upload size={15} />
+                      {busy ? 'Importando y compilando…' : 'Importar como borrador'}
+                    </Button>
+                  </form>
+                )}
+              </section>
+            </div>
           )}
         </>
       )}
@@ -1768,32 +1819,127 @@ export function AdminPanel({
 
             {pendingRequests.length > 0 && (
               <div className="mb-6 p-4 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-300 dark:border-amber-800">
-                <div className="flex items-center gap-2 font-semibold text-sm text-amber-900 dark:text-amber-200 mb-2">
-                  <Clock size={16} /> Solicitudes de inscripción a asignaturas (
-                  {pendingRequests.length})
+                <div className="flex flex-wrap items-center justify-between gap-3 mb-2">
+                  <div className="flex items-center gap-2 font-semibold text-sm text-amber-900 dark:text-amber-200">
+                    <Clock size={16} /> Solicitudes de inscripción a asignaturas (
+                    {pendingRequests.length})
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {selectedRequestIds.length > 0 ? (
+                      <>
+                        <Button
+                          size="sm"
+                          className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium"
+                          disabled={busy}
+                          onClick={async () => {
+                            if (
+                              await mutate(
+                                { action: 'approveJoinRequests', requestIds: selectedRequestIds },
+                                `${selectedRequestIds.length} solicitudes aprobadas.`
+                              )
+                            ) {
+                              setSelectedRequestIds([]);
+                            }
+                          }}
+                        >
+                          <CheckCircle2 size={13} />
+                          Aprobar seleccionadas ({selectedRequestIds.length})
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={busy}
+                          onClick={async () => {
+                            if (
+                              await mutate(
+                                { action: 'rejectJoinRequests', requestIds: selectedRequestIds },
+                                `${selectedRequestIds.length} solicitudes rechazadas.`
+                              )
+                            ) {
+                              setSelectedRequestIds([]);
+                            }
+                          }}
+                        >
+                          Rechazar ({selectedRequestIds.length})
+                        </Button>
+                      </>
+                    ) : (
+                      <Button
+                        size="sm"
+                        className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium"
+                        disabled={busy}
+                        onClick={async () => {
+                          if (
+                            await mutate(
+                              { action: 'approveAllJoinRequests' },
+                              `Todas las solicitudes (${pendingRequests.length}) han sido aprobadas.`
+                            )
+                          ) {
+                            setSelectedRequestIds([]);
+                          }
+                        }}
+                      >
+                        <CheckCircle2 size={13} />
+                        Aprobar todas ({pendingRequests.length})
+                      </Button>
+                    )}
+                  </div>
                 </div>
-                <p className="text-xs text-amber-800 dark:text-amber-300 mb-3 leading-relaxed">
-                  Alumnos que iniciaron sesión y esperan tu aprobación para inscribirse en su
-                  materia:
-                </p>
+                <div className="flex items-center justify-between text-xs text-amber-800 dark:text-amber-300 mb-3">
+                  <span>Alumnos que solicitaron acceso mediante enlace de invitación:</span>
+                  <label className="flex items-center gap-1.5 cursor-pointer font-medium select-none ml-2">
+                    <input
+                      type="checkbox"
+                      checked={
+                        pendingRequests.length > 0 &&
+                        selectedRequestIds.length === pendingRequests.length
+                      }
+                      onChange={(e) => {
+                        if (e.target.checked)
+                          setSelectedRequestIds(pendingRequests.map((r) => r.id));
+                        else setSelectedRequestIds([]);
+                      }}
+                      className="rounded border w-3.5 h-3.5 accent-primary cursor-pointer"
+                    />
+                    <span>Seleccionar todas</span>
+                  </label>
+                </div>
                 <div className="grid gap-2">
                   {pendingRequests.map((req) => {
                     const subj = data.subjects.find((s) => s.id === req.subjectId);
+                    const isSelected = selectedRequestIds.includes(req.id);
                     return (
                       <div
                         key={req.id}
-                        className="flex items-center justify-between p-2.5 rounded bg-white dark:bg-stone-900 border text-xs"
+                        className={`flex items-center justify-between p-2.5 rounded bg-white dark:bg-stone-900 border text-xs transition-colors ${
+                          isSelected
+                            ? 'ring-1 ring-emerald-500 border-emerald-400 bg-emerald-50/20'
+                            : ''
+                        }`}
                       >
-                        <div>
-                          <strong>{req.userName}</strong>{' '}
-                          <span className="text-muted-foreground">({req.username})</span>
-                          <p className="text-muted-foreground mt-0.5">
-                            Asignatura:{' '}
-                            <span className="font-medium text-foreground">
-                              {subj?.name ?? req.subjectId}
-                            </span>{' '}
-                            ({subj?.code})
-                          </p>
+                        <div className="flex items-center gap-2.5">
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={(e) => {
+                              if (e.target.checked)
+                                setSelectedRequestIds((prev) => [...prev, req.id]);
+                              else
+                                setSelectedRequestIds((prev) => prev.filter((id) => id !== req.id));
+                            }}
+                            className="rounded border w-3.5 h-3.5 accent-primary cursor-pointer"
+                          />
+                          <div>
+                            <strong>{req.userName}</strong>{' '}
+                            <span className="text-muted-foreground">({req.username})</span>
+                            <p className="text-muted-foreground mt-0.5">
+                              Asignatura:{' '}
+                              <span className="font-medium text-foreground">
+                                {subj?.name ?? req.subjectId}
+                              </span>{' '}
+                              ({subj?.code})
+                            </p>
+                          </div>
                         </div>
                         <div className="flex gap-1.5">
                           <Button
@@ -1922,7 +2068,23 @@ export function AdminPanel({
               <div className="flex items-center gap-2">
                 {selectedStudentIds.length > 0 && (
                   <>
-                    <span className="text-muted-foreground">{selectedStudentIds.length} seleccionados</span>
+                    <span className="text-muted-foreground">
+                      {selectedStudentIds.length} seleccionados
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={busy}
+                      className="border-emerald-600 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/30"
+                      onClick={() => {
+                        setBulkAssignOpen((prev) => !prev);
+                        setBulkSubjectIds([]);
+                        setBulkAssignMode('add');
+                      }}
+                    >
+                      <BookOpen size={13} />
+                      Asignar a materias ({selectedStudentIds.length})
+                    </Button>
                     <Button
                       variant="default"
                       className="bg-red-600 hover:bg-red-700 text-white"
@@ -1981,6 +2143,101 @@ export function AdminPanel({
                 )}
               </div>
             </div>
+            {bulkAssignOpen && selectedStudentIds.length > 0 && (
+              <div className="mb-4 p-4 rounded-lg bg-emerald-50/40 dark:bg-emerald-950/20 border border-emerald-300 dark:border-emerald-800 space-y-3">
+                <div className="flex items-center justify-between border-b border-emerald-200 dark:border-emerald-900 pb-2">
+                  <div className="font-semibold text-sm flex items-center gap-2 text-emerald-900 dark:text-emerald-200">
+                    <BookOpen size={16} />
+                    Asignación masiva a {selectedStudentIds.length}{' '}
+                    {selectedStudentIds.length === 1 ? 'alumno' : 'alumnos seleccionados'}
+                  </div>
+                  <Button variant="ghost" size="sm" onClick={() => setBulkAssignOpen(false)}>
+                    Cerrar
+                  </Button>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground mb-2">
+                    Marca las asignaturas a las que deseas asignar a estos{' '}
+                    {selectedStudentIds.length} alumnos:
+                  </p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto p-2 border rounded bg-background">
+                    {data.subjects.map((s) => (
+                      <label
+                        key={s.id}
+                        className="flex items-center gap-2 p-1.5 rounded hover:bg-stone-100 dark:hover:bg-stone-800 cursor-pointer text-xs"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={bulkSubjectIds.includes(s.id)}
+                          onChange={(e) =>
+                            setBulkSubjectIds((prev) =>
+                              e.target.checked ? [...prev, s.id] : prev.filter((id) => id !== s.id)
+                            )
+                          }
+                          className="rounded border w-3.5 h-3.5 accent-primary cursor-pointer"
+                        />
+                        <span className="truncate">
+                          <strong>{s.name}</strong>{' '}
+                          <span className="text-muted-foreground">({s.code})</span>
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+                <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-emerald-200/50 dark:border-emerald-900/50">
+                  <div className="flex flex-wrap items-center gap-4 text-xs">
+                    <label className="flex items-center gap-1.5 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="bulkAssignMode"
+                        checked={bulkAssignMode === 'add'}
+                        onChange={() => setBulkAssignMode('add')}
+                        className="accent-primary"
+                      />
+                      <span>Añadir a materias actuales (conservar existentes)</span>
+                    </label>
+                    <label className="flex items-center gap-1.5 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="bulkAssignMode"
+                        checked={bulkAssignMode === 'replace'}
+                        onChange={() => setBulkAssignMode('replace')}
+                        className="accent-primary"
+                      />
+                      <span>Reemplazar materias existentes</span>
+                    </label>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button variant="outline" size="sm" onClick={() => setBulkAssignOpen(false)}>
+                      Cancelar
+                    </Button>
+                    <Button
+                      size="sm"
+                      className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                      disabled={busy || bulkSubjectIds.length === 0}
+                      onClick={async () => {
+                        const ok = await mutate(
+                          {
+                            action: 'bulkAssignStudents',
+                            userIds: selectedStudentIds,
+                            subjectIds: bulkSubjectIds,
+                            mode: bulkAssignMode,
+                          },
+                          `Materias asignadas correctamente a ${selectedStudentIds.length} alumnos.`
+                        );
+                        if (ok) {
+                          setBulkAssignOpen(false);
+                          setSelectedStudentIds([]);
+                        }
+                      }}
+                    >
+                      <Save size={13} />
+                      Guardar asignaciones masivas
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
             <div className="admin-list student-list">
               {students.map((u) => {
                 const userBans = (data.bans ?? []).filter((b) => b.userId === u.id);
@@ -2318,7 +2575,8 @@ export function AdminPanel({
                     placeholder="Mínimo 6 caracteres (ej. documento de identidad)"
                   />
                   <small>
-                    Mínimo 6 caracteres (ej. documento de identidad). Comunica las credenciales al alumno por tu canal habitual.
+                    Mínimo 6 caracteres (ej. documento de identidad). Comunica las credenciales al
+                    alumno por tu canal habitual.
                   </small>
                 </label>
                 <label>
@@ -2524,11 +2782,13 @@ export function AdminPanel({
                           Asignar materias a {targetTeacher?.name}:
                         </strong>
                         <p className="text-[11px] text-muted-foreground mt-0.5">
-                          Selecciona las materias que este docente tendrá permiso de impartir, editar y gestionar.
+                          Selecciona las materias que este docente tendrá permiso de impartir,
+                          editar y gestionar.
                         </p>
                       </div>
                       <span className="text-[11px] font-semibold px-2 py-0.5 bg-primary/10 text-primary rounded">
-                        {teacherEditingSubjectIds.length} seleccionada{teacherEditingSubjectIds.length === 1 ? '' : 's'}
+                        {teacherEditingSubjectIds.length} seleccionada
+                        {teacherEditingSubjectIds.length === 1 ? '' : 's'}
                       </span>
                     </div>
 

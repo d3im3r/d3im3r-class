@@ -164,6 +164,72 @@ test('Pestañas: 5. Pestañas de Aprendizaje del Alumno (Catálogo, Progreso y R
   assert.deepEqual(progress[targetLesson.id], [targetFrame.id]);
 });
 
+test('Acciones masivas: aprobación múltiple de solicitudes y asignación masiva de alumnos a materias', () => {
+  // Crear alumnos adicionales para pruebas masivas
+  manage({
+    action: 'student',
+    name: 'Alumno Masivo 1',
+    username: 'alumno.masivo1',
+    password: 'Password-2026',
+  });
+  manage({
+    action: 'student',
+    name: 'Alumno Masivo 2',
+    username: 'alumno.masivo2',
+    password: 'Password-2026',
+  });
+  const m1 = login({ username: 'alumno.masivo1', password: 'Password-2026' });
+  const m2 = login({ username: 'alumno.masivo2', password: 'Password-2026' });
+
+  const snap = snapshot();
+  const sub = snap.subjects[0];
+  const lesson = snap.lessons.find((l) => l.subjectId === sub.id)!;
+
+  // Insertar solicitudes pendientes para ambos alumnos
+  const req1 = 'req-bulk-1';
+  const req2 = 'req-bulk-2';
+  db()
+    .prepare(
+      'INSERT INTO subject_join_requests(id,subject_id,user_id,status,created_at) VALUES (?,?,?,?,?)'
+    )
+    .run(req1, sub.id, m1.id, 'pending', new Date().toISOString());
+  db()
+    .prepare(
+      'INSERT INTO subject_join_requests(id,subject_id,user_id,status,created_at) VALUES (?,?,?,?,?)'
+    )
+    .run(req2, sub.id, m2.id, 'pending', new Date().toISOString());
+
+  assert.equal(canReadLesson(m1, lesson.id), false);
+  assert.equal(canReadLesson(m2, lesson.id), false);
+
+  // Probar aprobación masiva de todas las solicitudes
+  manage({
+    action: 'approveAllJoinRequests',
+  });
+
+  assert.equal(canReadLesson(m1, lesson.id), true, 'Alumno 1 aprobado masivamente');
+  assert.equal(canReadLesson(m2, lesson.id), true, 'Alumno 2 aprobado masivamente');
+
+  // Probar asignación masiva directa de estudiantes a asignaturas
+  manage({
+    action: 'bulkAssignStudents',
+    userIds: [m1.id, m2.id],
+    subjectIds: [sub.id],
+    mode: 'add',
+  });
+
+  const cat1 = userCatalog(m1);
+  const cat2 = userCatalog(m2);
+  assert.ok(
+    cat1.subjects.some((s) => s.id === sub.id),
+    'Materia presente en catálogo de Alumno 1'
+  );
+  assert.ok(
+    cat2.subjects.some((s) => s.id === sub.id),
+    'Materia presente en catálogo de Alumno 2'
+  );
+});
+
 after(() => {
   db().close();
   rmSync(folder, { recursive: true, force: true });
