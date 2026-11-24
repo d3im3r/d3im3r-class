@@ -1,3 +1,4 @@
+import { existsSync } from 'node:fs';
 import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
@@ -18,15 +19,23 @@ export async function testTikz(source: unknown) {
     const result = await compileFigures([source], folder);
     const file = Object.values(result.results)[0];
     const error = result.errors[0];
+    let svgContent: string | undefined;
+    if (file) {
+      if (file.startsWith('<svg') || file.startsWith('<?xml')) {
+        svgContent = file;
+      } else if (existsSync(file)) {
+        svgContent = await readFile(file, 'utf8');
+      }
+    }
     return {
-      ok: !!file,
-      svg: file ? await readFile(file, 'utf8') : undefined,
-      message: file
+      ok: !!svgContent,
+      svg: svgContent,
+      message: svgContent
         ? 'Diagrama generado correctamente.'
         : (error?.message ?? 'No se generó el diagrama.'),
       line: error?.line,
       log: error?.log?.replaceAll(folder, '[temporal]'),
-      hints: !file ? diagnosticHints(error?.message ?? '', source) : [],
+      hints: !svgContent ? diagnosticHints(error?.message ?? '', source) : [],
     };
   } finally {
     running = false;

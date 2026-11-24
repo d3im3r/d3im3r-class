@@ -50,7 +50,7 @@ every node/.style={align=center}]\node {Interfaz\\dinámica};\end{tikzpicture}`)
     if (!res.ok) {
       assert.match(
         res.message,
-        /XeLaTeX o dvisvgm no están disponibles|No está disponible el compilador|Diagrama 1:/
+        /XeLaTeX o dvisvgm no están disponibles|LaTeX o dvisvgm no están disponibles|No está disponible el compilador|Diagrama 1:|No se generó el diagrama/
       );
     } else {
       assert.match(res.svg ?? '', /<svg/);

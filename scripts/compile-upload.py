@@ -109,7 +109,9 @@ for index,source in enumerate(request['figures'][:60],start=1):
                     ['dvisvgm', '--pdf', '--no-fonts', '--exact-bbox', '--scale=1.35', '--output='+str(dest), 'figure.pdf'],
                     cwd=work, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, check=True, timeout=15
                 )
-                results[key]=str(dest)
+                if dest.exists() and dest.stat().st_size > 0:
+                    results[key]=str(dest)
+                    compiled = True
         except subprocess.CalledProcessError as error:
             log=(error.stdout or b'').decode(errors='replace')
             lines=log.splitlines()
@@ -124,5 +126,8 @@ for index,source in enumerate(request['figures'][:60],start=1):
             errors.append({'hash':key,'message':f'Diagrama {index}: se superó el tiempo máximo de compilación.'})
         except FileNotFoundError:
             errors.append({'hash':key,'message':f'Diagrama {index}: LaTeX o dvisvgm no están disponibles.'})
+
+        if not compiled and not any(e['hash'] == key for e in errors):
+            errors.append({'hash': key, 'message': f'Diagrama {index}: LaTeX o dvisvgm no están disponibles.'})
 
 json.dump({'results':results,'errors':errors},sys.stdout)
