@@ -11,7 +11,11 @@ const testDb = await createTestDatabase();
 let teacher: any, student: any;
 
 test('Pestañas: 1. Pestaña Instituciones (lectura, inserción y cambio)', async () => {
-  teacher = await setup({ name: 'Profesor Tabs', username: 'profe.tabs', password: 'ClaveDocente-2026' });
+  teacher = await setup({
+    name: 'Profesor Tabs',
+    username: 'profe.tabs',
+    password: 'ClaveDocente-2026',
+  });
   assert.equal(teacher.role, 'admin');
 
   const snap = await snapshot();

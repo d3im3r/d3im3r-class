@@ -9,9 +9,6 @@ export const dynamic = 'force-dynamic';
 export default async function Page() {
   const user = await currentUser();
   if (!user) return <Login setup={await needsSetup()} />;
-  const [catalog, initialProgress] = await Promise.all([
-    userCatalog(user),
-    userProgress(user),
-  ]);
+  const [catalog, initialProgress] = await Promise.all([userCatalog(user), userProgress(user)]);
   return <Workspace catalog={catalog} user={user} initialProgress={initialProgress} />;
 }

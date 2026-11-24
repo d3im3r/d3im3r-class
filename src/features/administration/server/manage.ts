@@ -103,9 +103,7 @@ export async function snapshot(actor?: User) {
     subjectId: string;
     token: string;
     topicId?: string | null;
-  }>(
-    'SELECT subject_id AS "subjectId", token, topic_id AS "topicId" FROM subject_invites'
-  );
+  }>('SELECT subject_id AS "subjectId", token, topic_id AS "topicId" FROM subject_invites');
   if (!isUnrestricted) {
     invites = invites.filter((i) => subjectIdSet.has(i.subjectId));
   }
@@ -163,9 +161,7 @@ export async function snapshot(actor?: User) {
   let institutionMembers = await query<{
     userId: string;
     institutionId: string;
-  }>(
-    'SELECT user_id AS "userId", institution_id AS "institutionId" FROM institution_members'
-  );
+  }>('SELECT user_id AS "userId", institution_id AS "institutionId" FROM institution_members');
   if (!isUnrestricted && actor) {
     institutionMembers = institutionMembers.filter((im) => im.userId === actor.id);
   }
@@ -219,10 +215,9 @@ async function removeLessonCascade(rowId: string) {
 }
 
 async function removeStudentCascade(userId: string) {
-  const target = await queryOne<User>(
-    'SELECT id, name, username, role FROM users WHERE id = $1',
-    [userId]
-  );
+  const target = await queryOne<User>('SELECT id, name, username, role FROM users WHERE id = $1', [
+    userId,
+  ]);
   if (!target) return;
   if (target.role === 'admin') {
     throw new AppError('No se puede eliminar a un administrador.');
@@ -249,7 +244,10 @@ export async function manage(input: Record<string, unknown>, actor?: User) {
       if (actor && actor.role !== 'admin')
         throw new AppError('Solo los administradores pueden añadir o editar instituciones.', 403);
       const id = typeof input.id === 'string' && input.id ? input.id : randomUUID();
-      const existing = await queryOne<{ data: unknown }>('SELECT data FROM institutions WHERE id = $1', [id]);
+      const existing = await queryOne<{ data: unknown }>(
+        'SELECT data FROM institutions WHERE id = $1',
+        [id]
+      );
       const existingObj = object(existing);
       const i: Institution = {
         id,
@@ -281,7 +279,9 @@ export async function manage(input: Record<string, unknown>, actor?: User) {
       const user = await createUser(input, 'teacher');
       let enrolledSubjectIds: string[] = [];
       if (institutionId) {
-        const instExists = await queryOne('SELECT id FROM institutions WHERE id = $1', [institutionId]);
+        const instExists = await queryOne('SELECT id FROM institutions WHERE id = $1', [
+          institutionId,
+        ]);
         if (!instExists) throw new AppError('Institución no encontrada.', 404);
         await execute(
           'INSERT INTO institution_members(user_id, institution_id) VALUES ($1, $2) ON CONFLICT DO NOTHING',
@@ -350,16 +350,15 @@ export async function manage(input: Record<string, unknown>, actor?: User) {
     }
     case 'subject': {
       const institutionId = text(input.institutionId, 'Institución');
-      const instExists = await queryOne('SELECT id FROM institutions WHERE id = $1', [institutionId]);
+      const instExists = await queryOne('SELECT id FROM institutions WHERE id = $1', [
+        institutionId,
+      ]);
       if (!instExists) throw new AppError('Institución no encontrada.');
 
       if (actor && actor.role === 'teacher') {
         const allowedInsts = await userAccessibleInstitutionIds(actor);
         if (!allowedInsts || !allowedInsts.has(institutionId))
-          throw new AppError(
-            'No tienes permiso para gestionar materias en esta institución.',
-            403
-          );
+          throw new AppError('No tienes permiso para gestionar materias en esta institución.', 403);
         if (input.id) {
           const allowedSubs = await userAccessibleSubjectIds(actor);
           if (!allowedSubs || !allowedSubs.has(String(input.id)))
@@ -465,10 +464,10 @@ export async function manage(input: Record<string, unknown>, actor?: User) {
           'INSERT INTO enrollments(user_id, subject_id) VALUES ($1, $2) ON CONFLICT DO NOTHING',
           [user.id, id]
         );
-        await execute(
-          'DELETE FROM subject_bans WHERE user_id = $1 AND subject_id = $2',
-          [user.id, id]
-        );
+        await execute('DELETE FROM subject_bans WHERE user_id = $1 AND subject_id = $2', [
+          user.id,
+          id,
+        ]);
       }
       break;
     }
@@ -499,10 +498,10 @@ export async function manage(input: Record<string, unknown>, actor?: User) {
               'INSERT INTO enrollments(user_id, subject_id) VALUES ($1, $2) ON CONFLICT DO NOTHING',
               [userId, sId]
             );
-            await execute(
-              'DELETE FROM subject_bans WHERE user_id = $1 AND subject_id = $2',
-              [userId, sId]
-            );
+            await execute('DELETE FROM subject_bans WHERE user_id = $1 AND subject_id = $2', [
+              userId,
+              sId,
+            ]);
           } else {
             await execute('DELETE FROM enrollments WHERE user_id = $1 AND subject_id = $2', [
               userId,
@@ -522,10 +521,10 @@ export async function manage(input: Record<string, unknown>, actor?: User) {
             'INSERT INTO enrollments(user_id, subject_id) VALUES ($1, $2) ON CONFLICT DO NOTHING',
             [userId, id]
           );
-          await execute(
-            'DELETE FROM subject_bans WHERE user_id = $1 AND subject_id = $2',
-            [userId, id]
-          );
+          await execute('DELETE FROM subject_bans WHERE user_id = $1 AND subject_id = $2', [
+            userId,
+            id,
+          ]);
         }
       }
 
@@ -641,10 +640,7 @@ export async function manage(input: Record<string, unknown>, actor?: User) {
       for (let i = 0; i < topicLessons.length; i++) {
         topicLessons[i].data.order = i;
         const jsonStr = JSON.stringify(topicLessons[i].data);
-        await execute('UPDATE lessons SET data = $1 WHERE id = $2', [
-          jsonStr,
-          topicLessons[i].id,
-        ]);
+        await execute('UPDATE lessons SET data = $1 WHERE id = $2', [jsonStr, topicLessons[i].id]);
       }
       break;
     }
@@ -830,10 +826,7 @@ export async function manage(input: Record<string, unknown>, actor?: User) {
       if (actor && actor.role === 'teacher') {
         const allowedSubs = await userAccessibleSubjectIds(actor);
         if (!allowedSubs || !allowedSubs.has(req.subject_id))
-          throw new AppError(
-            'No tienes permiso para responder solicitudes de esta materia.',
-            403
-          );
+          throw new AppError('No tienes permiso para responder solicitudes de esta materia.', 403);
       }
       await execute(
         'INSERT INTO enrollments(user_id, subject_id) VALUES ($1, $2) ON CONFLICT DO NOTHING',
@@ -849,9 +842,7 @@ export async function manage(input: Record<string, unknown>, actor?: User) {
         req.user_id,
         req.subject_id,
       ]);
-      await execute("UPDATE subject_join_requests SET status = 'approved' WHERE id = $1", [
-        req.id,
-      ]);
+      await execute("UPDATE subject_join_requests SET status = 'approved' WHERE id = $1", [req.id]);
       break;
     }
     case 'approveAllJoinRequests':
@@ -1028,10 +1019,7 @@ export async function manage(input: Record<string, unknown>, actor?: User) {
       if (req && actor && actor.role === 'teacher') {
         const allowedSubs = await userAccessibleSubjectIds(actor);
         if (!allowedSubs || !allowedSubs.has(req.subject_id))
-          throw new AppError(
-            'No tienes permiso para responder solicitudes de esta materia.',
-            403
-          );
+          throw new AppError('No tienes permiso para responder solicitudes de esta materia.', 403);
       }
       await execute("UPDATE subject_join_requests SET status = 'rejected' WHERE id = $1", [
         requestId,

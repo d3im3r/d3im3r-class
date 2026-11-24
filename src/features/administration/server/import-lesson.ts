@@ -395,7 +395,7 @@ export async function importLesson(form: FormData, actor?: User) {
 
   const resources: Resource[] = [];
   const previousLesson = existing
-    ? (typeof existing.data === 'string' ? JSON.parse(existing.data) : existing.data) as Lesson
+    ? ((typeof existing.data === 'string' ? JSON.parse(existing.data) : existing.data) as Lesson)
     : undefined;
 
   const previousResources = existing

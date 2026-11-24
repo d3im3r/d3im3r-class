@@ -77,7 +77,7 @@ export async function rebuildLesson(id: string, actor?: User) {
   }
 
   // Recover untouched TikZ from the stored source when an earlier parser masked its comments.
-  const sourceKey = lesson.source ? lesson.source.split('/').at(-1) ?? '' : '';
+  const sourceKey = lesson.source ? (lesson.source.split('/').at(-1) ?? '') : '';
   const sourceResource = resourceMap.get(sourceKey);
   if (sourceResource && existsSync(sourceResource.path)) {
     try {

@@ -286,7 +286,11 @@ export function ReadingDocument({
                         aria-label={`${completed.includes(f.id) ? 'Marcar como no leído' : 'Marcar como leído'}: ${f.title}`}
                         aria-pressed={completed.includes(f.id)}
                         onClick={() => onToggle(f.id)}
-                        title={completed.includes(f.id) ? 'Hacer clic para desmarcar' : 'Hacer clic para marcar como leído'}
+                        title={
+                          completed.includes(f.id)
+                            ? 'Hacer clic para desmarcar'
+                            : 'Hacer clic para marcar como leído'
+                        }
                       >
                         {completed.includes(f.id) ? (
                           <CheckCircle2 size={16} className="read-marker-icon" />
@@ -329,7 +333,11 @@ export function ReadingDocument({
             size="sm"
             onClick={onToggleTools}
             className={`tools-toggle-btn ${toolsEnabled ? 'is-active' : 'is-inactive'}`}
-            title={toolsEnabled ? 'Desactivar herramientas interactivas de esta clase' : 'Activar herramientas interactivas de esta clase'}
+            title={
+              toolsEnabled
+                ? 'Desactivar herramientas interactivas de esta clase'
+                : 'Activar herramientas interactivas de esta clase'
+            }
             aria-label="Conmutar herramientas interactivas"
           >
             <Wrench size={15} style={{ color: toolsEnabled ? '#10b981' : '#94a3b8' }} />

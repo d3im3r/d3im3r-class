@@ -71,7 +71,9 @@ export function LessonEditorModal({
             title: 'Introducción',
             section: 'General',
             line: 1,
-            blocks: [{ type: 'text', content: 'Escribe aquí el contenido introductorio de la clase...' }],
+            blocks: [
+              { type: 'text', content: 'Escribe aquí el contenido introductorio de la clase...' },
+            ],
           },
         ]
   );
@@ -153,10 +155,18 @@ export function LessonEditorModal({
       let newBlock: Block;
       switch (type) {
         case 'math':
-          newBlock = { type: 'math', content: 'x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}', variant: 'display' };
+          newBlock = {
+            type: 'math',
+            content: 'x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}',
+            variant: 'display',
+          };
           break;
         case 'code':
-          newBlock = { type: 'code', language: 'python', content: '# Escribe tu código aquí\nprint("Hola mundo")' };
+          newBlock = {
+            type: 'code',
+            language: 'python',
+            content: '# Escribe tu código aquí\nprint("Hola mundo")',
+          };
           break;
         case 'callout':
           newBlock = {
@@ -280,7 +290,9 @@ export function LessonEditorModal({
           flexWrap: 'wrap',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1, minWidth: '280px' }}>
+        <div
+          style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1, minWidth: '280px' }}
+        >
           <span
             style={{
               display: 'inline-flex',
@@ -353,7 +365,8 @@ export function LessonEditorModal({
                 fontSize: '11px',
                 borderRadius: '4px',
                 background: activeTab === 'both' ? 'var(--primary)' : 'transparent',
-                color: activeTab === 'both' ? 'var(--primary-foreground)' : 'var(--muted-foreground)',
+                color:
+                  activeTab === 'both' ? 'var(--primary-foreground)' : 'var(--muted-foreground)',
                 border: 0,
                 cursor: 'pointer',
                 fontWeight: activeTab === 'both' ? 600 : 400,
@@ -369,7 +382,8 @@ export function LessonEditorModal({
                 fontSize: '11px',
                 borderRadius: '4px',
                 background: activeTab === 'edit' ? 'var(--primary)' : 'transparent',
-                color: activeTab === 'edit' ? 'var(--primary-foreground)' : 'var(--muted-foreground)',
+                color:
+                  activeTab === 'edit' ? 'var(--primary-foreground)' : 'var(--muted-foreground)',
                 border: 0,
                 cursor: 'pointer',
                 fontWeight: activeTab === 'edit' ? 600 : 400,
@@ -385,7 +399,8 @@ export function LessonEditorModal({
                 fontSize: '11px',
                 borderRadius: '4px',
                 background: activeTab === 'preview' ? 'var(--primary)' : 'transparent',
-                color: activeTab === 'preview' ? 'var(--primary-foreground)' : 'var(--muted-foreground)',
+                color:
+                  activeTab === 'preview' ? 'var(--primary-foreground)' : 'var(--muted-foreground)',
                 border: 0,
                 cursor: 'pointer',
                 fontWeight: activeTab === 'preview' ? 600 : 400,
@@ -467,7 +482,15 @@ export function LessonEditorModal({
               justifyContent: 'space-between',
             }}
           >
-            <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--sidebar-foreground)', opacity: 0.8, textTransform: 'uppercase' }}>
+            <span
+              style={{
+                fontSize: '11px',
+                fontWeight: 600,
+                color: 'var(--sidebar-foreground)',
+                opacity: 0.8,
+                textTransform: 'uppercase',
+              }}
+            >
               Diapositivas ({frames.length})
             </span>
             <Button
@@ -516,7 +539,9 @@ export function LessonEditorModal({
                       <span
                         style={{
                           fontSize: '10px',
-                          color: isSelected ? 'var(--sidebar-primary-foreground)' : 'var(--muted-foreground)',
+                          color: isSelected
+                            ? 'var(--sidebar-primary-foreground)'
+                            : 'var(--muted-foreground)',
                           fontFamily: 'monospace',
                         }}
                       >
@@ -525,7 +550,9 @@ export function LessonEditorModal({
                       <strong
                         style={{
                           fontSize: '12px',
-                          color: isSelected ? 'var(--sidebar-primary-foreground)' : 'var(--sidebar-foreground)',
+                          color: isSelected
+                            ? 'var(--sidebar-primary-foreground)'
+                            : 'var(--sidebar-foreground)',
                           whiteSpace: 'nowrap',
                           overflow: 'hidden',
                           textOverflow: 'ellipsis',
@@ -535,7 +562,15 @@ export function LessonEditorModal({
                         <InlineText text={frame.title || 'Sin título'} />
                       </strong>
                     </div>
-                    <div style={{ display: 'flex', gap: '6px', marginTop: '3px', fontSize: '9px', opacity: 0.75 }}>
+                    <div
+                      style={{
+                        display: 'flex',
+                        gap: '6px',
+                        marginTop: '3px',
+                        fontSize: '9px',
+                        opacity: 0.75,
+                      }}
+                    >
                       <span>{frame.blocks.length} bloques</span>
                       {diagsCount > 0 && <span>• {diagsCount} SVG</span>}
                       {mathCount > 0 && <span>• {mathCount} math</span>}
@@ -543,12 +578,21 @@ export function LessonEditorModal({
                   </div>
 
                   {isSelected && (
-                    <div style={{ display: 'flex', gap: '2px' }} onClick={(e) => e.stopPropagation()}>
+                    <div
+                      style={{ display: 'flex', gap: '2px' }}
+                      onClick={(e) => e.stopPropagation()}
+                    >
                       <button
                         type="button"
                         onClick={() => handleMoveFrame('up')}
                         disabled={index === 0}
-                        style={{ background: 'transparent', border: 0, color: 'inherit', cursor: 'pointer', padding: '2px' }}
+                        style={{
+                          background: 'transparent',
+                          border: 0,
+                          color: 'inherit',
+                          cursor: 'pointer',
+                          padding: '2px',
+                        }}
                         title="Subir"
                       >
                         <ArrowUp size={11} />
@@ -557,7 +601,13 @@ export function LessonEditorModal({
                         type="button"
                         onClick={() => handleMoveFrame('down')}
                         disabled={index === frames.length - 1}
-                        style={{ background: 'transparent', border: 0, color: 'inherit', cursor: 'pointer', padding: '2px' }}
+                        style={{
+                          background: 'transparent',
+                          border: 0,
+                          color: 'inherit',
+                          cursor: 'pointer',
+                          padding: '2px',
+                        }}
                         title="Bajar"
                       >
                         <ArrowDown size={11} />
@@ -566,7 +616,13 @@ export function LessonEditorModal({
                         type="button"
                         onClick={() => handleDeleteFrame(index)}
                         disabled={frames.length <= 1}
-                        style={{ background: 'transparent', border: 0, color: '#ef4444', cursor: 'pointer', padding: '2px' }}
+                        style={{
+                          background: 'transparent',
+                          border: 0,
+                          color: '#ef4444',
+                          cursor: 'pointer',
+                          padding: '2px',
+                        }}
                         title="Eliminar diapositiva"
                       >
                         <Trash2 size={11} />
@@ -605,7 +661,14 @@ export function LessonEditorModal({
               }}
             >
               <div style={{ flex: 2, minWidth: '200px' }}>
-                <label style={{ display: 'block', fontSize: '10px', color: 'var(--muted-foreground)', marginBottom: '4px' }}>
+                <label
+                  style={{
+                    display: 'block',
+                    fontSize: '10px',
+                    color: 'var(--muted-foreground)',
+                    marginBottom: '4px',
+                  }}
+                >
                   Título de la Diapositiva:
                 </label>
                 <input
@@ -624,7 +687,14 @@ export function LessonEditorModal({
               </div>
 
               <div style={{ flex: 1, minWidth: '150px' }}>
-                <label style={{ display: 'block', fontSize: '10px', color: 'var(--muted-foreground)', marginBottom: '4px' }}>
+                <label
+                  style={{
+                    display: 'block',
+                    fontSize: '10px',
+                    color: 'var(--muted-foreground)',
+                    marginBottom: '4px',
+                  }}
+                >
                   Sección / Unidad:
                 </label>
                 <input
@@ -691,16 +761,16 @@ export function LessonEditorModal({
                         {block.type === 'diagram'
                           ? 'Diagrama TikZ / SVG'
                           : block.type === 'math'
-                          ? 'Fórmula Matemática'
-                          : block.type === 'code'
-                          ? `Código (${block.language || 'text'})`
-                          : block.type === 'callout'
-                          ? `Nota: ${block.title || 'Pedagógica'}`
-                          : block.type === 'table'
-                          ? 'Tabla'
-                          : block.type === 'list'
-                          ? 'Lista'
-                          : 'Texto'}
+                            ? 'Fórmula Matemática'
+                            : block.type === 'code'
+                              ? `Código (${block.language || 'text'})`
+                              : block.type === 'callout'
+                                ? `Nota: ${block.title || 'Pedagógica'}`
+                                : block.type === 'table'
+                                  ? 'Tabla'
+                                  : block.type === 'list'
+                                    ? 'Lista'
+                                    : 'Texto'}
                       </span>
                     </div>
 
@@ -709,7 +779,13 @@ export function LessonEditorModal({
                         type="button"
                         onClick={() => handleMoveBlock(blockIndex, 'up')}
                         disabled={blockIndex === 0}
-                        style={{ background: 'transparent', border: 0, color: 'var(--muted-foreground)', cursor: 'pointer', padding: '2px' }}
+                        style={{
+                          background: 'transparent',
+                          border: 0,
+                          color: 'var(--muted-foreground)',
+                          cursor: 'pointer',
+                          padding: '2px',
+                        }}
                         title="Mover arriba"
                       >
                         <ArrowUp size={12} />
@@ -718,7 +794,13 @@ export function LessonEditorModal({
                         type="button"
                         onClick={() => handleMoveBlock(blockIndex, 'down')}
                         disabled={blockIndex === currentFrame.blocks.length - 1}
-                        style={{ background: 'transparent', border: 0, color: 'var(--muted-foreground)', cursor: 'pointer', padding: '2px' }}
+                        style={{
+                          background: 'transparent',
+                          border: 0,
+                          color: 'var(--muted-foreground)',
+                          cursor: 'pointer',
+                          padding: '2px',
+                        }}
                         title="Mover abajo"
                       >
                         <ArrowDown size={12} />
@@ -726,7 +808,13 @@ export function LessonEditorModal({
                       <button
                         type="button"
                         onClick={() => handleDeleteBlock(blockIndex)}
-                        style={{ background: 'transparent', border: 0, color: '#ef4444', cursor: 'pointer', padding: '2px' }}
+                        style={{
+                          background: 'transparent',
+                          border: 0,
+                          color: '#ef4444',
+                          cursor: 'pointer',
+                          padding: '2px',
+                        }}
                         title="Eliminar bloque"
                       >
                         <Trash2 size={12} />
@@ -738,7 +826,9 @@ export function LessonEditorModal({
                   {block.type === 'text' && (
                     <textarea
                       value={block.content}
-                      onChange={(e) => updateBlock(blockIndex, (b) => ({ ...b, content: e.target.value }))}
+                      onChange={(e) =>
+                        updateBlock(blockIndex, (b) => ({ ...b, content: e.target.value }))
+                      }
                       rows={Math.max(3, Math.min(10, block.content.split('\n').length + 1))}
                       style={{
                         width: '100%',
@@ -759,7 +849,9 @@ export function LessonEditorModal({
                   {block.type === 'math' && (
                     <textarea
                       value={block.content}
-                      onChange={(e) => updateBlock(blockIndex, (b) => ({ ...b, content: e.target.value }))}
+                      onChange={(e) =>
+                        updateBlock(blockIndex, (b) => ({ ...b, content: e.target.value }))
+                      }
                       rows={Math.max(2, Math.min(8, block.content.split('\n').length + 1))}
                       style={{
                         width: '100%',
@@ -781,7 +873,9 @@ export function LessonEditorModal({
                       <div style={{ display: 'flex', gap: '8px', marginBottom: '6px' }}>
                         <select
                           value={block.language || 'python'}
-                          onChange={(e) => updateBlock(blockIndex, (b) => ({ ...b, language: e.target.value }))}
+                          onChange={(e) =>
+                            updateBlock(blockIndex, (b) => ({ ...b, language: e.target.value }))
+                          }
                           style={{
                             background: 'var(--input)',
                             border: '1px solid var(--border)',
@@ -803,7 +897,9 @@ export function LessonEditorModal({
                       </div>
                       <textarea
                         value={block.content}
-                        onChange={(e) => updateBlock(blockIndex, (b) => ({ ...b, content: e.target.value }))}
+                        onChange={(e) =>
+                          updateBlock(blockIndex, (b) => ({ ...b, content: e.target.value }))
+                        }
                         rows={Math.max(4, Math.min(14, block.content.split('\n').length + 1))}
                         style={{
                           width: '100%',
@@ -826,7 +922,9 @@ export function LessonEditorModal({
                       <div style={{ display: 'flex', gap: '8px' }}>
                         <select
                           value={block.variant || 'Idea'}
-                          onChange={(e) => updateBlock(blockIndex, (b) => ({ ...b, variant: e.target.value }))}
+                          onChange={(e) =>
+                            updateBlock(blockIndex, (b) => ({ ...b, variant: e.target.value }))
+                          }
                           style={{
                             background: 'var(--input)',
                             border: '1px solid var(--border)',
@@ -847,7 +945,9 @@ export function LessonEditorModal({
                         </select>
                         <input
                           value={block.title || ''}
-                          onChange={(e) => updateBlock(blockIndex, (b) => ({ ...b, title: e.target.value }))}
+                          onChange={(e) =>
+                            updateBlock(blockIndex, (b) => ({ ...b, title: e.target.value }))
+                          }
                           placeholder="Título del callout..."
                           style={{
                             flex: 1,
@@ -862,7 +962,9 @@ export function LessonEditorModal({
                       </div>
                       <textarea
                         value={block.content}
-                        onChange={(e) => updateBlock(blockIndex, (b) => ({ ...b, content: e.target.value }))}
+                        onChange={(e) =>
+                          updateBlock(blockIndex, (b) => ({ ...b, content: e.target.value }))
+                        }
                         rows={3}
                         style={{
                           width: '100%',
@@ -899,7 +1001,13 @@ export function LessonEditorModal({
                             style={{ maxWidth: '100%', maxHeight: '200px', objectFit: 'contain' }}
                           />
                         ) : (
-                          <div style={{ color: 'var(--muted-foreground)', fontSize: '11px', textAlign: 'center' }}>
+                          <div
+                            style={{
+                              color: 'var(--muted-foreground)',
+                              fontSize: '11px',
+                              textAlign: 'center',
+                            }}
+                          >
                             <Workflow size={24} style={{ margin: 'auto', marginBottom: '4px' }} />
                             Diagrama sin SVG compilado (utilizará el renderizador de respaldo)
                           </div>
@@ -911,7 +1019,9 @@ export function LessonEditorModal({
                         </summary>
                         <textarea
                           value={block.content}
-                          onChange={(e) => updateBlock(blockIndex, (b) => ({ ...b, content: e.target.value }))}
+                          onChange={(e) =>
+                            updateBlock(blockIndex, (b) => ({ ...b, content: e.target.value }))
+                          }
                           rows={4}
                           style={{
                             width: '100%',
@@ -946,17 +1056,39 @@ export function LessonEditorModal({
                 flexWrap: 'wrap',
               }}
             >
-              <span style={{ fontSize: '11px', color: 'var(--foreground)', fontWeight: 600 }}>+ Añadir bloque:</span>
-              <Button size="sm" variant="outline" onClick={() => handleAddBlock('text')} style={{ fontSize: '11px', gap: '4px' }}>
+              <span style={{ fontSize: '11px', color: 'var(--foreground)', fontWeight: 600 }}>
+                + Añadir bloque:
+              </span>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => handleAddBlock('text')}
+                style={{ fontSize: '11px', gap: '4px' }}
+              >
                 <FileText size={12} /> Texto
               </Button>
-              <Button size="sm" variant="outline" onClick={() => handleAddBlock('math')} style={{ fontSize: '11px', gap: '4px' }}>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => handleAddBlock('math')}
+                style={{ fontSize: '11px', gap: '4px' }}
+              >
                 <Sigma size={12} /> Matemáticas
               </Button>
-              <Button size="sm" variant="outline" onClick={() => handleAddBlock('code')} style={{ fontSize: '11px', gap: '4px' }}>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => handleAddBlock('code')}
+                style={{ fontSize: '11px', gap: '4px' }}
+              >
                 <Code2 size={12} /> Código
               </Button>
-              <Button size="sm" variant="outline" onClick={() => handleAddBlock('callout')} style={{ fontSize: '11px', gap: '4px' }}>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => handleAddBlock('callout')}
+                style={{ fontSize: '11px', gap: '4px' }}
+              >
                 <BookOpen size={12} /> Nota / Callout
               </Button>
             </div>
@@ -991,14 +1123,27 @@ export function LessonEditorModal({
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ fontSize: '11px', color: 'var(--foreground)', fontWeight: 600 }}>Vista previa:</span>
-                <div style={{ display: 'flex', background: 'var(--muted)', borderRadius: '6px', padding: '2px', border: '1px solid var(--border)' }}>
+                <span style={{ fontSize: '11px', color: 'var(--foreground)', fontWeight: 600 }}>
+                  Vista previa:
+                </span>
+                <div
+                  style={{
+                    display: 'flex',
+                    background: 'var(--muted)',
+                    borderRadius: '6px',
+                    padding: '2px',
+                    border: '1px solid var(--border)',
+                  }}
+                >
                   <button
                     type="button"
                     onClick={() => setPreviewViewMode('reader')}
                     style={{
                       background: previewViewMode === 'reader' ? 'var(--primary)' : 'transparent',
-                      color: previewViewMode === 'reader' ? 'var(--primary-foreground)' : 'var(--muted-foreground)',
+                      color:
+                        previewViewMode === 'reader'
+                          ? 'var(--primary-foreground)'
+                          : 'var(--muted-foreground)',
                       border: 0,
                       borderRadius: '4px',
                       fontSize: '11px',
@@ -1017,7 +1162,10 @@ export function LessonEditorModal({
                     onClick={() => setPreviewViewMode('slide')}
                     style={{
                       background: previewViewMode === 'slide' ? 'var(--primary)' : 'transparent',
-                      color: previewViewMode === 'slide' ? 'var(--primary-foreground)' : 'var(--muted-foreground)',
+                      color:
+                        previewViewMode === 'slide'
+                          ? 'var(--primary-foreground)'
+                          : 'var(--muted-foreground)',
                       border: 0,
                       borderRadius: '4px',
                       fontSize: '11px',
@@ -1035,7 +1183,8 @@ export function LessonEditorModal({
               </div>
 
               <span style={{ fontSize: '11px', color: 'var(--muted-foreground)' }}>
-                {currentFrame.section || 'General'} · Diapositiva {selectedFrameIndex + 1} de {frames.length}
+                {currentFrame.section || 'General'} · Diapositiva {selectedFrameIndex + 1} de{' '}
+                {frames.length}
               </span>
             </div>
 
@@ -1059,16 +1208,52 @@ export function LessonEditorModal({
                   }}
                 >
                   <div className="reading-document" style={{ width: '100%', margin: '0 auto' }}>
-                    <div style={{ borderBottom: '1px solid var(--border)', paddingBottom: '14px', marginBottom: '20px' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span style={{ fontSize: '10px', fontWeight: 700, color: 'var(--muted-foreground)', letterSpacing: '1px', textTransform: 'uppercase' }}>
-                          {currentFrame.section || 'General'} · Diapositiva {selectedFrameIndex + 1} de {frames.length}
+                    <div
+                      style={{
+                        borderBottom: '1px solid var(--border)',
+                        paddingBottom: '14px',
+                        marginBottom: '20px',
+                      }}
+                    >
+                      <div
+                        style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                        }}
+                      >
+                        <span
+                          style={{
+                            fontSize: '10px',
+                            fontWeight: 700,
+                            color: 'var(--muted-foreground)',
+                            letterSpacing: '1px',
+                            textTransform: 'uppercase',
+                          }}
+                        >
+                          {currentFrame.section || 'General'} · Diapositiva {selectedFrameIndex + 1}{' '}
+                          de {frames.length}
                         </span>
-                        <span style={{ fontSize: '10px', color: 'var(--muted-foreground)', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                        <span
+                          style={{
+                            fontSize: '10px',
+                            color: 'var(--muted-foreground)',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                          }}
+                        >
                           <Eye size={12} /> Vista previa WYSIWYG
                         </span>
                       </div>
-                      <h2 style={{ fontSize: '24px', fontWeight: 700, margin: '8px 0 0', color: 'var(--foreground)' }}>
+                      <h2
+                        style={{
+                          fontSize: '24px',
+                          fontWeight: 700,
+                          margin: '8px 0 0',
+                          color: 'var(--foreground)',
+                        }}
+                      >
                         <InlineText text={currentFrame.title || 'Sin título'} />
                       </h2>
                     </div>
@@ -1081,7 +1266,10 @@ export function LessonEditorModal({
                   </div>
                 </div>
               ) : (
-                <div className="presentation-stage" style={{ padding: '0', minHeight: 'auto', background: 'transparent' }}>
+                <div
+                  className="presentation-stage"
+                  style={{ padding: '0', minHeight: 'auto', background: 'transparent' }}
+                >
                   <div
                     className="presentation-slide"
                     style={{
@@ -1096,8 +1284,13 @@ export function LessonEditorModal({
                   >
                     <div className="slide-heading">
                       <div>
-                        <span>{currentFrame.section || 'General'} · DIAPOSITIVA {selectedFrameIndex + 1} DE {frames.length}</span>
-                        <h2><InlineText text={currentFrame.title || 'Sin título'} /></h2>
+                        <span>
+                          {currentFrame.section || 'General'} · DIAPOSITIVA {selectedFrameIndex + 1}{' '}
+                          DE {frames.length}
+                        </span>
+                        <h2>
+                          <InlineText text={currentFrame.title || 'Sin título'} />
+                        </h2>
                       </div>
                     </div>
                     <div
@@ -1109,14 +1302,19 @@ export function LessonEditorModal({
                         maxHeight: '68vh',
                       }}
                     >
-                      <div className="slide-content-inner" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                      <div
+                        className="slide-content-inner"
+                        style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}
+                      >
                         {currentFrame.blocks.map((block, idx) => (
                           <ContentBlock key={idx} block={block} />
                         ))}
                       </div>
                     </div>
                     <div className="slide-footer">
-                      <span>{selectedFrameIndex + 1} / {frames.length}</span>
+                      <span>
+                        {selectedFrameIndex + 1} / {frames.length}
+                      </span>
                       <span>Aula · Vista previa de presentación</span>
                     </div>
                   </div>
@@ -1167,7 +1365,8 @@ export function LessonEditorModal({
                 >
                   {frames.map((f, i) => (
                     <option key={f.id || i} value={i}>
-                      {String(i + 1).padStart(2, '0')}. {(f.title || `Diapositiva ${i + 1}`).replace(/\$([^\$]+)\$/g, '$1')}
+                      {String(i + 1).padStart(2, '0')}.{' '}
+                      {(f.title || `Diapositiva ${i + 1}`).replace(/\$([^\$]+)\$/g, '$1')}
                     </option>
                   ))}
                 </select>

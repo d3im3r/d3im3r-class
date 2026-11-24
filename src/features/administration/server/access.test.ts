@@ -2,11 +2,23 @@ import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { createTestDatabase } from './test-db';
 import { query, queryOne, execute, readLesson } from './database';
-import { setup, login, passwordMatches, sameOrigin, hasPermission, roles } from '../../auth/server/auth';
+import {
+  setup,
+  login,
+  passwordMatches,
+  sameOrigin,
+  hasPermission,
+  roles,
+} from '../../auth/server/auth';
 import { getAuth } from '../../auth/server/better-auth';
 import { manage, snapshot } from './manage';
 import { importLesson } from './import-lesson';
-import { canReadLesson, canReadResource, studentLesson, userCatalog } from '../../learning/server/access';
+import {
+  canReadLesson,
+  canReadResource,
+  studentLesson,
+  userCatalog,
+} from '../../learning/server/access';
 
 const testDb = await createTestDatabase();
 
@@ -21,15 +33,20 @@ test('crea una sola cuenta inicial y guarda contraseñas derivadas', async () =>
   });
   assert.equal(teacher.role, 'admin');
   await assert.rejects(
-    async () => await setup({ name: 'Otro', username: 'otro.test', password: 'Prueba-privada-2026' })
+    async () =>
+      await setup({ name: 'Otro', username: 'otro.test', password: 'Prueba-privada-2026' })
   );
-  const row = (await queryOne<{ password: string }>('SELECT password FROM users WHERE id=$1', [teacher.id]))!;
+  const row = (await queryOne<{ password: string }>('SELECT password FROM users WHERE id=$1', [
+    teacher.id,
+  ]))!;
   assert.notEqual(row.password, 'Prueba-privada-2026');
   assert.ok(passwordMatches('Prueba-privada-2026', row.password));
 });
 
 test('valida credenciales y no permite elegir el rol al entrar', async () => {
-  await assert.rejects(async () => await login({ username: 'docente.test', password: 'incorrecta' }));
+  await assert.rejects(
+    async () => await login({ username: 'docente.test', password: 'incorrecta' })
+  );
   const user = await login({
     username: 'docente.test',
     password: 'Prueba-privada-2026',
@@ -90,7 +107,9 @@ test('un borrador no aparece ni permite descargar materiales', async () => {
 test('una versión nueva exige revisión antes de publicar', async () => {
   await execute('UPDATE lessons SET revision=2,reviewed=0 WHERE id=$1', ['flexbox']);
   await assert.rejects(async () => await manage({ action: 'publish', lessonId: 'flexbox' }));
-  await assert.rejects(async () => await manage({ action: 'review', lessonId: 'flexbox', acknowledged: false }));
+  await assert.rejects(
+    async () => await manage({ action: 'review', lessonId: 'flexbox', acknowledged: false })
+  );
   await manage({ action: 'review', lessonId: 'flexbox', acknowledged: true });
   await manage({ action: 'publish', lessonId: 'flexbox' });
   assert.equal(await canReadLesson(student, 'flexbox'), true);
@@ -103,12 +122,13 @@ test('revocar una materia retira el acceso inmediatamente', async () => {
 });
 
 test('no permite asignar materias inexistentes ni deja cambios parciales', async () => {
-  await assert.rejects(async () =>
-    await manage({
-      action: 'assign',
-      userId: student.id,
-      subjectIds: ['diseno-web-1', 'materia-inexistente'],
-    })
+  await assert.rejects(
+    async () =>
+      await manage({
+        action: 'assign',
+        userId: student.id,
+        subjectIds: ['diseno-web-1', 'materia-inexistente'],
+      })
   );
   assert.equal((await userCatalog(student)).subjects.length, 0);
 });
@@ -181,13 +201,19 @@ test('bloquea fuentes y descargas de materiales para el alumno', async () => {
     await canReadResource(student, 'flexbox', { mime: 'image/svg+xml', name: 'diagrama.svg' }),
     true
   );
-  assert.equal(await canReadResource(student, 'flexbox', { mime: 'image/png', name: 'logo.png' }), true);
+  assert.equal(
+    await canReadResource(student, 'flexbox', { mime: 'image/png', name: 'logo.png' }),
+    true
+  );
   assert.equal(
     await canReadResource(teacher, 'flexbox', { mime: 'application/pdf', name: 'clase.pdf' }),
     true
   );
   assert.equal(
-    await canReadResource(teacher, 'flexbox', { mime: 'text/plain; charset=utf-8', name: 'clase.tex' }),
+    await canReadResource(teacher, 'flexbox', {
+      mime: 'text/plain; charset=utf-8',
+      name: 'clase.tex',
+    }),
     true
   );
 });
@@ -264,7 +290,9 @@ test('permite crear materias sin descripción e importar clases con formulario s
   assert.equal(lesson.subtitle, 'Controladores y sensores');
   assert.equal(lesson.topicId, 'general');
   assert.ok(lesson.pdf.startsWith(`/api/materials/${imported.id}/`));
-  const updatedSubject = (await userCatalog(teacher)).subjects.find((s) => s.id === createdSubject.id)!;
+  const updatedSubject = (await userCatalog(teacher)).subjects.find(
+    (s) => s.id === createdSubject.id
+  )!;
   assert.equal(updatedSubject.topics.length, 1);
   assert.equal(updatedSubject.topics[0].id, 'general');
 });
@@ -349,7 +377,9 @@ test('garantiza el principio de minimo privilegio (docentes y alumnos solo ven s
     { action: 'subject', institutionId: 'inst-sena', name: 'Programación SENA', code: 'ADSO-101' },
     teacher
   );
-  const senaSubjects = (await userCatalog(teacher)).subjects.filter((s) => s.institutionId === 'inst-sena');
+  const senaSubjects = (await userCatalog(teacher)).subjects.filter(
+    (s) => s.institutionId === 'inst-sena'
+  );
   assert.equal(senaSubjects.length, 1);
   const senaSubjId = senaSubjects[0].id;
 
@@ -382,12 +412,18 @@ test('garantiza el principio de minimo privilegio (docentes y alumnos solo ven s
   // 4. El docente de SENA no puede tocar materias de otras instituciones
   await assert.rejects(
     async () =>
-      await manage({ action: 'subject', institutionId: 'politecnico', name: 'Invasión' }, teacherSena),
+      await manage(
+        { action: 'subject', institutionId: 'politecnico', name: 'Invasión' },
+        teacherSena
+      ),
     /No tienes permiso/
   );
   await assert.rejects(
     async () =>
-      await manage({ action: 'assign', userId: student.id, subjectIds: ['diseno-web-1'] }, teacherSena),
+      await manage(
+        { action: 'assign', userId: student.id, subjectIds: ['diseno-web-1'] },
+        teacherSena
+      ),
     /No tienes permiso/
   );
 
@@ -475,12 +511,10 @@ test('permite eliminar clases con limpieza en cascada respetando permisos', asyn
 
 test('permite eliminar temas con limpieza en cascada respetando permisos', async () => {
   const teacherSena = await login({ username: 'docente.sena', password: 'ClaveSena-2026' });
-  const inst = (
-    await queryOne<{ institution_id: string }>(
-      'SELECT institution_id FROM institution_members WHERE user_id=$1 LIMIT 1',
-      [teacherSena.id]
-    )
-  )!.institution_id;
+  const inst = (await queryOne<{ institution_id: string }>(
+    'SELECT institution_id FROM institution_members WHERE user_id=$1 LIMIT 1',
+    [teacherSena.id]
+  ))!.institution_id;
 
   await manage(
     { action: 'subject', institutionId: inst, name: 'Materia Pruebas Temas', code: 'PRUTOP1' },
@@ -493,8 +527,11 @@ test('permite eliminar temas con limpieza en cascada respetando permisos', async
   const subId = sub.id;
 
   await manage({ action: 'topic', subjectId: subId, name: 'Tema Para Borrar' }, teacherSena);
-  const updatedSubRow = (await queryOne<{ data: any }>('SELECT data FROM subjects WHERE id=$1', [subId]))!;
-  const updatedSub = typeof updatedSubRow.data === 'string' ? JSON.parse(updatedSubRow.data) : updatedSubRow.data;
+  const updatedSubRow = (await queryOne<{ data: any }>('SELECT data FROM subjects WHERE id=$1', [
+    subId,
+  ]))!;
+  const updatedSub =
+    typeof updatedSubRow.data === 'string' ? JSON.parse(updatedSubRow.data) : updatedSubRow.data;
   const topicId = updatedSub.topics[0].id;
 
   // Insertar una clase bajo ese tema
@@ -524,8 +561,11 @@ test('permite eliminar temas con limpieza en cascada respetando permisos', async
 
   // El docente a cargo sí puede borrar el tema
   await manage({ action: 'deleteTopic', subjectId: subId, topicId }, teacherSena);
-  const subAfterRow = (await queryOne<{ data: any }>('SELECT data FROM subjects WHERE id=$1', [subId]))!;
-  const subAfter = typeof subAfterRow.data === 'string' ? JSON.parse(subAfterRow.data) : subAfterRow.data;
+  const subAfterRow = (await queryOne<{ data: any }>('SELECT data FROM subjects WHERE id=$1', [
+    subId,
+  ]))!;
+  const subAfter =
+    typeof subAfterRow.data === 'string' ? JSON.parse(subAfterRow.data) : subAfterRow.data;
   assert.equal(subAfter.topics.length, 0);
   assert.equal(await readLesson(lessonId), null);
 });
@@ -592,7 +632,12 @@ test('permite a administradores asignar nuevas materias a docentes existentes', 
 });
 
 test('permite eliminar alumnos individuales y seleccionados con limpieza en cascada', async () => {
-  const adminActor = { id: 'admin-del', name: 'Admin', username: 'admin.del', role: 'admin' as const };
+  const adminActor = {
+    id: 'admin-del',
+    name: 'Admin',
+    username: 'admin.del',
+    role: 'admin' as const,
+  };
   const s1Id = 'student-del-1';
   const s2Id = 'student-del-2';
   const sampleSubj = (await userCatalog(teacher)).subjects[0];
@@ -609,8 +654,14 @@ test('permite eliminar alumnos individuales y seleccionados con limpieza en casc
     'INSERT INTO users(id, name, username, password, role) VALUES ($1, $2, $3, $4, $5)',
     [s2Id, 'Alumno 2', 'alumno2@test.com', 'hash', 'student']
   );
-  await execute('INSERT INTO enrollments(user_id, subject_id) VALUES ($1, $2)', [s1Id, sampleSubj.id]);
-  await execute('INSERT INTO enrollments(user_id, subject_id) VALUES ($1, $2)', [s2Id, sampleSubj.id]);
+  await execute('INSERT INTO enrollments(user_id, subject_id) VALUES ($1, $2)', [
+    s1Id,
+    sampleSubj.id,
+  ]);
+  await execute('INSERT INTO enrollments(user_id, subject_id) VALUES ($1, $2)', [
+    s2Id,
+    sampleSubj.id,
+  ]);
 
   // Eliminar un alumno individual
   await manage({ action: 'deleteStudent', userId: s1Id }, adminActor);

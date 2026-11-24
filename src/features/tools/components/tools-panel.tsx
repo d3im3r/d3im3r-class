@@ -16,11 +16,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/sonner';
 import type { Catalog } from '@/features/catalog/model/types';
-import {
-  runPython,
-  getLanguageCategory,
-  type RunResult,
-} from '../lib/code-runner';
+import { runPython, getLanguageCategory, type RunResult } from '../lib/code-runner';
 
 const CodeEditor = dynamic(() => import('./code-editor'), {
   ssr: false,
@@ -132,7 +128,16 @@ function CodePenInteractive({
             borderBottom: '1px solid #2d3748',
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#e2e8f0', fontSize: '13px', fontWeight: 600 }}>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              color: '#e2e8f0',
+              fontSize: '13px',
+              fontWeight: 600,
+            }}
+          >
             <Code2 size={16} />
             <span>CodePen · Modo Pantalla Completa</span>
           </div>
@@ -187,10 +192,21 @@ export function ToolsPanel({
       if (cat === 'javascript' || cat === 'html') return 'javascript';
     }
     if (seed) {
-      if (seed.includes('def ') || seed.includes('import ') || seed.includes('numpy') || seed.includes('np.')) {
+      if (
+        seed.includes('def ') ||
+        seed.includes('import ') ||
+        seed.includes('numpy') ||
+        seed.includes('np.')
+      ) {
         return 'python';
       }
-      if (seed.includes('console.') || seed.includes('document.') || seed.includes('function ') || seed.includes('<div') || seed.includes('<html')) {
+      if (
+        seed.includes('console.') ||
+        seed.includes('document.') ||
+        seed.includes('function ') ||
+        seed.includes('<div') ||
+        seed.includes('<html')
+      ) {
         return 'javascript';
       }
     }
@@ -320,7 +336,7 @@ export function ToolsPanel({
           <div className="tools-actions" style={{ marginTop: '14px' }}>
             <Button onClick={runPythonCode} disabled={pythonRunning}>
               <Play size={15} />
-              {pythonRunning ? (pythonStatus || 'Ejecutando...') : 'Ejecutar Python'}
+              {pythonRunning ? pythonStatus || 'Ejecutando...' : 'Ejecutar Python'}
             </Button>
             <Button
               variant="outline"
@@ -382,7 +398,10 @@ export function ToolsPanel({
               </div>
               {pythonResult.output.length > 0 ? (
                 pythonResult.output.map((line, idx) => (
-                  <pre key={idx} style={{ margin: '2px 0', whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>
+                  <pre
+                    key={idx}
+                    style={{ margin: '2px 0', whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}
+                  >
                     {line}
                   </pre>
                 ))
@@ -428,7 +447,8 @@ export function ToolsPanel({
                 Entorno Web: JavaScript, HTML y CSS (CodePen)
               </h2>
               <p style={{ margin: '4px 0 0', fontSize: '13px', color: 'var(--muted)' }}>
-                Editor interactivo completo con pestañas para HTML, CSS, JavaScript y resultado en tiempo real.
+                Editor interactivo completo con pestañas para HTML, CSS, JavaScript y resultado en
+                tiempo real.
               </p>
             </div>
             <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>

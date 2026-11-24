@@ -91,10 +91,9 @@ export async function setup(input: Record<string, unknown>): Promise<User> {
 
 export async function resetPassword(userId: string, newPasswordRaw: unknown) {
   const password = validatePassword(newPasswordRaw);
-  const user = await queryOne<User>(
-    'SELECT id, name, username, role FROM users WHERE id = $1',
-    [userId]
-  );
+  const user = await queryOne<User>('SELECT id, name, username, role FROM users WHERE id = $1', [
+    userId,
+  ]);
   if (!user) throw new AppError('Usuario no encontrado.', 404);
 
   const hashed = passwordHash(password),
@@ -170,13 +169,12 @@ export async function currentUser(): Promise<User | null> {
       };
       if (u.banned) return null;
       const role = (u.role === 'admin' ? 'admin' : u.role === 'teacher' ? 'teacher' : 'student') as
-        | 'admin'
-        | 'teacher'
-        | 'student';
+        'admin' | 'teacher' | 'student';
 
-      const existing = await queryOne<User>('SELECT id, name, username, role FROM users WHERE id = $1', [
-        u.id,
-      ]);
+      const existing = await queryOne<User>(
+        'SELECT id, name, username, role FROM users WHERE id = $1',
+        [u.id]
+      );
 
       if (!existing) {
         const uname =
@@ -317,16 +315,21 @@ export async function login(input: Record<string, unknown>): Promise<User> {
   if (attempt && Number(attempt.until) > Date.now() && Number(attempt.count) >= 5)
     throw new AppError('Demasiados intentos. Intenta nuevamente en 15 minutos.', 429);
 
-  let row = await queryOne<User & { password: string }>(
-    'SELECT * FROM users WHERE username = $1',
-    [username]
-  );
+  let row = await queryOne<User & { password: string }>('SELECT * FROM users WHERE username = $1', [
+    username,
+  ]);
 
   if (!row) {
-    const u = await queryOne<{ id: string; name: string; username: string; email: string; role: any }>(
-      'SELECT id, name, username, email, role FROM "user" WHERE email = $1 OR username = $2',
-      [username, username]
-    );
+    const u = await queryOne<{
+      id: string;
+      name: string;
+      username: string;
+      email: string;
+      role: any;
+    }>('SELECT id, name, username, email, role FROM "user" WHERE email = $1 OR username = $2', [
+      username,
+      username,
+    ]);
     if (u) {
       const acc = await queryOne<{ password: string }>(
         'SELECT password FROM account WHERE "userId" = $1 AND "providerId" = $2',
@@ -350,8 +353,10 @@ export async function login(input: Record<string, unknown>): Promise<User> {
 
   const valid = passwordMatches(password, row?.password ?? '0'.repeat(32) + ':' + '0'.repeat(128));
   if (!row || !valid) {
-    const currentCount = attempt && Number(attempt.until) > Date.now() ? Number(attempt.count) + 1 : 1;
-    const currentUntil = attempt && Number(attempt.until) > Date.now() ? Number(attempt.until) : Date.now() + 900000;
+    const currentCount =
+      attempt && Number(attempt.until) > Date.now() ? Number(attempt.count) + 1 : 1;
+    const currentUntil =
+      attempt && Number(attempt.until) > Date.now() ? Number(attempt.until) : Date.now() + 900000;
     await execute(
       'INSERT INTO login_attempts(username, count, until) VALUES ($1, $2, $3) ON CONFLICT(username) DO UPDATE SET count = EXCLUDED.count, until = EXCLUDED.until',
       [username, currentCount, currentUntil]
@@ -377,9 +382,10 @@ export async function loginDevGoogle(input: Record<string, unknown>): Promise<Us
     .toLowerCase()
     .replace(/[^a-z0-9._+-]/g, '');
 
-  let user = await queryOne<User>('SELECT id, name, username, role FROM users WHERE username = $1', [
-    username,
-  ]);
+  let user = await queryOne<User>(
+    'SELECT id, name, username, role FROM users WHERE username = $1',
+    [username]
+  );
 
   if (!user) {
     user = { id: randomUUID(), name, username, role: 'student' };

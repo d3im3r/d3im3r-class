@@ -75,11 +75,19 @@ export function InlineText({ text }: { text: string }) {
         nodes.push(literal(m[0]));
       }
     } else if (m[2]) {
-      nodes.push(<strong key={m.index}><InlineText text={m[2]} /></strong>);
+      nodes.push(
+        <strong key={m.index}>
+          <InlineText text={m[2]} />
+        </strong>
+      );
     } else if (m[3]) {
       nodes.push(<code key={m.index}>{m[3].replace(/\\([_%&#${}])/g, '$1')}</code>);
     } else if (m[4]) {
-      nodes.push(<em key={m.index}><InlineText text={m[4]} /></em>);
+      nodes.push(
+        <em key={m.index}>
+          <InlineText text={m[4]} />
+        </em>
+      );
     } else if (m[0] === '$' || m[0] === '\\(') {
       const closing = m[0] === '$' ? '$' : '\\)';
       const stop = text.indexOf(closing, end);

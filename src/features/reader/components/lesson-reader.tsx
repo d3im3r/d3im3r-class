@@ -1,10 +1,6 @@
 'use client';
 
-import {
-  useCallback,
-  useEffect,
-  useState,
-} from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { toast } from '@/components/ui/sonner';
 import { ResourceToolsContext } from '@/shared/context/resource-tools-context';
 import type { Institution, Lesson, Subject } from '@/features/catalog/model/types';
@@ -76,7 +72,13 @@ export function LessonReader({
 
     const handleContextMenu = (e: MouseEvent) => {
       const target = e.target as HTMLElement | null;
-      if (target && (target.tagName === 'IMG' || target.tagName === 'svg' || target.closest('svg') || target.closest('.diagram-render'))) {
+      if (
+        target &&
+        (target.tagName === 'IMG' ||
+          target.tagName === 'svg' ||
+          target.closest('svg') ||
+          target.closest('.diagram-render'))
+      ) {
         e.preventDefault();
         toast.info('Guardado de recursos gráficos restringido (solo visualización).');
       }

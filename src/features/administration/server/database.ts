@@ -363,11 +363,7 @@ export async function syncBetterAuthUser(
 }
 
 export async function seedDatabase(client?: PoolClient | Pool): Promise<void> {
-  const hasMeta = await queryOne(
-    "SELECT key FROM metadata WHERE key = 'seed-v1'",
-    [],
-    client
-  );
+  const hasMeta = await queryOne("SELECT key FROM metadata WHERE key = 'seed-v1'", [], client);
   if (hasMeta) return;
 
   const instCount = await queryOne<{ c: string }>(

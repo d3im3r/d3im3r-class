@@ -1,12 +1,6 @@
 import ExcelJS from 'exceljs';
 import { createHash, randomUUID, randomBytes, scrypt } from 'node:crypto';
-import {
-  query,
-  queryOne,
-  execute,
-  syncBetterAuthUser,
-  userAccessibleSubjectIds,
-} from './database';
+import { query, queryOne, execute, syncBetterAuthUser, userAccessibleSubjectIds } from './database';
 import { AppError } from '@/features/auth/server/auth';
 import type { User } from '@/features/auth/types';
 
@@ -113,9 +107,7 @@ function findHeaderRowAndColumns(sheet: ExcelJS.Worksheet): {
       }
       if (
         !cols.email &&
-        /^(correo|email|correoelectronico|correoinstitucional|correosena|mail|usuario)/.test(
-          header
-        )
+        /^(correo|email|correoelectronico|correoinstitucional|correosena|mail|usuario)/.test(header)
       ) {
         cols.email = index;
       }
@@ -201,9 +193,7 @@ function findHeaderRowAndColumns(sheet: ExcelJS.Worksheet): {
     };
   }
 
-  throw new AppError(
-    'La primera fila debe tener las columnas nombre, correo e identificación.'
-  );
+  throw new AppError('La primera fila debe tener las columnas nombre, correo e identificación.');
 }
 
 function value(cell: ExcelJS.Cell, identifier = false) {
@@ -214,7 +204,9 @@ function value(cell: ExcelJS.Cell, identifier = false) {
     if (!Number.isSafeInteger(raw) || raw < 0)
       throw new Error('Guarda la identificación como texto, sin decimales ni notación científica.');
     const str = String(raw);
-    return identifier && cell.numFmt && /^0+$/.test(cell.numFmt) ? str.padStart(cell.numFmt.length, '0') : str;
+    return identifier && cell.numFmt && /^0+$/.test(cell.numFmt)
+      ? str.padStart(cell.numFmt.length, '0')
+      : str;
   }
   if (typeof raw === 'object' && 'richText' in raw)
     return raw.richText
@@ -482,8 +474,7 @@ export async function rosterTemplate() {
 }
 
 export async function exportStudentRoster(actor: User) {
-  const teacherSubjects =
-    actor.role === 'teacher' ? await userAccessibleSubjectIds(actor) : null;
+  const teacherSubjects = actor.role === 'teacher' ? await userAccessibleSubjectIds(actor) : null;
 
   const allSubjects = await query<{ id: string; data: unknown }>('SELECT id, data FROM subjects');
   const subjectMap = new Map<string, string>();

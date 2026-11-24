@@ -32,7 +32,10 @@ test('previsualiza sin exponer identificaciones y conserva ceros iniciales', asy
     skipErrors: false,
     enrollExisting: false,
   });
-  assert.equal((await login({ username: 'ana@pruebas.edu', password: '00091234' })).role, 'student');
+  assert.equal(
+    (await login({ username: 'ana@pruebas.edu', password: '00091234' })).role,
+    'student'
+  );
 });
 
 test('preserva formato numérico de identificación con ceros', async () => {
@@ -109,8 +112,13 @@ test('un correo existente conserva su contraseña y puede recibir asignaciones',
   });
   assert.equal(result.created, 0);
   assert.equal(result.enrolled, 1);
-  assert.equal((await login({ username: 'ana@pruebas.edu', password: '00091234' })).name, 'Ana Prueba');
-  await assert.rejects(async () => login({ username: 'ana@pruebas.edu', password: 'otra-identificacion' }));
+  assert.equal(
+    (await login({ username: 'ana@pruebas.edu', password: '00091234' })).name,
+    'Ana Prueba'
+  );
+  await assert.rejects(async () =>
+    login({ username: 'ana@pruebas.edu', password: 'otra-identificacion' })
+  );
 });
 
 test('limpia puntos y separadores en la identificación y permite iniciar sesión sin puntos', async () => {
@@ -126,7 +134,10 @@ test('limpia puntos y separadores en la identificación y permite iniciar sesió
     enrollExisting: false,
   });
   // El alumno puede iniciar sesión con la identificación limpia sin puntos
-  assert.equal((await login({ username: 'carlos.cedula@pruebas.edu', password: '1025761967' })).role, 'student');
+  assert.equal(
+    (await login({ username: 'carlos.cedula@pruebas.edu', password: '1025761967' })).role,
+    'student'
+  );
 });
 
 test('detecta encabezados en filas intermedias y encabezados institucionales (Aprendiz, Cédula)', async () => {

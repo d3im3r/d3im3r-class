@@ -244,7 +244,11 @@ export function SlideDeck({
               size="sm"
               onClick={onToggleTools}
               className={`presentation-tools-toggle ${toolsEnabled ? 'is-active' : ''}`}
-              title={toolsEnabled ? 'Desactivar herramientas en esta clase' : 'Activar herramientas en esta clase'}
+              title={
+                toolsEnabled
+                  ? 'Desactivar herramientas en esta clase'
+                  : 'Activar herramientas en esta clase'
+              }
             >
               <Wrench size={16} style={{ color: toolsEnabled ? '#10b981' : '#94a3b8' }} />
               <span>Herramientas: {toolsEnabled ? 'ON' : 'OFF'}</span>
