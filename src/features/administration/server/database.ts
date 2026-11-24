@@ -1,671 +1,444 @@
-import { DatabaseSync } from 'node:sqlite';
-import { mkdirSync, readFileSync, existsSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { Pool, type PoolClient } from 'pg';
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { readFileSync, existsSync } from 'node:fs';
 import path from 'node:path';
-import { createHash, randomUUID } from 'node:crypto';
-import { Pool } from 'pg';
+import { randomUUID } from 'node:crypto';
 import type { Catalog, Lesson, Block } from '@/features/catalog/model/types';
 import type { User } from '@/features/auth/types';
-const directory =
-  process.env.AULA_DATA_DIR ??
-  (process.env.VERCEL === '1' || process.env.AWS_LAMBDA_FUNCTION_NAME
-    ? path.join(tmpdir(), 'aula-data')
-    : path.join(process.cwd(), '.data'));
-let connection: DatabaseSync | undefined;
-let pgPool: Pool | undefined;
 
-const pendingPg: Promise<unknown>[] = [];
+export const MATERIALS_BUCKET = 'materials';
+export const LOGOS_BUCKET = 'logos';
 
-export function queuePg(promise: Promise<unknown>) {
-  pendingPg.push(
-    promise.catch((err) => {
-      console.error('[PostgreSQL Error]:', err?.message ?? err);
-    })
-  );
+let globalPool: Pool | undefined;
+let globalSupabase: SupabaseClient | undefined;
+let overrideClient: any = null;
+
+export function setDatabaseOverride(client: any) {
+  overrideClient = client;
 }
 
-export async function flushPg(): Promise<void> {
-  if (pendingPg.length === 0) return;
-  const current = [...pendingPg];
-  pendingPg.length = 0;
-  await Promise.allSettled(current);
+export function resetDatabaseOverride() {
+  overrideClient = null;
 }
 
-export function getPgPool(): Pool | undefined {
-  if (!process.env.DATABASE_URL) return undefined;
-  if (!pgPool) {
-    const rawPool = new Pool({
+export function getPgPool(): Pool {
+  if (overrideClient) return overrideClient as any;
+  if (!process.env.DATABASE_URL) {
+    throw new Error('DATABASE_URL no está configurada en las variables de entorno.');
+  }
+
+  const g = globalThis as unknown as { __pgPool?: Pool };
+  if (!g.__pgPool) {
+    g.__pgPool = new Pool({
       connectionString: process.env.DATABASE_URL,
       ssl: { rejectUnauthorized: false },
       max: 10,
       idleTimeoutMillis: 30000,
+      connectionTimeoutMillis: 10000,
     });
-    const origQuery = rawPool.query.bind(rawPool);
-    (rawPool as any).query = function (...args: any[]) {
-      const result = (origQuery as any)(...args);
-      if (result && typeof result.then === 'function') {
-        queuePg(result);
-      }
-      return result;
-    };
-    pgPool = rawPool;
   }
-  return pgPool;
+  globalPool = g.__pgPool;
+  return globalPool;
 }
 
-let lastSyncTime = 0;
-let inFlightSync: Promise<void> | null = null;
+export function getSupabase(): SupabaseClient | null {
+  if (globalSupabase) return globalSupabase;
+  const url = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+  const key =
+    process.env.SUPABASE_SERVICE_ROLE_KEY ||
+    process.env.SUPABASE_ANON_KEY ||
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+    '';
 
-export async function syncFromPostgres(force = false): Promise<void> {
-  const pool = getPgPool();
-  if (!pool) return;
-  const now = Date.now();
-  if (!force && now - lastSyncTime < 30000) return;
-  if (inFlightSync) return inFlightSync;
+  if (!url || !key) {
+    return null;
+  }
 
-  inFlightSync = (async () => {
+  globalSupabase = createClient(url, key, {
+    auth: { persistSession: false },
+  });
+  return globalSupabase;
+}
+
+export async function uploadToStorage(
+  bucket: string,
+  filePath: string,
+  data: Buffer | Uint8Array | string,
+  mimeType: string
+): Promise<string> {
+  const cleanPath = filePath.replace(/^\/+/, '');
+  const supabase = getSupabase();
+  if (!supabase) {
+    return `/api/${bucket}/${cleanPath}`;
+  }
+  const buffer =
+    typeof data === 'string'
+      ? Buffer.from(data, 'utf8')
+      : Buffer.isBuffer(data)
+        ? data
+        : Buffer.from(data);
+
+  const { error } = await supabase.storage.from(bucket).upload(cleanPath, buffer, {
+    contentType: mimeType,
+    upsert: true,
+  });
+
+  if (error) {
+    console.error(`[Supabase Storage Upload Error] bucket=${bucket} path=${cleanPath}:`, error);
+    throw new Error(`Error al subir archivo a almacenamiento: ${error.message}`);
+  }
+
+  const {
+    data: { publicUrl },
+  } = supabase.storage.from(bucket).getPublicUrl(cleanPath);
+  return publicUrl;
+}
+
+export async function downloadFromStorage(
+  bucket: string,
+  filePath: string
+): Promise<{ data: Buffer | null; error: Error | null; mime?: string }> {
+  try {
+    const supabase = getSupabase();
+    if (!supabase) {
+      return { data: null, error: null };
+    }
+    const cleanPath = filePath.replace(/^\/+/, '');
+    const { data, error } = await supabase.storage.from(bucket).download(cleanPath);
+    if (error || !data) {
+      return { data: null, error: error ? new Error(error.message) : new Error('No data') };
+    }
+    const arrayBuffer = await data.arrayBuffer();
+    return { data: Buffer.from(arrayBuffer), error: null, mime: data.type };
+  } catch (err: any) {
+    return { data: null, error: err };
+  }
+}
+
+export async function deleteFromStorage(bucket: string, paths: string[]): Promise<void> {
+  if (!paths.length) return;
+  try {
+    const supabase = getSupabase();
+    if (!supabase) return;
+    const clean = paths.map((p) => p.replace(/^\/+/, ''));
+    await supabase.storage.from(bucket).remove(clean);
+  } catch (err) {
+    console.error(`[Supabase Storage Delete Error] bucket=${bucket}:`, err);
+  }
+}
+
+export function getStoragePublicUrl(bucket: string, filePath: string): string {
+  const cleanPath = filePath.replace(/^\/+/, '');
+  const supabase = getSupabase();
+  if (!supabase) {
+    return `/api/${bucket}/${cleanPath}`;
+  }
+  const {
+    data: { publicUrl },
+  } = supabase.storage.from(bucket).getPublicUrl(cleanPath);
+  return publicUrl;
+}
+
+export async function query<T = any>(
+  sql: string,
+  params: any[] = [],
+  client?: PoolClient | Pool
+): Promise<T[]> {
+  const executor = client ?? (overrideClient || getPgPool());
+  const res = await executor.query(sql, params);
+  return (res.rows ?? []) as T[];
+}
+
+export async function queryOne<T = any>(
+  sql: string,
+  params: any[] = [],
+  client?: PoolClient | Pool
+): Promise<T | null> {
+  const rows = await query<T>(sql, params, client);
+  return rows[0] ?? null;
+}
+
+export async function execute(
+  sql: string,
+  params: any[] = [],
+  client?: PoolClient | Pool
+): Promise<number> {
+  const executor = client ?? (overrideClient || getPgPool());
+  const res = await executor.query(sql, params);
+  return res.rowCount ?? 0;
+}
+
+export async function transaction<T>(fn: (client: PoolClient) => Promise<T>): Promise<T> {
+  if (overrideClient?.transaction) {
+    return overrideClient.transaction(fn);
+  }
+  const pool = overrideClient || getPgPool();
+  if (typeof pool.connect !== 'function') {
+    // Single client or test adapter
+    await pool.query('BEGIN');
     try {
-      try {
-        await pool.query(`
-          INSERT INTO users(id, name, username, password, role)
-          SELECT u.id, u.name, COALESCE(u.username, u.email), 'managed-by-better-auth', 
-            CASE WHEN u.role='admin' THEN 'admin' WHEN u.role='teacher' THEN 'teacher' ELSE 'student' END
-          FROM "user" u
-          ON CONFLICT (id) DO UPDATE SET name=EXCLUDED.name, role=EXCLUDED.role;
-          CREATE TABLE IF NOT EXISTS topic_enrollments(
-            user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
-            subject_id TEXT REFERENCES subjects(id) ON DELETE CASCADE,
-            topic_id TEXT NOT NULL,
-            PRIMARY KEY(user_id, subject_id, topic_id)
-          );
-          ALTER TABLE subject_invites ADD COLUMN IF NOT EXISTS topic_id TEXT;
-          ALTER TABLE subject_join_requests ADD COLUMN IF NOT EXISTS topic_id TEXT;
-        `);
-      } catch {}
-
-      const res = await pool.query(`
-    SELECT json_build_object(
-      'users', COALESCE((SELECT json_agg(u) FROM users u), '[]'::json),
-      'sessions', COALESCE((SELECT json_agg(s) FROM sessions s), '[]'::json),
-      'user', COALESCE((SELECT json_agg(usr) FROM "user" usr), '[]'::json),
-      'session', COALESCE((SELECT json_agg(ses) FROM "session" ses), '[]'::json),
-      'account', COALESCE((SELECT json_agg(acc) FROM "account" acc), '[]'::json),
-      'institutions', COALESCE((SELECT json_agg(i) FROM institutions i), '[]'::json),
-      'subjects', COALESCE((SELECT json_agg(sub) FROM subjects sub), '[]'::json),
-      'lessons', COALESCE((SELECT json_agg(l) FROM lessons l), '[]'::json),
-      'enrollments', COALESCE((SELECT json_agg(e) FROM enrollments e), '[]'::json),
-      'topic_enrollments', COALESCE((SELECT json_agg(te) FROM topic_enrollments te), '[]'::json),
-      'institution_members', COALESCE((SELECT json_agg(im) FROM institution_members im), '[]'::json),
-      'subject_bans', COALESCE((SELECT json_agg(b) FROM subject_bans b), '[]'::json),
-      'subject_invites', COALESCE((SELECT json_agg(si) FROM subject_invites si), '[]'::json),
-      'subject_join_requests', COALESCE((SELECT json_agg(sjr) FROM subject_join_requests sjr), '[]'::json),
-      'institution_logos', COALESCE((SELECT json_agg(il) FROM institution_logos il), '[]'::json),
-      'progress', COALESCE((SELECT json_agg(p) FROM progress p), '[]'::json),
-      'resources', COALESCE((SELECT json_agg(r) FROM resources r), '[]'::json)
-    ) as state;
-  `);
-      const state = res.rows[0]?.state;
-      if (!state) return;
-      const sql = db();
-      sql.exec('PRAGMA foreign_keys=OFF;');
-      sql.exec('BEGIN IMMEDIATE');
-      try {
-        if (Array.isArray(state.users)) {
-          for (const u of state.users) {
-            sql
-              .prepare(
-                'INSERT INTO users(id,name,username,password,role) VALUES (?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET name=excluded.name,username=excluded.username,password=excluded.password,role=excluded.role'
-              )
-              .run(u.id, u.name, u.username, u.password, u.role);
-            const now = new Date().toISOString();
-            const email = u.username.includes('@') ? u.username : `${u.username}@aula.local`;
-            sql
-              .prepare(
-                'INSERT INTO user(id,name,email,emailVerified,createdAt,updatedAt,username,displayUsername,role,banned) VALUES (?,?,?,1,?,?,?,?,?,0) ON CONFLICT(id) DO UPDATE SET name=excluded.name,email=excluded.email,updatedAt=excluded.updatedAt,username=excluded.username,displayUsername=excluded.displayUsername,role=excluded.role'
-              )
-              .run(u.id, u.name, email, now, now, u.username, u.username, u.role);
-          }
-        }
-        if (Array.isArray(state.user)) {
-          for (const usr of state.user) {
-            sql
-              .prepare(
-                'INSERT INTO user(id,name,email,emailVerified,image,createdAt,updatedAt,username,displayUsername,role,banned,banReason,banExpires) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET name=excluded.name,email=excluded.email,emailVerified=excluded.emailVerified,image=excluded.image,updatedAt=excluded.updatedAt,username=excluded.username,displayUsername=excluded.displayUsername,role=excluded.role,banned=excluded.banned,banReason=excluded.banReason,banExpires=excluded.banExpires'
-              )
-              .run(
-                usr.id,
-                usr.name,
-                usr.email,
-                usr.emailVerified ? 1 : 0,
-                usr.image,
-                usr.createdAt,
-                usr.updatedAt,
-                usr.username,
-                usr.displayUsername,
-                usr.role,
-                usr.banned ? 1 : 0,
-                usr.banReason,
-                usr.banExpires
-              );
-            // Asegurar registro puente en 'users' para evitar fallos de Foreign Key en enrollments/progress
-            const r =
-              usr.role === 'admin' ? 'admin' : usr.role === 'teacher' ? 'teacher' : 'student';
-            const uName = usr.username || (usr.email ? usr.email.split('@')[0] : usr.id);
-            sql
-              .prepare(
-                'INSERT INTO users(id,name,username,password,role) VALUES (?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET name=excluded.name,role=excluded.role'
-              )
-              .run(usr.id, usr.name, uName, 'managed-by-better-auth', r);
-          }
-        }
-        if (Array.isArray(state.account)) {
-          for (const acc of state.account) {
-            sql
-              .prepare(
-                'INSERT INTO account(id,accountId,providerId,userId,accessToken,refreshToken,idToken,accessTokenExpiresAt,refreshTokenExpiresAt,scope,password,createdAt,updatedAt) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET password=excluded.password,updatedAt=excluded.updatedAt'
-              )
-              .run(
-                acc.id,
-                acc.accountId,
-                acc.providerId,
-                acc.userId,
-                acc.accessToken,
-                acc.refreshToken,
-                acc.idToken,
-                acc.accessTokenExpiresAt,
-                acc.refreshTokenExpiresAt,
-                acc.scope,
-                acc.password,
-                acc.createdAt,
-                acc.updatedAt
-              );
-          }
-        }
-        sql.prepare('DELETE FROM sessions WHERE expires < ?').run(Date.now());
-        sql.prepare('DELETE FROM session WHERE expiresAt < ?').run(new Date().toISOString());
-        if (Array.isArray(state.sessions)) {
-          for (const s of state.sessions) {
-            sql
-              .prepare(
-                'INSERT INTO sessions(token,user_id,expires) VALUES (?,?,?) ON CONFLICT(token) DO UPDATE SET user_id=excluded.user_id,expires=excluded.expires'
-              )
-              .run(s.token, s.user_id, Number(s.expires));
-          }
-        }
-        if (Array.isArray(state.session)) {
-          for (const ses of state.session) {
-            sql
-              .prepare(
-                'INSERT INTO session(id,expiresAt,token,createdAt,updatedAt,ipAddress,userAgent,userId,impersonatedBy) VALUES (?,?,?,?,?,?,?,?,?) ON CONFLICT(token) DO UPDATE SET expiresAt=excluded.expiresAt,updatedAt=excluded.updatedAt,userId=excluded.userId,ipAddress=excluded.ipAddress,userAgent=excluded.userAgent'
-              )
-              .run(
-                ses.id,
-                ses.expiresAt,
-                ses.token,
-                ses.createdAt,
-                ses.updatedAt,
-                ses.ipAddress,
-                ses.userAgent,
-                ses.userId,
-                ses.impersonatedBy
-              );
-          }
-        }
-        if (Array.isArray(state.institutions)) {
-          const pgInstIds = state.institutions.map((i: any) => i.id);
-          if (pgInstIds.length > 0) {
-            const placeholders = pgInstIds.map(() => '?').join(',');
-            sql
-              .prepare(`DELETE FROM institutions WHERE id NOT IN (${placeholders})`)
-              .run(...pgInstIds);
-          } else {
-            sql.prepare('DELETE FROM institutions').run();
-          }
-          for (const inst of state.institutions) {
-            const dataStr = typeof inst.data === 'string' ? inst.data : JSON.stringify(inst.data);
-            sql
-              .prepare(
-                'INSERT INTO institutions(id,data) VALUES (?,?) ON CONFLICT(id) DO UPDATE SET data=excluded.data'
-              )
-              .run(inst.id, dataStr);
-          }
-        }
-        if (Array.isArray(state.subjects)) {
-          const pgSubIds = state.subjects.map((s: any) => s.id);
-          const localSubCount =
-            (sql.prepare('SELECT COUNT(*) as c FROM subjects').get() as any)?.c ?? 0;
-          if (pgSubIds.length > 0) {
-            const placeholders = pgSubIds.map(() => '?').join(',');
-            sql.prepare(`DELETE FROM subjects WHERE id NOT IN (${placeholders})`).run(...pgSubIds);
-          } else if (localSubCount === 0) {
-            sql.prepare('DELETE FROM subjects').run();
-          }
-          for (const sub of state.subjects) {
-            const dataStr = typeof sub.data === 'string' ? sub.data : JSON.stringify(sub.data);
-            sql
-              .prepare(
-                'INSERT INTO subjects(id,institution_id,data) VALUES (?,?,?) ON CONFLICT(id) DO UPDATE SET institution_id=excluded.institution_id,data=excluded.data'
-              )
-              .run(sub.id, sub.institution_id, dataStr);
-          }
-        }
-        if (Array.isArray(state.lessons)) {
-          const pgLessonIds = state.lessons.map((l: any) => l.id);
-          const localLessonCount =
-            (sql.prepare('SELECT COUNT(*) as c FROM lessons').get() as any)?.c ?? 0;
-          if (pgLessonIds.length > 0) {
-            const placeholders = pgLessonIds.map(() => '?').join(',');
-            sql
-              .prepare(`DELETE FROM lessons WHERE id NOT IN (${placeholders})`)
-              .run(...pgLessonIds);
-            for (const les of state.lessons) {
-              const dataStr = typeof les.data === 'string' ? les.data : JSON.stringify(les.data);
-              sql
-                .prepare(
-                  'INSERT INTO lessons(id,subject_id,status,revision,reviewed,data) VALUES (?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET subject_id=excluded.subject_id,status=excluded.status,revision=excluded.revision,reviewed=excluded.reviewed,data=excluded.data'
-                )
-                .run(les.id, les.subject_id, les.status, les.revision, les.reviewed, dataStr);
-            }
-          } else if (localLessonCount > 0 && pool) {
-            // Postgres está vacío (primera conexión): poblar Postgres desde el seed local sin borrar SQLite
-            for (const l of sql.prepare('SELECT * FROM lessons').all() as any[]) {
-              pool
-                .query(
-                  'INSERT INTO lessons(id,subject_id,status,revision,reviewed,data) VALUES ($1,$2,$3,$4,$5,$6) ON CONFLICT(id) DO NOTHING',
-                  [l.id, l.subject_id, l.status, l.revision, l.reviewed, l.data]
-                )
-                .catch(console.error);
-            }
-            for (const s of sql.prepare('SELECT * FROM subjects').all() as any[]) {
-              pool
-                .query(
-                  'INSERT INTO subjects(id,institution_id,data) VALUES ($1,$2,$3) ON CONFLICT(id) DO NOTHING',
-                  [s.id, s.institution_id, s.data]
-                )
-                .catch(console.error);
-            }
-          } else if (localLessonCount === 0) {
-            sql.prepare('DELETE FROM lessons').run();
-          }
-        }
-        if (Array.isArray(state.enrollments)) {
-          sql.prepare('DELETE FROM enrollments').run();
-          for (const e of state.enrollments) {
-            sql
-              .prepare('INSERT OR IGNORE INTO enrollments(user_id,subject_id) VALUES (?,?)')
-              .run(e.user_id, e.subject_id);
-          }
-        }
-        if (Array.isArray(state.topic_enrollments)) {
-          sql.prepare('DELETE FROM topic_enrollments').run();
-          for (const te of state.topic_enrollments) {
-            sql
-              .prepare(
-                'INSERT OR IGNORE INTO topic_enrollments(user_id,subject_id,topic_id) VALUES (?,?,?)'
-              )
-              .run(te.user_id, te.subject_id, te.topic_id);
-          }
-        }
-        if (Array.isArray(state.institution_members)) {
-          sql.prepare('DELETE FROM institution_members').run();
-          for (const im of state.institution_members) {
-            sql
-              .prepare(
-                'INSERT OR IGNORE INTO institution_members(user_id,institution_id) VALUES (?,?)'
-              )
-              .run(im.user_id, im.institution_id);
-          }
-        }
-        if (Array.isArray(state.subject_bans)) {
-          sql.prepare('DELETE FROM subject_bans').run();
-          for (const b of state.subject_bans) {
-            sql
-              .prepare(
-                'INSERT INTO subject_bans(user_id,subject_id,reason,banned_at) VALUES (?,?,?,?) ON CONFLICT(user_id,subject_id) DO UPDATE SET reason=excluded.reason,banned_at=excluded.banned_at'
-              )
-              .run(b.user_id, b.subject_id, b.reason, b.banned_at);
-          }
-        }
-        if (Array.isArray(state.subject_invites)) {
-          sql.prepare('DELETE FROM subject_invites').run();
-          for (const si of state.subject_invites) {
-            sql
-              .prepare(
-                'INSERT INTO subject_invites(token,subject_id,topic_id,created_at) VALUES (?,?,?,?) ON CONFLICT(token) DO UPDATE SET subject_id=excluded.subject_id,topic_id=excluded.topic_id,created_at=excluded.created_at'
-              )
-              .run(si.token, si.subject_id, si.topic_id || null, si.created_at);
-          }
-        }
-        if (Array.isArray(state.subject_join_requests)) {
-          sql.prepare('DELETE FROM subject_join_requests').run();
-          for (const sjr of state.subject_join_requests) {
-            sql
-              .prepare(
-                'INSERT INTO subject_join_requests(id,subject_id,user_id,topic_id,status,created_at) VALUES (?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET topic_id=excluded.topic_id,status=excluded.status'
-              )
-              .run(
-                sjr.id,
-                sjr.subject_id,
-                sjr.user_id,
-                sjr.topic_id || null,
-                sjr.status,
-                sjr.created_at
-              );
-          }
-        }
-        if (Array.isArray(state.progress)) {
-          for (const p of state.progress) {
-            sql
-              .prepare('INSERT OR IGNORE INTO progress(user_id,lesson_id,frame_id) VALUES (?,?,?)')
-              .run(p.user_id, p.lesson_id, p.frame_id);
-          }
-        }
-        if (Array.isArray(state.institution_logos)) {
-          for (const il of state.institution_logos) {
-            if (!il.data) continue;
-            sql
-              .prepare(
-                'INSERT INTO institution_logos(id,mime,data) VALUES (?,?,?) ON CONFLICT(id) DO UPDATE SET mime=excluded.mime,data=excluded.data'
-              )
-              .run(il.id, il.mime, il.data);
-          }
-        }
-        if (Array.isArray(state.resources)) {
-          for (const r of state.resources) {
-            sql
-              .prepare(
-                'INSERT OR REPLACE INTO resources(lesson_id,key,name,path,mime) VALUES (?,?,?,?,?)'
-              )
-              .run(r.lesson_id, r.key, r.name, r.path, r.mime);
-          }
-        }
-        sql.exec('COMMIT');
-        lastSyncTime = Date.now();
-      } catch (err) {
-        sql.exec('ROLLBACK');
-        console.error('Failed to apply sync state to SQLite:', err);
-      } finally {
-        sql.exec('PRAGMA foreign_keys=ON;');
-      }
+      const res = await fn(pool as any);
+      await pool.query('COMMIT');
+      return res;
     } catch (err) {
-      console.error('Failed to sync from Postgres:', err);
-    } finally {
-      inFlightSync = null;
+      await pool.query('ROLLBACK');
+      throw err;
     }
-  })();
-
-  return inFlightSync;
-}
-export function db() {
-  if (connection) return connection;
-  mkdirSync(directory, { recursive: true, mode: 0o700 });
-  connection = new DatabaseSync(path.join(directory, 'aula.sqlite'));
-  connection.exec(`PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON; PRAGMA busy_timeout=5000;
- CREATE TABLE IF NOT EXISTS users(id TEXT PRIMARY KEY,name TEXT NOT NULL,username TEXT UNIQUE NOT NULL,password TEXT NOT NULL,role TEXT NOT NULL CHECK(role IN ('admin','teacher','student')));
- CREATE TABLE IF NOT EXISTS sessions(token TEXT PRIMARY KEY,user_id TEXT REFERENCES users(id) ON DELETE CASCADE,expires INTEGER NOT NULL);
- CREATE TABLE IF NOT EXISTS user(id TEXT PRIMARY KEY,name TEXT NOT NULL,email TEXT UNIQUE NOT NULL,emailVerified INTEGER NOT NULL DEFAULT 1,image TEXT,createdAt TEXT NOT NULL,updatedAt TEXT NOT NULL,username TEXT UNIQUE,displayUsername TEXT,role TEXT NOT NULL DEFAULT 'student',banned INTEGER DEFAULT 0,banReason TEXT,banExpires TEXT);
- CREATE TABLE IF NOT EXISTS session(id TEXT PRIMARY KEY,expiresAt TEXT NOT NULL,token TEXT UNIQUE NOT NULL,createdAt TEXT NOT NULL,updatedAt TEXT NOT NULL,ipAddress TEXT,userAgent TEXT,userId TEXT NOT NULL REFERENCES user(id) ON DELETE CASCADE,impersonatedBy TEXT);
- CREATE TABLE IF NOT EXISTS account(id TEXT PRIMARY KEY,accountId TEXT NOT NULL,providerId TEXT NOT NULL,userId TEXT NOT NULL REFERENCES user(id) ON DELETE CASCADE,accessToken TEXT,refreshToken TEXT,idToken TEXT,accessTokenExpiresAt TEXT,refreshTokenExpiresAt TEXT,scope TEXT,password TEXT,createdAt TEXT NOT NULL,updatedAt TEXT NOT NULL);
- CREATE TABLE IF NOT EXISTS verification(id TEXT PRIMARY KEY,identifier TEXT NOT NULL,value TEXT NOT NULL,expiresAt TEXT NOT NULL,createdAt TEXT,updatedAt TEXT);
- CREATE TABLE IF NOT EXISTS institutions(id TEXT PRIMARY KEY,data TEXT NOT NULL);
- CREATE TABLE IF NOT EXISTS subjects(id TEXT PRIMARY KEY,institution_id TEXT REFERENCES institutions(id),data TEXT NOT NULL);
- CREATE TABLE IF NOT EXISTS lessons(id TEXT PRIMARY KEY,subject_id TEXT REFERENCES subjects(id),status TEXT NOT NULL DEFAULT 'draft',revision INTEGER NOT NULL DEFAULT 1,reviewed INTEGER NOT NULL DEFAULT 0,data TEXT NOT NULL);
- CREATE TABLE IF NOT EXISTS enrollments(user_id TEXT REFERENCES users(id) ON DELETE CASCADE,subject_id TEXT REFERENCES subjects(id) ON DELETE CASCADE,PRIMARY KEY(user_id,subject_id));
- CREATE TABLE IF NOT EXISTS topic_enrollments(user_id TEXT REFERENCES users(id) ON DELETE CASCADE,subject_id TEXT REFERENCES subjects(id) ON DELETE CASCADE,topic_id TEXT NOT NULL,PRIMARY KEY(user_id,subject_id,topic_id));
- CREATE TABLE IF NOT EXISTS subject_bans(user_id TEXT REFERENCES users(id) ON DELETE CASCADE,subject_id TEXT REFERENCES subjects(id) ON DELETE CASCADE,reason TEXT,banned_at TEXT NOT NULL,PRIMARY KEY(user_id,subject_id));
- CREATE TABLE IF NOT EXISTS subject_invites(token TEXT PRIMARY KEY,subject_id TEXT NOT NULL REFERENCES subjects(id) ON DELETE CASCADE,topic_id TEXT,created_at TEXT NOT NULL);
- CREATE TABLE IF NOT EXISTS subject_join_requests(id TEXT PRIMARY KEY,subject_id TEXT NOT NULL REFERENCES subjects(id) ON DELETE CASCADE,user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,topic_id TEXT,status TEXT NOT NULL DEFAULT 'pending',created_at TEXT NOT NULL,UNIQUE(subject_id,user_id));
- CREATE TABLE IF NOT EXISTS class_invites(token TEXT PRIMARY KEY,lesson_id TEXT NOT NULL REFERENCES lessons(id) ON DELETE CASCADE,created_at TEXT NOT NULL);
- CREATE TABLE IF NOT EXISTS class_join_requests(id TEXT PRIMARY KEY,lesson_id TEXT NOT NULL REFERENCES lessons(id) ON DELETE CASCADE,user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,status TEXT NOT NULL DEFAULT 'pending',created_at TEXT NOT NULL,UNIQUE(lesson_id,user_id));
- CREATE TABLE IF NOT EXISTS resources(lesson_id TEXT REFERENCES lessons(id) ON DELETE CASCADE,key TEXT,name TEXT,path TEXT NOT NULL,mime TEXT NOT NULL,PRIMARY KEY(lesson_id,key));
- CREATE TABLE IF NOT EXISTS progress(user_id TEXT REFERENCES users(id) ON DELETE CASCADE,lesson_id TEXT REFERENCES lessons(id) ON DELETE CASCADE,frame_id TEXT NOT NULL,PRIMARY KEY(user_id,lesson_id,frame_id));
- CREATE TABLE IF NOT EXISTS login_attempts(username TEXT PRIMARY KEY,count INTEGER NOT NULL,until INTEGER NOT NULL);
- CREATE TABLE IF NOT EXISTS institution_logos(id TEXT PRIMARY KEY REFERENCES institutions(id) ON DELETE CASCADE,mime TEXT NOT NULL,data TEXT NOT NULL,path TEXT);
- CREATE TABLE IF NOT EXISTS institution_members(user_id TEXT REFERENCES users(id) ON DELETE CASCADE, institution_id TEXT REFERENCES institutions(id) ON DELETE CASCADE, PRIMARY KEY(user_id, institution_id));
- CREATE TABLE IF NOT EXISTS metadata(key TEXT PRIMARY KEY,value TEXT NOT NULL);`);
-  try {
-    const cols = connection.prepare('PRAGMA table_info(institution_logos)').all() as any[];
-    if (!cols.some((c) => c.name === 'data')) {
-      connection.exec('ALTER TABLE institution_logos ADD COLUMN data TEXT;');
-    }
-  } catch {}
-  try {
-    const colsInv = connection.prepare('PRAGMA table_info(subject_invites)').all() as any[];
-    if (!colsInv.some((c) => c.name === 'topic_id')) {
-      connection.exec('ALTER TABLE subject_invites ADD COLUMN topic_id TEXT;');
-    }
-  } catch {}
-  try {
-    const colsReq = connection.prepare('PRAGMA table_info(subject_join_requests)').all() as any[];
-    if (!colsReq.some((c) => c.name === 'topic_id')) {
-      connection.exec('ALTER TABLE subject_join_requests ADD COLUMN topic_id TEXT;');
-    }
-  } catch {}
-  if (!connection.prepare("SELECT key FROM metadata WHERE key='seed-v1'").get()) seed(connection);
-  return connection;
-}
-export function syncBetterAuthUser(
-  id: string,
-  name: string,
-  username: string,
-  password: string,
-  role: 'admin' | 'teacher' | 'student'
-) {
-  const sql = db(),
-    now = new Date().toISOString(),
-    email = username.includes('@') ? username : `${username}@aula.local`;
-
-  // Asegurar registro puente en 'users' PRIMERO con el mismo id
-  sql
-    .prepare(
-      'INSERT INTO users(id,name,username,password,role) VALUES (?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET name=excluded.name,username=excluded.username,password=excluded.password,role=excluded.role'
-    )
-    .run(id, name, username, password, role);
-
-  // Si existe un usuario en 'user' con este correo o username pero con otro id, unificarlo a 'id'
-  const oldUser = sql
-    .prepare('SELECT id FROM user WHERE (email=? OR username=?) AND id!=?')
-    .get(email, username, id) as { id: string } | undefined;
-  if (oldUser) {
-    sql.prepare('DELETE FROM session WHERE userId=?').run(oldUser.id);
-    sql.prepare('DELETE FROM account WHERE userId=?').run(oldUser.id);
-    sql.prepare('DELETE FROM user WHERE id=?').run(oldUser.id);
   }
 
-  sql
-    .prepare(
-      'INSERT INTO user(id,name,email,emailVerified,createdAt,updatedAt,username,displayUsername,role,banned) VALUES (?,?,?,1,?,?,?,?,?,0) ON CONFLICT(id) DO UPDATE SET name=excluded.name,email=excluded.email,updatedAt=excluded.updatedAt,username=excluded.username,displayUsername=excluded.displayUsername,role=excluded.role'
-    )
-    .run(id, name, email, now, now, username, username, role);
-
-  const existingAcc = sql
-    .prepare("SELECT id FROM account WHERE userId=? AND providerId='credential'")
-    .get(id) as { id: string } | undefined;
-  if (existingAcc)
-    sql
-      .prepare('UPDATE account SET password=?,updatedAt=? WHERE id=?')
-      .run(password, now, existingAcc.id);
-  else
-    sql
-      .prepare(
-        "INSERT INTO account(id,accountId,providerId,userId,password,createdAt,updatedAt) VALUES (?,?,'credential',?,?,?,?)"
-      )
-      .run(randomUUID(), id, id, password, now, now);
-
-  const pool = getPgPool();
-  if (pool) {
-    if (oldUser) {
-      pool.query('DELETE FROM "session" WHERE "userId"=$1', [oldUser.id]).catch(() => {});
-      pool.query('DELETE FROM account WHERE "userId"=$1', [oldUser.id]).catch(() => {});
-      pool.query('DELETE FROM "user" WHERE id=$1', [oldUser.id]).catch(() => {});
-    }
-    queuePg(
-      pool
-        .query(
-          'INSERT INTO users(id,name,username,password,role) VALUES ($1,$2,$3,$4,$5) ON CONFLICT(id) DO UPDATE SET name=EXCLUDED.name,username=EXCLUDED.username,password=EXCLUDED.password,role=EXCLUDED.role',
-          [id, name, username, password, role]
-        )
-        .then(() =>
-          pool.query(
-            'INSERT INTO "user"(id,name,email,"emailVerified","createdAt","updatedAt",username,"displayUsername",role,banned) VALUES ($1,$2,$3,true,$4,$4,$5,$5,$6,false) ON CONFLICT(id) DO UPDATE SET name=EXCLUDED.name,email=EXCLUDED.email,"updatedAt"=EXCLUDED."updatedAt",username=EXCLUDED.username,"displayUsername"=EXCLUDED."displayUsername",role=EXCLUDED.role',
-            [id, name, email, now, username, role]
-          )
-        )
-        .then(() =>
-          pool.query(
-            'INSERT INTO account(id,"accountId","providerId","userId",password,"createdAt","updatedAt") VALUES ($1,$2,\'credential\',$2,$3,$4,$4) ON CONFLICT(id) DO UPDATE SET password=EXCLUDED.password,"updatedAt"=EXCLUDED."updatedAt"',
-            [randomUUID(), id, password, now]
-          )
-        )
-    );
-  }
-}
-function seed(sql: DatabaseSync) {
-  const catalog = JSON.parse(
-    readFileSync(path.join(process.cwd(), 'content/generated.json'), 'utf8')
-  ) as Catalog;
-  sql.exec('BEGIN IMMEDIATE');
+  const client = await pool.connect();
   try {
-    if (sql.prepare("SELECT key FROM metadata WHERE key='seed-v1'").get()) {
-      sql.exec('COMMIT');
-      return;
-    }
-
-    for (const i of catalog.institutions)
-      sql.prepare('INSERT OR IGNORE INTO institutions VALUES (?,?)').run(i.id, JSON.stringify(i));
-    for (const s of catalog.subjects)
-      sql
-        .prepare('INSERT OR IGNORE INTO subjects VALUES (?,?,?)')
-        .run(s.id, s.institutionId, JSON.stringify(s));
-    for (const original of catalog.lessons) {
-      const l = structuredClone(original);
-      sql
-        .prepare(
-          'INSERT OR IGNORE INTO lessons(id,subject_id,status,revision,reviewed,data) VALUES (?,?,?,1,1,?)'
-        )
-        .run(l.id, l.subjectId, 'published', JSON.stringify(l));
-      function resource(url: string, name?: string) {
-        const relative = url.replace(/^\//, '');
-        const file = path.join(process.cwd(), 'content/materials', relative);
-        if (!existsSync(file)) return url;
-        const key = createHash('sha256').update(relative).digest('hex').slice(0, 24);
-        const mime = url.endsWith('.svg')
-          ? 'image/svg+xml'
-          : url.endsWith('.pdf')
-            ? 'application/pdf'
-            : url.endsWith('.tex')
-              ? 'text/plain; charset=utf-8'
-              : url.endsWith('.png')
-                ? 'image/png'
-                : 'image/jpeg';
-        sql
-          .prepare('INSERT OR REPLACE INTO resources VALUES (?,?,?,?,?)')
-          .run(l.id, key, name ?? path.basename(url), file, mime);
-        return `/api/materials/${l.id}/${key}`;
-      }
-      function walk(blocks: Block[]) {
-        for (const b of blocks) {
-          if (b.asset) b.asset = resource(b.asset);
-          if (b.children) walk(b.children);
-          if (b.items) for (const list of b.items) walk(list);
-        }
-      }
-      l.pdf = resource(l.pdf);
-      l.source = resource(`/resources/${l.id}.tex`, path.basename(l.source));
-      for (const f of l.frames) walk(f.blocks);
-      sql.prepare('UPDATE lessons SET data=? WHERE id=?').run(JSON.stringify(l), l.id);
-    }
-    const senaPath = path.join(process.cwd(), 'public/assets/teaching/logoSena.png');
-    if (existsSync(senaPath)) {
-      const bytes = readFileSync(senaPath);
-      sql
-        .prepare('INSERT OR IGNORE INTO institution_logos(id,mime,data) VALUES (?,?,?)')
-        .run('sena', 'image/png', bytes.toString('base64'));
-    }
-    const poliPath = path.join(process.cwd(), 'public/assets/teaching/LogoPoli.png');
-    if (existsSync(poliPath)) {
-      const bytes = readFileSync(poliPath);
-      sql
-        .prepare('INSERT OR IGNORE INTO institution_logos(id,mime,data) VALUES (?,?,?)')
-        .run('politecnico', 'image/png', bytes.toString('base64'));
-    }
-    sql.prepare('INSERT INTO metadata VALUES (?,?)').run('seed-v1', new Date().toISOString());
-    sql.exec('COMMIT');
-  } catch (error) {
-    sql.exec('ROLLBACK');
-    throw error;
-  }
-}
-export const dataDirectory = () => directory;
-export function transaction<T>(fn: () => T): T {
-  const sql = db();
-  sql.exec('BEGIN IMMEDIATE');
-  try {
-    const result = fn();
-    sql.exec('COMMIT');
+    await client.query('BEGIN');
+    const result = await fn(client);
+    await client.query('COMMIT');
     return result;
   } catch (error) {
-    sql.exec('ROLLBACK');
+    await client.query('ROLLBACK');
     throw error;
+  } finally {
+    client.release();
   }
 }
-export function lessonRecord(id: string) {
-  return db().prepare('SELECT * FROM lessons WHERE id=?').get(id) as
-    | {
-        id: string;
-        subject_id: string;
-        status: string;
-        revision: number;
-        reviewed: number;
-        data: string;
-      }
-    | undefined;
-}
-export function readLesson(id: string) {
-  const row = lessonRecord(id);
-  return row ? (JSON.parse(row.data) as Lesson) : undefined;
+
+export async function lessonRecord(
+  id: string,
+  client?: PoolClient | Pool
+): Promise<{
+  id: string;
+  subject_id: string;
+  status: string;
+  revision: number;
+  reviewed: number;
+  data: string | any;
+} | null> {
+  return queryOne(
+    'SELECT id, subject_id, status, revision, reviewed, data FROM lessons WHERE id = $1',
+    [id],
+    client
+  );
 }
 
-export function userAccessibleSubjectIds(user: User): Set<string> | null {
+export async function readLesson(id: string, client?: PoolClient | Pool): Promise<Lesson | null> {
+  const row = await lessonRecord(id, client);
+  if (!row) return null;
+  if (typeof row.data === 'string') {
+    try {
+      return JSON.parse(row.data) as Lesson;
+    } catch {
+      return null;
+    }
+  }
+  return row.data as Lesson;
+}
+
+export async function userAccessibleSubjectIds(
+  user: User,
+  client?: PoolClient | Pool
+): Promise<Set<string> | null> {
   if (user.role === 'admin') return null;
-  const sql = db();
-  const enrolled = sql
-    .prepare('SELECT subject_id FROM enrollments WHERE user_id=?')
-    .all(user.id) as { subject_id: string }[];
-  const instSubs = sql
-    .prepare(
-      `
-   SELECT s.id as subject_id 
-   FROM subjects s 
-   JOIN institution_members im ON im.institution_id=s.institution_id 
-   WHERE im.user_id=?
- `
-    )
-    .all(user.id) as { subject_id: string }[];
+
+  const [enrolled, instSubs] = await Promise.all([
+    query<{ subject_id: string }>(
+      'SELECT subject_id FROM enrollments WHERE user_id = $1',
+      [user.id],
+      client
+    ),
+    query<{ subject_id: string }>(
+      `SELECT s.id as subject_id 
+       FROM subjects s 
+       JOIN institution_members im ON im.institution_id = s.institution_id 
+       WHERE im.user_id = $1`,
+      [user.id],
+      client
+    ),
+  ]);
+
   const set = new Set<string>();
   for (const r of enrolled) set.add(r.subject_id);
   for (const r of instSubs) set.add(r.subject_id);
   return set;
 }
 
-export function userAccessibleInstitutionIds(user: User): Set<string> | null {
+export async function userAccessibleInstitutionIds(
+  user: User,
+  client?: PoolClient | Pool
+): Promise<Set<string> | null> {
   if (user.role === 'admin') return null;
-  const sql = db();
-  const direct = sql
-    .prepare('SELECT institution_id FROM institution_members WHERE user_id=?')
-    .all(user.id) as { institution_id: string }[];
-  const viaSubjects = sql
-    .prepare(
-      `
-   SELECT DISTINCT s.institution_id 
-   FROM subjects s 
-   JOIN enrollments e ON e.subject_id=s.id 
-   WHERE e.user_id=?
- `
-    )
-    .all(user.id) as { institution_id: string }[];
+
+  const [direct, viaSubjects] = await Promise.all([
+    query<{ institution_id: string }>(
+      'SELECT institution_id FROM institution_members WHERE user_id = $1',
+      [user.id],
+      client
+    ),
+    query<{ institution_id: string }>(
+      `SELECT DISTINCT s.institution_id 
+       FROM subjects s 
+       JOIN enrollments e ON e.subject_id = s.id 
+       WHERE e.user_id = $1`,
+      [user.id],
+      client
+    ),
+  ]);
+
   const set = new Set<string>();
   for (const r of direct) set.add(r.institution_id);
   for (const r of viaSubjects) set.add(r.institution_id);
   return set;
+}
+
+export async function syncBetterAuthUser(
+  id: string,
+  name: string,
+  username: string,
+  password: string,
+  role: 'admin' | 'teacher' | 'student',
+  client?: PoolClient | Pool
+) {
+  const now = new Date().toISOString();
+  const email = username.includes('@') ? username : `${username}@aula.local`;
+
+  // 1. users table
+  await execute(
+    `INSERT INTO users(id, name, username, password, role)
+     VALUES ($1, $2, $3, $4, $5)
+     ON CONFLICT(id) DO UPDATE SET 
+       name = EXCLUDED.name,
+       username = EXCLUDED.username,
+       password = EXCLUDED.password,
+       role = EXCLUDED.role`,
+    [id, name, username, password, role],
+    client
+  );
+
+  // 2. Unificar duplicados antiguos de "user" si existieran con otro id
+  const oldUser = await queryOne<{ id: string }>(
+    'SELECT id FROM "user" WHERE (email = $1 OR username = $2) AND id != $3',
+    [email, username, id],
+    client
+  );
+  if (oldUser) {
+    await execute('DELETE FROM "session" WHERE "userId" = $1', [oldUser.id], client);
+    await execute('DELETE FROM account WHERE "userId" = $1', [oldUser.id], client);
+    await execute('DELETE FROM "user" WHERE id = $1', [oldUser.id], client);
+  }
+
+  // 3. "user" table
+  await execute(
+    `INSERT INTO "user"(id, name, email, "emailVerified", "createdAt", "updatedAt", username, "displayUsername", role, banned)
+     VALUES ($1, $2, $3, true, $4, $4, $5, $5, $6, false)
+     ON CONFLICT(id) DO UPDATE SET 
+       name = EXCLUDED.name,
+       email = EXCLUDED.email,
+       "updatedAt" = EXCLUDED."updatedAt",
+       username = EXCLUDED.username,
+       "displayUsername" = EXCLUDED."displayUsername",
+       role = EXCLUDED.role`,
+    [id, name, email, now, username, role],
+    client
+  );
+
+  // 4. account table
+  const existingAcc = await queryOne<{ id: string }>(
+    'SELECT id FROM account WHERE "userId" = $1 AND "providerId" = $2',
+    [id, 'credential'],
+    client
+  );
+
+  if (existingAcc) {
+    await execute(
+      'UPDATE account SET password = $1, "updatedAt" = $2 WHERE id = $3',
+      [password, now, existingAcc.id],
+      client
+    );
+  } else {
+    await execute(
+      `INSERT INTO account(id, "accountId", "providerId", "userId", password, "createdAt", "updatedAt")
+       VALUES ($1, $2, 'credential', $2, $3, $4, $4)
+       ON CONFLICT(id) DO UPDATE SET password = EXCLUDED.password, "updatedAt" = EXCLUDED."updatedAt"`,
+      [randomUUID(), id, password, now],
+      client
+    );
+  }
+}
+
+export async function seedDatabase(client?: PoolClient | Pool): Promise<void> {
+  const hasMeta = await queryOne(
+    "SELECT key FROM metadata WHERE key = 'seed-v1'",
+    [],
+    client
+  );
+  if (hasMeta) return;
+
+  const instCount = await queryOne<{ c: string }>(
+    'SELECT COUNT(*) as c FROM institutions',
+    [],
+    client
+  );
+  if (Number(instCount?.c ?? 0) > 0) {
+    await execute(
+      "INSERT INTO metadata(key, value) VALUES ('seed-v1', $1) ON CONFLICT (key) DO NOTHING",
+      [new Date().toISOString()],
+      client
+    );
+    return;
+  }
+
+  const generatedPath = path.join(process.cwd(), 'content/generated.json');
+  if (!existsSync(generatedPath)) return;
+
+  const catalog = JSON.parse(readFileSync(generatedPath, 'utf8')) as Catalog;
+
+  for (const i of catalog.institutions) {
+    await execute(
+      'INSERT INTO institutions(id, data) VALUES ($1, $2) ON CONFLICT (id) DO NOTHING',
+      [i.id, JSON.stringify(i)],
+      client
+    );
+  }
+
+  for (const s of catalog.subjects) {
+    await execute(
+      'INSERT INTO subjects(id, institution_id, data) VALUES ($1, $2, $3) ON CONFLICT (id) DO NOTHING',
+      [s.id, s.institutionId, JSON.stringify(s)],
+      client
+    );
+  }
+
+  for (const original of catalog.lessons) {
+    const l = structuredClone(original);
+    await execute(
+      `INSERT INTO lessons(id, subject_id, status, revision, reviewed, data)
+       VALUES ($1, $2, 'published', 1, 1, $3)
+       ON CONFLICT (id) DO NOTHING`,
+      [l.id, l.subjectId, JSON.stringify(l)],
+      client
+    );
+  }
+
+  const senaPath = path.join(process.cwd(), 'public/assets/teaching/logoSena.png');
+  if (existsSync(senaPath)) {
+    const bytes = readFileSync(senaPath);
+    await execute(
+      'INSERT INTO institution_logos(id, mime, data) VALUES ($1, $2, $3) ON CONFLICT (id) DO NOTHING',
+      ['sena', 'image/png', bytes.toString('base64')],
+      client
+    );
+  }
+
+  const poliPath = path.join(process.cwd(), 'public/assets/teaching/LogoPoli.png');
+  if (existsSync(poliPath)) {
+    const bytes = readFileSync(poliPath);
+    await execute(
+      'INSERT INTO institution_logos(id, mime, data) VALUES ($1, $2, $3) ON CONFLICT (id) DO NOTHING',
+      ['politecnico', 'image/png', bytes.toString('base64')],
+      client
+    );
+  }
+
+  await execute(
+    "INSERT INTO metadata(key, value) VALUES ('seed-v1', $1) ON CONFLICT (key) DO NOTHING",
+    [new Date().toISOString()],
+    client
+  );
 }

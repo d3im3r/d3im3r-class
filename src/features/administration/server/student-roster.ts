@@ -1,14 +1,15 @@
 import ExcelJS from 'exceljs';
 import { createHash, randomUUID, randomBytes, scrypt } from 'node:crypto';
 import {
-  db,
-  transaction,
+  query,
+  queryOne,
+  execute,
   syncBetterAuthUser,
   userAccessibleSubjectIds,
-  getPgPool,
 } from './database';
 import { AppError } from '@/features/auth/server/auth';
 import type { User } from '@/features/auth/types';
+
 export type RosterRow = {
   row: number;
   name: string;
@@ -19,6 +20,7 @@ export type RosterRow = {
   warning?: string;
 };
 type PrivateRow = RosterRow & { identification: string };
+
 export type RosterPreview = {
   rows: RosterRow[];
   ready: number;
@@ -27,6 +29,7 @@ export type RosterPreview = {
   total: number;
   fingerprint: string;
 };
+
 function archiveLimit(buffer: Buffer) {
   if (buffer.length > 2 * 1024 * 1024 || buffer.readUInt32LE(0) !== 0x04034b50)
     throw new AppError('Selecciona un archivo Excel .xlsx de hasta 2 MB.');
@@ -55,6 +58,7 @@ function archiveLimit(buffer: Buffer) {
       buffer.readUInt16LE(offset + 32);
   }
 }
+
 const normalize = (text: string) =>
   text
     .normalize('NFD')
@@ -65,9 +69,7 @@ const normalize = (text: string) =>
 export function cleanIdentification(val: string): string {
   if (!val) return '';
   let s = String(val).trim();
-  // Quitar prefijo común de documento: CC, T.I, TI, CE, DNI, PAS, RUT, etc.
   s = s.replace(/^(?:c\.?c\.?|t\.?i\.?|c\.?e\.?|d\.?n\.?i\.?|pas\.?|rut\.?)\s*:?\s*/i, '');
-  // Si contiene puntos, comas o espacios como separadores de miles
   const numericOnly = s.replace(/[\s.,_-]/g, '');
   if (/^\d{4,20}$/.test(numericOnly) && /[\s.,]/.test(s)) {
     if (/\.00?$/.test(s) || /,00?$/.test(s)) {
@@ -75,7 +77,6 @@ export function cleanIdentification(val: string): string {
     }
     return s.replace(/[\s.,]/g, '');
   }
-  // Eliminar .0 o ,0 final si vino de float de Excel
   if (/^\d+[.,]00?$/.test(s)) {
     s = s.replace(/[.,]00?$/, '');
   }
@@ -213,7 +214,7 @@ function value(cell: ExcelJS.Cell, identifier = false) {
     if (!Number.isSafeInteger(raw) || raw < 0)
       throw new Error('Guarda la identificación como texto, sin decimales ni notación científica.');
     const str = String(raw);
-    return identifier && /^0+$/.test(cell.numFmt) ? str.padStart(cell.numFmt.length, '0') : str;
+    return identifier && cell.numFmt && /^0+$/.test(cell.numFmt) ? str.padStart(cell.numFmt.length, '0') : str;
   }
   if (typeof raw === 'object' && 'richText' in raw)
     return raw.richText
@@ -224,6 +225,7 @@ function value(cell: ExcelJS.Cell, identifier = false) {
     return String(raw.text ?? '').trim();
   throw new Error('Usa valores de texto, sin fórmulas ni fechas.');
 }
+
 async function parseRoster(buffer: Buffer): Promise<{ rows: PrivateRow[]; fingerprint: string }> {
   if (buffer.length < 22) throw new AppError('El archivo Excel está vacío o no es válido.');
   archiveLimit(buffer);
@@ -239,9 +241,10 @@ async function parseRoster(buffer: Buffer): Promise<{ rows: PrivateRow[]; finger
   if (!sheet) throw new AppError('El archivo no contiene hojas.');
   if (sheet.rowCount > 501) throw new AppError('Importa un máximo de 500 alumnos por archivo.');
   const { headerRow, columns } = findHeaderRowAndColumns(sheet);
-  const rows: PrivateRow[] = [],
-    emails = new Set<string>(),
-    identifications = new Set<string>();
+  const rows: PrivateRow[] = [];
+  const emails = new Set<string>();
+  const identifications = new Set<string>();
+
   for (let rowNumber = headerRow + 1; rowNumber <= sheet.rowCount; rowNumber++) {
     const row = sheet.getRow(rowNumber);
     if (
@@ -250,11 +253,13 @@ async function parseRoster(buffer: Buffer): Promise<{ rows: PrivateRow[]; finger
       )
     )
       continue;
+
     let name = '',
       email = '',
       identification = '',
       issue = '',
       warning: string | undefined;
+
     try {
       name = cleanName(value(row.getCell(columns.name)));
       email = cleanEmail(value(row.getCell(columns.email)));
@@ -268,6 +273,7 @@ async function parseRoster(buffer: Buffer): Promise<{ rows: PrivateRow[]; finger
     } catch (error) {
       issue = error instanceof Error ? error.message : 'Fila no válida.';
     }
+
     if (!issue && (!name || name.length > 100))
       issue = 'El nombre es obligatorio y debe tener hasta 100 caracteres.';
     if (
@@ -280,14 +286,22 @@ async function parseRoster(buffer: Buffer): Promise<{ rows: PrivateRow[]; finger
     if (!issue && emails.has(email)) issue = 'El correo está repetido en el archivo.';
     if (!issue && identifications.has(identification))
       issue = 'La identificación está repetida en el archivo.';
-    const existing = email
-      ? (db().prepare('SELECT role FROM users WHERE username=?').get(email) ||
-         db().prepare('SELECT role FROM user WHERE email=? OR username=?').get(email, email))
-      : undefined;
+
+    let existing: { role: string } | null = null;
+    if (email) {
+      existing =
+        (await queryOne<{ role: string }>('SELECT role FROM users WHERE username = $1', [email])) ||
+        (await queryOne<{ role: string }>(
+          'SELECT role FROM "user" WHERE email = $1 OR username = $2',
+          [email, email]
+        ));
+    }
+
     if (!issue && (existing?.role === 'teacher' || existing?.role === 'admin'))
       issue = 'El correo ya pertenece a una cuenta docente o administrativa.';
     if (email) emails.add(email);
     if (identification) identifications.add(identification);
+
     rows.push({
       row: rowNumber,
       name,
@@ -299,10 +313,12 @@ async function parseRoster(buffer: Buffer): Promise<{ rows: PrivateRow[]; finger
       warning,
     });
   }
+
   if (!rows.length)
     throw new AppError('No se encontraron alumnos. Completa las filas debajo del encabezado.');
   return { rows, fingerprint: createHash('sha256').update(buffer).digest('hex') };
 }
+
 export async function previewRoster(buffer: Buffer): Promise<RosterPreview> {
   const { rows, fingerprint } = await parseRoster(buffer);
   return {
@@ -314,6 +330,7 @@ export async function previewRoster(buffer: Buffer): Promise<RosterPreview> {
     errors: rows.filter((r) => r.status === 'error').length,
   };
 }
+
 async function hashIdentification(value: string) {
   const salt = randomBytes(16).toString('hex');
   const key = await new Promise<Buffer>((resolve, reject) =>
@@ -321,6 +338,7 @@ async function hashIdentification(value: string) {
   );
   return salt + ':' + key.toString('hex');
 }
+
 export async function importRoster(
   buffer: Buffer,
   input: {
@@ -336,16 +354,18 @@ export async function importRoster(
     throw new AppError('El archivo cambió. Revisa la vista previa nuevamente.', 409);
   if (rows.some((r) => r.status === 'error') && !input.skipErrors)
     throw new AppError('Corrige las filas con errores o confirma que deseas omitirlas.');
+
   const ids = [...new Set(input.subjectIds)];
-  if (
-    ids.length > 200 ||
-    ids.some(
-      (id) => typeof id !== 'string' || !db().prepare('SELECT id FROM subjects WHERE id=?').get(id)
-    )
-  )
-    throw new AppError('Selecciona materias válidas.');
+  if (ids.length > 200) throw new AppError('Selecciona materias válidas.');
+
+  for (const id of ids) {
+    if (typeof id !== 'string') throw new AppError('Selecciona materias válidas.');
+    const sExists = await queryOne('SELECT id FROM subjects WHERE id = $1', [id]);
+    if (!sExists) throw new AppError('Selecciona materias válidas.');
+  }
+
   if (actor && actor.role === 'teacher') {
-    const allowed = userAccessibleSubjectIds(actor);
+    const allowed = await userAccessibleSubjectIds(actor);
     for (const id of ids) {
       if (!allowed || !allowed.has(id))
         throw new AppError(
@@ -354,9 +374,11 @@ export async function importRoster(
         );
     }
   }
+
   const ready = rows.filter((r) => r.status === 'ready');
   if (!ready.length && !(input.enrollExisting && rows.some((r) => r.status === 'existing')))
     throw new AppError('No hay alumnos nuevos para importar.');
+
   const hashes = new Map<number, string>();
   let next = 0;
   await Promise.all(
@@ -367,79 +389,69 @@ export async function importRoster(
       }
     })
   );
-  return transaction(() => {
-    let created = 0,
-      enrolled = 0;
-    for (const row of rows) {
-      if (row.status === 'error') continue;
-      let user = db().prepare('SELECT id,role FROM users WHERE username=?').get(row.email) as
-        | { id: string; role: string }
-        | undefined;
-      if (!user) {
-        const u = db()
-          .prepare('SELECT id,role FROM user WHERE email=? OR username=?')
-          .get(row.email, row.email) as { id: string; role: string } | undefined;
-        if (u) user = u;
-      }
-      if (row.status === 'ready') {
-        const id = user?.id ?? randomUUID(),
-          hashed = hashes.get(row.row)!;
-        db()
-          .prepare(
-            "INSERT INTO users(id,name,username,password,role) VALUES (?,?,?,?,'student') ON CONFLICT(id) DO UPDATE SET name=excluded.name,password=excluded.password"
-          )
-          .run(id, row.name, row.email, hashed);
-        syncBetterAuthUser(id, row.name, row.email, hashed, 'student');
-        const pool = getPgPool();
-        if (pool) {
-          pool
-            .query(
-              'INSERT INTO users(id,name,username,password,role) VALUES ($1,$2,$3,$4,$5) ON CONFLICT(id) DO UPDATE SET name=EXCLUDED.name,password=EXCLUDED.password,role=EXCLUDED.role',
-              [id, row.name, row.email, hashed, 'student']
-            )
-            .catch(console.error);
-        }
-        user = { id, role: 'student' };
-        created++;
-      } else if (!input.enrollExisting) {
-        continue;
-      } else if (user) {
-        // Asegurar que el alumno existente tenga registro espejo en 'users' para evitar error de FK en enrollments sin sobreescribir su nombre/clave
-        db()
-          .prepare(
-            "INSERT INTO users(id,name,username,password,role) VALUES (?,?,?,?,'student') ON CONFLICT(id) DO NOTHING"
-          )
-          .run(user.id, row.name, row.email, 'managed-credentials');
-      }
-      if (!user || user.role !== 'student')
-        throw new AppError(
-          'Una cuenta cambió durante la importación. Revisa el archivo nuevamente.',
-          409
-        );
-      for (const id of ids) {
-        const result = db()
-          .prepare('INSERT OR IGNORE INTO enrollments VALUES (?,?)')
-          .run(user.id as string, id);
-        enrolled += Number(result.changes);
-        const pool = getPgPool();
-        if (pool) {
-          pool
-            .query(
-              'INSERT INTO enrollments(user_id,subject_id) VALUES ($1,$2) ON CONFLICT DO NOTHING',
-              [user.id as string, id]
-            )
-            .catch(console.error);
-        }
-      }
+
+  let created = 0,
+    enrolled = 0;
+
+  for (const row of rows) {
+    if (row.status === 'error') continue;
+
+    let user = await queryOne<{ id: string; role: string }>(
+      'SELECT id, role FROM users WHERE username = $1',
+      [row.email]
+    );
+
+    if (!user) {
+      const u = await queryOne<{ id: string; role: string }>(
+        'SELECT id, role FROM "user" WHERE email = $1 OR username = $2',
+        [row.email, row.email]
+      );
+      if (u) user = u;
     }
-    return {
-      created,
-      enrolled,
-      skippedErrors: rows.filter((r) => r.status === 'error').length,
-      existing: rows.filter((r) => r.status === 'existing').length,
-    };
-  });
+
+    if (row.status === 'ready') {
+      const id = user?.id ?? randomUUID(),
+        hashed = hashes.get(row.row)!;
+
+      await execute(
+        "INSERT INTO users(id, name, username, password, role) VALUES ($1, $2, $3, $4, 'student') ON CONFLICT(id) DO UPDATE SET name = EXCLUDED.name, password = EXCLUDED.password",
+        [id, row.name, row.email, hashed]
+      );
+      await syncBetterAuthUser(id, row.name, row.email, hashed, 'student');
+      user = { id, role: 'student' };
+      created++;
+    } else if (!input.enrollExisting) {
+      continue;
+    } else if (user) {
+      await execute(
+        "INSERT INTO users(id, name, username, password, role) VALUES ($1, $2, $3, $4, 'student') ON CONFLICT(id) DO NOTHING",
+        [user.id, row.name, row.email, 'managed-credentials']
+      );
+    }
+
+    if (!user || user.role !== 'student')
+      throw new AppError(
+        'Una cuenta cambió durante la importación. Revisa el archivo nuevamente.',
+        409
+      );
+
+    for (const id of ids) {
+      const changes = await execute(
+        'INSERT INTO enrollments(user_id, subject_id) VALUES ($1, $2) ON CONFLICT DO NOTHING',
+        [user.id, id]
+      );
+      enrolled += changes;
+    }
+  }
+
+  return {
+    created,
+    enrolled,
+    skippedErrors: rows.filter((r) => r.status === 'error').length,
+    existing: rows.filter((r) => r.status === 'existing').length,
+  };
 }
+
 export async function rosterTemplate() {
   const book = new ExcelJS.Workbook(),
     sheet = book.addWorksheet('Alumnos');
@@ -470,47 +482,42 @@ export async function rosterTemplate() {
 }
 
 export async function exportStudentRoster(actor: User) {
-  const teacherSubjects = actor.role === 'teacher' ? userAccessibleSubjectIds(actor) : null;
+  const teacherSubjects =
+    actor.role === 'teacher' ? await userAccessibleSubjectIds(actor) : null;
 
-  const allSubjects = db().prepare('SELECT id, data FROM subjects').all() as Array<{
-    id: string;
-    data: string;
-  }>;
+  const allSubjects = await query<{ id: string; data: unknown }>('SELECT id, data FROM subjects');
   const subjectMap = new Map<string, string>();
   for (const s of allSubjects) {
     try {
-      const parsed = JSON.parse(s.data);
+      const parsed = typeof s.data === 'string' ? JSON.parse(s.data) : (s.data as any);
       subjectMap.set(s.id, parsed.name || s.id);
     } catch {
       subjectMap.set(s.id, s.id);
     }
   }
 
-  let studentRows = db()
-    .prepare("SELECT id, name, username FROM users WHERE role='student' ORDER BY name ASC")
-    .all() as Array<{
-    id: string;
-    name: string;
-    username: string;
-  }>;
+  let studentRows = await query<{ id: string; name: string; username: string }>(
+    "SELECT id, name, username FROM users WHERE role = 'student' ORDER BY name ASC"
+  );
 
   if (teacherSubjects) {
     const subsArray = [...teacherSubjects];
-    const placeholders = subsArray.length > 0 ? subsArray.map(() => '?').join(',') : "''";
-    const enrolledUsers = new Set(
-      (
-        db()
-          .prepare(`SELECT user_id FROM enrollments WHERE subject_id IN (${placeholders})`)
-          .all(...subsArray) as Array<{ user_id: string }>
-      ).map((r) => r.user_id)
-    );
-    studentRows = studentRows.filter((s) => enrolledUsers.has(s.id));
+    if (subsArray.length > 0) {
+      const placeholders = subsArray.map((_, i) => `$${i + 1}`).join(',');
+      const enrolledRows = await query<{ user_id: string }>(
+        `SELECT user_id FROM enrollments WHERE subject_id IN (${placeholders})`,
+        subsArray
+      );
+      const enrolledUsers = new Set(enrolledRows.map((r) => r.user_id));
+      studentRows = studentRows.filter((s) => enrolledUsers.has(s.id));
+    } else {
+      studentRows = [];
+    }
   }
 
-  const enrollments = db().prepare('SELECT user_id, subject_id FROM enrollments').all() as Array<{
-    user_id: string;
-    subject_id: string;
-  }>;
+  const enrollments = await query<{ user_id: string; subject_id: string }>(
+    'SELECT user_id, subject_id FROM enrollments'
+  );
   const userSubjectsMap = new Map<string, string[]>();
   for (const e of enrollments) {
     if (teacherSubjects && !teacherSubjects.has(e.subject_id)) continue;
@@ -519,19 +526,17 @@ export async function exportStudentRoster(actor: User) {
     userSubjectsMap.set(e.user_id, list);
   }
 
-  const progressCounts = db()
-    .prepare('SELECT user_id, COUNT(*) as count FROM progress GROUP BY user_id')
-    .all() as Array<{ user_id: string; count: number }>;
+  const progressCounts = await query<{ user_id: string; count: string | number }>(
+    'SELECT user_id, COUNT(*) as count FROM progress GROUP BY user_id'
+  );
   const progressMap = new Map<string, number>();
   for (const p of progressCounts) {
-    progressMap.set(p.user_id, p.count);
+    progressMap.set(p.user_id, Number(p.count));
   }
 
-  const bans = db().prepare('SELECT user_id, subject_id, reason FROM subject_bans').all() as Array<{
-    user_id: string;
-    subject_id: string;
-    reason: string;
-  }>;
+  const bans = await query<{ user_id: string; subject_id: string; reason: string }>(
+    'SELECT user_id, subject_id, reason FROM subject_bans'
+  );
   const banMap = new Map<string, string[]>();
   for (const b of bans) {
     if (teacherSubjects && !teacherSubjects.has(b.subject_id)) continue;
@@ -585,6 +590,5 @@ export async function exportStudentRoster(actor: User) {
   }
 
   sheet.autoFilter = 'A1:E1';
-
   return book.xlsx.writeBuffer();
 }

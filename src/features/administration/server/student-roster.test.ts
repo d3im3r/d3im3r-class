@@ -1,15 +1,15 @@
 import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
 import ExcelJS from 'exceljs';
-import { mkdtempSync, rmSync } from 'node:fs';
-import { tmpdir } from 'node:os';
-import path from 'node:path';
-const folder = mkdtempSync(path.join(tmpdir(), 'aula-roster-'));
-process.env.AULA_DATA_DIR = folder;
+import { createTestDatabase } from './test-db';
+
+const testDb = await createTestDatabase();
 const { previewRoster, importRoster } = await import('./student-roster');
-const { db } = await import('./database');
+const { queryOne } = await import('./database');
 const { setup, login } = await import('../../auth/server/auth');
-setup({ name: 'Docente', username: 'docente@pruebas.edu', password: 'Clave-docente-prueba' });
+
+await setup({ name: 'Docente', username: 'docente@pruebas.edu', password: 'Clave-docente-prueba' });
+
 async function workbook(rows: (string | number)[][], numericFormat?: string) {
   const book = new ExcelJS.Workbook(),
     sheet = book.addWorksheet('Alumnos');
@@ -18,6 +18,7 @@ async function workbook(rows: (string | number)[][], numericFormat?: string) {
   if (numericFormat) sheet.getCell('C2').numFmt = numericFormat;
   return Buffer.from(await book.xlsx.writeBuffer());
 }
+
 test('previsualiza sin exponer identificaciones y conserva ceros iniciales', async () => {
   const buffer = await workbook([['Ana Prueba', 'ANA@PRUEBAS.EDU', '00091234']]);
   const preview = await previewRoster(buffer);
@@ -31,8 +32,9 @@ test('previsualiza sin exponer identificaciones y conserva ceros iniciales', asy
     skipErrors: false,
     enrollExisting: false,
   });
-  assert.equal(login({ username: 'ana@pruebas.edu', password: '00091234' }).role, 'student');
+  assert.equal((await login({ username: 'ana@pruebas.edu', password: '00091234' })).role, 'student');
 });
+
 test('preserva formato numérico de identificación con ceros', async () => {
   const buffer = await workbook([['Beto Prueba', 'beto@pruebas.edu', 1234]], '000000');
   const preview = await previewRoster(buffer);
@@ -43,8 +45,9 @@ test('preserva formato numérico de identificación con ceros', async () => {
     skipErrors: false,
     enrollExisting: false,
   });
-  assert.equal(login({ username: 'beto@pruebas.edu', password: '001234' }).role, 'student');
+  assert.equal((await login({ username: 'beto@pruebas.edu', password: '001234' })).role, 'student');
 });
+
 test('detecta correos inválidos, docentes y duplicados sin crear cuentas', async () => {
   const buffer = await workbook([
     ['Uno', 'correo-invalido', '123'],
@@ -64,10 +67,11 @@ test('detecta correos inválidos, docentes y duplicados sin crear cuentas', asyn
     })
   );
   assert.equal(
-    db().prepare('SELECT id FROM users WHERE username=?').get('nuevo@pruebas.edu'),
-    undefined
+    await queryOne('SELECT id FROM users WHERE username = $1', ['nuevo@pruebas.edu']),
+    null
   );
 });
+
 test('importar filas válidas exige omisión explícita y no permite cambiar el archivo', async () => {
   const buffer = await workbook([
     ['Válido', 'valido@pruebas.edu', '123'],
@@ -90,8 +94,9 @@ test('importar filas válidas exige omisión explícita y no permite cambiar el 
   });
   assert.equal(result.created, 1);
   assert.equal(result.skippedErrors, 1);
-  assert.equal(login({ username: 'valido@pruebas.edu', password: '123' }).role, 'student');
+  assert.equal((await login({ username: 'valido@pruebas.edu', password: '123' })).role, 'student');
 });
+
 test('un correo existente conserva su contraseña y puede recibir asignaciones', async () => {
   const buffer = await workbook([['Ana actualizada', 'ana@pruebas.edu', 'otra-identificacion']]);
   const preview = await previewRoster(buffer);
@@ -104,9 +109,10 @@ test('un correo existente conserva su contraseña y puede recibir asignaciones',
   });
   assert.equal(result.created, 0);
   assert.equal(result.enrolled, 1);
-  assert.equal(login({ username: 'ana@pruebas.edu', password: '00091234' }).name, 'Ana Prueba');
-  assert.throws(() => login({ username: 'ana@pruebas.edu', password: 'otra-identificacion' }));
+  assert.equal((await login({ username: 'ana@pruebas.edu', password: '00091234' })).name, 'Ana Prueba');
+  await assert.rejects(async () => login({ username: 'ana@pruebas.edu', password: 'otra-identificacion' }));
 });
+
 test('limpia puntos y separadores en la identificación y permite iniciar sesión sin puntos', async () => {
   const buffer = await workbook([['Carlos Cédula', 'carlos.cedula@pruebas.edu', '1.025.761.967']]);
   const preview = await previewRoster(buffer);
@@ -120,8 +126,9 @@ test('limpia puntos y separadores en la identificación y permite iniciar sesió
     enrollExisting: false,
   });
   // El alumno puede iniciar sesión con la identificación limpia sin puntos
-  assert.equal(login({ username: 'carlos.cedula@pruebas.edu', password: '1025761967' }).role, 'student');
+  assert.equal((await login({ username: 'carlos.cedula@pruebas.edu', password: '1025761967' })).role, 'student');
 });
+
 test('detecta encabezados en filas intermedias y encabezados institucionales (Aprendiz, Cédula)', async () => {
   const book = new ExcelJS.Workbook();
   const sheet = book.addWorksheet('Alumnos');
@@ -134,7 +141,7 @@ test('detecta encabezados en filas intermedias y encabezados institucionales (Ap
   assert.equal(preview.rows[0].name, 'Estudiante Sena');
   assert.equal(preview.rows[0].email, 'sena.aprendiz@pruebas.edu');
 });
-after(() => {
-  db().close();
-  rmSync(folder, { recursive: true, force: true });
+
+after(async () => {
+  await testDb.adapter.close();
 });

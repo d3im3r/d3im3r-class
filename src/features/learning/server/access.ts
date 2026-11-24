@@ -1,26 +1,38 @@
 import {
-  db,
+  query,
+  queryOne,
   lessonRecord,
   userAccessibleSubjectIds,
 } from '@/features/administration/server/database';
 import { hasPermission } from '@/features/auth/server/permissions';
 import type { Catalog, Institution, Subject, Lesson, Block } from '@/features/catalog/model/types';
 import type { User, Progress } from '@/features/auth/types';
-export function canReadLesson(user: User, id: string) {
-  const row = lessonRecord(id);
+
+const parseData = <T>(val: unknown): T => {
+  if (typeof val === 'string') {
+    return JSON.parse(val) as T;
+  }
+  return val as T;
+};
+
+export async function canReadLesson(user: User, id: string): Promise<boolean> {
+  const row = await lessonRecord(id);
   if (!row) return false;
   if (user.role === 'admin') return true;
-  const allowed = userAccessibleSubjectIds(user);
+
+  const allowed = await userAccessibleSubjectIds(user);
   if (!allowed || !allowed.has(row.subject_id)) return false;
   if (hasPermission(user, { lesson: ['readDraft'] })) return true;
   if (row.status !== 'published' || !hasPermission(user, { lesson: ['readPublished'] }))
     return false;
-  const isBanned = !!db()
-    .prepare('SELECT 1 FROM subject_bans WHERE user_id=? AND subject_id=?')
-    .get(user.id, row.subject_id);
+
+  const isBanned = await queryOne(
+    'SELECT 1 FROM subject_bans WHERE user_id = $1 AND subject_id = $2',
+    [user.id, row.subject_id]
+  );
   if (isBanned) return false;
 
-  const data = JSON.parse(row.data) as Lesson;
+  const data = parseData<Lesson>(row.data);
   if (data.publishAt) {
     const pubTime = new Date(data.publishAt).getTime();
     if (!isNaN(pubTime) && Date.now() < pubTime) {
@@ -28,9 +40,11 @@ export function canReadLesson(user: User, id: string) {
     }
   }
 
-  const topicEnrollments = db()
-    .prepare('SELECT topic_id FROM topic_enrollments WHERE user_id=? AND subject_id=?')
-    .all(user.id, row.subject_id) as Array<{ topic_id: string }>;
+  const topicEnrollments = await query<{ topic_id: string }>(
+    'SELECT topic_id FROM topic_enrollments WHERE user_id = $1 AND subject_id = $2',
+    [user.id, row.subject_id]
+  );
+
   if (topicEnrollments.length > 0) {
     const allowedTopics = new Set(topicEnrollments.map((t) => t.topic_id));
     if (!allowedTopics.has(data.topicId)) {
@@ -40,12 +54,13 @@ export function canReadLesson(user: User, id: string) {
 
   return true;
 }
-export function canReadResource(
+
+export async function canReadResource(
   user: User,
   lessonId: string,
   resource: { mime: string; name: string }
-) {
-  if (!canReadLesson(user, lessonId)) return false;
+): Promise<boolean> {
+  if (!(await canReadLesson(user, lessonId))) return false;
   if (hasPermission(user, { lesson: ['downloadSource'] })) return true;
   const isDangerous = /\.(tex|sty|cls|bib|tikz|py|js|ts|zip)$/i.test(resource.name);
   if (isDangerous) return false;
@@ -53,6 +68,7 @@ export function canReadResource(
   if (!hasPermission(user, { lesson: ['downloadMaterial'] })) return false;
   return resource.mime === 'application/pdf';
 }
+
 export function studentLesson(lesson: Lesson): Lesson {
   function visible(block: Block): Block {
     return {
@@ -74,31 +90,31 @@ export function studentLesson(lesson: Lesson): Lesson {
     })),
   };
 }
-export function userCatalog(user: User): Catalog {
+
+export async function userCatalog(user: User): Promise<Catalog> {
   const canReadAll = user.role === 'admin';
   const canReadDraft = canReadAll || hasPermission(user, { lesson: ['readDraft'] });
-  let subjects = (
-    canReadAll
-      ? db().prepare('SELECT data FROM subjects').all()
-      : db()
-          .prepare(
-            `
-      SELECT s.data FROM subjects s 
-      LEFT JOIN subject_bans b ON b.subject_id=s.id AND b.user_id=? 
-      WHERE (
-        s.id IN (SELECT subject_id FROM enrollments WHERE user_id=?)
-        OR s.institution_id IN (SELECT institution_id FROM institution_members WHERE user_id=?)
-      )
-      AND b.user_id IS NULL
-    `
-          )
-          .all(user.id, user.id, user.id)
-  ).map((row) => JSON.parse(row.data as string) as Subject);
+
+  const rawSubjects = canReadAll
+    ? await query<{ data: unknown }>('SELECT data FROM subjects')
+    : await query<{ data: unknown }>(
+        `SELECT s.data FROM subjects s 
+         LEFT JOIN subject_bans b ON b.subject_id = s.id AND b.user_id = $1 
+         WHERE (
+           s.id IN (SELECT subject_id FROM enrollments WHERE user_id = $1)
+           OR s.institution_id IN (SELECT institution_id FROM institution_members WHERE user_id = $1)
+         )
+         AND b.user_id IS NULL`,
+        [user.id]
+      );
+
+  let subjects = rawSubjects.map((row) => parseData<Subject>(row.data));
 
   if (!canReadDraft) {
-    const topicRows = db()
-      .prepare('SELECT subject_id, topic_id FROM topic_enrollments WHERE user_id=?')
-      .all(user.id) as Array<{ subject_id: string; topic_id: string }>;
+    const topicRows = await query<{ subject_id: string; topic_id: string }>(
+      'SELECT subject_id, topic_id FROM topic_enrollments WHERE user_id = $1',
+      [user.id]
+    );
 
     if (topicRows.length > 0) {
       const allowedTopicsBySubject = new Map<string, Set<string>>();
@@ -122,19 +138,21 @@ export function userCatalog(user: User): Catalog {
 
   const ids = new Set(subjects.map((s) => s.id));
   const allowedTopicIdSet = new Set(subjects.flatMap((s) => s.topics.map((t) => t.id)));
-  const rawLessons = db()
-    .prepare('SELECT id,subject_id,data,status FROM lessons')
-    .all()
-    .filter((row) => ids.has(row.subject_id as string));
+
+  const allLessons = await query<{ id: string; subject_id: string; data: unknown; status: string }>(
+    'SELECT id, subject_id, data, status FROM lessons'
+  );
+  const rawLessons = allLessons.filter((row) => ids.has(row.subject_id));
 
   const lessons: Lesson[] = [];
   for (const row of rawLessons) {
-    const isBanned = !!db()
-      .prepare('SELECT 1 FROM subject_bans WHERE user_id=? AND subject_id=?')
-      .get(user.id, row.subject_id);
+    const isBanned = await queryOne(
+      'SELECT 1 FROM subject_bans WHERE user_id = $1 AND subject_id = $2',
+      [user.id, row.subject_id]
+    );
     if (isBanned) continue;
 
-    const data = JSON.parse(row.data as string) as Lesson;
+    const data = parseData<Lesson>(row.data);
     if (!canReadDraft && !allowedTopicIdSet.has(data.topicId)) {
       continue;
     }
@@ -155,45 +173,58 @@ export function userCatalog(user: User): Catalog {
           diagnostics: [],
           frames: [],
         });
-      } else if (canReadLesson(user, row.id as string)) {
+      } else if (await canReadLesson(user, row.id)) {
         lessons.push({ ...data, status });
       }
-    } else if (canReadDraft && canReadLesson(user, row.id as string)) {
+    } else if (canReadDraft && (await canReadLesson(user, row.id))) {
       lessons.push({ ...data, status });
     }
   }
 
-  if (!hasPermission(user, { tools: ['inspectSource'] }))
+  if (!hasPermission(user, { tools: ['inspectSource'] })) {
     for (let i = 0; i < lessons.length; i++) {
       if (lessons[i].frames.length > 0) {
         lessons[i] = studentLesson(lessons[i]);
       }
     }
+  }
 
   lessons.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
   const institutionIds = new Set(subjects.map((s) => s.institutionId));
+
   if (!canReadAll) {
-    for (const im of db()
-      .prepare('SELECT institution_id FROM institution_members WHERE user_id=?')
-      .all(user.id) as { institution_id: string }[]) {
+    const memberInsts = await query<{ institution_id: string }>(
+      'SELECT institution_id FROM institution_members WHERE user_id = $1',
+      [user.id]
+    );
+    for (const im of memberInsts) {
       institutionIds.add(im.institution_id);
     }
   }
-  const institutions = db()
-    .prepare('SELECT data FROM institutions')
-    .all()
-    .map((row) => JSON.parse(row.data as string) as Institution)
+
+  const rawInstitutions = await query<{ id: string; data: unknown }>(
+    'SELECT id, data FROM institutions'
+  );
+  const institutions = rawInstitutions
+    .map((row) => parseData<Institution>(row.data))
     .filter((i) => canReadAll || institutionIds.has(i.id));
+
   return { institutions, subjects, lessons };
 }
-export function userProgress(user: User) {
+
+export async function userProgress(user: User): Promise<Progress> {
   if (!hasPermission(user, { progress: ['read'] })) return {};
   const result: Progress = {};
-  for (const row of db()
-    .prepare('SELECT lesson_id,frame_id FROM progress WHERE user_id=?')
-    .all(user.id)) {
-    if (canReadLesson(user, row.lesson_id as string))
-      (result[row.lesson_id as string] ??= []).push(row.frame_id as string);
+
+  const rows = await query<{ lesson_id: string; frame_id: string }>(
+    'SELECT lesson_id, frame_id FROM progress WHERE user_id = $1',
+    [user.id]
+  );
+
+  for (const row of rows) {
+    if (await canReadLesson(user, row.lesson_id)) {
+      (result[row.lesson_id] ??= []).push(row.frame_id);
+    }
   }
   return result;
 }

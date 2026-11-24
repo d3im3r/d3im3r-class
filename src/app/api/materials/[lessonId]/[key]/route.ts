@@ -4,10 +4,12 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
 import {
-  db,
-  dataDirectory,
+  queryOne,
+  execute,
   readLesson,
-  getPgPool,
+  downloadFromStorage,
+  uploadToStorage,
+  MATERIALS_BUCKET,
 } from '@/features/administration/server/database';
 import { requireUser, errorResponse, AppError } from '@/features/auth/server/auth';
 import { canReadLesson, canReadResource } from '@/features/learning/server/access';
@@ -18,7 +20,7 @@ import {
 
 export const runtime = 'nodejs';
 
-function resolvePath(filePath: string): string | null {
+function resolveLocalPath(filePath: string): string | null {
   if (existsSync(filePath)) return filePath;
   const cwd = process.cwd();
   const relMaterials = filePath.replace(/^.*\/content\/materials\//, 'content/materials/');
@@ -34,7 +36,6 @@ function resolvePath(filePath: string): string | null {
     path.join(cwd, 'content/materials/assets/diagrams', base),
     path.join(cwd, 'content/materials/assets/teaching', base),
     path.join(cwd, 'content/materials/resources', base),
-    path.join(dataDirectory(), 'cache/diagrams', base),
   ];
   for (const c of candidates) {
     if (existsSync(c)) return c;
@@ -48,7 +49,6 @@ function findFallbackResource(key: string): { path: string; mime: string; name: 
   const diagDirs = [
     path.join(cwd, 'public/assets/diagrams'),
     path.join(cwd, 'content/materials/assets/diagrams'),
-    path.join(dataDirectory(), 'cache/diagrams'),
   ];
   for (const d of diagDirs) {
     if (existsSync(d)) {
@@ -67,7 +67,7 @@ function findFallbackResource(key: string): { path: string; mime: string; name: 
       } catch {}
     }
   }
-  // Check teaching directory
+
   const teachDirs = [
     path.join(cwd, 'public/assets/teaching'),
     path.join(cwd, 'content/materials/assets/teaching'),
@@ -107,12 +107,14 @@ export async function GET(
   try {
     const user = await requireUser();
     const { lessonId, key } = await params;
-    if (!canReadLesson(user, lessonId)) throw new AppError('Material no disponible.', 404);
-    let row = db()
-      .prepare('SELECT * FROM resources WHERE lesson_id=? AND key=?')
-      .get(lessonId, key) as { path: string; mime: string; name: string } | undefined;
+    if (!(await canReadLesson(user, lessonId))) throw new AppError('Material no disponible.', 404);
 
-    // 1. Si el recurso es un SVG almacenado directamente como texto en la base de datos
+    let row = await queryOne<{ path: string; mime: string; name: string }>(
+      'SELECT path, mime, name FROM resources WHERE lesson_id = $1 AND key = $2',
+      [lessonId, key]
+    );
+
+    // 1. Si el recurso es un SVG almacenado directamente como texto
     if (row && row.mime === 'image/svg+xml') {
       if (
         row.path.startsWith('<svg') ||
@@ -123,9 +125,11 @@ export async function GET(
         if (svg.startsWith('data:image/svg+xml;utf8,')) {
           svg = decodeURIComponent(svg.slice('data:image/svg+xml;utf8,'.length));
         } else if (svg.startsWith('data:image/svg+xml;base64,')) {
-          svg = Buffer.from(svg.slice('data:image/svg+xml;base64,'.length), 'base64').toString('utf8');
+          svg = Buffer.from(svg.slice('data:image/svg+xml;base64,'.length), 'base64').toString(
+            'utf8'
+          );
         }
-        if (!canReadResource(user, lessonId, row))
+        if (!(await canReadResource(user, lessonId, row)))
           throw new AppError('Recurso no encontrado.', 404);
         const etag = `"${key}-${createHash('sha256').update(svg).digest('hex').slice(0, 16)}"`;
         const headers = {
@@ -142,11 +146,11 @@ export async function GET(
       }
     }
 
-    // 1b. Si el recurso es cualquier binario (PNG, JPG, PDF) almacenado como data URI en la base de datos
+    // 2. Si el recurso es un data URI
     if (row && row.path.startsWith('data:')) {
       const commaIdx = row.path.indexOf(',');
       if (commaIdx !== -1) {
-        if (!canReadResource(user, lessonId, row))
+        if (!(await canReadResource(user, lessonId, row)))
           throw new AppError('Recurso no encontrado.', 404);
         const headerPart = row.path.slice(0, commaIdx);
         const dataPart = row.path.slice(commaIdx + 1);
@@ -168,13 +172,34 @@ export async function GET(
       }
     }
 
+    // 3. Si está en Supabase Storage
+    if (row && !row.path.startsWith('/') && !existsSync(row.path)) {
+      const { data, error } = await downloadFromStorage(MATERIALS_BUCKET, row.path);
+      if (!error && data) {
+        if (!(await canReadResource(user, lessonId, row)))
+          throw new AppError('Recurso no encontrado.', 404);
+        const etag = `"${key}-${createHash('sha256').update(data).digest('hex').slice(0, 16)}"`;
+        const headers = {
+          'Content-Type': row.mime || 'application/octet-stream',
+          'Content-Disposition': `${row.mime.startsWith('text/') ? 'attachment' : 'inline'}; filename*=UTF-8''${encodeURIComponent(row.name)}`,
+          'Cache-Control': 'public, max-age=31536000, immutable',
+          ETag: etag,
+          'X-Content-Type-Options': 'nosniff',
+        };
+        if (request.headers.get('if-none-match') === etag)
+          return new Response(null, { status: 304, headers });
+        return new Response(new Uint8Array(data), { headers });
+      }
+    }
+
+    // 4. Si es archivo local o fallback
     if (row) {
-      const resolved = resolvePath(row.path);
+      const resolved = resolveLocalPath(row.path);
       if (resolved) {
         row = { ...row, path: resolved };
       } else if (row.mime === 'image/svg+xml') {
-        // Recuperación bajo demanda para diagramas cuyo archivo temporal no existe en la instancia Serverless actual
-        const lesson = readLesson(lessonId);
+        // Recuperación bajo demanda para diagramas
+        const lesson = await readLesson(lessonId);
         let recoveredSvg: string | null = null;
         if (lesson) {
           for (const f of lesson.frames || []) {
@@ -185,9 +210,8 @@ export async function GET(
                   try {
                     const compiled = await compileTikzWithTikzjax([b.content], tmpdir());
                     const svgFile = compiled.results[h];
-                    if (svgFile && existsSync(svgFile)) {
-                      const raw = await readFile(svgFile, 'utf8');
-                      recoveredSvg = cropSvgViewBox(raw);
+                    if (svgFile) {
+                      recoveredSvg = cropSvgViewBox(svgFile);
                     }
                   } catch {}
                   break;
@@ -198,20 +222,17 @@ export async function GET(
           }
         }
         if (recoveredSvg) {
-          db()
-            .prepare('UPDATE resources SET path=? WHERE lesson_id=? AND key=?')
-            .run(recoveredSvg, lessonId, key);
-          const pool = getPgPool();
-          if (pool) {
-            pool
-              .query('UPDATE resources SET path=$1 WHERE lesson_id=$2 AND key=$3', [
-                recoveredSvg,
-                lessonId,
-                key,
-              ])
-              .catch(() => {});
-          }
-          if (!canReadResource(user, lessonId, row))
+          const storagePath = `${lessonId}/${key}.svg`;
+          try {
+            await uploadToStorage(MATERIALS_BUCKET, storagePath, recoveredSvg, 'image/svg+xml');
+          } catch {}
+          await execute('UPDATE resources SET path = $1 WHERE lesson_id = $2 AND key = $3', [
+            storagePath,
+            lessonId,
+            key,
+          ]);
+
+          if (!(await canReadResource(user, lessonId, row)))
             throw new AppError('Recurso no encontrado.', 404);
           const etag = `"${key}-${createHash('sha256').update(recoveredSvg).digest('hex').slice(0, 16)}"`;
           const headers = {
@@ -239,7 +260,9 @@ export async function GET(
       if (fallback) row = fallback;
       else throw new AppError('Recurso no encontrado.', 404);
     }
-    if (!canReadResource(user, lessonId, row)) throw new AppError('Recurso no encontrado.', 404);
+
+    if (!(await canReadResource(user, lessonId, row)))
+      throw new AppError('Recurso no encontrado.', 404);
     const info = await stat(row.path).catch(() => {
       throw new AppError('Recurso no encontrado.', 404);
     });

@@ -11,7 +11,7 @@ import {
   errorResponse,
 } from '@/features/auth/server/auth';
 import { getAuth } from '@/features/auth/server/better-auth';
-import { syncFromPostgres } from '@/features/administration/server/database';
+
 export const runtime = 'nodejs';
 
 export async function GET(request: Request, { params }: { params: Promise<{ all?: string[] }> }) {
@@ -27,7 +27,8 @@ export async function GET(request: Request, { params }: { params: Promise<{ all?
     ) {
       await endSession();
       const cookieName = process.env.AULA_SESSION_COOKIE ?? 'aula_session';
-      const baseOpts = 'Path=/; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT; HttpOnly; SameSite=Lax';
+      const baseOpts =
+        'Path=/; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT; HttpOnly; SameSite=Lax';
       const res = Response.redirect(new URL('/', request.url), 302);
       res.headers.append('Set-Cookie', `${cookieName}=; ${baseOpts}`);
       res.headers.append('Set-Cookie', `${cookieName}=; ${baseOpts}; Secure`);
@@ -61,7 +62,6 @@ export async function GET(request: Request, { params }: { params: Promise<{ all?
 
 export async function POST(request: Request, { params }: { params: Promise<{ all?: string[] }> }) {
   try {
-    await syncFromPostgres();
     const { all } = await params;
     const action = all?.[0] ?? '';
     const fullPath = all?.join('/') ?? '';
@@ -76,18 +76,22 @@ export async function POST(request: Request, { params }: { params: Promise<{ all
       await endSession();
       const response = Response.json({ ok: true });
       const cookieName = process.env.AULA_SESSION_COOKIE ?? 'aula_session';
-      const baseOpts = 'Path=/; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT; HttpOnly; SameSite=Lax';
+      const baseOpts =
+        'Path=/; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT; HttpOnly; SameSite=Lax';
       response.headers.append('Set-Cookie', `${cookieName}=; ${baseOpts}`);
       response.headers.append('Set-Cookie', `${cookieName}=; ${baseOpts}; Secure`);
       response.headers.append('Set-Cookie', `better-auth.session_token=; ${baseOpts}`);
       response.headers.append('Set-Cookie', `better-auth.session_token=; ${baseOpts}; Secure`);
-      response.headers.append('Set-Cookie', `__Secure-better-auth.session_token=; ${baseOpts}; Secure`);
+      response.headers.append(
+        'Set-Cookie',
+        `__Secure-better-auth.session_token=; ${baseOpts}; Secure`
+      );
       return response;
     }
     if (action === 'setup' || action === 'login') {
       sameOrigin(request);
       const input = await request.json();
-      const user = action === 'setup' ? setup(input) : login(input);
+      const user = action === 'setup' ? await setup(input) : await login(input);
       const sessionRes = await startSession(user);
       const response = Response.json({ user, permissions: roles[user.role].statements });
       const url = new URL(request.url);

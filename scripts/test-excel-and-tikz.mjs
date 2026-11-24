@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import ExcelJS from 'exceljs';
-import {DatabaseSync} from 'node:sqlite';
+import pg from 'pg';
 import {readFile,writeFile} from 'node:fs/promises';
 const base='http://127.0.0.1:3102',run=Date.now();let checks=0;
 async function request(route,{cookie,method='GET',body,status=200}={}){const headers={Origin:base};if(cookie)headers.Cookie=cookie;if(body&&!(body instanceof FormData))headers['Content-Type']='application/json';const response=await fetch(base+route,{method,headers,body:body instanceof FormData?body:body?JSON.stringify(body):undefined});assert.equal(response.status,status,`${route}: ${response.status===status?'':await response.clone().text()}`);checks++;return response;}
@@ -12,7 +12,12 @@ const preview=await (await request('/api/admin/students/import',{cookie:teacher,
 await request('/api/admin/students/import',{cookie:teacher,method:'POST',body:await roster('import',{fingerprint:preview.fingerprint,subjectIds:['diseno-web-1']}),status:400});
 const imported=await (await request('/api/admin/students/import',{cookie:teacher,method:'POST',body:await roster('import',{fingerprint:preview.fingerprint,subjectIds:['diseno-web-1'],skipErrors:'true'})})).json();assert.equal(imported.created,2);assert.equal(imported.enrolled,2);
 const studentLogin=await request('/api/auth/login',{method:'POST',body:{username:`excel.${run}.ana@pruebas.edu`,password:'00091234'}}),student=studentLogin.headers.get('set-cookie').split(';')[0];const catalog=await (await request('/api/catalog',{cookie:student})).json();assert.deepEqual(catalog.subjects.map(s=>s.id),['diseno-web-1']);await request('/api/admin/students/template',{cookie:student,status:403});await request('/api/admin/students/import',{cookie:student,method:'POST',body:await roster('preview'),status:403});
-const local=new DatabaseSync('.data/aula.sqlite',{readOnly:true});const original=JSON.parse(local.prepare('SELECT data FROM lessons WHERE id=?').get('2710538e-a424-41da-a375-20db15e596ce').data);const source=local.prepare("SELECT path FROM resources WHERE lesson_id=? AND mime LIKE 'text/%'").get(original.id).path;const pdf=local.prepare("SELECT path FROM resources WHERE lesson_id=? AND mime='application/pdf'").get(original.id)?.path;local.close();
+const pool=new pg.Pool({connectionString:process.env.DATABASE_URL,ssl:{rejectUnauthorized:false}});
+const lRow=(await pool.query('SELECT data FROM lessons WHERE id=$1',['2710538e-a424-41da-a375-20db15e596ce'])).rows[0];
+const original=typeof lRow.data==='string'?JSON.parse(lRow.data):lRow.data;
+const source=(await pool.query("SELECT path FROM resources WHERE lesson_id=$1 AND mime LIKE 'text/%'",[original.id])).rows[0]?.path;
+const pdf=(await pool.query("SELECT path FROM resources WHERE lesson_id=$1 AND mime='application/pdf'",[original.id])).rows[0]?.path;
+await pool.end();
 const form=new FormData();form.set('subjectId','robotica-servicio');form.set('topicId','ros2');form.set('title','Motivación en robótica · Verificación');form.set('subtitle','Prueba de importación con TikZ');form.set('source',new File([await readFile(source)],'robotica.tex'));if(pdf)form.set('pdf',new File([await readFile(pdf)],'robotica.pdf'));
 const lessonResult=await (await request('/api/admin/import',{cookie:teacher,method:'POST',body:form})).json();assert.equal(lessonResult.frames,50);assert.deepEqual(lessonResult.diagnostics,[]);
 const teacherCatalog=await (await request('/api/catalog',{cookie:teacher})).json(),lesson=teacherCatalog.lessons.find(l=>l.id===lessonResult.id);let diagrams=0;async function verify(blocks){for(const block of blocks){if(block.type==='diagram'){assert.ok(block.asset);const response=await request(block.asset,{cookie:teacher});assert.match(await response.text(),/<svg/);diagrams++;}if(block.type==='image')assert.ok(block.asset);if(block.children)await verify(block.children);for(const item of block.items??[])await verify(item);}}for(const frame of lesson.frames)await verify(frame.blocks);assert.equal(diagrams,10);

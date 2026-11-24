@@ -1,14 +1,12 @@
 import { betterAuth } from 'better-auth';
 import { username, admin, bearer } from 'better-auth/plugins';
 import { nextCookies } from 'better-auth/next-js';
-import { db, getPgPool } from '@/features/administration/server/database';
+import { getPgPool } from '@/features/administration/server/database';
 import { passwordHash, passwordMatches } from './auth';
 import { ac, roles } from './permissions';
 
 function getDatabase() {
-  const pool = getPgPool();
-  if (pool) return pool;
-  return db();
+  return getPgPool();
 }
 
 function getTrustedOrigins() {

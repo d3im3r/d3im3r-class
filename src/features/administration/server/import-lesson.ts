@@ -1,5 +1,6 @@
 import { existsSync } from 'node:fs';
-import { mkdir, writeFile, readFile } from 'node:fs/promises';
+import { readFile, mkdtemp, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { randomUUID, createHash } from 'node:crypto';
 import { spawn } from 'node:child_process';
@@ -7,15 +8,17 @@ import { parseLatex, extractLatexMetadata } from '@/features/latex-import/lib/pa
 import type { Subject, Lesson, Block } from '@/features/catalog/model/types';
 import type { User } from '@/features/auth/types';
 import {
-  db,
-  dataDirectory,
-  transaction,
+  query,
+  queryOne,
+  execute,
   lessonRecord,
   userAccessibleSubjectIds,
-  getPgPool,
+  uploadToStorage,
+  MATERIALS_BUCKET,
 } from './database';
-import { sharedImage, cachedDiagramPath, cacheDiagram } from './shared-resource';
+import { sharedImage, cachedDiagramPath } from './shared-resource';
 import { AppError, text } from '@/features/auth/server/auth';
+
 type Resource = { key: string; name: string; path: string; mime: string };
 const types: Record<string, string> = {
   '.pdf': 'application/pdf',
@@ -25,8 +28,8 @@ const types: Record<string, string> = {
   '.jpeg': 'image/jpeg',
   '.webp': 'image/webp',
 };
+
 export function cropSvgViewBox(svg: string): string {
-  // Los SVGs generados por Inkscape (--export-area-drawing) ya tienen el viewBox exacto y óptimo
   if (svg.includes('inkscape') || svg.includes('sodipodi')) {
     return svg;
   }
@@ -119,7 +122,6 @@ export function cropSvgViewBox(svg: string): string {
     .replace(/width=["'][^"']+["']/, `width="${width.toFixed(2)}"`)
     .replace(/height=["'][^"']+["']/, `height="${height.toFixed(2)}"`);
 
-  // Asegurar que las puntas de flecha cerradas se rellenen de forma sólida y visible
   processed = processed.replace(
     /<path\s+([^>]*\bd=["'][^"']*[Zz]["'][^>]*)(\/?>)/g,
     (match, attrs, close) => {
@@ -187,14 +189,7 @@ export async function compileTikzWithTikzjax(
     try {
       const full = `\\begin{document}\n${preambleColors}\n${source}\n\\end{document}`;
       const svg = cropSvgViewBox(await tikzjax(full));
-      const dest = path.join(output, `${hash}.svg`);
-      await writeFile(dest, svg);
-      const cachedDest = cacheDiagram(hash, dest);
-      try {
-        const inPublic = path.join(process.cwd(), 'public/assets/diagrams', `${hash}.svg`);
-        await writeFile(inPublic, svg);
-      } catch {}
-      results[hash] = cachedDest;
+      results[hash] = svg;
     } catch (err) {
       errors.push({
         hash,
@@ -269,8 +264,9 @@ export function compileFigures(
           results: Record<string, string>;
           errors: { hash: string; message: string; log?: string; line?: number }[];
         };
-        for (const [hash, file] of Object.entries(parsed.results))
-          cachedResults[hash] = cacheDiagram(hash, file);
+        for (const [hash, file] of Object.entries(parsed.results)) {
+          cachedResults[hash] = file;
+        }
         if (parsed.errors.length) {
           const failedHashes = new Set(parsed.errors.map((e) => e.hash));
           const failedSources = pending.filter((s) =>
@@ -299,16 +295,21 @@ export function compileFigures(
     child.stdin.end(JSON.stringify({ figures: pending, output }));
   });
 }
+
 export async function importLesson(form: FormData, actor?: User) {
   const subjectId = text(form.get('subjectId'), 'Materia');
   if (actor && actor.role === 'teacher') {
-    const allowed = userAccessibleSubjectIds(actor);
+    const allowed = await userAccessibleSubjectIds(actor);
     if (!allowed || !allowed.has(subjectId))
       throw new AppError('No tienes permiso para importar clases en esta materia.', 403);
   }
-  const row = db().prepare('SELECT data FROM subjects WHERE id=?').get(subjectId);
+
+  const row = await queryOne<{ data: unknown }>('SELECT data FROM subjects WHERE id = $1', [
+    subjectId,
+  ]);
   if (!row) throw new AppError('Materia no encontrada.');
-  const subject = JSON.parse(row.data as string) as Subject;
+  const subject = (typeof row.data === 'string' ? JSON.parse(row.data) : row.data) as Subject;
+
   const rawTopic =
     typeof form.get('topicId') === 'string' ? String(form.get('topicId')).trim() : '';
   let topicId = rawTopic,
@@ -323,15 +324,18 @@ export async function importLesson(form: FormData, actor?: User) {
     }
   } else if (!subject.topics.some((t) => t.id === topicId))
     throw new AppError('Selecciona un tema de la materia.');
+
   const rawTitle = typeof form.get('title') === 'string' ? String(form.get('title')).trim() : '',
     rawSubtitle =
       typeof form.get('subtitle') === 'string' ? String(form.get('subtitle')).trim() : '';
+
   const existingId = form.get('lessonId');
   const existing =
-    typeof existingId === 'string' && existingId ? lessonRecord(existingId) : undefined;
+    typeof existingId === 'string' && existingId ? await lessonRecord(existingId) : null;
   if (existingId && !existing) throw new AppError('Clase no encontrada.', 404);
   if (existing && existing.subject_id !== subjectId)
     throw new AppError('La clase debe conservar su materia.');
+
   const tex = form.get('source'),
     rawPdf = form.get('pdf');
   if (
@@ -340,6 +344,7 @@ export async function importLesson(form: FormData, actor?: User) {
     tex.size > 2 * 1024 * 1024
   )
     throw new AppError('Selecciona un archivo .tex de hasta 2 MB.');
+
   const allExtras = form.getAll('images').filter((f): f is File => f instanceof File && f.size > 0);
   const extraPdfs = allExtras.filter((f) => f.name.toLowerCase().endsWith('.pdf'));
   const extras = allExtras.filter((f) => !f.name.toLowerCase().endsWith('.pdf'));
@@ -348,6 +353,7 @@ export async function importLesson(form: FormData, actor?: User) {
   const pdf = rawPdf instanceof File && rawPdf.size > 0 ? rawPdf : extraPdfs[0];
   if (extras.length > 30) throw new AppError('Puedes cargar hasta 30 imágenes por clase.');
   const uploads = [tex, ...(pdf instanceof File && pdf.size > 0 ? [pdf] : []), ...extras];
+
   if (uploads.reduce((n, f) => n + f.size, 0) > 35 * 1024 * 1024)
     throw new AppError('El total de archivos debe ser menor a 35 MB.');
   if (pdf instanceof File && pdf.size > 0) {
@@ -355,6 +361,7 @@ export async function importLesson(form: FormData, actor?: User) {
     const headBytes = Buffer.from(await pdf.slice(0, 8).arrayBuffer()).toString('utf8');
     if (!headBytes.startsWith('%PDF-')) throw new AppError('El PDF no es válido.');
   }
+
   const names = new Set<string>();
   for (const f of uploads) {
     const name = path.basename(f.name.replace(/\\/g, '/')).toLowerCase();
@@ -366,6 +373,7 @@ export async function importLesson(form: FormData, actor?: User) {
         'Formato o tamaño de archivo no admitido. Usa .tex, .pdf, PNG, JPG o WebP.'
       );
   }
+
   const source = await tex.text();
   if (!source.includes('\\begin{document}'))
     throw new AppError('El archivo debe contener un documento LaTeX completo.');
@@ -377,22 +385,25 @@ export async function importLesson(form: FormData, actor?: User) {
   }
   if (!parsed.frames.length)
     throw new AppError('No se encontraron diapositivas frame en el documento.');
+
   const meta = extractLatexMetadata(source, tex.name);
   const title = (rawTitle || meta.title || parsed.frames[0]?.title || 'Nueva clase').slice(0, 150),
     subtitle = (rawSubtitle || meta.subtitle || '').slice(0, 200);
+
   const id = existing?.id ?? randomUUID(),
-    revision = (existing?.revision ?? 0) + 1,
-    folder = path.join(dataDirectory(), 'uploads', id, randomUUID());
-  await mkdir(folder, { recursive: true, mode: 0o700 });
+    revision = (existing?.revision ?? 0) + 1;
+
   const resources: Resource[] = [];
-  const previousLesson = existing ? (JSON.parse(existing.data) as Lesson) : undefined;
+  const previousLesson = existing
+    ? (typeof existing.data === 'string' ? JSON.parse(existing.data) : existing.data) as Lesson
+    : undefined;
+
   const previousResources = existing
-    ? (
-        db()
-          .prepare('SELECT key,name,path,mime FROM resources WHERE lesson_id=?')
-          .all(id) as Resource[]
-      ).filter((r) => r.path.startsWith('data:') || r.path.startsWith('<svg') || existsSync(r.path))
+    ? await query<Resource>('SELECT key, name, path, mime FROM resources WHERE lesson_id = $1', [
+        id,
+      ])
     : [];
+
   async function register(file: File) {
     const name = path.basename(file.name.replace(/\\/g, '/')),
       ext = path.extname(name).toLowerCase(),
@@ -403,21 +414,30 @@ export async function importLesson(form: FormData, actor?: User) {
       .update(bytes)
       .digest('hex')
       .slice(0, 24);
-    const reused = previousResources.find((r) => r.key === key && (r.path.startsWith('data:') || existsSync(r.path)));
-    const dest = reused ? reused.path : path.join(folder, key + ext);
-    if (!reused && !dest.startsWith('data:')) {
+
+    const reused = previousResources.find((r) => r.key === key);
+    let storedPath = reused ? reused.path : '';
+    if (!storedPath) {
+      const storagePath = `${id}/${key}${ext}`;
       try {
-        await writeFile(dest, bytes, { mode: 0o600 });
-      } catch {}
+        await uploadToStorage(
+          MATERIALS_BUCKET,
+          storagePath,
+          bytes,
+          types[ext] || 'application/octet-stream'
+        );
+        storedPath = storagePath;
+      } catch {
+        // Fallback a data URI si storage falla en tests o entorno local offline
+        storedPath = `data:${types[ext] || 'application/octet-stream'};base64,${bytes.toString('base64')}`;
+      }
     }
-    const storedPath =
-      bytes.length <= 4 * 1024 * 1024 && (types[ext]?.startsWith('image/') || ext === '.tex')
-        ? `data:${types[ext]};base64,${bytes.toString('base64')}`
-        : dest;
+
     const resource = { key, name, path: storedPath, mime: types[ext] };
     resources.push(resource);
     return `/api/materials/${id}/${key}`;
   }
+
   const sourceUrl = await register(tex);
   let pdfUrl = '';
   if (pdf instanceof File && pdf.size > 0) {
@@ -430,9 +450,11 @@ export async function importLesson(form: FormData, actor?: User) {
       pdfUrl = `/api/materials/${id}/${prevPdf.key}`;
     }
   }
+
   const images = new Map<string, string>();
   for (const f of extras)
     images.set(path.basename(f.name.replace(/\\/g, '/')).toLowerCase(), await register(f));
+
   const figures: string[] = [];
   function walk(blocks: Block[], action: (b: Block) => void) {
     for (const b of blocks) {
@@ -441,15 +463,33 @@ export async function importLesson(form: FormData, actor?: User) {
       if (b.items) for (const item of b.items) walk(item, action);
     }
   }
+
   const diagnostics = new Set(parsed.diagnostics);
   for (const f of parsed.frames)
     walk(f.blocks, (b) => {
       if (b.type === 'diagram') figures.push(b.content);
     });
+
   if (figures.length > 60) throw new AppError('Esta versión permite hasta 60 diagramas por clase.');
-  const compiled = figures.length
-    ? await compileFigures([...new Set(figures)], folder)
-    : { results: {}, errors: [] };
+
+  // Usar directorio temporal efímero para compilación
+  let tempFolder: string | undefined;
+  let compiled: {
+    results: Record<string, string>;
+    errors: { hash: string; message: string; log?: string; line?: number }[];
+  } = { results: {}, errors: [] };
+
+  try {
+    if (figures.length) {
+      tempFolder = await mkdtemp(path.join(tmpdir(), 'aula-compile-'));
+      compiled = await compileFigures([...new Set(figures)], tempFolder);
+    }
+  } finally {
+    if (tempFolder) {
+      await rm(tempFolder, { recursive: true, force: true }).catch(() => {});
+    }
+  }
+
   const figureUrls: Record<string, string> = {};
   for (const [hash, file] of Object.entries(compiled.results)) {
     const key = 'diag-' + hash.slice(0, 20);
@@ -464,15 +504,29 @@ export async function importLesson(form: FormData, actor?: User) {
     if (svgContent) {
       svgContent = cropSvgViewBox(svgContent);
     }
+
+    const storagePath = `${id}/${key}.svg`;
+    let storedPath = svgContent;
+    if (svgContent) {
+      try {
+        await uploadToStorage(MATERIALS_BUCKET, storagePath, svgContent, 'image/svg+xml');
+        storedPath = storagePath;
+      } catch {
+        storedPath = svgContent;
+      }
+    }
+
     resources.push({
       key,
       name: 'diagrama-' + hash.slice(0, 8) + '.svg',
-      path: svgContent.startsWith('<svg') || svgContent.startsWith('<?xml') ? svgContent : file,
+      path: storedPath,
       mime: 'image/svg+xml',
     });
     figureUrls[hash] = `/api/materials/${id}/${key}`;
   }
+
   for (const error of compiled.errors) diagnostics.add(error.message);
+
   for (const f of parsed.frames)
     walk(f.blocks, (b) => {
       if (b.type === 'diagram')
@@ -499,7 +553,9 @@ export async function importLesson(form: FormData, actor?: User) {
         }
       }
     });
+
   if (!pdfUrl) diagnostics.add('No se adjuntó el PDF original.');
+
   const lesson: Lesson = {
     id,
     title,
@@ -512,49 +568,45 @@ export async function importLesson(form: FormData, actor?: User) {
     frames: parsed.frames,
     diagnostics: [...diagnostics],
   };
-  transaction(() => {
-    const latest = lessonRecord(id);
-    if (existing && latest?.revision !== existing.revision)
-      throw new AppError('La clase cambió durante la importación. Vuelve a intentarlo.', 409);
-    if (createdGeneralTopic)
-      db()
-        .prepare('UPDATE subjects SET data=? WHERE id=?')
-        .run(JSON.stringify(subject), subject.id);
-    db()
-      .prepare(
-        "INSERT INTO lessons(id,subject_id,status,revision,reviewed,data) VALUES (?,?,'draft',?,0,?) ON CONFLICT(id) DO UPDATE SET status='draft',revision=excluded.revision,reviewed=0,data=excluded.data"
-      )
-      .run(id, subjectId, revision, JSON.stringify(lesson));
-    if (existing) db().prepare('DELETE FROM progress WHERE lesson_id=?').run(id);
-    db().prepare('DELETE FROM resources WHERE lesson_id=?').run(id);
-    for (const r of resources)
-      db()
-        .prepare('INSERT OR REPLACE INTO resources VALUES (?,?,?,?,?)')
-        .run(id, r.key, r.name, r.path, r.mime);
-  });
-  const pool = getPgPool();
-  if (pool) {
-    if (createdGeneralTopic) {
-      pool
-        .query('UPDATE subjects SET data=$1 WHERE id=$2', [JSON.stringify(subject), subject.id])
-        .catch(console.error);
-    }
-    pool
-      .query(
-        "INSERT INTO lessons(id,subject_id,status,revision,reviewed,data) VALUES ($1,$2,'draft',$3,0,$4) ON CONFLICT(id) DO UPDATE SET status='draft',revision=EXCLUDED.revision,reviewed=0,data=EXCLUDED.data",
-        [id, subjectId, revision, JSON.stringify(lesson)]
-      )
-      .then(() => {
-        for (const r of resources) {
-          pool
-            .query(
-              'INSERT INTO resources(lesson_id,key,name,path,mime) VALUES ($1,$2,$3,$4,$5) ON CONFLICT(lesson_id,key) DO UPDATE SET name=EXCLUDED.name,path=EXCLUDED.path,mime=EXCLUDED.mime',
-              [id, r.key, r.name, r.path, r.mime]
-            )
-            .catch(console.error);
-        }
-      })
-      .catch(console.error);
+
+  const latest = await lessonRecord(id);
+  if (existing && latest?.revision !== existing.revision)
+    throw new AppError('La clase cambió durante la importación. Vuelve a intentarlo.', 409);
+
+  if (createdGeneralTopic) {
+    await execute('UPDATE subjects SET data = $1 WHERE id = $2', [
+      JSON.stringify(subject),
+      subject.id,
+    ]);
   }
+
+  await execute(
+    `INSERT INTO lessons(id, subject_id, status, revision, reviewed, data)
+     VALUES ($1, $2, 'draft', $3, 0, $4)
+     ON CONFLICT(id) DO UPDATE SET 
+       status = 'draft',
+       revision = EXCLUDED.revision,
+       reviewed = 0,
+       data = EXCLUDED.data`,
+    [id, subjectId, revision, JSON.stringify(lesson)]
+  );
+
+  if (existing) {
+    await execute('DELETE FROM progress WHERE lesson_id = $1', [id]);
+  }
+  await execute('DELETE FROM resources WHERE lesson_id = $1', [id]);
+
+  for (const r of resources) {
+    await execute(
+      `INSERT INTO resources(lesson_id, key, name, path, mime)
+       VALUES ($1, $2, $3, $4, $5)
+       ON CONFLICT(lesson_id, key) DO UPDATE SET 
+         name = EXCLUDED.name,
+         path = EXCLUDED.path,
+         mime = EXCLUDED.mime`,
+      [id, r.key, r.name, r.path, r.mime]
+    );
+  }
+
   return { id, frames: lesson.frames.length, diagnostics: lesson.diagnostics };
 }

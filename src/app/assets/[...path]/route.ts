@@ -1,7 +1,7 @@
 import { existsSync } from 'node:fs';
 import { readFile, stat } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { dataDirectory } from '@/features/administration/server/database';
 
 export const runtime = 'nodejs';
 
@@ -36,7 +36,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ path
     path.join(cwd, 'public/assets/teaching', filename),
     path.join(cwd, 'content/materials/assets/diagrams', filename),
     path.join(cwd, 'content/materials/assets/teaching', filename),
-    path.join(dataDirectory(), 'cache/diagrams', filename),
+    path.join(tmpdir(), 'aula-cache-diagrams', filename),
   ];
 
   let foundPath: string | null = null;

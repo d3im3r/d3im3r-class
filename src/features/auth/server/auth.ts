@@ -1,16 +1,16 @@
 import { cookies, headers } from 'next/headers';
 import { randomBytes, randomUUID, scryptSync, timingSafeEqual, createHash } from 'node:crypto';
 import {
-  db,
-  transaction,
+  query,
+  queryOne,
+  execute,
   syncBetterAuthUser,
-  getPgPool,
-  syncFromPostgres,
 } from '@/features/administration/server/database';
 import { hasPermission, type PermissionRequest, ac, roles } from './permissions';
 import { getAuth } from './better-auth';
 import type { User } from '../types';
 export { hasPermission, type PermissionRequest, ac, roles };
+
 export class AppError extends Error {
   constructor(
     message: string,
@@ -19,10 +19,12 @@ export class AppError extends Error {
     super(message);
   }
 }
+
 export function passwordHash(password: string) {
   const salt = randomBytes(16).toString('hex');
   return salt + ':' + scryptSync(password, salt, 64).toString('hex');
 }
+
 export function passwordMatches(password: string, stored: string) {
   try {
     const [salt, key] = stored.split(':');
@@ -31,20 +33,23 @@ export function passwordMatches(password: string, stored: string) {
     return false;
   }
 }
+
 export function text(value: unknown, label: string, max = 200) {
   if (typeof value !== 'string' || !value.trim() || value.length > max)
     throw new AppError(`${label}: introduce un valor válido (máximo ${max} caracteres).`);
   return value.trim();
 }
+
 export function validatePassword(value: unknown) {
   if (typeof value !== 'string' || value.length < 6 || value.length > 256)
     throw new AppError('La contraseña debe tener entre 6 y 256 caracteres.');
   return value;
 }
-export function createUser(
+
+export async function createUser(
   input: Record<string, unknown>,
   role: 'admin' | 'teacher' | 'student'
-): User {
+): Promise<User> {
   const name = text(input.name, 'Nombre', 100),
     username = text(input.username, 'Usuario', 100).toLowerCase();
   if (!/^[a-z0-9][a-z0-9@._+-]{2,99}$/.test(username))
@@ -52,164 +57,106 @@ export function createUser(
       'El usuario debe tener al menos 3 caracteres: letras sin tildes, números, punto, guion o correo.'
     );
   const password = validatePassword(input.password);
-  if (db().prepare('SELECT id FROM users WHERE username=?').get(username))
-    throw new AppError('Ese usuario ya existe.', 409);
+
+  const existing = await queryOne<{ id: string }>('SELECT id FROM users WHERE username = $1', [
+    username,
+  ]);
+  if (existing) throw new AppError('Ese usuario ya existe.', 409);
+
   const user = { id: randomUUID(), name, username, role },
     hashed = passwordHash(password);
-  db().prepare('INSERT INTO users VALUES (?,?,?,?,?)').run(user.id, name, username, hashed, role);
-  syncBetterAuthUser(user.id, name, username, hashed, role);
-  const pool = getPgPool();
-  if (pool) {
-    pool
-      .query(
-        'INSERT INTO users(id,name,username,password,role) VALUES ($1,$2,$3,$4,$5) ON CONFLICT(id) DO UPDATE SET name=EXCLUDED.name,username=EXCLUDED.username,password=EXCLUDED.password,role=EXCLUDED.role',
-        [user.id, name, username, hashed, role]
-      )
-      .catch((e) => console.error('PG create user err:', e.message));
-  }
+
+  await execute(
+    'INSERT INTO users(id, name, username, password, role) VALUES ($1, $2, $3, $4, $5)',
+    [user.id, name, username, hashed, role]
+  );
+  await syncBetterAuthUser(user.id, name, username, hashed, role);
   return user;
 }
+
 export async function needsSetup(): Promise<boolean> {
-  const pool = getPgPool();
-  if (pool) {
-    try {
-      const res = await pool.query(
-        "SELECT id FROM users WHERE role IN ('admin','teacher') LIMIT 1"
-      );
-      return res.rows.length === 0;
-    } catch {}
+  const row = await queryOne<{ id: string }>(
+    "SELECT id FROM users WHERE role IN ('admin', 'teacher') LIMIT 1"
+  );
+  return !row;
+}
+
+export async function setup(input: Record<string, unknown>): Promise<User> {
+  const needed = await needsSetup();
+  if (!needed) {
+    throw new AppError('La cuenta administrativa inicial ya fue configurada.', 409);
   }
-  return !db().prepare("SELECT id FROM users WHERE role IN ('admin','teacher') LIMIT 1").get();
+  return createUser(input, 'admin');
 }
-export function syncNeedsSetup(): boolean {
-  return !db().prepare("SELECT id FROM users WHERE role IN ('admin','teacher') LIMIT 1").get();
-}
-export function setup(input: Record<string, unknown>) {
-  return transaction(() => {
-    if (!syncNeedsSetup())
-      throw new AppError('La cuenta administrativa inicial ya fue configurada.', 409);
-    return createUser(input, 'admin');
-  });
-}
-export function resetPassword(userId: string, newPasswordRaw: unknown) {
+
+export async function resetPassword(userId: string, newPasswordRaw: unknown) {
   const password = validatePassword(newPasswordRaw);
-  const user = db().prepare('SELECT id,name,username,role FROM users WHERE id=?').get(userId) as
-    User | undefined;
+  const user = await queryOne<User>(
+    'SELECT id, name, username, role FROM users WHERE id = $1',
+    [userId]
+  );
   if (!user) throw new AppError('Usuario no encontrado.', 404);
+
   const hashed = passwordHash(password),
     now = new Date().toISOString();
-  db().prepare('UPDATE users SET password=? WHERE id=?').run(hashed, userId);
-  db().prepare('UPDATE account SET password=?,updatedAt=? WHERE userId=?').run(hashed, now, userId);
-  db().prepare('DELETE FROM login_attempts WHERE username=?').run(user.username);
-  const pool = getPgPool();
-  if (pool) {
-    pool
-      .query('UPDATE users SET password=$1 WHERE id=$2', [hashed, userId])
-      .catch((e) => console.error('PG reset pass err:', e.message));
-    pool
-      .query('UPDATE account SET password=$1,"updatedAt"=$2 WHERE "userId"=$3', [
-        hashed,
-        now,
-        userId,
-      ])
-      .catch((e) => console.error('PG reset pass acc err:', e.message));
-    pool.query('DELETE FROM login_attempts WHERE username=$1', [user.username]).catch(() => {});
-  }
+
+  await execute('UPDATE users SET password = $1 WHERE id = $2', [hashed, userId]);
+  await execute('UPDATE account SET password = $1, "updatedAt" = $2 WHERE "userId" = $3', [
+    hashed,
+    now,
+    userId,
+  ]);
+  await execute('DELETE FROM login_attempts WHERE username = $1', [user.username]);
+
   return { ok: true, userId: user.id, username: user.username };
 }
+
 const cookieName = process.env.AULA_SESSION_COOKIE ?? 'aula_session';
 const digest = (token: string) => createHash('sha256').update(token).digest('hex');
 
 export async function currentUser(): Promise<User | null> {
-  await syncFromPostgres();
   let jar: any;
   try {
     jar = await cookies();
   } catch {}
   const token = jar?.get(cookieName)?.value;
+
   if (token) {
     const hashed = digest(token),
       nowIso = new Date().toISOString();
-    let baRow = db()
-      .prepare(
-        'SELECT u.id,u.name,u.username,u.role,u.banned FROM session s JOIN user u ON u.id=s.userId WHERE s.token=? AND s.expiresAt>?'
-      )
-      .get(hashed, nowIso) as
-      | {
-          id: string;
-          name: string;
-          username: string;
-          role: 'admin' | 'teacher' | 'student';
-          banned: number;
-        }
-      | undefined;
 
-    let row = !baRow
-      ? (db()
-          .prepare(
-            'SELECT u.id,u.name,u.username,u.role,u.password FROM sessions s JOIN users u ON u.id=s.user_id WHERE s.token=? AND s.expires>?'
-          )
-          .get(hashed, Date.now()) as (User & { password: string }) | undefined)
-      : undefined;
-
-    // Fallback a Postgres si el contenedor local SQLite no tiene la sesión aún
-    if (!baRow && !row) {
-      const pool = getPgPool();
-      if (pool) {
-        try {
-          const pgSesRes = await pool.query(
-            'SELECT u.id,u.name,u.username,u.role,u.banned FROM "session" s JOIN "user" u ON u.id=s."userId" WHERE s.token=$1 AND s."expiresAt">$2',
-            [hashed, nowIso]
-          );
-          if (pgSesRes.rows.length > 0) {
-            const r = pgSesRes.rows[0];
-            baRow = {
-              id: r.id,
-              name: r.name,
-              username: r.username,
-              role: r.role,
-              banned: r.banned ? 1 : 0,
-            };
-            db()
-              .prepare(
-                'INSERT OR IGNORE INTO user(id,name,email,emailVerified,createdAt,updatedAt,username,displayUsername,role,banned) VALUES (?,?,?,1,?,?,?,?,?,?)'
-              )
-              .run(r.id, r.name, r.username, nowIso, nowIso, r.username, r.username, r.role, r.banned ? 1 : 0);
-            db()
-              .prepare(
-                'INSERT OR IGNORE INTO session(id,expiresAt,token,createdAt,updatedAt,userId) VALUES (?,?,?,?,?,?)'
-              )
-              .run(randomUUID(), new Date(Date.now() + 7 * 86400000).toISOString(), hashed, nowIso, nowIso, r.id);
-          } else {
-            const pgOldSesRes = await pool.query(
-              'SELECT u.id,u.name,u.username,u.role,u.password FROM sessions s JOIN users u ON u.id=s.user_id WHERE s.token=$1 AND s.expires>$2',
-              [hashed, Date.now()]
-            );
-            if (pgOldSesRes.rows.length > 0) {
-              row = pgOldSesRes.rows[0];
-            }
-          }
-        } catch (e) {
-          console.error('PG session fallback err:', e);
-        }
-      }
-    }
+    const baRow = await queryOne<{
+      id: string;
+      name: string;
+      username: string;
+      role: 'admin' | 'teacher' | 'student';
+      banned: boolean | number;
+    }>(
+      'SELECT u.id, u.name, u.username, u.role, u.banned FROM "session" s JOIN "user" u ON u.id = s."userId" WHERE s.token = $1 AND s."expiresAt" > $2',
+      [hashed, nowIso]
+    );
 
     if (baRow) {
       if (baRow.banned) return null;
       return { id: baRow.id, name: baRow.name, username: baRow.username, role: baRow.role };
     }
+
+    const row = await queryOne<User & { password: string }>(
+      'SELECT u.id, u.name, u.username, u.role, u.password FROM sessions s JOIN users u ON u.id = s.user_id WHERE s.token = $1 AND s.expires > $2',
+      [hashed, Date.now()]
+    );
+
     if (row) {
-      syncBetterAuthUser(row.id, row.name, row.username, row.password, row.role);
+      await syncBetterAuthUser(row.id, row.name, row.username, row.password, row.role);
       const expiresIso = new Date(Date.now() + 7 * 86400000).toISOString();
-      db()
-        .prepare(
-          'INSERT OR IGNORE INTO session(id,expiresAt,token,createdAt,updatedAt,userId) VALUES (?,?,?,?,?,?)'
-        )
-        .run(randomUUID(), expiresIso, hashed, nowIso, nowIso, row.id);
+      await execute(
+        'INSERT INTO "session"(id, "expiresAt", token, "createdAt", "updatedAt", "userId") VALUES ($1, $2, $3, $4, $4, $5) ON CONFLICT(token) DO NOTHING',
+        [randomUUID(), expiresIso, hashed, nowIso, row.id]
+      );
       return { id: row.id, name: row.name, username: row.username, role: row.role };
     }
   }
+
   try {
     const baSession = await getAuth().api.getSession({ headers: await headers() });
     if (baSession?.user) {
@@ -223,10 +170,14 @@ export async function currentUser(): Promise<User | null> {
       };
       if (u.banned) return null;
       const role = (u.role === 'admin' ? 'admin' : u.role === 'teacher' ? 'teacher' : 'student') as
-        'admin' | 'teacher' | 'student';
-      const existing = db()
-        .prepare('SELECT id,name,username,role FROM users WHERE id=?')
-        .get(u.id) as User | undefined;
+        | 'admin'
+        | 'teacher'
+        | 'student';
+
+      const existing = await queryOne<User>('SELECT id, name, username, role FROM users WHERE id = $1', [
+        u.id,
+      ]);
+
       if (!existing) {
         const uname =
           u.username ??
@@ -234,9 +185,10 @@ export async function currentUser(): Promise<User | null> {
             .split('@')[0]
             .toLowerCase()
             .replace(/[^a-z0-9._+-]/g, '');
-        db()
-          .prepare('INSERT OR IGNORE INTO users VALUES (?,?,?,?,?)')
-          .run(u.id, u.name, uname, 'google-oauth', role);
+        await execute(
+          'INSERT INTO users(id, name, username, password, role) VALUES ($1, $2, $3, $4, $5) ON CONFLICT (id) DO NOTHING',
+          [u.id, u.name, uname, 'google-oauth', role]
+        );
       }
       return {
         id: u.id,
@@ -279,8 +231,8 @@ export async function startSession(user: User) {
   const old = jar?.get(cookieName)?.value;
   if (old) {
     const oldHash = digest(old);
-    db().prepare('DELETE FROM sessions WHERE token=?').run(oldHash);
-    db().prepare('DELETE FROM session WHERE token=?').run(oldHash);
+    await execute('DELETE FROM sessions WHERE token = $1', [oldHash]);
+    await execute('DELETE FROM "session" WHERE token = $1', [oldHash]);
   }
   const token = randomBytes(32).toString('hex'),
     hashed = digest(token),
@@ -289,50 +241,37 @@ export async function startSession(user: User) {
     nowIso = new Date(now).toISOString(),
     expiresIso = new Date(expires).toISOString();
   const sessionId = randomUUID();
-  const dbUser = (db().prepare('SELECT id, password FROM users WHERE id=?').get(user.id) ||
-    db().prepare('SELECT id, password FROM users WHERE username=?').get(user.username)) as
-    { id: string; password: string } | undefined;
-  syncBetterAuthUser(
+
+  const dbUser =
+    (await queryOne<{ id: string; password: string }>(
+      'SELECT id, password FROM users WHERE id = $1',
+      [user.id]
+    )) ||
+    (await queryOne<{ id: string; password: string }>(
+      'SELECT id, password FROM users WHERE username = $1',
+      [user.username]
+    ));
+
+  await syncBetterAuthUser(
     user.id,
     user.name,
     user.username,
     dbUser?.password || 'managed-credentials',
     user.role
   );
-  db().prepare('DELETE FROM sessions WHERE expires<?').run(now);
-  db().prepare('DELETE FROM session WHERE expiresAt<?').run(nowIso);
-  db()
-    .prepare(
-      'INSERT INTO sessions VALUES (?,?,?) ON CONFLICT(token) DO UPDATE SET user_id=excluded.user_id,expires=excluded.expires'
-    )
-    .run(hashed, user.id, expires);
-  db()
-    .prepare(
-      'INSERT INTO session(id,expiresAt,token,createdAt,updatedAt,userId) VALUES (?,?,?,?,?,?) ON CONFLICT(token) DO UPDATE SET expiresAt=excluded.expiresAt,updatedAt=excluded.updatedAt,userId=excluded.userId'
-    )
-    .run(sessionId, expiresIso, hashed, nowIso, nowIso, user.id);
-  const pool = getPgPool();
-  if (pool) {
-    try {
-      if (old) {
-        const oldHash = digest(old);
-        await pool.query('DELETE FROM sessions WHERE token=$1', [oldHash]);
-        await pool.query('DELETE FROM "session" WHERE token=$1', [oldHash]);
-      }
-      await pool.query('DELETE FROM sessions WHERE expires < $1', [now]);
-      await pool.query('DELETE FROM "session" WHERE "expiresAt" < $1', [nowIso]);
-      await pool.query(
-        'INSERT INTO sessions(token,user_id,expires) VALUES ($1,$2,$3) ON CONFLICT(token) DO UPDATE SET user_id=EXCLUDED.user_id,expires=EXCLUDED.expires',
-        [hashed, user.id, expires]
-      );
-      await pool.query(
-        'INSERT INTO "session"(id,"expiresAt",token,"createdAt","updatedAt","userId") VALUES ($1,$2,$3,$4,$4,$5) ON CONFLICT(token) DO UPDATE SET "expiresAt"=EXCLUDED."expiresAt",token=EXCLUDED.token,"updatedAt"=EXCLUDED."updatedAt","userId"=EXCLUDED."userId"',
-        [sessionId, expiresIso, hashed, nowIso, user.id]
-      );
-    } catch (e) {
-      console.error('PG session err:', e instanceof Error ? e.message : e);
-    }
-  }
+
+  await execute('DELETE FROM sessions WHERE expires < $1', [now]);
+  await execute('DELETE FROM "session" WHERE "expiresAt" < $1', [nowIso]);
+
+  await execute(
+    'INSERT INTO sessions(token, user_id, expires) VALUES ($1, $2, $3) ON CONFLICT(token) DO UPDATE SET user_id = EXCLUDED.user_id, expires = EXCLUDED.expires',
+    [hashed, user.id, expires]
+  );
+  await execute(
+    'INSERT INTO "session"(id, "expiresAt", token, "createdAt", "updatedAt", "userId") VALUES ($1, $2, $3, $4, $4, $5) ON CONFLICT(token) DO UPDATE SET "expiresAt" = EXCLUDED."expiresAt", "updatedAt" = EXCLUDED."updatedAt", "userId" = EXCLUDED."userId"',
+    [sessionId, expiresIso, hashed, nowIso, user.id]
+  );
+
   const isSecure =
     process.env.AULA_SECURE_COOKIES === '1' ||
     process.env.NODE_ENV === 'production' ||
@@ -355,17 +294,8 @@ export async function endSession() {
   const token = jar?.get(cookieName)?.value;
   if (token) {
     const hashed = digest(token);
-    db().prepare('DELETE FROM sessions WHERE token=?').run(hashed);
-    db().prepare('DELETE FROM session WHERE token=?').run(hashed);
-    const pool = getPgPool();
-    if (pool) {
-      try {
-        await pool.query('DELETE FROM sessions WHERE token=$1', [hashed]);
-        await pool.query('DELETE FROM "session" WHERE token=$1', [hashed]);
-      } catch (e) {
-        console.error('PG end session err:', e instanceof Error ? e.message : e);
-      }
-    }
+    await execute('DELETE FROM sessions WHERE token = $1', [hashed]);
+    await execute('DELETE FROM "session" WHERE token = $1', [hashed]);
   }
   try {
     jar?.delete(cookieName);
@@ -374,25 +304,34 @@ export async function endSession() {
   } catch {}
 }
 
-export function login(input: Record<string, unknown>) {
+export async function login(input: Record<string, unknown>): Promise<User> {
   const username = text(input.username, 'Usuario', 100).toLowerCase(),
     password =
       typeof input.password === 'string' && input.password.length <= 256 ? input.password : '';
-  const attempt = db()
-    .prepare('SELECT count,until FROM login_attempts WHERE username=?')
-    .get(username) as { count: number; until: number } | undefined;
-  if (attempt && attempt.until > Date.now() && attempt.count >= 5)
+
+  const attempt = await queryOne<{ count: number; until: string | number }>(
+    'SELECT count, until FROM login_attempts WHERE username = $1',
+    [username]
+  );
+
+  if (attempt && Number(attempt.until) > Date.now() && Number(attempt.count) >= 5)
     throw new AppError('Demasiados intentos. Intenta nuevamente en 15 minutos.', 429);
-  let row = db().prepare('SELECT * FROM users WHERE username=?').get(username) as
-    (User & { password: string }) | undefined;
+
+  let row = await queryOne<User & { password: string }>(
+    'SELECT * FROM users WHERE username = $1',
+    [username]
+  );
+
   if (!row) {
-    const u = db()
-      .prepare('SELECT * FROM user WHERE email=? OR username=?')
-      .get(username, username) as any;
+    const u = await queryOne<{ id: string; name: string; username: string; email: string; role: any }>(
+      'SELECT id, name, username, email, role FROM "user" WHERE email = $1 OR username = $2',
+      [username, username]
+    );
     if (u) {
-      const acc = db()
-        .prepare("SELECT password FROM account WHERE userId=? AND providerId='credential'")
-        .get(u.id) as any;
+      const acc = await queryOne<{ password: string }>(
+        'SELECT password FROM account WHERE "userId" = $1 AND "providerId" = $2',
+        [u.id, 'credential']
+      );
       if (acc && acc.password) {
         row = {
           id: u.id,
@@ -401,29 +340,27 @@ export function login(input: Record<string, unknown>) {
           role: u.role,
           password: acc.password,
         };
-        db()
-          .prepare(
-            'INSERT INTO users(id, name, username, password, role) VALUES (?, ?, ?, ?, ?) ON CONFLICT(id) DO UPDATE SET name=excluded.name, password=excluded.password'
-          )
-          .run(u.id, u.name, u.username || u.email, acc.password, u.role);
+        await execute(
+          'INSERT INTO users(id, name, username, password, role) VALUES ($1, $2, $3, $4, $5) ON CONFLICT(id) DO UPDATE SET name = EXCLUDED.name, password = EXCLUDED.password',
+          [u.id, u.name, u.username || u.email, acc.password, u.role]
+        );
       }
     }
   }
+
   const valid = passwordMatches(password, row?.password ?? '0'.repeat(32) + ':' + '0'.repeat(128));
   if (!row || !valid) {
-    db()
-      .prepare(
-        'INSERT INTO login_attempts VALUES (?,?,?) ON CONFLICT(username) DO UPDATE SET count=excluded.count,until=excluded.until'
-      )
-      .run(
-        username,
-        attempt && attempt.until > Date.now() ? attempt.count + 1 : 1,
-        attempt && attempt.until > Date.now() ? attempt.until : Date.now() + 900000
-      );
+    const currentCount = attempt && Number(attempt.until) > Date.now() ? Number(attempt.count) + 1 : 1;
+    const currentUntil = attempt && Number(attempt.until) > Date.now() ? Number(attempt.until) : Date.now() + 900000;
+    await execute(
+      'INSERT INTO login_attempts(username, count, until) VALUES ($1, $2, $3) ON CONFLICT(username) DO UPDATE SET count = EXCLUDED.count, until = EXCLUDED.until',
+      [username, currentCount, currentUntil]
+    );
     throw new AppError('Usuario o contraseña incorrectos.', 401);
   }
-  db().prepare('DELETE FROM login_attempts WHERE username=?').run(username);
-  syncBetterAuthUser(row.id, row.name, row.username, row.password, row.role);
+
+  await execute('DELETE FROM login_attempts WHERE username = $1', [username]);
+  await syncBetterAuthUser(row.id, row.name, row.username, row.password, row.role);
   const { password: _, ...user } = row;
   return user;
 }
@@ -439,27 +376,31 @@ export async function loginDevGoogle(input: Record<string, unknown>): Promise<Us
     .split('@')[0]
     .toLowerCase()
     .replace(/[^a-z0-9._+-]/g, '');
-  let user = db()
-    .prepare('SELECT id,name,username,role FROM users WHERE username=?')
-    .get(username) as User | undefined;
+
+  let user = await queryOne<User>('SELECT id, name, username, role FROM users WHERE username = $1', [
+    username,
+  ]);
+
   if (!user) {
     user = { id: randomUUID(), name, username, role: 'student' };
-    db()
-      .prepare('INSERT INTO users VALUES (?,?,?,?,?)')
-      .run(user.id, name, username, 'google-oauth', 'student');
-    const subjects = db().prepare('SELECT id FROM subjects').all() as { id: string }[];
+    await execute(
+      'INSERT INTO users(id, name, username, password, role) VALUES ($1, $2, $3, $4, $5)',
+      [user.id, name, username, 'google-oauth', 'student']
+    );
+    const subjects = await query<{ id: string }>('SELECT id FROM subjects');
     for (const s of subjects) {
-      db()
-        .prepare(
-          'INSERT OR IGNORE INTO subject_bans(user_id,subject_id,reason,banned_at) VALUES (?,?,?,?)'
-        )
-        .run(user.id, s.id, 'Esperando autorización del docente', new Date().toISOString());
+      await execute(
+        'INSERT INTO subject_bans(user_id, subject_id, reason, banned_at) VALUES ($1, $2, $3, $4) ON CONFLICT (user_id, subject_id) DO NOTHING',
+        [user.id, s.id, 'Esperando autorización del docente', new Date().toISOString()]
+      );
     }
   }
-  syncBetterAuthUser(user.id, user.name, user.username, 'google-oauth', user.role);
+
+  await syncBetterAuthUser(user.id, user.name, user.username, 'google-oauth', user.role);
   await startSession(user);
   return user;
 }
+
 export function sameOrigin(request: Request) {
   const origin = request.headers.get('origin');
   if (!origin) return;
@@ -476,6 +417,7 @@ export function sameOrigin(request: Request) {
     throw new AppError('Origen de solicitud no permitido.', 403);
   }
 }
+
 export function errorResponse(error: unknown) {
   if (
     error instanceof AppError ||

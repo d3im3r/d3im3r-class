@@ -1,8 +1,10 @@
 import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
-import { dataDirectory } from './database';
+
 export type StoredResource = { key: string; name: string; path: string; mime: string };
+
 export function sharedImage(name: string): StoredResource | null {
   const base = path.basename(name.replace(/\\/g, '/')).toLowerCase();
   const folders = [
@@ -28,6 +30,7 @@ export function sharedImage(name: string): StoredResource | null {
   }
   return null;
 }
+
 function isValidDiagramFile(filePath: string): boolean {
   try {
     if (!existsSync(filePath)) return false;
@@ -40,19 +43,21 @@ function isValidDiagramFile(filePath: string): boolean {
     return false;
   }
 }
+
 export function cachedDiagramPath(hash: string): string | null {
   const inPublic = path.join(process.cwd(), 'public/assets/diagrams', `${hash}.svg`);
   if (isValidDiagramFile(inPublic)) return inPublic;
   const precompiled = path.join(process.cwd(), 'content/materials/assets/diagrams', `${hash}.svg`);
   if (isValidDiagramFile(precompiled)) return precompiled;
-  const cached = path.join(dataDirectory(), 'cache/diagrams', `${hash}.svg`);
+  const cached = path.join(tmpdir(), 'aula-cache-diagrams', `${hash}.svg`);
   if (isValidDiagramFile(cached)) return cached;
   return null;
 }
+
 export function cacheDiagram(hash: string, sourcePath: string): string {
   try {
-    const dir = path.join(dataDirectory(), 'cache/diagrams');
-    mkdirSync(dir, { recursive: true, mode: 0o700 });
+    const dir = path.join(tmpdir(), 'aula-cache-diagrams');
+    mkdirSync(dir, { recursive: true });
     const dest = path.join(dir, `${hash}.svg`);
     if (path.resolve(sourcePath) !== path.resolve(dest)) copyFileSync(sourcePath, dest);
     return dest;

@@ -1,31 +1,27 @@
 import { currentUser, errorResponse, AppError } from '@/features/auth/server/auth';
-import {
-  db,
-  syncFromPostgres,
-  getPgPool,
-  flushPg,
-} from '@/features/administration/server/database';
+import { queryOne, execute } from '@/features/administration/server/database';
 import { randomUUID } from 'node:crypto';
 
 export const runtime = 'nodejs';
 
 export async function GET(request: Request, { params }: { params: Promise<{ token: string }> }) {
   try {
-    await syncFromPostgres();
     const { token } = await params;
-    const row = db()
-      .prepare(
-        'SELECT i.token,i.subject_id,i.topic_id,s.data AS subject_data,inst.data AS inst_data FROM subject_invites i JOIN subjects s ON s.id=i.subject_id JOIN institutions inst ON inst.id=s.institution_id WHERE i.token=?'
-      )
-      .get(token) as
-      | {
-          token: string;
-          subject_id: string;
-          topic_id?: string | null;
-          subject_data: string;
-          inst_data: string;
-        }
-      | undefined;
+    const row = await queryOne<{
+      token: string;
+      subject_id: string;
+      topic_id?: string | null;
+      subject_data: unknown;
+      inst_data: unknown;
+    }>(
+      `SELECT i.token, i.subject_id, i.topic_id, s.data AS subject_data, inst.data AS inst_data 
+       FROM subject_invites i 
+       JOIN subjects s ON s.id = i.subject_id 
+       JOIN institutions inst ON inst.id = s.institution_id 
+       WHERE i.token = $1`,
+      [token]
+    );
+
     if (!row) throw new AppError('Enlace de inscripción no válido o expirado.', 404);
 
     let subjectObj: any = {};
@@ -71,17 +67,20 @@ export async function GET(request: Request, { params }: { params: Promise<{ toke
       });
     }
 
-    const isEnrolled = !!db()
-      .prepare('SELECT 1 FROM enrollments WHERE user_id=? AND subject_id=?')
-      .get(user.id, invite.subject_id);
-    const isBanned = !!db()
-      .prepare('SELECT 1 FROM subject_bans WHERE user_id=? AND subject_id=?')
-      .get(user.id, invite.subject_id);
+    const isEnrolled = !!(await queryOne(
+      'SELECT 1 FROM enrollments WHERE user_id = $1 AND subject_id = $2',
+      [user.id, invite.subject_id]
+    ));
+    const isBanned = !!(await queryOne(
+      'SELECT 1 FROM subject_bans WHERE user_id = $1 AND subject_id = $2',
+      [user.id, invite.subject_id]
+    ));
     const hasAccess = isEnrolled && !isBanned;
 
-    const existingReq = db()
-      .prepare('SELECT id,status FROM subject_join_requests WHERE subject_id=? AND user_id=?')
-      .get(invite.subject_id, user.id) as { id: string; status: string } | undefined;
+    const existingReq = await queryOne<{ id: string; status: string }>(
+      'SELECT id, status FROM subject_join_requests WHERE subject_id = $1 AND user_id = $2',
+      [invite.subject_id, user.id]
+    );
 
     return Response.json({
       authenticated: true,
@@ -109,40 +108,32 @@ export async function GET(request: Request, { params }: { params: Promise<{ toke
 
 export async function POST(request: Request, { params }: { params: Promise<{ token: string }> }) {
   try {
-    await syncFromPostgres();
     const { token } = await params;
-    const invite = db()
-      .prepare('SELECT subject_id, topic_id FROM subject_invites WHERE token=?')
-      .get(token) as { subject_id: string; topic_id?: string | null } | undefined;
+    const invite = await queryOne<{ subject_id: string; topic_id?: string | null }>(
+      'SELECT subject_id, topic_id FROM subject_invites WHERE token = $1',
+      [token]
+    );
     if (!invite) throw new AppError('Invitación de inscripción no válida.', 404);
 
     const user = await currentUser();
     if (!user)
       throw new AppError('Debes iniciar sesión para solicitar inscripción a la asignatura.', 401);
 
-    const isEnrolled = !!db()
-      .prepare('SELECT 1 FROM enrollments WHERE user_id=? AND subject_id=?')
-      .get(user.id, invite.subject_id);
-    const isBanned = !!db()
-      .prepare('SELECT 1 FROM subject_bans WHERE user_id=? AND subject_id=?')
-      .get(user.id, invite.subject_id);
+    const isEnrolled = !!(await queryOne(
+      'SELECT 1 FROM enrollments WHERE user_id = $1 AND subject_id = $2',
+      [user.id, invite.subject_id]
+    ));
+    const isBanned = !!(await queryOne(
+      'SELECT 1 FROM subject_bans WHERE user_id = $1 AND subject_id = $2',
+      [user.id, invite.subject_id]
+    ));
 
     if (isEnrolled && !isBanned) {
       if (invite.topic_id) {
-        db()
-          .prepare(
-            'INSERT OR IGNORE INTO topic_enrollments(user_id,subject_id,topic_id) VALUES (?,?,?)'
-          )
-          .run(user.id, invite.subject_id, invite.topic_id);
-        const pool = getPgPool();
-        if (pool) {
-          pool
-            .query(
-              'INSERT INTO topic_enrollments(user_id,subject_id,topic_id) VALUES ($1,$2,$3) ON CONFLICT DO NOTHING',
-              [user.id, invite.subject_id, invite.topic_id]
-            )
-            .catch(console.error);
-        }
+        await execute(
+          'INSERT INTO topic_enrollments(user_id, subject_id, topic_id) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING',
+          [user.id, invite.subject_id, invite.topic_id]
+        );
       }
       return Response.json({
         ok: true,
@@ -151,9 +142,11 @@ export async function POST(request: Request, { params }: { params: Promise<{ tok
       });
     }
 
-    const existing = db()
-      .prepare('SELECT id,status FROM subject_join_requests WHERE subject_id=? AND user_id=?')
-      .get(invite.subject_id, user.id) as { id: string; status: string } | undefined;
+    const existing = await queryOne<{ id: string; status: string }>(
+      'SELECT id, status FROM subject_join_requests WHERE subject_id = $1 AND user_id = $2',
+      [invite.subject_id, user.id]
+    );
+
     if (existing) {
       if (existing.status === 'approved' && !isBanned) {
         return Response.json({
@@ -171,22 +164,14 @@ export async function POST(request: Request, { params }: { params: Promise<{ tok
 
     const reqId = randomUUID();
     const nowIso = new Date().toISOString();
-    db()
-      .prepare(
-        'INSERT INTO subject_join_requests(id,subject_id,user_id,topic_id,status,created_at) VALUES (?,?,?,?,?,?)'
-      )
-      .run(reqId, invite.subject_id, user.id, invite.topic_id || null, 'pending', nowIso);
-
-    const pool = getPgPool();
-    if (pool) {
-      pool
-        .query(
-          'INSERT INTO subject_join_requests(id,subject_id,user_id,topic_id,status,created_at) VALUES ($1,$2,$3,$4,$5,$6) ON CONFLICT(subject_id,user_id) DO UPDATE SET topic_id=EXCLUDED.topic_id, status=EXCLUDED.status',
-          [reqId, invite.subject_id, user.id, invite.topic_id || null, 'pending', nowIso]
-        )
-        .catch(console.error);
-    }
-    await flushPg();
+    await execute(
+      `INSERT INTO subject_join_requests(id, subject_id, user_id, topic_id, status, created_at)
+       VALUES ($1, $2, $3, $4, $5, $6)
+       ON CONFLICT(subject_id, user_id) DO UPDATE SET 
+         topic_id = EXCLUDED.topic_id, 
+         status = EXCLUDED.status`,
+      [reqId, invite.subject_id, user.id, invite.topic_id || null, 'pending', nowIso]
+    );
 
     return Response.json({
       ok: true,
