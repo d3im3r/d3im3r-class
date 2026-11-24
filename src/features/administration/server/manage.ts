@@ -84,30 +84,43 @@ export function snapshot(actor?: User) {
     bans = bans.filter((b) => subjectIdSet.has(b.subjectId));
   }
 
-  let invites = db().prepare('SELECT subject_id AS subjectId,token FROM subject_invites').all() as {
+  let invites = db()
+    .prepare('SELECT subject_id AS subjectId,token,topic_id AS topicId FROM subject_invites')
+    .all() as Array<{
     subjectId: string;
     token: string;
-  }[];
+    topicId?: string | null;
+  }>;
   if (!isUnrestricted) {
     invites = invites.filter((i) => subjectIdSet.has(i.subjectId));
   }
 
   let joinRequests = db()
     .prepare(
-      "SELECT r.id,r.subject_id AS subjectId,r.user_id AS userId,r.status,r.created_at AS createdAt,u.name AS userName,u.username,s.institution_id AS institutionId FROM subject_join_requests r JOIN users u ON u.id=r.user_id JOIN subjects s ON s.id=r.subject_id WHERE r.status='pending' ORDER BY r.created_at DESC"
+      "SELECT r.id,r.subject_id AS subjectId,r.user_id AS userId,r.topic_id AS topicId,r.status,r.created_at AS createdAt,u.name AS userName,u.username,s.institution_id AS institutionId FROM subject_join_requests r JOIN users u ON u.id=r.user_id JOIN subjects s ON s.id=r.subject_id WHERE r.status='pending' ORDER BY r.created_at DESC"
     )
-    .all() as {
+    .all() as Array<{
     id: string;
     subjectId: string;
     userId: string;
+    topicId?: string | null;
     status: string;
     createdAt: string;
     userName: string;
     username: string;
     institutionId: string;
-  }[];
+  }>;
   if (!isUnrestricted) {
     joinRequests = joinRequests.filter((r) => subjectIdSet.has(r.subjectId));
+  }
+
+  let topicEnrollments = db()
+    .prepare(
+      'SELECT user_id AS userId,subject_id AS subjectId,topic_id AS topicId FROM topic_enrollments'
+    )
+    .all() as Array<{ userId: string; subjectId: string; topicId: string }>;
+  if (!isUnrestricted) {
+    topicEnrollments = topicEnrollments.filter((te) => subjectIdSet.has(te.subjectId));
   }
 
   let users = db().prepare('SELECT id,name,username,role FROM users ORDER BY name').all() as {
@@ -141,6 +154,7 @@ export function snapshot(actor?: User) {
     invites,
     joinRequests,
     institutionMembers,
+    topicEnrollments,
   };
 }
 function subject(id: unknown) {
@@ -191,6 +205,7 @@ function removeStudentCascade(userId: string) {
   // Limpiar relaciones en SQLite
   db().prepare('DELETE FROM progress WHERE user_id=?').run(userId);
   db().prepare('DELETE FROM enrollments WHERE user_id=?').run(userId);
+  db().prepare('DELETE FROM topic_enrollments WHERE user_id=?').run(userId);
   db().prepare('DELETE FROM subject_bans WHERE user_id=?').run(userId);
   db().prepare('DELETE FROM subject_join_requests WHERE user_id=?').run(userId);
   db().prepare('DELETE FROM class_join_requests WHERE user_id=?').run(userId);
@@ -207,6 +222,7 @@ function removeStudentCascade(userId: string) {
   if (pool) {
     pool.query('DELETE FROM progress WHERE user_id=$1', [userId]).catch(() => {});
     pool.query('DELETE FROM enrollments WHERE user_id=$1', [userId]).catch(() => {});
+    pool.query('DELETE FROM topic_enrollments WHERE user_id=$1', [userId]).catch(() => {});
     pool.query('DELETE FROM subject_bans WHERE user_id=$1', [userId]).catch(() => {});
     pool.query('DELETE FROM subject_join_requests WHERE user_id=$1', [userId]).catch(() => {});
     pool.query('DELETE FROM class_join_requests WHERE user_id=$1', [userId]).catch(() => {});
@@ -532,10 +548,14 @@ export function manage(input: Record<string, unknown>, actor?: User) {
               db()
                 .prepare('DELETE FROM enrollments WHERE user_id=? AND subject_id=?')
                 .run(userId, sId);
+              db()
+                .prepare('DELETE FROM topic_enrollments WHERE user_id=? AND subject_id=?')
+                .run(userId, sId);
             }
           }
         } else {
           db().prepare('DELETE FROM enrollments WHERE user_id=?').run(userId);
+          db().prepare('DELETE FROM topic_enrollments WHERE user_id=?').run(userId);
           for (const id of ids) {
             db().prepare('INSERT INTO enrollments VALUES (?,?)').run(userId, id);
             db()
@@ -787,7 +807,9 @@ export function manage(input: Record<string, unknown>, actor?: User) {
         const existingId =
           typeof input.lessonId === 'string' && input.lessonId.trim() ? input.lessonId.trim() : '';
         const existing = existingId ? lessonRecord(existingId) : null;
-        const id = existing?.id ?? randomUUID();
+        const id =
+          existing?.id ??
+          (typeof input.id === 'string' && input.id.trim() ? input.id.trim() : randomUUID());
         const revision = (existing?.revision ?? 0) + 1;
         const isPublish = input.publish === true;
         const status: 'draft' | 'published' = isPublish ? 'published' : 'draft';
@@ -880,38 +902,49 @@ export function manage(input: Record<string, unknown>, actor?: User) {
       }
       case 'getOrCreateInvite': {
         const subjectId = text(input.subjectId, 'Materia');
+        const topicId = input.topicId ? String(input.topicId) : null;
         subject(subjectId);
         if (actor && actor.role === 'teacher') {
           const allowedSubs = userAccessibleSubjectIds(actor);
           if (!allowedSubs || !allowedSubs.has(subjectId))
             throw new AppError('No tienes permiso para generar enlaces de esta materia.', 403);
         }
-        const existing = db()
-          .prepare('SELECT token FROM subject_invites WHERE subject_id=?')
-          .get(subjectId) as { token: string } | undefined;
+        const existing = topicId
+          ? (db()
+              .prepare('SELECT token FROM subject_invites WHERE subject_id=? AND topic_id=?')
+              .get(subjectId, topicId) as { token: string } | undefined)
+          : (db()
+              .prepare(
+                "SELECT token FROM subject_invites WHERE subject_id=? AND (topic_id IS NULL OR topic_id='')"
+              )
+              .get(subjectId) as { token: string } | undefined);
+        let token = existing?.token;
         if (!existing) {
-          const token = randomUUID(),
-            nowIso = new Date().toISOString();
+          token = randomUUID();
+          const nowIso = new Date().toISOString();
           db()
-            .prepare('INSERT INTO subject_invites(token,subject_id,created_at) VALUES (?,?,?)')
-            .run(token, subjectId, nowIso);
+            .prepare(
+              'INSERT INTO subject_invites(token,subject_id,topic_id,created_at) VALUES (?,?,?,?)'
+            )
+            .run(token, subjectId, topicId, nowIso);
           const pool = getPgPool();
           if (pool) {
             pool
               .query(
-                'INSERT INTO subject_invites(token,subject_id,created_at) VALUES ($1,$2,$3) ON CONFLICT DO NOTHING',
-                [token, subjectId, nowIso]
+                'INSERT INTO subject_invites(token,subject_id,topic_id,created_at) VALUES ($1,$2,$3,$4) ON CONFLICT DO NOTHING',
+                [token, subjectId, topicId, nowIso]
               )
               .catch(console.error);
           }
         }
-        break;
+        return { ok: true, token };
       }
       case 'approveJoinRequest': {
         const requestId = text(input.requestId, 'Solicitud');
         const req = db()
-          .prepare('SELECT id,subject_id,user_id FROM subject_join_requests WHERE id=?')
-          .get(requestId) as { id: string; subject_id: string; user_id: string } | undefined;
+          .prepare('SELECT id,subject_id,user_id,topic_id FROM subject_join_requests WHERE id=?')
+          .get(requestId) as
+          { id: string; subject_id: string; user_id: string; topic_id?: string | null } | undefined;
         if (!req) throw new AppError('Solicitud no encontrada.', 404);
         if (actor && actor.role === 'teacher') {
           const allowedSubs = userAccessibleSubjectIds(actor);
@@ -924,6 +957,13 @@ export function manage(input: Record<string, unknown>, actor?: User) {
         db()
           .prepare('INSERT OR IGNORE INTO enrollments(user_id,subject_id) VALUES (?,?)')
           .run(req.user_id, req.subject_id);
+        if (req.topic_id) {
+          db()
+            .prepare(
+              'INSERT OR IGNORE INTO topic_enrollments(user_id,subject_id,topic_id) VALUES (?,?,?)'
+            )
+            .run(req.user_id, req.subject_id, req.topic_id);
+        }
         db()
           .prepare('DELETE FROM subject_bans WHERE user_id=? AND subject_id=?')
           .run(req.user_id, req.subject_id);
@@ -936,6 +976,14 @@ export function manage(input: Record<string, unknown>, actor?: User) {
               [req.user_id, req.subject_id]
             )
             .catch(console.error);
+          if (req.topic_id) {
+            pool
+              .query(
+                'INSERT INTO topic_enrollments(user_id,subject_id,topic_id) VALUES ($1,$2,$3) ON CONFLICT DO NOTHING',
+                [req.user_id, req.subject_id, req.topic_id]
+              )
+              .catch(console.error);
+          }
           pool
             .query('DELETE FROM subject_bans WHERE user_id=$1 AND subject_id=$2', [
               req.user_id,
@@ -952,18 +1000,23 @@ export function manage(input: Record<string, unknown>, actor?: User) {
       case 'approveJoinRequests': {
         const allowedSubs =
           actor && actor.role === 'teacher' ? userAccessibleSubjectIds(actor) : null;
-        let reqs: Array<{ id: string; subject_id: string; user_id: string }> = [];
+        let reqs: Array<{
+          id: string;
+          subject_id: string;
+          user_id: string;
+          topic_id?: string | null;
+        }> = [];
         if (Array.isArray(input.requestIds) && input.requestIds.length > 0) {
           const placeholders = input.requestIds.map(() => '?').join(',');
           reqs = db()
             .prepare(
-              `SELECT id,subject_id,user_id FROM subject_join_requests WHERE id IN (${placeholders}) AND status='pending'`
+              `SELECT id,subject_id,user_id,topic_id FROM subject_join_requests WHERE id IN (${placeholders}) AND status='pending'`
             )
             .all(...input.requestIds) as any;
         } else {
           reqs = db()
             .prepare(
-              "SELECT id,subject_id,user_id FROM subject_join_requests WHERE status='pending'"
+              "SELECT id,subject_id,user_id,topic_id FROM subject_join_requests WHERE status='pending'"
             )
             .all() as any;
         }
@@ -977,6 +1030,13 @@ export function manage(input: Record<string, unknown>, actor?: User) {
           db()
             .prepare('INSERT OR IGNORE INTO enrollments(user_id,subject_id) VALUES (?,?)')
             .run(req.user_id, req.subject_id);
+          if (req.topic_id) {
+            db()
+              .prepare(
+                'INSERT OR IGNORE INTO topic_enrollments(user_id,subject_id,topic_id) VALUES (?,?,?)'
+              )
+              .run(req.user_id, req.subject_id, req.topic_id);
+          }
           db()
             .prepare('DELETE FROM subject_bans WHERE user_id=? AND subject_id=?')
             .run(req.user_id, req.subject_id);
@@ -989,6 +1049,14 @@ export function manage(input: Record<string, unknown>, actor?: User) {
                 [req.user_id, req.subject_id]
               )
               .catch(console.error);
+            if (req.topic_id) {
+              pool
+                .query(
+                  'INSERT INTO topic_enrollments(user_id,subject_id,topic_id) VALUES ($1,$2,$3) ON CONFLICT DO NOTHING',
+                  [req.user_id, req.subject_id, req.topic_id]
+                )
+                .catch(console.error);
+            }
             pool
               .query('DELETE FROM subject_bans WHERE user_id=$1 AND subject_id=$2', [
                 req.user_id,
@@ -1067,9 +1135,18 @@ export function manage(input: Record<string, unknown>, actor?: User) {
                   db()
                     .prepare('DELETE FROM enrollments WHERE user_id=? AND subject_id=?')
                     .run(uId, sId);
+                  db()
+                    .prepare('DELETE FROM topic_enrollments WHERE user_id=? AND subject_id=?')
+                    .run(uId, sId);
                   if (pool) {
                     pool
                       .query('DELETE FROM enrollments WHERE user_id=$1 AND subject_id=$2', [
+                        uId,
+                        sId,
+                      ])
+                      .catch(console.error);
+                    pool
+                      .query('DELETE FROM topic_enrollments WHERE user_id=$1 AND subject_id=$2', [
                         uId,
                         sId,
                       ])
@@ -1079,8 +1156,12 @@ export function manage(input: Record<string, unknown>, actor?: User) {
               }
             } else {
               db().prepare('DELETE FROM enrollments WHERE user_id=?').run(uId);
+              db().prepare('DELETE FROM topic_enrollments WHERE user_id=?').run(uId);
               if (pool) {
                 pool.query('DELETE FROM enrollments WHERE user_id=$1', [uId]).catch(console.error);
+                pool
+                  .query('DELETE FROM topic_enrollments WHERE user_id=$1', [uId])
+                  .catch(console.error);
               }
             }
           }
@@ -1089,6 +1170,22 @@ export function manage(input: Record<string, unknown>, actor?: User) {
             db()
               .prepare('INSERT OR IGNORE INTO enrollments(user_id,subject_id) VALUES (?,?)')
               .run(uId, sId);
+            if (input.topicId) {
+              const tId = String(input.topicId);
+              db()
+                .prepare(
+                  'INSERT OR IGNORE INTO topic_enrollments(user_id,subject_id,topic_id) VALUES (?,?,?)'
+                )
+                .run(uId, sId, tId);
+              if (pool) {
+                pool
+                  .query(
+                    'INSERT INTO topic_enrollments(user_id,subject_id,topic_id) VALUES ($1,$2,$3) ON CONFLICT DO NOTHING',
+                    [uId, sId, tId]
+                  )
+                  .catch(console.error);
+              }
+            }
             db().prepare('DELETE FROM subject_bans WHERE user_id=? AND subject_id=?').run(uId, sId);
             db()
               .prepare(
@@ -1113,6 +1210,44 @@ export function manage(input: Record<string, unknown>, actor?: User) {
                 )
                 .catch(console.error);
             }
+          }
+        }
+        break;
+      }
+      case 'setStudentTopics': {
+        const userId = text(input.userId, 'Alumno');
+        const subjectId = text(input.subjectId, 'Materia');
+        if (actor && actor.role === 'teacher') {
+          const allowedSubs = userAccessibleSubjectIds(actor);
+          if (!allowedSubs || !allowedSubs.has(subjectId))
+            throw new AppError('No tienes permiso para modificar grupos de esta materia.', 403);
+        }
+        const rawTopicIds = Array.isArray(input.topicIds) ? (input.topicIds as string[]) : [];
+        db()
+          .prepare('DELETE FROM topic_enrollments WHERE user_id=? AND subject_id=?')
+          .run(userId, subjectId);
+        const pool = getPgPool();
+        if (pool) {
+          pool
+            .query('DELETE FROM topic_enrollments WHERE user_id=$1 AND subject_id=$2', [
+              userId,
+              subjectId,
+            ])
+            .catch(console.error);
+        }
+        for (const tId of rawTopicIds) {
+          db()
+            .prepare(
+              'INSERT OR IGNORE INTO topic_enrollments(user_id,subject_id,topic_id) VALUES (?,?,?)'
+            )
+            .run(userId, subjectId, tId);
+          if (pool) {
+            pool
+              .query(
+                'INSERT INTO topic_enrollments(user_id,subject_id,topic_id) VALUES ($1,$2,$3) ON CONFLICT DO NOTHING',
+                [userId, subjectId, tId]
+              )
+              .catch(console.error);
           }
         }
         break;
@@ -1166,10 +1301,29 @@ export function manage(input: Record<string, unknown>, actor?: User) {
         if (topicIndex < 0) throw new AppError('Tema no encontrado.', 404);
         s.topics.splice(topicIndex, 1);
         db().prepare('UPDATE subjects SET data=? WHERE id=?').run(JSON.stringify(s), s.id);
+        db()
+          .prepare('DELETE FROM topic_enrollments WHERE subject_id=? AND topic_id=?')
+          .run(s.id, topicId);
+        db()
+          .prepare('DELETE FROM subject_invites WHERE subject_id=? AND topic_id=?')
+          .run(s.id, topicId);
+
         const pool = getPgPool();
         if (pool) {
           pool
             .query('UPDATE subjects SET data=$1 WHERE id=$2', [JSON.stringify(s), s.id])
+            .catch(console.error);
+          pool
+            .query('DELETE FROM topic_enrollments WHERE subject_id=$1 AND topic_id=$2', [
+              s.id,
+              topicId,
+            ])
+            .catch(console.error);
+          pool
+            .query('DELETE FROM subject_invites WHERE subject_id=$1 AND topic_id=$2', [
+              s.id,
+              topicId,
+            ])
             .catch(console.error);
         }
 
@@ -1203,6 +1357,7 @@ export function manage(input: Record<string, unknown>, actor?: User) {
 
         // Eliminar relaciones de la materia
         db().prepare('DELETE FROM enrollments WHERE subject_id=?').run(s.id);
+        db().prepare('DELETE FROM topic_enrollments WHERE subject_id=?').run(s.id);
         db().prepare('DELETE FROM subject_bans WHERE subject_id=?').run(s.id);
         db().prepare('DELETE FROM subject_invites WHERE subject_id=?').run(s.id);
         db().prepare('DELETE FROM subject_join_requests WHERE subject_id=?').run(s.id);
@@ -1211,6 +1366,9 @@ export function manage(input: Record<string, unknown>, actor?: User) {
         const pool = getPgPool();
         if (pool) {
           pool.query('DELETE FROM enrollments WHERE subject_id=$1', [s.id]).catch(console.error);
+          pool
+            .query('DELETE FROM topic_enrollments WHERE subject_id=$1', [s.id])
+            .catch(console.error);
           pool.query('DELETE FROM subject_bans WHERE subject_id=$1', [s.id]).catch(console.error);
           pool
             .query('DELETE FROM subject_invites WHERE subject_id=$1', [s.id])

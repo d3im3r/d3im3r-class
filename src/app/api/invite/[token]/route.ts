@@ -15,12 +15,13 @@ export async function GET(request: Request, { params }: { params: Promise<{ toke
     const { token } = await params;
     const row = db()
       .prepare(
-        'SELECT i.token,i.subject_id,s.data AS subject_data,inst.data AS inst_data FROM subject_invites i JOIN subjects s ON s.id=i.subject_id JOIN institutions inst ON inst.id=s.institution_id WHERE i.token=?'
+        'SELECT i.token,i.subject_id,i.topic_id,s.data AS subject_data,inst.data AS inst_data FROM subject_invites i JOIN subjects s ON s.id=i.subject_id JOIN institutions inst ON inst.id=s.institution_id WHERE i.token=?'
       )
       .get(token) as
       | {
           token: string;
           subject_id: string;
+          topic_id?: string | null;
           subject_data: string;
           inst_data: string;
         }
@@ -30,15 +31,21 @@ export async function GET(request: Request, { params }: { params: Promise<{ toke
     let subjectObj: any = {};
     let instObj: any = {};
     try {
-      subjectObj = typeof row.subject_data === 'string' ? JSON.parse(row.subject_data) : row.subject_data || {};
+      subjectObj =
+        typeof row.subject_data === 'string'
+          ? JSON.parse(row.subject_data)
+          : row.subject_data || {};
     } catch {}
     try {
       instObj = typeof row.inst_data === 'string' ? JSON.parse(row.inst_data) : row.inst_data || {};
     } catch {}
 
+    const topic = (subjectObj.topics || []).find((t: any) => t.id === row.topic_id);
     const invite = {
       token: row.token,
       subject_id: row.subject_id,
+      topic_id: row.topic_id ?? null,
+      topic_name: topic?.name ?? null,
       subject_name: subjectObj.name ?? 'Materia',
       subject_code: subjectObj.code ?? '',
       description: subjectObj.description ?? '',
@@ -53,6 +60,8 @@ export async function GET(request: Request, { params }: { params: Promise<{ toke
         invite: {
           token: invite.token,
           subjectId: invite.subject_id,
+          topicId: invite.topic_id,
+          topicName: invite.topic_name,
           subjectName: invite.subject_name,
           subjectCode: invite.subject_code,
           description: invite.description,
@@ -84,6 +93,8 @@ export async function GET(request: Request, { params }: { params: Promise<{ toke
       invite: {
         token: invite.token,
         subjectId: invite.subject_id,
+        topicId: invite.topic_id,
+        topicName: invite.topic_name,
         subjectName: invite.subject_name,
         subjectCode: invite.subject_code,
         description: invite.description,
@@ -101,8 +112,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ tok
     await syncFromPostgres();
     const { token } = await params;
     const invite = db()
-      .prepare('SELECT subject_id FROM subject_invites WHERE token=?')
-      .get(token) as { subject_id: string } | undefined;
+      .prepare('SELECT subject_id, topic_id FROM subject_invites WHERE token=?')
+      .get(token) as { subject_id: string; topic_id?: string | null } | undefined;
     if (!invite) throw new AppError('Invitación de inscripción no válida.', 404);
 
     const user = await currentUser();
@@ -117,6 +128,22 @@ export async function POST(request: Request, { params }: { params: Promise<{ tok
       .get(user.id, invite.subject_id);
 
     if (isEnrolled && !isBanned) {
+      if (invite.topic_id) {
+        db()
+          .prepare(
+            'INSERT OR IGNORE INTO topic_enrollments(user_id,subject_id,topic_id) VALUES (?,?,?)'
+          )
+          .run(user.id, invite.subject_id, invite.topic_id);
+        const pool = getPgPool();
+        if (pool) {
+          pool
+            .query(
+              'INSERT INTO topic_enrollments(user_id,subject_id,topic_id) VALUES ($1,$2,$3) ON CONFLICT DO NOTHING',
+              [user.id, invite.subject_id, invite.topic_id]
+            )
+            .catch(console.error);
+        }
+      }
       return Response.json({
         ok: true,
         status: 'approved',
@@ -146,16 +173,16 @@ export async function POST(request: Request, { params }: { params: Promise<{ tok
     const nowIso = new Date().toISOString();
     db()
       .prepare(
-        'INSERT INTO subject_join_requests(id,subject_id,user_id,status,created_at) VALUES (?,?,?,?,?)'
+        'INSERT INTO subject_join_requests(id,subject_id,user_id,topic_id,status,created_at) VALUES (?,?,?,?,?,?)'
       )
-      .run(reqId, invite.subject_id, user.id, 'pending', nowIso);
+      .run(reqId, invite.subject_id, user.id, invite.topic_id || null, 'pending', nowIso);
 
     const pool = getPgPool();
     if (pool) {
       pool
         .query(
-          'INSERT INTO subject_join_requests(id,subject_id,user_id,status,created_at) VALUES ($1,$2,$3,$4,$5) ON CONFLICT(subject_id,user_id) DO UPDATE SET status=EXCLUDED.status',
-          [reqId, invite.subject_id, user.id, 'pending', nowIso]
+          'INSERT INTO subject_join_requests(id,subject_id,user_id,topic_id,status,created_at) VALUES ($1,$2,$3,$4,$5,$6) ON CONFLICT(subject_id,user_id) DO UPDATE SET topic_id=EXCLUDED.topic_id, status=EXCLUDED.status',
+          [reqId, invite.subject_id, user.id, invite.topic_id || null, 'pending', nowIso]
         )
         .catch(console.error);
     }

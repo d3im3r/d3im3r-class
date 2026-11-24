@@ -65,17 +65,19 @@ type Snapshot = {
   enrollments: { userId: string; subjectId: string }[];
   institutionMembers?: { userId: string; institutionId: string }[];
   bans?: { userId: string; subjectId: string; reason?: string; bannedAt: string }[];
-  invites?: { subjectId: string; token: string }[];
+  invites?: { subjectId: string; token: string; topicId?: string | null }[];
   joinRequests?: {
     id: string;
     subjectId: string;
     userId: string;
+    topicId?: string | null;
     status: string;
     createdAt: string;
     userName: string;
     username: string;
     institutionId: string;
   }[];
+  topicEnrollments?: { userId: string; subjectId: string; topicId: string }[];
 };
 async function parseJson<T = any>(response: Response): Promise<T> {
   const text = await response.text();
@@ -126,6 +128,8 @@ export function AdminPanel({
     [selectedRequestIds, setSelectedRequestIds] = useState<string[]>([]),
     [bulkAssignOpen, setBulkAssignOpen] = useState(false),
     [bulkSubjectIds, setBulkSubjectIds] = useState<string[]>([]),
+    [bulkTopicId, setBulkTopicId] = useState(''),
+    [studentTopics, setStudentTopics] = useState<Record<string, string[]>>({}),
     [bulkAssignMode, setBulkAssignMode] = useState<'add' | 'replace'>('add'),
     [schedulingLessonId, setSchedulingLessonId] = useState<string | null>(null),
     [scheduleDate, setScheduleDate] = useState(''),
@@ -384,23 +388,32 @@ export function AdminPanel({
     setMessage('');
   }
 
-  async function copyInviteLink(subjectId: string) {
+  async function copyInviteLink(subjectId: string, topicId?: string) {
     try {
-      let token = (data?.invites ?? []).find((i) => i.subjectId === subjectId)?.token;
+      let token = (data?.invites ?? []).find(
+        (i) => i.subjectId === subjectId && (topicId ? i.topicId === topicId : !i.topicId)
+      )?.token;
       if (!token) {
-        await mutate({ action: 'getOrCreateInvite', subjectId }, 'Enlace de inscripción generado.');
+        await mutate(
+          { action: 'getOrCreateInvite', subjectId, topicId },
+          topicId ? 'Enlace del grupo generado.' : 'Enlace de inscripción generado.'
+        );
         const ref = await fetch('/api/admin', { cache: 'no-store' });
         const snap = await ref.json();
         token = snap.invites?.find(
-          (i: { subjectId: string; token: string }) => i.subjectId === subjectId
+          (i: { subjectId: string; token: string; topicId?: string | null }) =>
+            i.subjectId === subjectId && (topicId ? i.topicId === topicId : !i.topicId)
         )?.token;
       }
       if (token) {
         const url = `${window.location.origin}/join/${token}`;
         await navigator.clipboard.writeText(url);
-        setCopiedSubject(subjectId);
+        const copyKey = topicId ? `${subjectId}-${topicId}` : subjectId;
+        setCopiedSubject(copyKey);
         setTimeout(() => setCopiedSubject(''), 2500);
-        const msg = 'Enlace de inscripción copiado al portapapeles. Compártelo con tus alumnos.';
+        const msg = topicId
+          ? 'Enlace de este grupo copiado al portapapeles. Los alumnos que se unan quedarán inscritos directamente a este grupo.'
+          : 'Enlace de inscripción copiado al portapapeles. Compártelo con tus alumnos.';
         setMessage(msg);
         toast.success(msg);
       }
@@ -1085,6 +1098,25 @@ export function AdminPanel({
                             }}
                           >
                             Ver clases ({count})<ArrowRight size={14} />
+                          </Button>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            title="Copiar enlace de invitación para este grupo"
+                            onClick={() => copyInviteLink(currentSubject.id, t.id)}
+                          >
+                            {copiedSubject === `${currentSubject.id}-${t.id}` ? (
+                              <>
+                                <Check size={14} className="text-emerald-500" />
+                                <span>Copiado</span>
+                              </>
+                            ) : (
+                              <>
+                                <LinkIcon size={14} />
+                                <span>Link del grupo</span>
+                              </>
+                            )}
                           </Button>
                           <Button
                             type="button"
@@ -2080,12 +2112,23 @@ export function AdminPanel({
                           <div>
                             <strong>{req.userName}</strong>{' '}
                             <span className="text-muted-foreground">({req.username})</span>
-                            <p className="text-muted-foreground mt-0.5">
-                              Asignatura:{' '}
-                              <span className="font-medium text-foreground">
-                                {subj?.name ?? req.subjectId}
-                              </span>{' '}
-                              ({subj?.code})
+                            <p className="text-muted-foreground mt-0.5 flex flex-wrap items-center gap-2">
+                              <span>
+                                Asignatura:{' '}
+                                <span className="font-medium text-foreground">
+                                  {subj?.name ?? req.subjectId}
+                                </span>{' '}
+                                ({subj?.code})
+                              </span>
+                              {req.topicId &&
+                                (() => {
+                                  const topic = subj?.topics?.find((t) => t.id === req.topicId);
+                                  return (
+                                    <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300">
+                                      Grupo: {topic?.name ?? req.topicId}
+                                    </span>
+                                  );
+                                })()}
                             </p>
                           </div>
                         </div>
@@ -2129,12 +2172,19 @@ export function AdminPanel({
               <select
                 value={student}
                 onChange={(e) => {
-                  setStudent(e.target.value);
+                  const sId = e.target.value;
+                  setStudent(sId);
                   setAssigned(
-                    data.enrollments
-                      .filter((a) => a.userId === e.target.value)
-                      .map((a) => a.subjectId)
+                    data.enrollments.filter((a) => a.userId === sId).map((a) => a.subjectId)
                   );
+                  const stMap: Record<string, string[]> = {};
+                  (data.topicEnrollments ?? [])
+                    .filter((te) => te.userId === sId)
+                    .forEach((te) => {
+                      if (!stMap[te.subjectId]) stMap[te.subjectId] = [];
+                      stMap[te.subjectId].push(te.topicId);
+                    });
+                  setStudentTopics(stMap);
                 }}
               >
                 <option value="">Seleccionar alumno para gestionar sus materias</option>
@@ -2172,6 +2222,44 @@ export function AdminPanel({
                             </small>
                           </span>
                         </label>
+                        {assigned.includes(s.id) && s.topics && s.topics.length > 0 && (
+                          <div className="ml-6 mt-1 flex flex-wrap gap-2 items-center text-xs">
+                            <span className="text-muted-foreground font-medium">
+                              Grupos / Temas asignados:
+                            </span>
+                            {s.topics.map((t) => {
+                              const isChecked = (studentTopics[s.id] ?? []).includes(t.id);
+                              return (
+                                <label
+                                  key={t.id}
+                                  className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-muted/60 hover:bg-muted cursor-pointer text-xs"
+                                >
+                                  <input
+                                    type="checkbox"
+                                    checked={isChecked}
+                                    onChange={(ev) => {
+                                      const current = studentTopics[s.id] ?? [];
+                                      const updated = ev.target.checked
+                                        ? [...current, t.id]
+                                        : current.filter((id) => id !== t.id);
+                                      setStudentTopics((prev) => ({
+                                        ...prev,
+                                        [s.id]: updated,
+                                      }));
+                                    }}
+                                    className="rounded border w-3 h-3 accent-primary cursor-pointer"
+                                  />
+                                  <span>{t.name}</span>
+                                </label>
+                              );
+                            })}
+                            {(!studentTopics[s.id] || studentTopics[s.id].length === 0) && (
+                              <span className="text-muted-foreground text-[11px] italic">
+                                (Acceso a todos los grupos)
+                              </span>
+                            )}
+                          </div>
+                        )}
                         {isBanned && (
                           <span className="status-badge draft">
                             <ShieldAlert size={12} />
@@ -2184,12 +2272,25 @@ export function AdminPanel({
                 </div>
                 <Button
                   disabled={busy}
-                  onClick={() =>
-                    mutate(
+                  onClick={async () => {
+                    const ok = await mutate(
                       { action: 'assign', userId: student, subjectIds: assigned },
                       'Asignaciones guardadas. El alumno verá únicamente estas materias.'
-                    )
-                  }
+                    );
+                    if (ok) {
+                      for (const sId of assigned) {
+                        await mutate(
+                          {
+                            action: 'setStudentTopics',
+                            userId: student,
+                            subjectId: sId,
+                            topicIds: studentTopics[sId] ?? [],
+                          },
+                          'Grupos actualizados.'
+                        );
+                      }
+                    }
+                  }}
                 >
                   <Save size={15} />
                   Guardar asignaciones
@@ -2317,11 +2418,12 @@ export function AdminPanel({
                         <input
                           type="checkbox"
                           checked={bulkSubjectIds.includes(s.id)}
-                          onChange={(e) =>
+                          onChange={(e) => {
                             setBulkSubjectIds((prev) =>
                               e.target.checked ? [...prev, s.id] : prev.filter((id) => id !== s.id)
-                            )
-                          }
+                            );
+                            setBulkTopicId('');
+                          }}
                           className="rounded border w-3.5 h-3.5 accent-primary cursor-pointer"
                         />
                         <span className="truncate">
@@ -2331,6 +2433,30 @@ export function AdminPanel({
                       </label>
                     ))}
                   </div>
+                  {bulkSubjectIds.length === 1 &&
+                    (() => {
+                      const selSub = data.subjects.find((s) => s.id === bulkSubjectIds[0]);
+                      if (!selSub || !selSub.topics || selSub.topics.length === 0) return null;
+                      return (
+                        <div className="pt-2">
+                          <label className="text-xs text-muted-foreground block mb-1">
+                            Grupo / Tema específico (opcional):
+                          </label>
+                          <select
+                            className="text-xs p-1.5 rounded border bg-background w-full sm:w-auto"
+                            value={bulkTopicId}
+                            onChange={(e) => setBulkTopicId(e.target.value)}
+                          >
+                            <option value="">Todos los grupos (sin restricción)</option>
+                            {selSub.topics.map((t) => (
+                              <option key={t.id} value={t.id}>
+                                Grupo: {t.name}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      );
+                    })()}
                 </div>
                 <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-emerald-200/50 dark:border-emerald-900/50">
                   <div className="flex flex-wrap items-center gap-4 text-xs">
@@ -2369,6 +2495,7 @@ export function AdminPanel({
                             action: 'bulkAssignStudents',
                             userIds: selectedStudentIds,
                             subjectIds: bulkSubjectIds,
+                            topicId: bulkTopicId || undefined,
                             mode: bulkAssignMode,
                           },
                           `Materias asignadas correctamente a ${selectedStudentIds.length} alumnos.`
@@ -2376,6 +2503,7 @@ export function AdminPanel({
                         if (ok) {
                           setBulkAssignOpen(false);
                           setSelectedStudentIds([]);
+                          setBulkTopicId('');
                         }
                       }}
                     >

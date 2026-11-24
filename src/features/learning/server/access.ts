@@ -28,6 +28,16 @@ export function canReadLesson(user: User, id: string) {
     }
   }
 
+  const topicEnrollments = db()
+    .prepare('SELECT topic_id FROM topic_enrollments WHERE user_id=? AND subject_id=?')
+    .all(user.id, row.subject_id) as Array<{ topic_id: string }>;
+  if (topicEnrollments.length > 0) {
+    const allowedTopics = new Set(topicEnrollments.map((t) => t.topic_id));
+    if (!allowedTopics.has(data.topicId)) {
+      return false;
+    }
+  }
+
   return true;
 }
 export function canReadResource(
@@ -60,14 +70,14 @@ export function studentLesson(lesson: Lesson): Lesson {
     frames: lesson.frames.map((frame) => ({
       ...frame,
       line: 0,
-      blocks: frame.blocks.map(visible),
+      blocks: (frame.blocks ?? []).map(visible),
     })),
   };
 }
 export function userCatalog(user: User): Catalog {
   const canReadAll = user.role === 'admin';
   const canReadDraft = canReadAll || hasPermission(user, { lesson: ['readDraft'] });
-  const subjects = (
+  let subjects = (
     canReadAll
       ? db().prepare('SELECT data FROM subjects').all()
       : db()
@@ -84,7 +94,34 @@ export function userCatalog(user: User): Catalog {
           )
           .all(user.id, user.id, user.id)
   ).map((row) => JSON.parse(row.data as string) as Subject);
+
+  if (!canReadDraft) {
+    const topicRows = db()
+      .prepare('SELECT subject_id, topic_id FROM topic_enrollments WHERE user_id=?')
+      .all(user.id) as Array<{ subject_id: string; topic_id: string }>;
+
+    if (topicRows.length > 0) {
+      const allowedTopicsBySubject = new Map<string, Set<string>>();
+      for (const tr of topicRows) {
+        if (!allowedTopicsBySubject.has(tr.subject_id)) {
+          allowedTopicsBySubject.set(tr.subject_id, new Set());
+        }
+        allowedTopicsBySubject.get(tr.subject_id)!.add(tr.topic_id);
+      }
+
+      subjects = subjects.map((s) => {
+        const allowed = allowedTopicsBySubject.get(s.id);
+        if (!allowed || allowed.size === 0) return s;
+        return {
+          ...s,
+          topics: s.topics.filter((t) => allowed.has(t.id)),
+        };
+      });
+    }
+  }
+
   const ids = new Set(subjects.map((s) => s.id));
+  const allowedTopicIdSet = new Set(subjects.flatMap((s) => s.topics.map((t) => t.id)));
   const rawLessons = db()
     .prepare('SELECT id,subject_id,data,status FROM lessons')
     .all()
@@ -98,6 +135,9 @@ export function userCatalog(user: User): Catalog {
     if (isBanned) continue;
 
     const data = JSON.parse(row.data as string) as Lesson;
+    if (!canReadDraft && !allowedTopicIdSet.has(data.topicId)) {
+      continue;
+    }
     const isScheduledFuture =
       Boolean(data.publishAt) &&
       !isNaN(new Date(data.publishAt!).getTime()) &&

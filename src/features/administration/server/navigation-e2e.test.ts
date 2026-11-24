@@ -8,7 +8,7 @@ const folder = mkdtempSync(path.join(tmpdir(), 'aula-tab-nav-'));
 process.env.AULA_DATA_DIR = folder;
 
 const { db } = await import('./database');
-const { setup, login, currentUser, startSession, endSession, requirePermission } =
+const { setup, login, currentUser, startSession, endSession, requirePermission, createUser } =
   await import('../../auth/server/auth');
 const { manage, snapshot } = await import('./manage');
 const { userCatalog, userProgress, canReadLesson } = await import('../../learning/server/access');
@@ -345,6 +345,177 @@ test('Organización de clases: reordenamiento (moveLesson) y publicación progra
     true,
     'Alumno puede leer clase tras llegar su fecha'
   );
+});
+
+test('Separación de alumnos por grupos (Temas como Grupos)', () => {
+  const instId = snapshot().institutions[0].id;
+  // 1. Crear materia con dos grupos (temas): Grupo A y Grupo B
+  manage({
+    action: 'subject',
+    institutionId: instId,
+    name: 'Matemáticas por Grupos',
+    code: 'MAT-GRP',
+    color: '#3b82f6',
+  });
+  const matGrupos = snapshot().subjects.find((s) => s.code === 'MAT-GRP')!;
+  assert.ok(matGrupos);
+
+  manage({
+    action: 'topic',
+    subjectId: matGrupos.id,
+    name: 'Grupo A',
+  });
+  manage({
+    action: 'topic',
+    subjectId: matGrupos.id,
+    name: 'Grupo B',
+  });
+
+  const matUpdated = snapshot().subjects.find((s) => s.id === matGrupos.id)!;
+  const topicA = matUpdated.topics.find((t) => t.name === 'Grupo A')!;
+  const topicB = matUpdated.topics.find((t) => t.name === 'Grupo B')!;
+  assert.ok(topicA && topicB);
+
+  // 2. Crear clases para cada grupo
+  const lessonGroupA = {
+    id: 'clase-grupo-a',
+    title: 'Clase Álgebra Grupo A',
+    subtitle: 'Tema 1',
+    subjectId: matGrupos.id,
+    topicId: topicA.id,
+    status: 'published',
+    revision: 1,
+    reviewed: 1,
+    frames: [{ id: 'f-1', title: 'Frame 1', body: 'Contenido Grupo A' }],
+  };
+  const lessonGroupB = {
+    id: 'clase-grupo-b',
+    title: 'Clase Álgebra Grupo B',
+    subtitle: 'Tema 1',
+    subjectId: matGrupos.id,
+    topicId: topicB.id,
+    status: 'published',
+    revision: 1,
+    reviewed: 1,
+    frames: [{ id: 'f-2', title: 'Frame 2', body: 'Contenido Grupo B' }],
+  };
+  manage({ action: 'saveLesson', ...lessonGroupA, publish: true });
+  manage({ action: 'saveLesson', ...lessonGroupB, publish: true });
+
+  // 3. Crear alumno para Grupo A y alumno para Grupo B
+  const studentA = createUser(
+    {
+      name: 'Estudiante Grupo A',
+      username: 'alumno.grupo.a',
+      password: 'Password-2026',
+    },
+    'student'
+  );
+  const studentB = createUser(
+    {
+      name: 'Estudiante Grupo B',
+      username: 'alumno.grupo.b',
+      password: 'Password-2026',
+    },
+    'student'
+  );
+
+  // 4. Inscribir ambos a la materia, pero restringir temas/grupos
+  manage({ action: 'assign', userId: studentA.id, subjectIds: [matGrupos.id] });
+  manage({ action: 'assign', userId: studentB.id, subjectIds: [matGrupos.id] });
+
+  manage({
+    action: 'setStudentTopics',
+    userId: studentA.id,
+    subjectId: matGrupos.id,
+    topicIds: [topicA.id],
+  });
+  manage({
+    action: 'setStudentTopics',
+    userId: studentB.id,
+    subjectId: matGrupos.id,
+    topicIds: [topicB.id],
+  });
+
+  // 5. Verificar canReadLesson
+  assert.equal(
+    canReadLesson(studentA, lessonGroupA.id),
+    true,
+    'Alumno A puede leer clase de Grupo A'
+  );
+  assert.equal(
+    canReadLesson(studentA, lessonGroupB.id),
+    false,
+    'Alumno A NO puede leer clase de Grupo B'
+  );
+
+  assert.equal(
+    canReadLesson(studentB, lessonGroupA.id),
+    false,
+    'Alumno B NO puede leer clase de Grupo A'
+  );
+  assert.equal(
+    canReadLesson(studentB, lessonGroupB.id),
+    true,
+    'Alumno B puede leer clase de Grupo B'
+  );
+
+  // 6. Verificar userCatalog (solo debe listar el tema y clases correspondientes a su grupo)
+  const catA = userCatalog(studentA);
+  const subA = catA.subjects.find((s) => s.id === matGrupos.id);
+  assert.ok(subA, 'Alumno A ve la materia');
+  assert.equal(subA.topics.length, 1, 'Alumno A solo ve 1 tema (Grupo A)');
+  assert.equal(subA.topics[0].id, topicA.id);
+
+  const lessonsCatA = catA.lessons.filter((l) => l.subjectId === matGrupos.id);
+  assert.equal(lessonsCatA.length, 1, 'Alumno A solo ve 1 clase en el catálogo');
+  assert.equal(lessonsCatA[0].id, 'clase-grupo-a');
+
+  const catB = userCatalog(studentB);
+  const subB = catB.subjects.find((s) => s.id === matGrupos.id);
+  assert.ok(subB, 'Alumno B ve la materia');
+  assert.equal(subB.topics.length, 1, 'Alumno B solo ve 1 tema (Grupo B)');
+  assert.equal(subB.topics[0].id, topicB.id);
+
+  // 7. Docente ve ambos grupos y clases
+  const teacherCat = userCatalog(teacher);
+  const subTeacher = teacherCat.subjects.find((s) => s.id === matGrupos.id);
+  assert.ok(subTeacher);
+  assert.equal(subTeacher.topics.length, 2, 'Docente ve ambos grupos (temas)');
+
+  // 8. Enlace de invitación directo a grupo
+  const inviteRes = manage({
+    action: 'getOrCreateInvite',
+    subjectId: matGrupos.id,
+    topicId: topicB.id,
+  }) as { ok: boolean; token?: string };
+  assert.ok(inviteRes.token, 'Generó token para el grupo B');
+
+  // Alumno C se registra e ingresa con solicitud de Grupo B
+  const studentC = createUser(
+    {
+      name: 'Estudiante C',
+      username: 'alumno.c',
+      password: 'Password-2026',
+    },
+    'student'
+  );
+  db()
+    .prepare(
+      'INSERT INTO subject_join_requests(id, subject_id, user_id, topic_id, created_at) VALUES (?,?,?,?,?)'
+    )
+    .run('req-c', matGrupos.id, studentC.id, topicB.id, new Date().toISOString());
+
+  // Aprobar solicitud
+  manage({ action: 'approveJoinRequest', requestId: 'req-c' });
+
+  // Verificar que el alumno C quedó asignado al topicB.id
+  assert.equal(
+    canReadLesson(studentC, lessonGroupB.id),
+    true,
+    'Alumno C inscrito vía solicitud aprobada ve Grupo B'
+  );
+  assert.equal(canReadLesson(studentC, lessonGroupA.id), false, 'Alumno C NO ve Grupo A');
 });
 
 after(() => {

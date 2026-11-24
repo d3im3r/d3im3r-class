@@ -72,6 +72,14 @@ export async function syncFromPostgres(force = false): Promise<void> {
             CASE WHEN u.role='admin' THEN 'admin' WHEN u.role='teacher' THEN 'teacher' ELSE 'student' END
           FROM "user" u
           ON CONFLICT (id) DO UPDATE SET name=EXCLUDED.name, role=EXCLUDED.role;
+          CREATE TABLE IF NOT EXISTS topic_enrollments(
+            user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
+            subject_id TEXT REFERENCES subjects(id) ON DELETE CASCADE,
+            topic_id TEXT NOT NULL,
+            PRIMARY KEY(user_id, subject_id, topic_id)
+          );
+          ALTER TABLE subject_invites ADD COLUMN IF NOT EXISTS topic_id TEXT;
+          ALTER TABLE subject_join_requests ADD COLUMN IF NOT EXISTS topic_id TEXT;
         `);
       } catch {}
 
@@ -86,6 +94,7 @@ export async function syncFromPostgres(force = false): Promise<void> {
       'subjects', COALESCE((SELECT json_agg(sub) FROM subjects sub), '[]'::json),
       'lessons', COALESCE((SELECT json_agg(l) FROM lessons l), '[]'::json),
       'enrollments', COALESCE((SELECT json_agg(e) FROM enrollments e), '[]'::json),
+      'topic_enrollments', COALESCE((SELECT json_agg(te) FROM topic_enrollments te), '[]'::json),
       'institution_members', COALESCE((SELECT json_agg(im) FROM institution_members im), '[]'::json),
       'subject_bans', COALESCE((SELECT json_agg(b) FROM subject_bans b), '[]'::json),
       'subject_invites', COALESCE((SELECT json_agg(si) FROM subject_invites si), '[]'::json),
@@ -95,272 +104,294 @@ export async function syncFromPostgres(force = false): Promise<void> {
       'resources', COALESCE((SELECT json_agg(r) FROM resources r), '[]'::json)
     ) as state;
   `);
-    const state = res.rows[0]?.state;
-    if (!state) return;
-    const sql = db();
-    sql.exec('PRAGMA foreign_keys=OFF;');
-    sql.exec('BEGIN IMMEDIATE');
-    try {
-      if (Array.isArray(state.users)) {
-        for (const u of state.users) {
-          sql
-            .prepare(
-              'INSERT INTO users(id,name,username,password,role) VALUES (?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET name=excluded.name,username=excluded.username,password=excluded.password,role=excluded.role'
-            )
-            .run(u.id, u.name, u.username, u.password, u.role);
-          const now = new Date().toISOString();
-          const email = u.username.includes('@') ? u.username : `${u.username}@aula.local`;
-          sql
-            .prepare(
-              'INSERT INTO user(id,name,email,emailVerified,createdAt,updatedAt,username,displayUsername,role,banned) VALUES (?,?,?,1,?,?,?,?,?,0) ON CONFLICT(id) DO UPDATE SET name=excluded.name,email=excluded.email,updatedAt=excluded.updatedAt,username=excluded.username,displayUsername=excluded.displayUsername,role=excluded.role'
-            )
-            .run(u.id, u.name, email, now, now, u.username, u.username, u.role);
-        }
-      }
-      if (Array.isArray(state.user)) {
-        for (const usr of state.user) {
-          sql
-            .prepare(
-              'INSERT INTO user(id,name,email,emailVerified,image,createdAt,updatedAt,username,displayUsername,role,banned,banReason,banExpires) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET name=excluded.name,email=excluded.email,emailVerified=excluded.emailVerified,image=excluded.image,updatedAt=excluded.updatedAt,username=excluded.username,displayUsername=excluded.displayUsername,role=excluded.role,banned=excluded.banned,banReason=excluded.banReason,banExpires=excluded.banExpires'
-            )
-            .run(
-              usr.id,
-              usr.name,
-              usr.email,
-              usr.emailVerified ? 1 : 0,
-              usr.image,
-              usr.createdAt,
-              usr.updatedAt,
-              usr.username,
-              usr.displayUsername,
-              usr.role,
-              usr.banned ? 1 : 0,
-              usr.banReason,
-              usr.banExpires
-            );
-          // Asegurar registro puente en 'users' para evitar fallos de Foreign Key en enrollments/progress
-          const r = usr.role === 'admin' ? 'admin' : usr.role === 'teacher' ? 'teacher' : 'student';
-          const uName = usr.username || (usr.email ? usr.email.split('@')[0] : usr.id);
-          sql
-            .prepare(
-              'INSERT INTO users(id,name,username,password,role) VALUES (?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET name=excluded.name,role=excluded.role'
-            )
-            .run(usr.id, usr.name, uName, 'managed-by-better-auth', r);
-        }
-      }
-      if (Array.isArray(state.account)) {
-        for (const acc of state.account) {
-          sql
-            .prepare(
-              'INSERT INTO account(id,accountId,providerId,userId,accessToken,refreshToken,idToken,accessTokenExpiresAt,refreshTokenExpiresAt,scope,password,createdAt,updatedAt) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET password=excluded.password,updatedAt=excluded.updatedAt'
-            )
-            .run(
-              acc.id,
-              acc.accountId,
-              acc.providerId,
-              acc.userId,
-              acc.accessToken,
-              acc.refreshToken,
-              acc.idToken,
-              acc.accessTokenExpiresAt,
-              acc.refreshTokenExpiresAt,
-              acc.scope,
-              acc.password,
-              acc.createdAt,
-              acc.updatedAt
-            );
-        }
-      }
-      sql.prepare('DELETE FROM sessions WHERE expires < ?').run(Date.now());
-      sql.prepare('DELETE FROM session WHERE expiresAt < ?').run(new Date().toISOString());
-      if (Array.isArray(state.sessions)) {
-        for (const s of state.sessions) {
-          sql
-            .prepare(
-              'INSERT INTO sessions(token,user_id,expires) VALUES (?,?,?) ON CONFLICT(token) DO UPDATE SET user_id=excluded.user_id,expires=excluded.expires'
-            )
-            .run(s.token, s.user_id, Number(s.expires));
-        }
-      }
-      if (Array.isArray(state.session)) {
-        for (const ses of state.session) {
-          sql
-            .prepare(
-              'INSERT INTO session(id,expiresAt,token,createdAt,updatedAt,ipAddress,userAgent,userId,impersonatedBy) VALUES (?,?,?,?,?,?,?,?,?) ON CONFLICT(token) DO UPDATE SET expiresAt=excluded.expiresAt,updatedAt=excluded.updatedAt,userId=excluded.userId,ipAddress=excluded.ipAddress,userAgent=excluded.userAgent'
-            )
-            .run(
-              ses.id,
-              ses.expiresAt,
-              ses.token,
-              ses.createdAt,
-              ses.updatedAt,
-              ses.ipAddress,
-              ses.userAgent,
-              ses.userId,
-              ses.impersonatedBy
-            );
-        }
-      }
-      if (Array.isArray(state.institutions)) {
-        const pgInstIds = state.institutions.map((i: any) => i.id);
-        if (pgInstIds.length > 0) {
-          const placeholders = pgInstIds.map(() => '?').join(',');
-          sql
-            .prepare(`DELETE FROM institutions WHERE id NOT IN (${placeholders})`)
-            .run(...pgInstIds);
-        } else {
-          sql.prepare('DELETE FROM institutions').run();
-        }
-        for (const inst of state.institutions) {
-          const dataStr = typeof inst.data === 'string' ? inst.data : JSON.stringify(inst.data);
-          sql
-            .prepare(
-              'INSERT INTO institutions(id,data) VALUES (?,?) ON CONFLICT(id) DO UPDATE SET data=excluded.data'
-            )
-            .run(inst.id, dataStr);
-        }
-      }
-      if (Array.isArray(state.subjects)) {
-        const pgSubIds = state.subjects.map((s: any) => s.id);
-        const localSubCount = (sql.prepare('SELECT COUNT(*) as c FROM subjects').get() as any)?.c ?? 0;
-        if (pgSubIds.length > 0) {
-          const placeholders = pgSubIds.map(() => '?').join(',');
-          sql.prepare(`DELETE FROM subjects WHERE id NOT IN (${placeholders})`).run(...pgSubIds);
-        } else if (localSubCount === 0) {
-          sql.prepare('DELETE FROM subjects').run();
-        }
-        for (const sub of state.subjects) {
-          const dataStr = typeof sub.data === 'string' ? sub.data : JSON.stringify(sub.data);
-          sql
-            .prepare(
-              'INSERT INTO subjects(id,institution_id,data) VALUES (?,?,?) ON CONFLICT(id) DO UPDATE SET institution_id=excluded.institution_id,data=excluded.data'
-            )
-            .run(sub.id, sub.institution_id, dataStr);
-        }
-      }
-      if (Array.isArray(state.lessons)) {
-        const pgLessonIds = state.lessons.map((l: any) => l.id);
-        const localLessonCount = (sql.prepare('SELECT COUNT(*) as c FROM lessons').get() as any)?.c ?? 0;
-        if (pgLessonIds.length > 0) {
-          const placeholders = pgLessonIds.map(() => '?').join(',');
-          sql.prepare(`DELETE FROM lessons WHERE id NOT IN (${placeholders})`).run(...pgLessonIds);
-          for (const les of state.lessons) {
-            const dataStr = typeof les.data === 'string' ? les.data : JSON.stringify(les.data);
+      const state = res.rows[0]?.state;
+      if (!state) return;
+      const sql = db();
+      sql.exec('PRAGMA foreign_keys=OFF;');
+      sql.exec('BEGIN IMMEDIATE');
+      try {
+        if (Array.isArray(state.users)) {
+          for (const u of state.users) {
             sql
               .prepare(
-                'INSERT INTO lessons(id,subject_id,status,revision,reviewed,data) VALUES (?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET subject_id=excluded.subject_id,status=excluded.status,revision=excluded.revision,reviewed=excluded.reviewed,data=excluded.data'
+                'INSERT INTO users(id,name,username,password,role) VALUES (?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET name=excluded.name,username=excluded.username,password=excluded.password,role=excluded.role'
               )
-              .run(les.id, les.subject_id, les.status, les.revision, les.reviewed, dataStr);
-          }
-        } else if (localLessonCount > 0 && pool) {
-          // Postgres está vacío (primera conexión): poblar Postgres desde el seed local sin borrar SQLite
-          for (const l of sql.prepare('SELECT * FROM lessons').all() as any[]) {
-            pool
-              .query(
-                'INSERT INTO lessons(id,subject_id,status,revision,reviewed,data) VALUES ($1,$2,$3,$4,$5,$6) ON CONFLICT(id) DO NOTHING',
-                [l.id, l.subject_id, l.status, l.revision, l.reviewed, l.data]
+              .run(u.id, u.name, u.username, u.password, u.role);
+            const now = new Date().toISOString();
+            const email = u.username.includes('@') ? u.username : `${u.username}@aula.local`;
+            sql
+              .prepare(
+                'INSERT INTO user(id,name,email,emailVerified,createdAt,updatedAt,username,displayUsername,role,banned) VALUES (?,?,?,1,?,?,?,?,?,0) ON CONFLICT(id) DO UPDATE SET name=excluded.name,email=excluded.email,updatedAt=excluded.updatedAt,username=excluded.username,displayUsername=excluded.displayUsername,role=excluded.role'
               )
-              .catch(console.error);
+              .run(u.id, u.name, email, now, now, u.username, u.username, u.role);
           }
-          for (const s of sql.prepare('SELECT * FROM subjects').all() as any[]) {
-            pool
-              .query(
-                'INSERT INTO subjects(id,institution_id,data) VALUES ($1,$2,$3) ON CONFLICT(id) DO NOTHING',
-                [s.id, s.institution_id, s.data]
+        }
+        if (Array.isArray(state.user)) {
+          for (const usr of state.user) {
+            sql
+              .prepare(
+                'INSERT INTO user(id,name,email,emailVerified,image,createdAt,updatedAt,username,displayUsername,role,banned,banReason,banExpires) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET name=excluded.name,email=excluded.email,emailVerified=excluded.emailVerified,image=excluded.image,updatedAt=excluded.updatedAt,username=excluded.username,displayUsername=excluded.displayUsername,role=excluded.role,banned=excluded.banned,banReason=excluded.banReason,banExpires=excluded.banExpires'
               )
-              .catch(console.error);
+              .run(
+                usr.id,
+                usr.name,
+                usr.email,
+                usr.emailVerified ? 1 : 0,
+                usr.image,
+                usr.createdAt,
+                usr.updatedAt,
+                usr.username,
+                usr.displayUsername,
+                usr.role,
+                usr.banned ? 1 : 0,
+                usr.banReason,
+                usr.banExpires
+              );
+            // Asegurar registro puente en 'users' para evitar fallos de Foreign Key en enrollments/progress
+            const r =
+              usr.role === 'admin' ? 'admin' : usr.role === 'teacher' ? 'teacher' : 'student';
+            const uName = usr.username || (usr.email ? usr.email.split('@')[0] : usr.id);
+            sql
+              .prepare(
+                'INSERT INTO users(id,name,username,password,role) VALUES (?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET name=excluded.name,role=excluded.role'
+              )
+              .run(usr.id, usr.name, uName, 'managed-by-better-auth', r);
           }
-        } else if (localLessonCount === 0) {
-          sql.prepare('DELETE FROM lessons').run();
         }
-      }
-      if (Array.isArray(state.enrollments)) {
-        sql.prepare('DELETE FROM enrollments').run();
-        for (const e of state.enrollments) {
-          sql
-            .prepare('INSERT OR IGNORE INTO enrollments(user_id,subject_id) VALUES (?,?)')
-            .run(e.user_id, e.subject_id);
+        if (Array.isArray(state.account)) {
+          for (const acc of state.account) {
+            sql
+              .prepare(
+                'INSERT INTO account(id,accountId,providerId,userId,accessToken,refreshToken,idToken,accessTokenExpiresAt,refreshTokenExpiresAt,scope,password,createdAt,updatedAt) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET password=excluded.password,updatedAt=excluded.updatedAt'
+              )
+              .run(
+                acc.id,
+                acc.accountId,
+                acc.providerId,
+                acc.userId,
+                acc.accessToken,
+                acc.refreshToken,
+                acc.idToken,
+                acc.accessTokenExpiresAt,
+                acc.refreshTokenExpiresAt,
+                acc.scope,
+                acc.password,
+                acc.createdAt,
+                acc.updatedAt
+              );
+          }
         }
-      }
-      if (Array.isArray(state.institution_members)) {
-        sql.prepare('DELETE FROM institution_members').run();
-        for (const im of state.institution_members) {
-          sql
-            .prepare(
-              'INSERT OR IGNORE INTO institution_members(user_id,institution_id) VALUES (?,?)'
-            )
-            .run(im.user_id, im.institution_id);
+        sql.prepare('DELETE FROM sessions WHERE expires < ?').run(Date.now());
+        sql.prepare('DELETE FROM session WHERE expiresAt < ?').run(new Date().toISOString());
+        if (Array.isArray(state.sessions)) {
+          for (const s of state.sessions) {
+            sql
+              .prepare(
+                'INSERT INTO sessions(token,user_id,expires) VALUES (?,?,?) ON CONFLICT(token) DO UPDATE SET user_id=excluded.user_id,expires=excluded.expires'
+              )
+              .run(s.token, s.user_id, Number(s.expires));
+          }
         }
-      }
-      if (Array.isArray(state.subject_bans)) {
-        sql.prepare('DELETE FROM subject_bans').run();
-        for (const b of state.subject_bans) {
-          sql
-            .prepare(
-              'INSERT INTO subject_bans(user_id,subject_id,reason,banned_at) VALUES (?,?,?,?) ON CONFLICT(user_id,subject_id) DO UPDATE SET reason=excluded.reason,banned_at=excluded.banned_at'
-            )
-            .run(b.user_id, b.subject_id, b.reason, b.banned_at);
+        if (Array.isArray(state.session)) {
+          for (const ses of state.session) {
+            sql
+              .prepare(
+                'INSERT INTO session(id,expiresAt,token,createdAt,updatedAt,ipAddress,userAgent,userId,impersonatedBy) VALUES (?,?,?,?,?,?,?,?,?) ON CONFLICT(token) DO UPDATE SET expiresAt=excluded.expiresAt,updatedAt=excluded.updatedAt,userId=excluded.userId,ipAddress=excluded.ipAddress,userAgent=excluded.userAgent'
+              )
+              .run(
+                ses.id,
+                ses.expiresAt,
+                ses.token,
+                ses.createdAt,
+                ses.updatedAt,
+                ses.ipAddress,
+                ses.userAgent,
+                ses.userId,
+                ses.impersonatedBy
+              );
+          }
         }
-      }
-      if (Array.isArray(state.subject_invites)) {
-        sql.prepare('DELETE FROM subject_invites').run();
-        for (const si of state.subject_invites) {
-          sql
-            .prepare(
-              'INSERT INTO subject_invites(token,subject_id,created_at) VALUES (?,?,?) ON CONFLICT(token) DO UPDATE SET subject_id=excluded.subject_id,created_at=excluded.created_at'
-            )
-            .run(si.token, si.subject_id, si.created_at);
+        if (Array.isArray(state.institutions)) {
+          const pgInstIds = state.institutions.map((i: any) => i.id);
+          if (pgInstIds.length > 0) {
+            const placeholders = pgInstIds.map(() => '?').join(',');
+            sql
+              .prepare(`DELETE FROM institutions WHERE id NOT IN (${placeholders})`)
+              .run(...pgInstIds);
+          } else {
+            sql.prepare('DELETE FROM institutions').run();
+          }
+          for (const inst of state.institutions) {
+            const dataStr = typeof inst.data === 'string' ? inst.data : JSON.stringify(inst.data);
+            sql
+              .prepare(
+                'INSERT INTO institutions(id,data) VALUES (?,?) ON CONFLICT(id) DO UPDATE SET data=excluded.data'
+              )
+              .run(inst.id, dataStr);
+          }
         }
-      }
-      if (Array.isArray(state.subject_join_requests)) {
-        sql.prepare('DELETE FROM subject_join_requests').run();
-        for (const sjr of state.subject_join_requests) {
-          sql
-            .prepare(
-              'INSERT INTO subject_join_requests(id,subject_id,user_id,status,created_at) VALUES (?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET status=excluded.status'
-            )
-            .run(sjr.id, sjr.subject_id, sjr.user_id, sjr.status, sjr.created_at);
+        if (Array.isArray(state.subjects)) {
+          const pgSubIds = state.subjects.map((s: any) => s.id);
+          const localSubCount =
+            (sql.prepare('SELECT COUNT(*) as c FROM subjects').get() as any)?.c ?? 0;
+          if (pgSubIds.length > 0) {
+            const placeholders = pgSubIds.map(() => '?').join(',');
+            sql.prepare(`DELETE FROM subjects WHERE id NOT IN (${placeholders})`).run(...pgSubIds);
+          } else if (localSubCount === 0) {
+            sql.prepare('DELETE FROM subjects').run();
+          }
+          for (const sub of state.subjects) {
+            const dataStr = typeof sub.data === 'string' ? sub.data : JSON.stringify(sub.data);
+            sql
+              .prepare(
+                'INSERT INTO subjects(id,institution_id,data) VALUES (?,?,?) ON CONFLICT(id) DO UPDATE SET institution_id=excluded.institution_id,data=excluded.data'
+              )
+              .run(sub.id, sub.institution_id, dataStr);
+          }
         }
-      }
-      if (Array.isArray(state.progress)) {
-        for (const p of state.progress) {
-          sql
-            .prepare('INSERT OR IGNORE INTO progress(user_id,lesson_id,frame_id) VALUES (?,?,?)')
-            .run(p.user_id, p.lesson_id, p.frame_id);
+        if (Array.isArray(state.lessons)) {
+          const pgLessonIds = state.lessons.map((l: any) => l.id);
+          const localLessonCount =
+            (sql.prepare('SELECT COUNT(*) as c FROM lessons').get() as any)?.c ?? 0;
+          if (pgLessonIds.length > 0) {
+            const placeholders = pgLessonIds.map(() => '?').join(',');
+            sql
+              .prepare(`DELETE FROM lessons WHERE id NOT IN (${placeholders})`)
+              .run(...pgLessonIds);
+            for (const les of state.lessons) {
+              const dataStr = typeof les.data === 'string' ? les.data : JSON.stringify(les.data);
+              sql
+                .prepare(
+                  'INSERT INTO lessons(id,subject_id,status,revision,reviewed,data) VALUES (?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET subject_id=excluded.subject_id,status=excluded.status,revision=excluded.revision,reviewed=excluded.reviewed,data=excluded.data'
+                )
+                .run(les.id, les.subject_id, les.status, les.revision, les.reviewed, dataStr);
+            }
+          } else if (localLessonCount > 0 && pool) {
+            // Postgres está vacío (primera conexión): poblar Postgres desde el seed local sin borrar SQLite
+            for (const l of sql.prepare('SELECT * FROM lessons').all() as any[]) {
+              pool
+                .query(
+                  'INSERT INTO lessons(id,subject_id,status,revision,reviewed,data) VALUES ($1,$2,$3,$4,$5,$6) ON CONFLICT(id) DO NOTHING',
+                  [l.id, l.subject_id, l.status, l.revision, l.reviewed, l.data]
+                )
+                .catch(console.error);
+            }
+            for (const s of sql.prepare('SELECT * FROM subjects').all() as any[]) {
+              pool
+                .query(
+                  'INSERT INTO subjects(id,institution_id,data) VALUES ($1,$2,$3) ON CONFLICT(id) DO NOTHING',
+                  [s.id, s.institution_id, s.data]
+                )
+                .catch(console.error);
+            }
+          } else if (localLessonCount === 0) {
+            sql.prepare('DELETE FROM lessons').run();
+          }
         }
-      }
-      if (Array.isArray(state.institution_logos)) {
-        for (const il of state.institution_logos) {
-          if (!il.data) continue;
-          sql
-            .prepare(
-              'INSERT INTO institution_logos(id,mime,data) VALUES (?,?,?) ON CONFLICT(id) DO UPDATE SET mime=excluded.mime,data=excluded.data'
-            )
-            .run(il.id, il.mime, il.data);
+        if (Array.isArray(state.enrollments)) {
+          sql.prepare('DELETE FROM enrollments').run();
+          for (const e of state.enrollments) {
+            sql
+              .prepare('INSERT OR IGNORE INTO enrollments(user_id,subject_id) VALUES (?,?)')
+              .run(e.user_id, e.subject_id);
+          }
         }
-      }
-      if (Array.isArray(state.resources)) {
-        for (const r of state.resources) {
-          sql
-            .prepare(
-              'INSERT OR REPLACE INTO resources(lesson_id,key,name,path,mime) VALUES (?,?,?,?,?)'
-            )
-            .run(r.lesson_id, r.key, r.name, r.path, r.mime);
+        if (Array.isArray(state.topic_enrollments)) {
+          sql.prepare('DELETE FROM topic_enrollments').run();
+          for (const te of state.topic_enrollments) {
+            sql
+              .prepare(
+                'INSERT OR IGNORE INTO topic_enrollments(user_id,subject_id,topic_id) VALUES (?,?,?)'
+              )
+              .run(te.user_id, te.subject_id, te.topic_id);
+          }
         }
+        if (Array.isArray(state.institution_members)) {
+          sql.prepare('DELETE FROM institution_members').run();
+          for (const im of state.institution_members) {
+            sql
+              .prepare(
+                'INSERT OR IGNORE INTO institution_members(user_id,institution_id) VALUES (?,?)'
+              )
+              .run(im.user_id, im.institution_id);
+          }
+        }
+        if (Array.isArray(state.subject_bans)) {
+          sql.prepare('DELETE FROM subject_bans').run();
+          for (const b of state.subject_bans) {
+            sql
+              .prepare(
+                'INSERT INTO subject_bans(user_id,subject_id,reason,banned_at) VALUES (?,?,?,?) ON CONFLICT(user_id,subject_id) DO UPDATE SET reason=excluded.reason,banned_at=excluded.banned_at'
+              )
+              .run(b.user_id, b.subject_id, b.reason, b.banned_at);
+          }
+        }
+        if (Array.isArray(state.subject_invites)) {
+          sql.prepare('DELETE FROM subject_invites').run();
+          for (const si of state.subject_invites) {
+            sql
+              .prepare(
+                'INSERT INTO subject_invites(token,subject_id,topic_id,created_at) VALUES (?,?,?,?) ON CONFLICT(token) DO UPDATE SET subject_id=excluded.subject_id,topic_id=excluded.topic_id,created_at=excluded.created_at'
+              )
+              .run(si.token, si.subject_id, si.topic_id || null, si.created_at);
+          }
+        }
+        if (Array.isArray(state.subject_join_requests)) {
+          sql.prepare('DELETE FROM subject_join_requests').run();
+          for (const sjr of state.subject_join_requests) {
+            sql
+              .prepare(
+                'INSERT INTO subject_join_requests(id,subject_id,user_id,topic_id,status,created_at) VALUES (?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET topic_id=excluded.topic_id,status=excluded.status'
+              )
+              .run(
+                sjr.id,
+                sjr.subject_id,
+                sjr.user_id,
+                sjr.topic_id || null,
+                sjr.status,
+                sjr.created_at
+              );
+          }
+        }
+        if (Array.isArray(state.progress)) {
+          for (const p of state.progress) {
+            sql
+              .prepare('INSERT OR IGNORE INTO progress(user_id,lesson_id,frame_id) VALUES (?,?,?)')
+              .run(p.user_id, p.lesson_id, p.frame_id);
+          }
+        }
+        if (Array.isArray(state.institution_logos)) {
+          for (const il of state.institution_logos) {
+            if (!il.data) continue;
+            sql
+              .prepare(
+                'INSERT INTO institution_logos(id,mime,data) VALUES (?,?,?) ON CONFLICT(id) DO UPDATE SET mime=excluded.mime,data=excluded.data'
+              )
+              .run(il.id, il.mime, il.data);
+          }
+        }
+        if (Array.isArray(state.resources)) {
+          for (const r of state.resources) {
+            sql
+              .prepare(
+                'INSERT OR REPLACE INTO resources(lesson_id,key,name,path,mime) VALUES (?,?,?,?,?)'
+              )
+              .run(r.lesson_id, r.key, r.name, r.path, r.mime);
+          }
+        }
+        sql.exec('COMMIT');
+        lastSyncTime = Date.now();
+      } catch (err) {
+        sql.exec('ROLLBACK');
+        console.error('Failed to apply sync state to SQLite:', err);
+      } finally {
+        sql.exec('PRAGMA foreign_keys=ON;');
       }
-      sql.exec('COMMIT');
-      lastSyncTime = Date.now();
     } catch (err) {
-      sql.exec('ROLLBACK');
-      console.error('Failed to apply sync state to SQLite:', err);
+      console.error('Failed to sync from Postgres:', err);
     } finally {
-      sql.exec('PRAGMA foreign_keys=ON;');
+      inFlightSync = null;
     }
-  } catch (err) {
-    console.error('Failed to sync from Postgres:', err);
-  } finally {
-    inFlightSync = null;
-  }
   })();
 
   return inFlightSync;
@@ -380,9 +411,10 @@ export function db() {
  CREATE TABLE IF NOT EXISTS subjects(id TEXT PRIMARY KEY,institution_id TEXT REFERENCES institutions(id),data TEXT NOT NULL);
  CREATE TABLE IF NOT EXISTS lessons(id TEXT PRIMARY KEY,subject_id TEXT REFERENCES subjects(id),status TEXT NOT NULL DEFAULT 'draft',revision INTEGER NOT NULL DEFAULT 1,reviewed INTEGER NOT NULL DEFAULT 0,data TEXT NOT NULL);
  CREATE TABLE IF NOT EXISTS enrollments(user_id TEXT REFERENCES users(id) ON DELETE CASCADE,subject_id TEXT REFERENCES subjects(id) ON DELETE CASCADE,PRIMARY KEY(user_id,subject_id));
+ CREATE TABLE IF NOT EXISTS topic_enrollments(user_id TEXT REFERENCES users(id) ON DELETE CASCADE,subject_id TEXT REFERENCES subjects(id) ON DELETE CASCADE,topic_id TEXT NOT NULL,PRIMARY KEY(user_id,subject_id,topic_id));
  CREATE TABLE IF NOT EXISTS subject_bans(user_id TEXT REFERENCES users(id) ON DELETE CASCADE,subject_id TEXT REFERENCES subjects(id) ON DELETE CASCADE,reason TEXT,banned_at TEXT NOT NULL,PRIMARY KEY(user_id,subject_id));
- CREATE TABLE IF NOT EXISTS subject_invites(token TEXT PRIMARY KEY,subject_id TEXT NOT NULL REFERENCES subjects(id) ON DELETE CASCADE,created_at TEXT NOT NULL);
- CREATE TABLE IF NOT EXISTS subject_join_requests(id TEXT PRIMARY KEY,subject_id TEXT NOT NULL REFERENCES subjects(id) ON DELETE CASCADE,user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,status TEXT NOT NULL DEFAULT 'pending',created_at TEXT NOT NULL,UNIQUE(subject_id,user_id));
+ CREATE TABLE IF NOT EXISTS subject_invites(token TEXT PRIMARY KEY,subject_id TEXT NOT NULL REFERENCES subjects(id) ON DELETE CASCADE,topic_id TEXT,created_at TEXT NOT NULL);
+ CREATE TABLE IF NOT EXISTS subject_join_requests(id TEXT PRIMARY KEY,subject_id TEXT NOT NULL REFERENCES subjects(id) ON DELETE CASCADE,user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,topic_id TEXT,status TEXT NOT NULL DEFAULT 'pending',created_at TEXT NOT NULL,UNIQUE(subject_id,user_id));
  CREATE TABLE IF NOT EXISTS class_invites(token TEXT PRIMARY KEY,lesson_id TEXT NOT NULL REFERENCES lessons(id) ON DELETE CASCADE,created_at TEXT NOT NULL);
  CREATE TABLE IF NOT EXISTS class_join_requests(id TEXT PRIMARY KEY,lesson_id TEXT NOT NULL REFERENCES lessons(id) ON DELETE CASCADE,user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,status TEXT NOT NULL DEFAULT 'pending',created_at TEXT NOT NULL,UNIQUE(lesson_id,user_id));
  CREATE TABLE IF NOT EXISTS resources(lesson_id TEXT REFERENCES lessons(id) ON DELETE CASCADE,key TEXT,name TEXT,path TEXT NOT NULL,mime TEXT NOT NULL,PRIMARY KEY(lesson_id,key));
@@ -395,6 +427,18 @@ export function db() {
     const cols = connection.prepare('PRAGMA table_info(institution_logos)').all() as any[];
     if (!cols.some((c) => c.name === 'data')) {
       connection.exec('ALTER TABLE institution_logos ADD COLUMN data TEXT;');
+    }
+  } catch {}
+  try {
+    const colsInv = connection.prepare('PRAGMA table_info(subject_invites)').all() as any[];
+    if (!colsInv.some((c) => c.name === 'topic_id')) {
+      connection.exec('ALTER TABLE subject_invites ADD COLUMN topic_id TEXT;');
+    }
+  } catch {}
+  try {
+    const colsReq = connection.prepare('PRAGMA table_info(subject_join_requests)').all() as any[];
+    if (!colsReq.some((c) => c.name === 'topic_id')) {
+      connection.exec('ALTER TABLE subject_join_requests ADD COLUMN topic_id TEXT;');
     }
   } catch {}
   if (!connection.prepare("SELECT key FROM metadata WHERE key='seed-v1'").get()) seed(connection);
