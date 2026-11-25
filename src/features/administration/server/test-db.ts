@@ -21,8 +21,6 @@ export async function createTestDatabase() {
     CREATE TABLE IF NOT EXISTS subject_bans(user_id TEXT REFERENCES users(id) ON DELETE CASCADE,subject_id TEXT REFERENCES subjects(id) ON DELETE CASCADE,reason TEXT,banned_at TEXT NOT NULL,PRIMARY KEY(user_id,subject_id));
     CREATE TABLE IF NOT EXISTS subject_invites(token TEXT PRIMARY KEY,subject_id TEXT NOT NULL REFERENCES subjects(id) ON DELETE CASCADE,topic_id TEXT,created_at TEXT NOT NULL);
     CREATE TABLE IF NOT EXISTS subject_join_requests(id TEXT PRIMARY KEY,subject_id TEXT NOT NULL REFERENCES subjects(id) ON DELETE CASCADE,user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,topic_id TEXT,status TEXT NOT NULL DEFAULT 'pending',created_at TEXT NOT NULL,UNIQUE(subject_id,user_id));
-    CREATE TABLE IF NOT EXISTS class_invites(token TEXT PRIMARY KEY,lesson_id TEXT NOT NULL REFERENCES lessons(id) ON DELETE CASCADE,created_at TEXT NOT NULL);
-    CREATE TABLE IF NOT EXISTS class_join_requests(id TEXT PRIMARY KEY,lesson_id TEXT NOT NULL REFERENCES lessons(id) ON DELETE CASCADE,user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,status TEXT NOT NULL DEFAULT 'pending',created_at TEXT NOT NULL,UNIQUE(lesson_id,user_id));
     CREATE TABLE IF NOT EXISTS resources(lesson_id TEXT REFERENCES lessons(id) ON DELETE CASCADE,key TEXT,name TEXT,path TEXT NOT NULL,mime TEXT NOT NULL,PRIMARY KEY(lesson_id,key));
     CREATE TABLE IF NOT EXISTS progress(user_id TEXT REFERENCES users(id) ON DELETE CASCADE,lesson_id TEXT REFERENCES lessons(id) ON DELETE CASCADE,frame_id TEXT NOT NULL,PRIMARY KEY(user_id,lesson_id,frame_id));
     CREATE TABLE IF NOT EXISTS login_attempts(username TEXT PRIMARY KEY,count INTEGER NOT NULL,until BIGINT NOT NULL);

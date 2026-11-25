@@ -1795,7 +1795,25 @@
   user-drag: none;
 }
 
-/* Estilos de botones de activación/desactivación de herramientas */
+/* Desactivar ligaduras tipográficas en bloques de código para mostrar operadores reales (===, !==, !=, ==, etc.) */
+.code-block,
+.code-content,
+.code-content pre,
+.code-content code,
+.code-content .shiki,
+.code-content .shiki code,
+.code-content .shiki span,
+.cm-editor,
+.cm-content,
+.cm-scroller,
+.code-console,
+code,
+pre {
+  font-variant-ligatures: none !important;
+  -webkit-font-variant-ligatures: none !important;
+  font-feature-settings: "liga" 0, "calt" 0, "dlig" 0 !important;
+}
+
 .code-content pre,
 .code-content code,
 .code-content .shiki,

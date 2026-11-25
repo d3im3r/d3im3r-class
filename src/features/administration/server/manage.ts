@@ -205,8 +205,6 @@ async function removeLessonCascade(rowId: string) {
 
   await execute('DELETE FROM progress WHERE lesson_id = $1', [rowId]);
   await execute('DELETE FROM resources WHERE lesson_id = $1', [rowId]);
-  await execute('DELETE FROM class_join_requests WHERE lesson_id = $1', [rowId]);
-  await execute('DELETE FROM class_invites WHERE lesson_id = $1', [rowId]);
   await execute('DELETE FROM lessons WHERE id = $1', [rowId]);
 
   if (storagePaths.length > 0) {
@@ -228,7 +226,6 @@ async function removeStudentCascade(userId: string) {
   await execute('DELETE FROM topic_enrollments WHERE user_id = $1', [userId]);
   await execute('DELETE FROM subject_bans WHERE user_id = $1', [userId]);
   await execute('DELETE FROM subject_join_requests WHERE user_id = $1', [userId]);
-  await execute('DELETE FROM class_join_requests WHERE user_id = $1', [userId]);
   await execute('DELETE FROM institution_members WHERE user_id = $1', [userId]);
   await execute('DELETE FROM sessions WHERE user_id = $1', [userId]);
   await execute('DELETE FROM "session" WHERE "userId" = $1', [userId]);

@@ -230,7 +230,15 @@ export function CodeBlock({ content, language = 'text' }: { content: string; lan
           </Button>
         </div>
       </div>
-      <div className="code-content" style={{ fontSize: `${fontSize}px` }}>
+      <div
+        className="code-content"
+        style={{
+          fontSize: `${fontSize}px`,
+          fontVariantLigatures: 'none',
+          WebkitFontVariantLigatures: 'none',
+          fontFeatureSettings: '"liga" 0, "calt" 0, "dlig" 0',
+        }}
+      >
         {highlighted ? (
           <div dangerouslySetInnerHTML={{ __html: highlighted }} />
         ) : (
