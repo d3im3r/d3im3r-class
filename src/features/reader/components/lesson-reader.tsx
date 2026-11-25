@@ -38,7 +38,7 @@ export function LessonReader({
       const saved = localStorage.getItem(storageKey);
       if (saved !== null) return saved === 'true';
     }
-    return lesson.toolsEnabled ?? true;
+    return lesson.toolsEnabled ?? false;
   });
 
   const toggleTools = useCallback(() => {

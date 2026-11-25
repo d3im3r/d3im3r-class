@@ -15,7 +15,7 @@ import {
   Save,
   ArrowRight,
   AlertTriangle,
-  RefreshCw,
+  GripVertical,
   ChevronUp,
   ChevronDown,
   ChevronLeft,
@@ -148,7 +148,8 @@ export function AdminPanel({
       topicId: string;
       topicName?: string;
     } | null>(null),
-    [importMethod, setImportMethod] = useState<'json' | 'latex'>('json');
+    [draggedLessonId, setDraggedLessonId] = useState<string | null>(null),
+    [dragOverLessonId, setDragOverLessonId] = useState<string | null>(null);
   async function onCatalogChange() {
     try {
       sessionStorage.setItem(
@@ -214,72 +215,6 @@ export function AdminPanel({
     event.preventDefault();
     return Object.fromEntries(new FormData(event.currentTarget));
   }
-  async function importClass(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const node = event.currentTarget;
-    setBusy(true);
-    setError('');
-    setMessage('');
-    const toastId = toast.loading('Importando y compilando clase LaTeX…');
-    try {
-      const formData = new FormData(node);
-      let totalBytes = 0;
-      let pdfSize = 0;
-      const filteredFormData = new FormData();
-      for (const [key, val] of formData.entries()) {
-        if (val instanceof File) {
-          totalBytes += val.size;
-          if (val.name.toLowerCase().endsWith('.pdf')) {
-            pdfSize = val.size;
-          }
-        }
-      }
-      // Vercel Serverless Functions tiene un límite estricto de 4.5 MB por payload HTTP
-      if (totalBytes > 4.2 * 1024 * 1024) {
-        if (pdfSize > 3 * 1024 * 1024) {
-          // El PDF excede el límite de Vercel. Omitimos el PDF para que la clase .tex se importe con éxito
-          for (const [key, val] of formData.entries()) {
-            if (val instanceof File && val.name.toLowerCase().endsWith('.pdf')) {
-              continue;
-            }
-            filteredFormData.append(key, val);
-          }
-          toast.info(
-            `El PDF pesa ${(pdfSize / (1024 * 1024)).toFixed(1)} MB y supera el límite de Vercel (4.5 MB). Importando la clase directamente desde el .tex con sus diagramas.`,
-            { duration: 6000 }
-          );
-        } else {
-          throw new Error(
-            `Los archivos pesan ${(totalBytes / (1024 * 1024)).toFixed(1)} MB y superan el límite de 4.5 MB de Vercel. Sube únicamente el archivo .tex (el PDF es opcional).`
-          );
-        }
-      } else {
-        for (const [key, val] of formData.entries()) {
-          filteredFormData.append(key, val);
-        }
-      }
-      const response = await fetch('/api/admin/import', {
-        method: 'POST',
-        body: filteredFormData,
-      });
-      const result = await parseJson<{ frames: number; diagnostics: string[] }>(response);
-      await Promise.all([refresh(), onCatalogChange()]);
-      node.reset();
-      setReplace('');
-      const successMsg = `Clase importada: ${result.frames} bloques. Revisa la vista previa antes de publicar.`;
-      setMessage(successMsg);
-      toast.success(successMsg, { id: toastId });
-      if (result.diagnostics.length > 0) {
-        toast.warning(`La importación contiene ${result.diagnostics.length} avisos de sintaxis.`);
-      }
-    } catch (e) {
-      const err = e instanceof Error ? e.message : 'No se pudo importar.';
-      setError(err);
-      toast.error(err, { id: toastId });
-    } finally {
-      setBusy(false);
-    }
-  }
   async function uploadLogo(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setBusy(true);
@@ -297,31 +232,6 @@ export function AdminPanel({
       const err = error instanceof Error ? error.message : 'No se pudo guardar el logo.';
       setError(err);
       toast.error(err);
-    } finally {
-      setBusy(false);
-    }
-  }
-  async function repairResources(lessonId: string) {
-    setBusy(true);
-    setError('');
-    const toastId = toast.loading('Reparando recursos y diagramas vectoriales…');
-    try {
-      const response = await fetch('/api/admin/rebuild', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ lessonId }),
-      });
-      const result = await parseJson<{ repairedDiagrams: number; repairedImages: number }>(
-        response
-      );
-      await Promise.all([refresh(), onCatalogChange()]);
-      const msg = `Recursos reprocesados: ${result.repairedDiagrams} diagramas y ${result.repairedImages} imágenes restaurados.`;
-      setMessage(msg);
-      toast.success(msg, { id: toastId });
-    } catch (e) {
-      const err = e instanceof Error ? e.message : 'No se pudo reprocesar.';
-      setError(err);
-      toast.error(err, { id: toastId });
     } finally {
       setBusy(false);
     }
@@ -1037,115 +947,122 @@ export function AdminPanel({
                             );
                           }}
                         >
-                          <span>{String(i + 1).padStart(2, '0')}</span>
-                          <input
-                            aria-label={`Nombre del tema ${i + 1}`}
-                            name="name"
-                            required
-                            maxLength={120}
-                            defaultValue={t.name}
-                          />
-                          <Button size="sm" variant="outline" disabled={busy}>
-                            Guardar
-                          </Button>
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant="ghost"
-                            aria-label={`Subir tema ${i + 1}`}
-                            disabled={busy || i === 0}
-                            onClick={() =>
-                              mutate(
-                                {
-                                  action: 'moveTopic',
-                                  subjectId: currentSubject.id,
-                                  topicId: t.id,
-                                  direction: 'up',
-                                },
-                                'Orden actualizado.'
-                              )
-                            }
-                          >
-                            <ChevronUp size={14} />
-                          </Button>
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant="ghost"
-                            aria-label={`Bajar tema ${i + 1}`}
-                            disabled={busy || i === subjectTopics.length - 1}
-                            onClick={() =>
-                              mutate(
-                                {
-                                  action: 'moveTopic',
-                                  subjectId: currentSubject.id,
-                                  topicId: t.id,
-                                  direction: 'down',
-                                },
-                                'Orden actualizado.'
-                              )
-                            }
-                          >
-                            <ChevronDown size={14} />
-                          </Button>
-                          <Button
-                            type="button"
-                            size="sm"
-                            onClick={() => {
-                              setSelectedTopic(t.id);
-                              setReplace('');
-                              goTab('lessons');
-                            }}
-                          >
-                            Ver clases ({count})<ArrowRight size={14} />
-                          </Button>
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant="outline"
-                            title="Copiar enlace de invitación para este grupo"
-                            onClick={() => copyInviteLink(currentSubject.id, t.id)}
-                          >
-                            {copiedSubject === `${currentSubject.id}-${t.id}` ? (
-                              <>
-                                <Check size={14} className="text-emerald-500" />
-                                <span>Copiado</span>
-                              </>
-                            ) : (
-                              <>
-                                <LinkIcon size={14} />
-                                <span>Link del grupo</span>
-                              </>
-                            )}
-                          </Button>
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant="outline"
-                            className="btn-danger-action"
-                            aria-label={`Eliminar tema ${t.name}`}
-                            title="Eliminar tema y sus clases asociadas"
-                            disabled={busy}
-                            onClick={async () => {
-                              const msg =
-                                count > 0
-                                  ? `¿Eliminar el tema "${t.name}" y sus ${count} clase(s) asociada(s)? Esta acción no se puede deshacer.`
-                                  : `¿Eliminar el tema "${t.name}"?`;
-                              if (!window.confirm(msg)) return;
-                              if (selectedTopic === t.id) setSelectedTopic('');
-                              await mutate(
-                                {
-                                  action: 'deleteTopic',
-                                  subjectId: currentSubject.id,
-                                  topicId: t.id,
-                                },
-                                'Tema eliminado.'
-                              );
-                              await onCatalogChange();
-                            }}
-                          >
-                            <Trash2 size={14} />
-                          </Button>
+                          <div className="topic-edit-main">
+                            <span className="topic-badge">{String(i + 1).padStart(2, '0')}</span>
+                            <input
+                              aria-label={`Nombre del tema ${i + 1}`}
+                              name="name"
+                              required
+                              maxLength={120}
+                              defaultValue={t.name}
+                              className="topic-name-input"
+                            />
+                            <Button size="sm" variant="outline" disabled={busy}>
+                              Guardar
+                            </Button>
+                          </div>
+                          <div className="topic-edit-actions">
+                            <div className="topic-reorder-buttons">
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="ghost"
+                                aria-label={`Subir tema ${i + 1}`}
+                                disabled={busy || i === 0}
+                                onClick={() =>
+                                  mutate(
+                                    {
+                                      action: 'moveTopic',
+                                      subjectId: currentSubject.id,
+                                      topicId: t.id,
+                                      direction: 'up',
+                                    },
+                                    'Orden actualizado.'
+                                  )
+                                }
+                              >
+                                <ChevronUp size={14} />
+                              </Button>
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="ghost"
+                                aria-label={`Bajar tema ${i + 1}`}
+                                disabled={busy || i === subjectTopics.length - 1}
+                                onClick={() =>
+                                  mutate(
+                                    {
+                                      action: 'moveTopic',
+                                      subjectId: currentSubject.id,
+                                      topicId: t.id,
+                                      direction: 'down',
+                                    },
+                                    'Orden actualizado.'
+                                  )
+                                }
+                              >
+                                <ChevronDown size={14} />
+                              </Button>
+                            </div>
+                            <Button
+                              type="button"
+                              size="sm"
+                              onClick={() => {
+                                setSelectedTopic(t.id);
+                                setReplace('');
+                                goTab('lessons');
+                              }}
+                            >
+                              Ver clases ({count})<ArrowRight size={14} />
+                            </Button>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              title="Copiar enlace de invitación para este grupo"
+                              onClick={() => copyInviteLink(currentSubject.id, t.id)}
+                            >
+                              {copiedSubject === `${currentSubject.id}-${t.id}` ? (
+                                <>
+                                  <Check size={14} className="text-emerald-500" />
+                                  <span>Copiado</span>
+                                </>
+                              ) : (
+                                <>
+                                  <LinkIcon size={14} />
+                                  <span>Link del grupo</span>
+                                </>
+                              )}
+                            </Button>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              className="btn-danger-action"
+                              aria-label={`Eliminar tema ${t.name}`}
+                              title="Eliminar tema y sus clases asociadas"
+                              disabled={busy}
+                              onClick={async () => {
+                                const msg =
+                                  count > 0
+                                    ? `¿Eliminar el tema "${t.name}" y sus ${count} clase(s) asociada(s)? Esta acción no se puede deshacer.`
+                                    : `¿Eliminar el tema "${t.name}"?`;
+                                if (!window.confirm(msg)) return;
+                                if (selectedTopic === t.id) setSelectedTopic('');
+                                await mutate(
+                                  {
+                                    action: 'deleteTopic',
+                                    subjectId: currentSubject.id,
+                                    topicId: t.id,
+                                  },
+                                  'Tema eliminado.'
+                                );
+                                await onCatalogChange();
+                              }}
+                            >
+                              <Trash2 size={14} />
+                            </Button>
+                          </div>
                         </form>
                       );
                     })}
@@ -1251,33 +1168,101 @@ export function AdminPanel({
                     {topicLessons.map((l, index) => {
                       const isScheduled =
                         Boolean(l.publishAt) && new Date(l.publishAt!).getTime() > Date.now();
+                      const isDragging = draggedLessonId === l.id;
+                      const isDragOver = dragOverLessonId === l.id;
                       return (
-                        <article key={l.id}>
+                        <article
+                          key={l.id}
+                          draggable={!busy}
+                          onDragStart={(e) => {
+                            e.dataTransfer.setData('text/plain', l.id);
+                            e.dataTransfer.effectAllowed = 'move';
+                            setDraggedLessonId(l.id);
+                          }}
+                          onDragOver={(e) => {
+                            e.preventDefault();
+                            e.dataTransfer.dropEffect = 'move';
+                            if (dragOverLessonId !== l.id) {
+                              setDragOverLessonId(l.id);
+                            }
+                          }}
+                          onDragLeave={() => {
+                            if (dragOverLessonId === l.id) {
+                              setDragOverLessonId(null);
+                            }
+                          }}
+                          onDrop={async (e) => {
+                            e.preventDefault();
+                            setDragOverLessonId(null);
+                            setDraggedLessonId(null);
+                            const sourceId =
+                              e.dataTransfer.getData('text/plain') || draggedLessonId;
+                            if (!sourceId || sourceId === l.id) return;
+                            const sourceIdx = topicLessons.findIndex((x) => x.id === sourceId);
+                            const targetIdx = topicLessons.findIndex((x) => x.id === l.id);
+                            if (sourceIdx === -1 || targetIdx === -1 || sourceIdx === targetIdx)
+                              return;
+                            const reordered = [...topicLessons];
+                            const [moved] = reordered.splice(sourceIdx, 1);
+                            reordered.splice(targetIdx, 0, moved);
+                            await mutate(
+                              {
+                                action: 'reorderLessons',
+                                lessonIds: reordered.map((item) => item.id),
+                              },
+                              'Orden de clases actualizado.'
+                            );
+                          }}
+                          onDragEnd={() => {
+                            setDraggedLessonId(null);
+                            setDragOverLessonId(null);
+                          }}
+                          style={{
+                            opacity: isDragging ? 0.4 : 1,
+                            borderTop: isDragOver ? '3px solid #2563eb' : undefined,
+                            transition: 'opacity 0.15s ease, border-color 0.15s ease',
+                          }}
+                        >
                           <div className="admin-lesson-heading">
-                            <div>
-                              <div className="flex items-center gap-2 flex-wrap mb-1">
-                                {isScheduled ? (
-                                  <span className="status-badge draft bg-amber-100 text-amber-900 dark:bg-amber-950/40 dark:text-amber-300 border border-amber-300 dark:border-amber-800">
-                                    <Clock size={12} className="inline mr-1" />
-                                    Programada:{' '}
-                                    {new Date(l.publishAt!).toLocaleDateString('es-ES', {
-                                      day: 'numeric',
-                                      month: 'short',
-                                      hour: '2-digit',
-                                      minute: '2-digit',
-                                    })}
-                                  </span>
-                                ) : (
-                                  <span className={`status-badge ${l.status}`}>
-                                    {l.status === 'published' ? 'Publicada' : 'Borrador'}
-                                  </span>
-                                )}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                              <div
+                                style={{
+                                  cursor: 'grab',
+                                  color: 'var(--muted)',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  padding: '4px 2px',
+                                  flexShrink: 0,
+                                }}
+                                title="Arrastra para reordenar esta clase"
+                              >
+                                <GripVertical size={18} />
                               </div>
-                              <h3>{l.title}</h3>
-                              <p>
-                                {l.subtitle ? `${l.subtitle} · ` : ''}
-                                {l.frames} bloques · Versión {l.revision}
-                              </p>
+                              <div>
+                                <div className="flex items-center gap-2 flex-wrap mb-1">
+                                  {isScheduled ? (
+                                    <span className="status-badge draft bg-amber-100 text-amber-900 dark:bg-amber-950/40 dark:text-amber-300 border border-amber-300 dark:border-amber-800">
+                                      <Clock size={12} className="inline mr-1" />
+                                      Programada:{' '}
+                                      {new Date(l.publishAt!).toLocaleDateString('es-ES', {
+                                        day: 'numeric',
+                                        month: 'short',
+                                        hour: '2-digit',
+                                        minute: '2-digit',
+                                      })}
+                                    </span>
+                                  ) : (
+                                    <span className={`status-badge ${l.status}`}>
+                                      {l.status === 'published' ? 'Publicada' : 'Borrador'}
+                                    </span>
+                                  )}
+                                </div>
+                                <h3>{l.title}</h3>
+                                <p>
+                                  {l.subtitle ? `${l.subtitle} · ` : ''}
+                                  {l.frames} bloques · Versión {l.revision}
+                                </p>
+                              </div>
                             </div>
                             <div
                               style={{
@@ -1391,15 +1376,6 @@ export function AdminPanel({
                             </details>
                           )}
                           <div className="publication-actions">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              disabled={busy}
-                              onClick={() => repairResources(l.id)}
-                            >
-                              <RefreshCw size={14} />
-                              Reparar recursos
-                            </Button>
                             <Button
                               size="sm"
                               variant="outline"
@@ -1591,391 +1567,279 @@ export function AdminPanel({
                   </div>
                 </div>
 
-                {/* Selector de método de importación */}
-                <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
-                  <button
-                    type="button"
-                    onClick={() => setImportMethod('json')}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                  <div
                     style={{
-                      flex: 1,
-                      padding: '8px 10px',
-                      borderRadius: '6px',
+                      background: 'rgba(37, 99, 235, 0.08)',
+                      border: '1px solid rgba(37, 99, 235, 0.25)',
+                      borderRadius: '8px',
+                      padding: '12px 14px',
                       fontSize: '11px',
-                      fontWeight: 600,
-                      cursor: 'pointer',
-                      border:
-                        importMethod === 'json' ? '1px solid #2563eb' : '1px solid var(--border)',
-                      background: importMethod === 'json' ? '#2563eb' : 'transparent',
-                      color: importMethod === 'json' ? '#fff' : 'inherit',
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '5px',
+                      lineHeight: 1.6,
                     }}
                   >
-                    <Sparkles size={13} />
-                    JSON / Editor en vivo (Recomendado)
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setImportMethod('latex')}
-                    style={{
-                      flex: 1,
-                      padding: '8px 10px',
-                      borderRadius: '6px',
-                      fontSize: '11px',
-                      fontWeight: 600,
-                      cursor: 'pointer',
-                      border:
-                        importMethod === 'latex' ? '1px solid #2563eb' : '1px solid var(--border)',
-                      background: importMethod === 'latex' ? '#2563eb' : 'transparent',
-                      color: importMethod === 'latex' ? '#fff' : 'inherit',
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '5px',
-                    }}
-                  >
-                    <Upload size={13} />
-                    Directo .tex
-                  </button>
-                </div>
-
-                {importMethod === 'json' ? (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                    <div
+                    <strong
                       style={{
-                        background: 'rgba(37, 99, 235, 0.08)',
-                        border: '1px solid rgba(37, 99, 235, 0.25)',
-                        borderRadius: '8px',
-                        padding: '12px 14px',
-                        fontSize: '11px',
-                        lineHeight: 1.6,
+                        color: '#60a5fa',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '5px',
+                        marginBottom: '4px',
                       }}
                     >
-                      <strong
-                        style={{
-                          color: '#60a5fa',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '5px',
-                          marginBottom: '4px',
-                        }}
-                      >
-                        <Sparkles size={14} /> Flujo sin errores de diagramas ni rutas:
-                      </strong>
-                      <ol style={{ margin: '4px 0 10px 16px', padding: 0 }}>
-                        <li>
-                          Exporta tu .tex localmente con el script de Python (convierte TikZ a SVG
-                          nativo).
-                        </li>
-                        <li>
-                          Sube aquí el <strong>clase.json</strong> generado para previsualizarlo y
-                          retocarlo en vivo.
-                        </li>
-                      </ol>
-                      <a
-                        href="/tools/export_lesson.py"
-                        download="export_lesson.py"
-                        className="ui-button"
-                        data-variant="outline"
-                        style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '6px',
-                          padding: '6px 12px',
-                          fontSize: '11px',
-                          fontWeight: 600,
-                          textDecoration: 'none',
-                        }}
-                      >
-                        <Download size={13} /> Descargar exportador local (export_lesson.py)
-                      </a>
-                    </div>
+                      <Sparkles size={14} /> Flujo sin errores de diagramas ni rutas:
+                    </strong>
+                    <ol style={{ margin: '4px 0 10px 16px', padding: 0 }}>
+                      <li>
+                        Exporta tu .tex localmente con el script de Python (convierte TikZ a SVG
+                        nativo).
+                      </li>
+                      <li>
+                        Sube aquí el <strong>clase.json</strong> generado para previsualizarlo y
+                        retocarlo en vivo.
+                      </li>
+                    </ol>
+                    <a
+                      href="/tools/export_lesson.py"
+                      download="export_lesson.py"
+                      className="ui-button"
+                      data-variant="outline"
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        padding: '6px 12px',
+                        fontSize: '11px',
+                        fontWeight: 600,
+                        textDecoration: 'none',
+                      }}
+                    >
+                      <Download size={13} /> Descargar exportador local (export_lesson.py)
+                    </a>
+                  </div>
 
-                    {topicLessons.length > 0 && (
-                      <label>
-                        Destino de la clase
-                        <select
-                          name="lessonId"
-                          value={replace}
-                          onChange={(e) => setReplace(e.target.value)}
-                        >
-                          <option value="">Crear nueva clase en este tema</option>
-                          {topicLessons.map((l) => (
-                            <option key={l.id} value={l.id}>
-                              Actualizar: {l.title}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                    )}
-
+                  {topicLessons.length > 0 && (
                     <label>
-                      Subir archivo clase.json o paquete .zip
-                      <input
-                        type="file"
-                        accept=".json,.zip,application/zip"
-                        onChange={async (e) => {
-                          const file = e.target.files?.[0];
-                          if (!file) return;
-                          try {
-                            let jsonContent = '';
-                            if (file.name.endsWith('.zip')) {
-                              const zip = await JSZip.loadAsync(file);
-                              const claseFile =
-                                zip.file('clase.json') || zip.file(/(?:^|\/)clase\.json$/)[0];
-                              const docFile =
-                                zip.file('document.json') || zip.file(/(?:^|\/)document\.json$/)[0];
-                              if (claseFile) {
-                                jsonContent = await claseFile.async('text');
-                              } else if (docFile) {
-                                jsonContent = await docFile.async('text');
-                              } else {
-                                throw new Error(
-                                  'El archivo ZIP no contiene "clase.json" ni "document.json".'
-                                );
-                              }
+                      Destino de la clase
+                      <select
+                        name="lessonId"
+                        value={replace}
+                        onChange={(e) => setReplace(e.target.value)}
+                      >
+                        <option value="">Crear nueva clase en este tema</option>
+                        {topicLessons.map((l) => (
+                          <option key={l.id} value={l.id}>
+                            Actualizar: {l.title}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  )}
+
+                  <label>
+                    Subir archivo clase.json o paquete .zip
+                    <input
+                      type="file"
+                      accept=".json,.zip,application/zip"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        try {
+                          let jsonContent = '';
+                          if (file.name.endsWith('.zip')) {
+                            const zip = await JSZip.loadAsync(file);
+                            const claseFile =
+                              zip.file('clase.json') || zip.file(/(?:^|\/)clase\.json$/)[0];
+                            const docFile =
+                              zip.file('document.json') || zip.file(/(?:^|\/)document\.json$/)[0];
+                            if (claseFile) {
+                              jsonContent = await claseFile.async('text');
+                            } else if (docFile) {
+                              jsonContent = await docFile.async('text');
                             } else {
-                              jsonContent = await file.text();
+                              throw new Error(
+                                'El archivo ZIP no contiene "clase.json" ni "document.json".'
+                              );
                             }
-                            const json = JSON.parse(jsonContent);
-                            let frames = json.frames;
-                            if (
-                              (!frames || !Array.isArray(frames)) &&
-                              Array.isArray(json.structure)
-                            ) {
-                              // Compatibilidad nativa con d3im3r-class v2 (document.json)
-                              frames = [];
-                              const inlineToText = (inlines: any[]): string =>
-                                inlines
-                                  .map((node) => {
-                                    if (node.type === 'text') return node.value || '';
-                                    if (node.type === 'code_inline')
-                                      return `\`${node.children ? inlineToText(node.children) : node.value || ''}\``;
-                                    if (node.type === 'strong') {
-                                      const inner = inlineToText(node.children || []).trim();
-                                      return inner ? `**${inner}**` : '';
-                                    }
-                                    if (node.type === 'emphasis') {
-                                      const inner = inlineToText(node.children || []).trim();
-                                      return inner ? `*${inner}*` : '';
-                                    }
-                                    if (node.type === 'math_inline') return `$${node.latex || ''}$`;
-                                    if (node.type === 'line_break') return '\n';
-                                    return node.value || '';
-                                  })
-                                  .join('');
-
-                              const convertBlock = (b: any): any => {
-                                if (b.type === 'paragraph')
-                                  return { type: 'text', content: inlineToText(b.children || []) };
-                                if (b.type === 'code')
-                                  return {
-                                    type: 'code',
-                                    language: b.language || 'text',
-                                    content: b.value || '',
-                                  };
-                                if (b.type === 'math')
-                                  return { type: 'math', content: b.latex || '' };
-                                if (b.type === 'academic_block')
-                                  return {
-                                    type: 'callout',
-                                    variant: b.variant || 'idea',
-                                    title: b.title || '',
-                                    children: (b.children || []).map(convertBlock).filter(Boolean),
-                                  };
-                                if (b.type === 'figure')
-                                  return {
-                                    type: 'diagram',
-                                    asset: b.assetId ? `assets/${b.assetId}.svg` : '',
-                                    content: '',
-                                  };
-                                if (b.type === 'list')
-                                  return {
-                                    type: 'list',
-                                    variant: b.variant || 'itemize',
-                                    items: (b.items || []).map((it: any) =>
-                                      (it.blocks || []).map(convertBlock).filter(Boolean)
-                                    ),
-                                  };
-                                if (b.type === 'table')
-                                  return {
-                                    type: 'table',
-                                    rows: (b.rows || []).map((row: any[]) =>
-                                      row.map((cell: any) =>
-                                        (cell.children || [])
-                                          .map((c: any) => inlineToText(c.children || []))
-                                          .join(' ')
-                                      )
-                                    ),
-                                  };
-                                return null;
-                              };
-
-                              for (const sec of json.structure) {
-                                const secTitle = sec.title || 'General';
-                                const processChild = (child: any, parentTitle: string) => {
-                                  if (child.type === 'frame') {
-                                    frames.push({
-                                      id: child.id || `frame-${frames.length + 1}`,
-                                      title: child.title || '',
-                                      section: parentTitle,
-                                      line: child.sourceLine || 1,
-                                      blocks: (child.blocks || [])
-                                        .map(convertBlock)
-                                        .filter(Boolean),
-                                    });
-                                  } else if (
-                                    child.type === 'subsection' &&
-                                    Array.isArray(child.children)
-                                  ) {
-                                    for (const sub of child.children) {
-                                      processChild(sub, child.title || parentTitle);
-                                    }
+                          } else {
+                            jsonContent = await file.text();
+                          }
+                          const json = JSON.parse(jsonContent);
+                          let frames = json.frames;
+                          if (
+                            (!frames || !Array.isArray(frames)) &&
+                            Array.isArray(json.structure)
+                          ) {
+                            // Compatibilidad nativa con d3im3r-class v2 (document.json)
+                            frames = [];
+                            const inlineToText = (inlines: any[]): string =>
+                              inlines
+                                .map((node) => {
+                                  if (node.type === 'text') return node.value || '';
+                                  if (node.type === 'code_inline')
+                                    return `\`${node.children ? inlineToText(node.children) : node.value || ''}\``;
+                                  if (node.type === 'strong') {
+                                    const inner = inlineToText(node.children || []).trim();
+                                    return inner ? `**${inner}**` : '';
                                   }
+                                  if (node.type === 'emphasis') {
+                                    const inner = inlineToText(node.children || []).trim();
+                                    return inner ? `*${inner}*` : '';
+                                  }
+                                  if (node.type === 'math_inline') return `$${node.latex || ''}$`;
+                                  if (node.type === 'line_break') return '\n';
+                                  return node.value || '';
+                                })
+                                .join('');
+
+                            const convertBlock = (b: any): any => {
+                              if (b.type === 'paragraph')
+                                return { type: 'text', content: inlineToText(b.children || []) };
+                              if (b.type === 'code')
+                                return {
+                                  type: 'code',
+                                  language: b.language || 'text',
+                                  content: b.value || '',
                                 };
-                                if (Array.isArray(sec.children)) {
-                                  for (const child of sec.children) {
-                                    processChild(child, secTitle);
+                              if (b.type === 'math')
+                                return { type: 'math', content: b.latex || '' };
+                              if (b.type === 'academic_block')
+                                return {
+                                  type: 'callout',
+                                  variant: b.variant || 'idea',
+                                  title: b.title || '',
+                                  children: (b.children || []).map(convertBlock).filter(Boolean),
+                                };
+                              if (b.type === 'figure')
+                                return {
+                                  type: 'diagram',
+                                  asset: b.assetId ? `assets/${b.assetId}.svg` : '',
+                                  content: '',
+                                };
+                              if (b.type === 'list')
+                                return {
+                                  type: 'list',
+                                  variant: b.variant || 'itemize',
+                                  items: (b.items || []).map((it: any) =>
+                                    (it.blocks || []).map(convertBlock).filter(Boolean)
+                                  ),
+                                };
+                              if (b.type === 'table')
+                                return {
+                                  type: 'table',
+                                  rows: (b.rows || []).map((row: any[]) =>
+                                    row.map((cell: any) =>
+                                      (cell.children || [])
+                                        .map((c: any) => inlineToText(c.children || []))
+                                        .join(' ')
+                                    )
+                                  ),
+                                };
+                              return null;
+                            };
+
+                            for (const sec of json.structure) {
+                              const secTitle = sec.title || 'General';
+                              const processChild = (child: any, parentTitle: string) => {
+                                if (child.type === 'frame') {
+                                  frames.push({
+                                    id: child.id || `frame-${frames.length + 1}`,
+                                    title: child.title || '',
+                                    section: parentTitle,
+                                    line: child.sourceLine || 1,
+                                    blocks: (child.blocks || []).map(convertBlock).filter(Boolean),
+                                  });
+                                } else if (
+                                  child.type === 'subsection' &&
+                                  Array.isArray(child.children)
+                                ) {
+                                  for (const sub of child.children) {
+                                    processChild(sub, child.title || parentTitle);
                                   }
+                                }
+                              };
+                              if (Array.isArray(sec.children)) {
+                                for (const child of sec.children) {
+                                  processChild(child, secTitle);
                                 }
                               }
                             }
+                          }
 
-                            if (!frames || !Array.isArray(frames)) {
-                              throw new Error(
-                                'El archivo JSON no tiene una estructura de clase válida (se esperaba arreglo "frames" o "structure").'
-                              );
-                            }
-                            setEditingLesson({
-                              lessonId: replace || undefined,
-                              title: json.title || 'Nueva clase',
-                              subtitle: json.subtitle || json.metadata?.subtitle || '',
-                              frames: frames,
-                              subjectId: currentSubject.id,
-                              topicId: currentTopic.id,
-                              topicName: currentTopic.name,
-                            });
-                            toast.success(
-                              `Clase cargada: ${frames.length} diapositivas listas para previsualizar y editar.`
-                            );
-                            e.target.value = '';
-                          } catch (err) {
-                            toast.error(
-                              err instanceof Error ? err.message : 'Error al procesar el archivo.'
+                          if (!frames || !Array.isArray(frames)) {
+                            throw new Error(
+                              'El archivo JSON no tiene una estructura de clase válida (se esperaba arreglo "frames" o "structure").'
                             );
                           }
-                        }}
-                      />
-                      <small>
-                        Se abrirá de inmediato la ventana de edición y previsualización en vivo.
-                      </small>
-                    </label>
-
-                    <div
-                      style={{
-                        textAlign: 'center',
-                        margin: '4px 0',
-                        fontSize: '11px',
-                        color: 'var(--muted)',
+                          setEditingLesson({
+                            lessonId: replace || undefined,
+                            title: json.title || 'Nueva clase',
+                            subtitle: json.subtitle || json.metadata?.subtitle || '',
+                            frames: frames,
+                            subjectId: currentSubject.id,
+                            topicId: currentTopic.id,
+                            topicName: currentTopic.name,
+                          });
+                          toast.success(
+                            `Clase cargada: ${frames.length} diapositivas listas para previsualizar y editar.`
+                          );
+                          e.target.value = '';
+                        } catch (err) {
+                          toast.error(
+                            err instanceof Error ? err.message : 'Error al procesar el archivo.'
+                          );
+                        }
                       }}
-                    >
-                      — o —
-                    </div>
+                    />
+                    <small>
+                      Se abrirá de inmediato la ventana de edición y previsualización en vivo.
+                    </small>
+                  </label>
 
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => {
-                        setEditingLesson({
-                          lessonId: replace || undefined,
-                          title: 'Nueva clase interactiva',
-                          subtitle: '',
-                          frames: [
-                            {
-                              id: 'frame-1',
-                              title: 'Introducción',
-                              section: currentTopic.name,
-                              line: 1,
-                              blocks: [
-                                {
-                                  type: 'text',
-                                  content: 'Escribe aquí el contenido introductorio de la clase...',
-                                },
-                              ],
-                            },
-                          ],
-                          subjectId: currentSubject.id,
-                          topicId: currentTopic.id,
-                          topicName: currentTopic.name,
-                        });
-                      }}
-                      style={{ gap: '6px' }}
-                    >
-                      <Plus size={14} />
-                      Crear clase desde cero en el editor
-                    </Button>
+                  <div
+                    style={{
+                      textAlign: 'center',
+                      margin: '4px 0',
+                      fontSize: '11px',
+                      color: 'var(--muted)',
+                    }}
+                  >
+                    — o —
                   </div>
-                ) : (
-                  <form onSubmit={importClass}>
-                    <input type="hidden" name="subjectId" value={currentSubject.id} />
-                    <input type="hidden" name="topicId" value={currentTopic.id} />
-                    <label>
-                      Documento LaTeX (.tex)
-                      <input type="file" name="source" accept=".tex" required />
-                      <small>Archivo .tex de la clase · hasta 2 MB</small>
-                    </label>
-                    <label>
-                      PDF e imágenes (opcional)
-                      <input
-                        type="file"
-                        name="images"
-                        accept=".pdf,.png,.jpg,.jpeg,.webp"
-                        multiple
-                      />
-                      <small>
-                        Opcional · PDF original y figuras (máx. 4 MB en Vercel; el .tex es lo único
-                        obligatorio)
-                      </small>
-                    </label>
-                    <label>
-                      Título de la clase (opcional)
-                      <input
-                        name="title"
-                        maxLength={150}
-                        placeholder="Opcional · se detecta del .tex"
-                      />
-                    </label>
-                    {topicLessons.length > 0 && (
-                      <label>
-                        Acción
-                        <select
-                          name="lessonId"
-                          value={replace}
-                          onChange={(e) => setReplace(e.target.value)}
-                        >
-                          <option value="">Crear nueva clase en este tema</option>
-                          {topicLessons.map((l) => (
-                            <option key={l.id} value={l.id}>
-                              Actualizar: {l.title}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                    )}
-                    {replace && (
-                      <p className="admin-help">
-                        La versión anterior se sustituirá y la clase volverá a borrador hasta
-                        revisar y publicar esta versión.
-                      </p>
-                    )}
-                    <Button disabled={busy}>
-                      <Upload size={15} />
-                      {busy ? 'Importando y compilando…' : 'Importar como borrador'}
-                    </Button>
-                  </form>
-                )}
+
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      setEditingLesson({
+                        lessonId: replace || undefined,
+                        title: 'Nueva clase interactiva',
+                        subtitle: '',
+                        frames: [
+                          {
+                            id: 'frame-1',
+                            title: 'Introducción',
+                            section: currentTopic.name,
+                            line: 1,
+                            blocks: [
+                              {
+                                type: 'text',
+                                content: 'Escribe aquí el contenido introductorio de la clase...',
+                              },
+                            ],
+                          },
+                        ],
+                        subjectId: currentSubject.id,
+                        topicId: currentTopic.id,
+                        topicName: currentTopic.name,
+                      });
+                    }}
+                    style={{ gap: '6px' }}
+                  >
+                    <Plus size={14} />
+                    Crear clase desde cero en el editor
+                  </Button>
+                </div>
               </section>
             </div>
           )}

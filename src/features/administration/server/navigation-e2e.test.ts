@@ -293,6 +293,20 @@ test('Organización de clases: reordenamiento (moveLesson) y publicación progra
     'Clase Beta ahora aparece antes que Clase Alfa tras mover arriba'
   );
 
+  // Reordenar mediante drag & drop (reorderLessons) volviendo a poner Alfa primero
+  await manage({
+    action: 'reorderLessons',
+    lessonIds: [lessonData1.id, lessonData2.id],
+  });
+
+  snapLessons = (await snapshot()).lessons.filter((l) => l.topicId === topic.id);
+  const reorderIdxAlfa = snapLessons.findIndex((l) => l.id === lessonData1.id);
+  const reorderIdxBeta = snapLessons.findIndex((l) => l.id === lessonData2.id);
+  assert.ok(
+    reorderIdxAlfa < reorderIdxBeta,
+    'Clase Alfa vuelve a aparecer antes que Beta tras reordenar por drag & drop'
+  );
+
   // Probar publicación programada por fecha (publishAt futuro)
   const futureIso = new Date(Date.now() + 7 * 86400 * 1000).toISOString();
   await manage({

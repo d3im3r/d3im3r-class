@@ -641,6 +641,31 @@ export async function manage(input: Record<string, unknown>, actor?: User) {
       }
       break;
     }
+    case 'reorderLessons': {
+      if (!Array.isArray(input.lessonIds) || input.lessonIds.length === 0) {
+        throw new AppError('Lista de clases inválida.');
+      }
+      const lessonIds = input.lessonIds.map((id: unknown) => text(id, 'Clase'));
+      const firstRow = await lessonRecord(lessonIds[0]);
+      if (!firstRow) throw new AppError('Clase no encontrada.', 404);
+
+      if (actor && actor.role === 'teacher') {
+        const allowedSubs = await userAccessibleSubjectIds(actor);
+        if (!allowedSubs || !allowedSubs.has(firstRow.subject_id))
+          throw new AppError('No tienes permiso para ordenar clases de esta materia.', 403);
+      }
+
+      for (let i = 0; i < lessonIds.length; i++) {
+        const id = lessonIds[i];
+        const row = await lessonRecord(id);
+        if (!row) continue;
+        const currentData = object(row) as Lesson;
+        currentData.order = i;
+        const jsonStr = JSON.stringify(currentData);
+        await execute('UPDATE lessons SET data = $1 WHERE id = $2', [jsonStr, id]);
+      }
+      break;
+    }
     case 'setLessonPublishDate': {
       const lessonId = text(input.lessonId, 'Clase');
       const row = await lessonRecord(lessonId);

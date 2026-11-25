@@ -38,15 +38,16 @@ Convierte material docente escrito en LaTeX Beamer en un entorno de aprendizaje 
 - **Bloques Docentes Semánticos:** Diferenciación visual automática con paleta cromática propia para definición, teorema, resultado, ejemplo, práctica, advertencia, pregunta, idea y algoritmos estructurados.
 
 ### 📐 Motor Híbrido de Compilación TikZ
-- **Renderizado Vectorial Nativo:** Pipeline de alta fidelidad basado en XeLaTeX, dvisvgm e Inkscape con cálculo milimétrico de *viewBox* y eliminación de fondos redundantes.
-- **Fallback Autónomo a WebAssembly:** En entornos sin compilador TeX en el sistema operativo (como GitHub Actions o servidores en la nube), utiliza automáticamente `node-tikzjax` para generar los diagramas SVG sin interrumpir el flujo.
+- **Renderizado Vectorial Nativo:** Pipeline de alta fidelidad basado en XeLaTeX, dvisvgm e Inkscape con cálculo milimétrico de *viewBox* y eliminación de fondos redundantes durante la importación de clases.
+- **Fallback Autónomo a WebAssembly:** En entornos sin compilador TeX en el sistema operativo (como GitHub Actions o servidores en la nube), utiliza automáticamente `node-tikzjax` para generar los diagramas SVG sin interrumpir el flujo de importación.
 - **Seguridad en Compilación:** Entorno aislado con lista blanca de comandos y entornos matemáticos/gráficos, prohibiendo expresamente comandos de riesgo (`\input`, `\openout`, `\write`, `^^`, etc.).
-- **Laboratorio TikZ:** Herramienta interactiva para probar diagramas aislados con diagnóstico heurístico de errores comunes (saltos de línea en opciones, delimitadores faltantes, macros ausentes).
+- **Diagnóstico Automático:** Detección y reporte preventivo de errores sintácticos de TeX durante la subida de clases Beamer.
 
-### 💻 Editor de Código Interactivo Embebido
-- Integración ligera con **CodeMirror 6** cargado bajo demanda para evitar sobrecarga en la carga inicial.
-- Resaltado de sintaxis enriquecido mediante **Shiki** para Python, JavaScript, HTML, CSS y SQL.
-- Entorno de edición temporal en memoria que permite a los alumnos alterar parámetros y experimentar con los fragmentos de código de la clase.
+### 💻 Editor y Herramientas de Código
+- **Desactivadas por defecto:** En todas las clases las herramientas interactivas inician deshabilitadas, permitiendo que el docente decida si habilitarlas selectivamente.
+- **Editor CodeMirror 6:** Integración ligera cargada bajo demanda para evitar sobrecarga en la carga inicial.
+- **Resaltado Shiki:** Resaltado de sintaxis enriquecido para Python, JavaScript, HTML, CSS y SQL.
+- **Entorno de Prueba:** Edición temporal en memoria para que los alumnos experimenten con fragmentos de código cuando el docente active las herramientas.
 
 ### 🔐 Seguridad y Control de Acceso Granular (RBAC)
 - Autenticación robusta implementada con **Better Auth** sincronizada con la base de datos relacional.
@@ -74,9 +75,9 @@ Convierte material docente escrito en LaTeX Beamer en un entorno de aprendizaje 
 |:---:|:---:|
 | ![Lectura](docs/previews/reading.jpg) | ![Panel Docente](docs/previews/docente.jpg) |
 
-| Modo Presentación Beamer | Laboratorio de Diagramas TikZ |
+| Modo Presentación Beamer | Catálogo del Alumno |
 |:---:|:---:|
-| ![Presentación](docs/previews/presentation.jpg) | ![Laboratorio TikZ](docs/previews/tikz-laboratory.jpg) |
+| ![Presentación](docs/previews/presentation.jpg) | ![Catálogo Alumno](docs/previews/alumno.jpg) |
 
 | Importación Masiva Excel | Modo Oscuro |
 |:---:|:---:|
@@ -184,7 +185,7 @@ src/
 │   ├── learning/         # Seguimiento de progreso y restricciones de acceso para el estudiante
 │   ├── reader/           # Lector continuo, presentación de diapositivas, KaTeX y TikZ
 │   ├── theme/            # Proveedor de temas, selector claro/oscuro y firma d3im3r
-│   └── tools/            # Laboratorio TikZ, editor CodeMirror y ejecutores de código
+│   └── tools/            # Entornos interactivos de código (Python/JS) y editor CodeMirror
 ├── components/           # Componentes UI reutilizables (botones, modales, toasts)
 ├── shared/               # Contextos compartidos y utilidades generales
 └── lib/                  # Utilidades auxiliares, efectos visuales y limitador de peticiones
