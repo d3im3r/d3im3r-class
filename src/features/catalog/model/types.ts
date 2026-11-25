@@ -44,4 +44,17 @@ export type Subject = {
   icon: 'code' | 'robot';
   topics: { id: string; name: string }[];
 };
+export type SubjectGroup = {
+  id: string;
+  subjectId: string;
+  name: string;
+  createdAt: number;
+  memberCount?: number;
+};
+export type GroupLessonRelease = {
+  groupId: string;
+  lessonId: string;
+  status: 'inherit' | 'published' | 'draft';
+  publishAt?: string | null;
+};
 export type Catalog = { institutions: Institution[]; subjects: Subject[]; lessons: Lesson[] };

@@ -23,8 +23,7 @@ export async function canReadLesson(user: User, id: string): Promise<boolean> {
   const allowed = await userAccessibleSubjectIds(user);
   if (!allowed || !allowed.has(row.subject_id)) return false;
   if (hasPermission(user, { lesson: ['readDraft'] })) return true;
-  if (row.status !== 'published' || !hasPermission(user, { lesson: ['readPublished'] }))
-    return false;
+  if (!hasPermission(user, { lesson: ['readPublished'] })) return false;
 
   const isBanned = await queryOne(
     'SELECT 1 FROM subject_bans WHERE user_id = $1 AND subject_id = $2',
@@ -33,8 +32,35 @@ export async function canReadLesson(user: User, id: string): Promise<boolean> {
   if (isBanned) return false;
 
   const data = parseData<Lesson>(row.data);
-  if (data.publishAt) {
-    const pubTime = new Date(data.publishAt).getTime();
+
+  // 1. Resolución de estado por Grupo
+  const memberGroup = await queryOne<{ group_id: string }>(
+    'SELECT group_id FROM group_members WHERE user_id = $1 AND subject_id = $2',
+    [user.id, row.subject_id]
+  );
+
+  let effectiveStatus: string = row.status;
+  let effectivePublishAt: string | null = data.publishAt ?? null;
+
+  if (memberGroup) {
+    const release = await queryOne<{ status: string; publish_at: string | null }>(
+      'SELECT status, publish_at FROM group_lesson_releases WHERE group_id = $1 AND lesson_id = $2',
+      [memberGroup.group_id, row.id]
+    );
+    if (release) {
+      if (release.status === 'published' || release.status === 'draft') {
+        effectiveStatus = release.status;
+      }
+      if (release.publish_at !== undefined) {
+        effectivePublishAt = release.publish_at;
+      }
+    }
+  }
+
+  if (effectiveStatus !== 'published') return false;
+
+  if (effectivePublishAt) {
+    const pubTime = new Date(effectivePublishAt).getTime();
     if (!isNaN(pubTime) && Date.now() < pubTime) {
       return false;
     }
@@ -139,6 +165,38 @@ export async function userCatalog(user: User): Promise<Catalog> {
   const ids = new Set(subjects.map((s) => s.id));
   const allowedTopicIdSet = new Set(subjects.flatMap((s) => s.topics.map((t) => t.id)));
 
+  const userGroups = !canReadDraft
+    ? await query<{ subject_id: string; group_id: string }>(
+        'SELECT subject_id, group_id FROM group_members WHERE user_id = $1',
+        [user.id]
+      )
+    : [];
+  const userGroupBySubject = new Map<string, string>();
+  for (const ug of userGroups) {
+    userGroupBySubject.set(ug.subject_id, ug.group_id);
+  }
+
+  const groupIds = [...new Set(userGroups.map((ug) => ug.group_id))];
+  const userReleases =
+    groupIds.length > 0
+      ? await query<{
+          group_id: string;
+          lesson_id: string;
+          status: string;
+          publish_at: string | null;
+        }>(
+          `SELECT group_id, lesson_id, status, publish_at FROM group_lesson_releases WHERE group_id IN (${groupIds.map((_, i) => `$${i + 1}`).join(',')})`,
+          groupIds
+        )
+      : [];
+  const releaseByGroupAndLesson = new Map<string, { status: string; publishAt: string | null }>();
+  for (const rel of userReleases) {
+    releaseByGroupAndLesson.set(`${rel.group_id}:${rel.lesson_id}`, {
+      status: rel.status,
+      publishAt: rel.publish_at,
+    });
+  }
+
   const allLessons = await query<{ id: string; subject_id: string; data: unknown; status: string }>(
     'SELECT id, subject_id, data, status FROM lessons'
   );
@@ -156,28 +214,44 @@ export async function userCatalog(user: User): Promise<Catalog> {
     if (!canReadDraft && !allowedTopicIdSet.has(data.topicId)) {
       continue;
     }
+
+    let effectiveStatus: 'draft' | 'published' = row.status === 'published' ? 'published' : 'draft';
+    let effectivePublishAt: string | null = data.publishAt ?? null;
+
+    const userGroupId = userGroupBySubject.get(row.subject_id);
+    if (userGroupId) {
+      const rel = releaseByGroupAndLesson.get(`${userGroupId}:${row.id}`);
+      if (rel) {
+        if (rel.status === 'published' || rel.status === 'draft') {
+          effectiveStatus = rel.status as 'draft' | 'published';
+        }
+        if (rel.publishAt !== undefined) {
+          effectivePublishAt = rel.publishAt;
+        }
+      }
+    }
+
     const isScheduledFuture =
-      Boolean(data.publishAt) &&
-      !isNaN(new Date(data.publishAt!).getTime()) &&
-      Date.now() < new Date(data.publishAt!).getTime();
+      Boolean(effectivePublishAt) &&
+      !isNaN(new Date(effectivePublishAt!).getTime()) &&
+      Date.now() < new Date(effectivePublishAt!).getTime();
 
-    const status: 'draft' | 'published' = row.status === 'published' ? 'published' : 'draft';
-
-    if (row.status === 'published') {
+    if (effectiveStatus === 'published') {
       if (isScheduledFuture && !canReadDraft) {
         lessons.push({
           ...data,
           status: 'published',
+          publishAt: effectivePublishAt,
           pdf: '',
           source: '',
           diagnostics: [],
           frames: [],
         });
       } else if (await canReadLesson(user, row.id)) {
-        lessons.push({ ...data, status });
+        lessons.push({ ...data, status: effectiveStatus, publishAt: effectivePublishAt });
       }
     } else if (canReadDraft && (await canReadLesson(user, row.id))) {
-      lessons.push({ ...data, status });
+      lessons.push({ ...data, status: effectiveStatus, publishAt: effectivePublishAt });
     }
   }
 

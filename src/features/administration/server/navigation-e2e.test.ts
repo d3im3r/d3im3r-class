@@ -527,6 +527,188 @@ test('Separación de alumnos por grupos (Temas como Grupos)', async () => {
   assert.equal(await canReadLesson(studentC, lessonGroupA.id), false, 'Alumno C NO ve Grupo A');
 });
 
+test('Cohortes independientes: Grupos con liberación asíncrona de clases sin duplicar contenidos', async () => {
+  const snap = await snapshot();
+  const sub = snap.subjects[0];
+  const topic = sub.topics[0];
+
+  // 1. Crear una única clase para la materia
+  const sharedLesson = {
+    id: 'lesson-shared-groups-1',
+    title: 'Clase Unificada para Grupos',
+    subtitle: 'Mismo contenido para todos los grupos',
+    institutionId: sub.institutionId,
+    subjectId: sub.id,
+    topicId: topic.id,
+    source: '',
+    pdf: '',
+    frames: [{ id: 'f-shared-1', title: 'Intro', section: topic.name, line: 1, blocks: [] }],
+    diagnostics: [],
+    status: 'draft', // Estado global en borrador
+    order: 0,
+  };
+  await execute(
+    'INSERT INTO lessons(id,subject_id,status,revision,reviewed,data) VALUES ($1,$2,$3,1,1,$4) ON CONFLICT (id) DO UPDATE SET data = EXCLUDED.data, status = EXCLUDED.status',
+    [sharedLesson.id, sub.id, 'draft', JSON.stringify(sharedLesson)]
+  );
+
+  // 2. Crear dos grupos en la materia: Grupo Diurno y Grupo Nocturno
+  const resG1 = (await manage({
+    action: 'createGroup',
+    subjectId: sub.id,
+    name: 'Grupo Diurno',
+  })) as { id: string; name: string };
+  const resG2 = (await manage({
+    action: 'createGroup',
+    subjectId: sub.id,
+    name: 'Grupo Nocturno',
+  })) as { id: string; name: string };
+
+  assert.ok(resG1.id, 'Grupo 1 creado');
+  assert.ok(resG2.id, 'Grupo 2 creado');
+
+  // 3. Crear dos alumnos y asignarlos a la materia y a sus grupos respectivos
+  const studentG1 = await createUser(
+    {
+      name: 'Estudiante Grupo Diurno',
+      username: 'alumno.diurno',
+      password: 'Password-2026',
+    },
+    'student'
+  );
+  const studentG2 = await createUser(
+    {
+      name: 'Estudiante Grupo Nocturno',
+      username: 'alumno.nocturno',
+      password: 'Password-2026',
+    },
+    'student'
+  );
+
+  await execute(
+    'INSERT INTO enrollments(user_id, subject_id) VALUES ($1,$2), ($3,$2) ON CONFLICT DO NOTHING',
+    [studentG1.id, sub.id, studentG2.id]
+  );
+
+  await manage({
+    action: 'assignStudentGroup',
+    userId: studentG1.id,
+    subjectId: sub.id,
+    groupId: resG1.id,
+  });
+  await manage({
+    action: 'assignStudentGroup',
+    userId: studentG2.id,
+    subjectId: sub.id,
+    groupId: resG2.id,
+  });
+
+  // 4. Configurar liberación: Publicar SOLO para Grupo Diurno; Grupo Nocturno permanece en borrador
+  await manage({
+    action: 'setGroupLessonRelease',
+    groupId: resG1.id,
+    lessonId: sharedLesson.id,
+    status: 'published',
+  });
+  await manage({
+    action: 'setGroupLessonRelease',
+    groupId: resG2.id,
+    lessonId: sharedLesson.id,
+    status: 'draft',
+  });
+
+  // 5. Verificar accesibilidad asíncrona: Diurno puede leer, Nocturno NO
+  assert.equal(
+    await canReadLesson(studentG1, sharedLesson.id),
+    true,
+    'Alumno Diurno tiene acceso a la clase'
+  );
+  assert.equal(
+    await canReadLesson(studentG2, sharedLesson.id),
+    false,
+    'Alumno Nocturno NO tiene acceso (sigue en borrador para su grupo)'
+  );
+
+  const catG1 = await userCatalog(studentG1);
+  const catG2 = await userCatalog(studentG2);
+  assert.ok(
+    catG1.lessons.some((l) => l.id === sharedLesson.id),
+    'Clase aparece en catálogo de Alumno Diurno'
+  );
+  assert.ok(
+    !catG2.lessons.some((l) => l.id === sharedLesson.id),
+    'Clase NO aparece en catálogo de Alumno Nocturno'
+  );
+
+  // 6. Ahora liberar para Grupo Nocturno programada a futuro (7 días después)
+  const futureIso = new Date(Date.now() + 7 * 86400 * 1000).toISOString();
+  await manage({
+    action: 'setGroupLessonRelease',
+    groupId: resG2.id,
+    lessonId: sharedLesson.id,
+    status: 'published',
+    publishAt: futureIso,
+  });
+
+  // Nocturno ve la clase en catálogo como programada pero aún no puede leer su contenido
+  const catG2Updated = await userCatalog(studentG2);
+  const lessonScheduledG2 = catG2Updated.lessons.find((l) => l.id === sharedLesson.id);
+  assert.ok(lessonScheduledG2, 'Clase programada aparece en catálogo de Nocturno');
+  assert.equal(
+    lessonScheduledG2?.frames.length,
+    0,
+    'Clase programada no expone diapositivas antes de fecha'
+  );
+  assert.equal(
+    await canReadLesson(studentG2, sharedLesson.id),
+    false,
+    'Nocturno aún no puede leer clase programada a futuro'
+  );
+
+  // 7. Liberar definitivamente para Nocturno con fecha inmediata
+  await manage({
+    action: 'setGroupLessonRelease',
+    groupId: resG2.id,
+    lessonId: sharedLesson.id,
+    status: 'published',
+    publishAt: null,
+  });
+  assert.equal(
+    await canReadLesson(studentG2, sharedLesson.id),
+    true,
+    'Nocturno ahora puede leer la clase'
+  );
+
+  // 8. Probar enlace de invitación con groupId: nuevo alumno se inscribe directamente al grupo
+  const inviteRes = (await manage({
+    action: 'getOrCreateInvite',
+    subjectId: sub.id,
+    groupId: resG1.id,
+  })) as { ok: boolean; token?: string };
+  assert.ok(inviteRes.token, 'Generó token de invitación para Grupo Diurno');
+
+  const studentNew = await createUser(
+    {
+      name: 'Nuevo Alumno Diurno',
+      username: 'alumno.nuevo.diurno',
+      password: 'Password-2026',
+    },
+    'student'
+  );
+  await execute(
+    'INSERT INTO subject_join_requests(id, subject_id, user_id, group_id, created_at) VALUES ($1,$2,$3,$4,$5)',
+    ['req-diurno-new', sub.id, studentNew.id, resG1.id, new Date().toISOString()]
+  );
+  await manage({ action: 'approveJoinRequest', requestId: 'req-diurno-new' });
+
+  // Comprobar que studentNew pertenece a Grupo Diurno y ve la clase inmediatamente
+  assert.equal(
+    await canReadLesson(studentNew, sharedLesson.id),
+    true,
+    'Nuevo alumno aprobado pertenece al Grupo Diurno y ve la clase'
+  );
+});
+
 after(async () => {
   await testDb.adapter.close();
 });

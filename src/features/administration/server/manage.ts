@@ -11,7 +11,13 @@ import {
   MATERIALS_BUCKET,
 } from './database';
 import { AppError, text, createUser, resetPassword } from '@/features/auth/server/auth';
-import type { Subject, Institution, Lesson } from '@/features/catalog/model/types';
+import type {
+  Subject,
+  Institution,
+  Lesson,
+  SubjectGroup,
+  GroupLessonRelease,
+} from '@/features/catalog/model/types';
 import type { User } from '@/features/auth/types';
 
 const object = (row: { data?: unknown } | null | undefined): any => {
@@ -103,7 +109,10 @@ export async function snapshot(actor?: User) {
     subjectId: string;
     token: string;
     topicId?: string | null;
-  }>('SELECT subject_id AS "subjectId", token, topic_id AS "topicId" FROM subject_invites');
+    groupId?: string | null;
+  }>(
+    'SELECT subject_id AS "subjectId", token, topic_id AS "topicId", group_id AS "groupId" FROM subject_invites'
+  );
   if (!isUnrestricted) {
     invites = invites.filter((i) => subjectIdSet.has(i.subjectId));
   }
@@ -113,13 +122,14 @@ export async function snapshot(actor?: User) {
     subjectId: string;
     userId: string;
     topicId?: string | null;
+    groupId?: string | null;
     status: string;
     createdAt: string;
     userName: string;
     username: string;
     institutionId: string;
   }>(
-    `SELECT r.id, r.subject_id AS "subjectId", r.user_id AS "userId", r.topic_id AS "topicId", 
+    `SELECT r.id, r.subject_id AS "subjectId", r.user_id AS "userId", r.topic_id AS "topicId", r.group_id AS "groupId",
             r.status, r.created_at AS "createdAt", u.name AS "userName", u.username, 
             s.institution_id AS "institutionId" 
      FROM subject_join_requests r 
@@ -142,6 +152,40 @@ export async function snapshot(actor?: User) {
   if (!isUnrestricted) {
     topicEnrollments = topicEnrollments.filter((te) => subjectIdSet.has(te.subjectId));
   }
+
+  let groups = await query<SubjectGroup>(
+    'SELECT id, subject_id AS "subjectId", name, created_at AS "createdAt" FROM subject_groups ORDER BY created_at ASC'
+  );
+  if (!isUnrestricted) {
+    groups = groups.filter((g) => subjectIdSet.has(g.subjectId));
+  }
+
+  let groupMembers = await query<{
+    groupId: string;
+    userId: string;
+    subjectId: string;
+  }>(
+    'SELECT group_id AS "groupId", user_id AS "userId", subject_id AS "subjectId" FROM group_members'
+  );
+  if (!isUnrestricted) {
+    groupMembers = groupMembers.filter((gm) => subjectIdSet.has(gm.subjectId));
+  }
+
+  // Contar miembros por grupo
+  const memberCountByGroup = new Map<string, number>();
+  for (const gm of groupMembers) {
+    memberCountByGroup.set(gm.groupId, (memberCountByGroup.get(gm.groupId) ?? 0) + 1);
+  }
+  groups = groups.map((g) => ({
+    ...g,
+    memberCount: memberCountByGroup.get(g.id) ?? 0,
+  }));
+
+  let groupLessonReleases = await query<GroupLessonRelease>(
+    'SELECT group_id AS "groupId", lesson_id AS "lessonId", status, publish_at AS "publishAt" FROM group_lesson_releases'
+  );
+  const allowedGroupIds = new Set(groups.map((g) => g.id));
+  groupLessonReleases = groupLessonReleases.filter((glr) => allowedGroupIds.has(glr.groupId));
 
   let users = await query<{
     id: string;
@@ -177,6 +221,9 @@ export async function snapshot(actor?: User) {
     joinRequests,
     institutionMembers,
     topicEnrollments,
+    groups,
+    groupMembers,
+    groupLessonReleases,
   };
 }
 
@@ -204,6 +251,7 @@ async function removeLessonCascade(rowId: string) {
     .filter((p) => p && !p.startsWith('data:') && !p.startsWith('<svg') && !p.startsWith('<?xml'));
 
   await execute('DELETE FROM progress WHERE lesson_id = $1', [rowId]);
+  await execute('DELETE FROM group_lesson_releases WHERE lesson_id = $1', [rowId]);
   await execute('DELETE FROM resources WHERE lesson_id = $1', [rowId]);
   await execute('DELETE FROM lessons WHERE id = $1', [rowId]);
 
@@ -222,6 +270,7 @@ async function removeStudentCascade(userId: string) {
   }
 
   await execute('DELETE FROM progress WHERE user_id = $1', [userId]);
+  await execute('DELETE FROM group_members WHERE user_id = $1', [userId]);
   await execute('DELETE FROM enrollments WHERE user_id = $1', [userId]);
   await execute('DELETE FROM topic_enrollments WHERE user_id = $1', [userId]);
   await execute('DELETE FROM subject_bans WHERE user_id = $1', [userId]);
@@ -807,29 +856,38 @@ export async function manage(input: Record<string, unknown>, actor?: User) {
     case 'getOrCreateInvite': {
       const subjectId = text(input.subjectId, 'Materia');
       const topicId = input.topicId ? String(input.topicId) : null;
+      const groupId = input.groupId ? String(input.groupId) : null;
       await subject(subjectId);
       if (actor && actor.role === 'teacher') {
         const allowedSubs = await userAccessibleSubjectIds(actor);
         if (!allowedSubs || !allowedSubs.has(subjectId))
           throw new AppError('No tienes permiso para generar enlaces de esta materia.', 403);
       }
-      const existing = topicId
-        ? await queryOne<{ token: string }>(
-            'SELECT token FROM subject_invites WHERE subject_id = $1 AND topic_id = $2',
-            [subjectId, topicId]
-          )
-        : await queryOne<{ token: string }>(
-            "SELECT token FROM subject_invites WHERE subject_id = $1 AND (topic_id IS NULL OR topic_id = '')",
-            [subjectId]
-          );
+      let existing: { token: string } | null = null;
+      if (groupId) {
+        existing = await queryOne<{ token: string }>(
+          'SELECT token FROM subject_invites WHERE subject_id = $1 AND group_id = $2',
+          [subjectId, groupId]
+        );
+      } else if (topicId) {
+        existing = await queryOne<{ token: string }>(
+          'SELECT token FROM subject_invites WHERE subject_id = $1 AND topic_id = $2',
+          [subjectId, topicId]
+        );
+      } else {
+        existing = await queryOne<{ token: string }>(
+          "SELECT token FROM subject_invites WHERE subject_id = $1 AND (topic_id IS NULL OR topic_id = '') AND (group_id IS NULL OR group_id = '')",
+          [subjectId]
+        );
+      }
 
       let token = existing?.token;
       if (!existing) {
         token = randomUUID();
         const nowIso = new Date().toISOString();
         await execute(
-          'INSERT INTO subject_invites(token, subject_id, topic_id, created_at) VALUES ($1, $2, $3, $4) ON CONFLICT DO NOTHING',
-          [token, subjectId, topicId, nowIso]
+          'INSERT INTO subject_invites(token, subject_id, topic_id, group_id, created_at) VALUES ($1, $2, $3, $4, $5) ON CONFLICT DO NOTHING',
+          [token, subjectId, topicId, groupId, nowIso]
         );
       }
       return { ok: true, token };
@@ -841,9 +899,11 @@ export async function manage(input: Record<string, unknown>, actor?: User) {
         subject_id: string;
         user_id: string;
         topic_id?: string | null;
-      }>('SELECT id, subject_id, user_id, topic_id FROM subject_join_requests WHERE id = $1', [
-        requestId,
-      ]);
+        group_id?: string | null;
+      }>(
+        'SELECT id, subject_id, user_id, topic_id, group_id FROM subject_join_requests WHERE id = $1',
+        [requestId]
+      );
       if (!req) throw new AppError('Solicitud no encontrada.', 404);
       if (actor && actor.role === 'teacher') {
         const allowedSubs = await userAccessibleSubjectIds(actor);
@@ -858,6 +918,12 @@ export async function manage(input: Record<string, unknown>, actor?: User) {
         await execute(
           'INSERT INTO topic_enrollments(user_id, subject_id, topic_id) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING',
           [req.user_id, req.subject_id, req.topic_id]
+        );
+      }
+      if (req.group_id) {
+        await execute(
+          'INSERT INTO group_members(group_id, user_id, subject_id) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING',
+          [req.group_id, req.user_id, req.subject_id]
         );
       }
       await execute('DELETE FROM subject_bans WHERE user_id = $1 AND subject_id = $2', [
@@ -876,16 +942,17 @@ export async function manage(input: Record<string, unknown>, actor?: User) {
         subject_id: string;
         user_id: string;
         topic_id?: string | null;
+        group_id?: string | null;
       }> = [];
       if (Array.isArray(input.requestIds) && input.requestIds.length > 0) {
         const placeholders = input.requestIds.map((_, i) => `$${i + 1}`).join(',');
         reqs = await query(
-          `SELECT id, subject_id, user_id, topic_id FROM subject_join_requests WHERE id IN (${placeholders}) AND status = 'pending'`,
+          `SELECT id, subject_id, user_id, topic_id, group_id FROM subject_join_requests WHERE id IN (${placeholders}) AND status = 'pending'`,
           input.requestIds
         );
       } else {
         reqs = await query(
-          "SELECT id, subject_id, user_id, topic_id FROM subject_join_requests WHERE status = 'pending'"
+          "SELECT id, subject_id, user_id, topic_id, group_id FROM subject_join_requests WHERE status = 'pending'"
         );
       }
       if (allowedSubs) {
@@ -904,6 +971,12 @@ export async function manage(input: Record<string, unknown>, actor?: User) {
             [req.user_id, req.subject_id, req.topic_id]
           );
         }
+        if (req.group_id) {
+          await execute(
+            'INSERT INTO group_members(group_id, user_id, subject_id) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING',
+            [req.group_id, req.user_id, req.subject_id]
+          );
+        }
         await execute('DELETE FROM subject_bans WHERE user_id = $1 AND subject_id = $2', [
           req.user_id,
           req.subject_id,
@@ -911,6 +984,125 @@ export async function manage(input: Record<string, unknown>, actor?: User) {
         await execute("UPDATE subject_join_requests SET status = 'approved' WHERE id = $1", [
           req.id,
         ]);
+      }
+      break;
+    }
+    case 'createGroup': {
+      const subjectId = text(input.subjectId, 'Materia');
+      const name = text(input.name, 'Nombre del grupo');
+      await subject(subjectId);
+      if (actor && actor.role === 'teacher') {
+        const allowedSubs = await userAccessibleSubjectIds(actor);
+        if (!allowedSubs || !allowedSubs.has(subjectId))
+          throw new AppError('No tienes permiso para crear grupos en esta materia.', 403);
+      }
+      const id = randomUUID();
+      const now = Date.now();
+      await execute(
+        'INSERT INTO subject_groups(id, subject_id, name, created_at) VALUES ($1, $2, $3, $4)',
+        [id, subjectId, name, now]
+      );
+      return { ok: true, id, name };
+    }
+    case 'renameGroup': {
+      const groupId = text(input.groupId, 'Grupo');
+      const name = text(input.name, 'Nombre del grupo');
+      const grp = await queryOne<{ id: string; subject_id: string }>(
+        'SELECT id, subject_id FROM subject_groups WHERE id = $1',
+        [groupId]
+      );
+      if (!grp) throw new AppError('Grupo no encontrado.', 404);
+      if (actor && actor.role === 'teacher') {
+        const allowedSubs = await userAccessibleSubjectIds(actor);
+        if (!allowedSubs || !allowedSubs.has(grp.subject_id))
+          throw new AppError('No tienes permiso para modificar este grupo.', 403);
+      }
+      await execute('UPDATE subject_groups SET name = $1 WHERE id = $2', [name, groupId]);
+      break;
+    }
+    case 'deleteGroup': {
+      const groupId = text(input.groupId, 'Grupo');
+      const grp = await queryOne<{ id: string; subject_id: string }>(
+        'SELECT id, subject_id FROM subject_groups WHERE id = $1',
+        [groupId]
+      );
+      if (!grp) throw new AppError('Grupo no encontrado.', 404);
+      if (actor && actor.role === 'teacher') {
+        const allowedSubs = await userAccessibleSubjectIds(actor);
+        if (!allowedSubs || !allowedSubs.has(grp.subject_id))
+          throw new AppError('No tienes permiso para eliminar este grupo.', 403);
+      }
+      await execute('DELETE FROM group_lesson_releases WHERE group_id = $1', [groupId]);
+      await execute('DELETE FROM group_members WHERE group_id = $1', [groupId]);
+      await execute('DELETE FROM subject_invites WHERE group_id = $1', [groupId]);
+      await execute('DELETE FROM subject_groups WHERE id = $1', [groupId]);
+      break;
+    }
+    case 'assignStudentGroup': {
+      const userId = text(input.userId, 'Alumno');
+      const subjectId = text(input.subjectId, 'Materia');
+      const groupId = input.groupId ? text(input.groupId, 'Grupo') : null;
+      if (actor && actor.role === 'teacher') {
+        const allowedSubs = await userAccessibleSubjectIds(actor);
+        if (!allowedSubs || !allowedSubs.has(subjectId))
+          throw new AppError('No tienes permiso para asignar grupos en esta materia.', 403);
+      }
+      await execute('DELETE FROM group_members WHERE user_id = $1 AND subject_id = $2', [
+        userId,
+        subjectId,
+      ]);
+      if (groupId) {
+        const grp = await queryOne<{ id: string }>(
+          'SELECT id FROM subject_groups WHERE id = $1 AND subject_id = $2',
+          [groupId, subjectId]
+        );
+        if (!grp) throw new AppError('El grupo seleccionado no pertenece a esta materia.', 400);
+        await execute(
+          'INSERT INTO group_members(group_id, user_id, subject_id) VALUES ($1, $2, $3)',
+          [groupId, userId, subjectId]
+        );
+      }
+      break;
+    }
+    case 'setGroupLessonRelease': {
+      const groupId = text(input.groupId, 'Grupo');
+      const lessonId = text(input.lessonId, 'Clase');
+      const status =
+        input.status === 'published' ? 'published' : input.status === 'draft' ? 'draft' : 'inherit';
+      const publishAt = input.publishAt ? text(input.publishAt, 'Fecha de publicación') : null;
+
+      const grp = await queryOne<{ id: string; subject_id: string }>(
+        'SELECT id, subject_id FROM subject_groups WHERE id = $1',
+        [groupId]
+      );
+      if (!grp) throw new AppError('Grupo no encontrado.', 404);
+
+      const lesson = await lessonRecord(lessonId);
+      if (!lesson) throw new AppError('Clase no encontrada.', 404);
+      if (lesson.subject_id !== grp.subject_id) {
+        throw new AppError('La clase no pertenece a la materia del grupo.', 400);
+      }
+
+      if (actor && actor.role === 'teacher') {
+        const allowedSubs = await userAccessibleSubjectIds(actor);
+        if (!allowedSubs || !allowedSubs.has(grp.subject_id))
+          throw new AppError('No tienes permiso para programar clases en este grupo.', 403);
+      }
+
+      if (status === 'inherit' && !publishAt) {
+        await execute('DELETE FROM group_lesson_releases WHERE group_id = $1 AND lesson_id = $2', [
+          groupId,
+          lessonId,
+        ]);
+      } else {
+        await execute(
+          `INSERT INTO group_lesson_releases(group_id, lesson_id, status, publish_at)
+           VALUES ($1, $2, $3, $4)
+           ON CONFLICT(group_id, lesson_id) DO UPDATE SET 
+             status = EXCLUDED.status,
+             publish_at = EXCLUDED.publish_at`,
+          [groupId, lessonId, status, publishAt]
+        );
       }
       break;
     }
@@ -1113,6 +1305,12 @@ export async function manage(input: Record<string, unknown>, actor?: User) {
 
       await execute('DELETE FROM enrollments WHERE subject_id = $1', [s.id]);
       await execute('DELETE FROM topic_enrollments WHERE subject_id = $1', [s.id]);
+      await execute(
+        'DELETE FROM group_lesson_releases WHERE group_id IN (SELECT id FROM subject_groups WHERE subject_id = $1)',
+        [s.id]
+      );
+      await execute('DELETE FROM group_members WHERE subject_id = $1', [s.id]);
+      await execute('DELETE FROM subject_groups WHERE subject_id = $1', [s.id]);
       await execute('DELETE FROM subject_bans WHERE subject_id = $1', [s.id]);
       await execute('DELETE FROM subject_invites WHERE subject_id = $1', [s.id]);
       await execute('DELETE FROM subject_join_requests WHERE subject_id = $1', [s.id]);

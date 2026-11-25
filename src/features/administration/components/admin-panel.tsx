@@ -36,10 +36,17 @@ import {
   Sparkles,
   Download,
   FileJson,
+  RotateCcw,
 } from 'lucide-react';
 import { toast } from '@/components/ui/sonner';
 import { Button } from '@/components/ui/button';
-import type { Institution, Subject, Frame } from '@/features/catalog/model/types';
+import type {
+  Institution,
+  Subject,
+  Frame,
+  SubjectGroup,
+  GroupLessonRelease,
+} from '@/features/catalog/model/types';
 import { StudentImport } from './student-import';
 import { LessonEditorModal } from './lesson-editor-modal';
 import type { User } from '@/features/auth/types';
@@ -65,12 +72,18 @@ type Snapshot = {
   enrollments: { userId: string; subjectId: string }[];
   institutionMembers?: { userId: string; institutionId: string }[];
   bans?: { userId: string; subjectId: string; reason?: string; bannedAt: string }[];
-  invites?: { subjectId: string; token: string; topicId?: string | null }[];
+  invites?: {
+    subjectId: string;
+    token: string;
+    topicId?: string | null;
+    groupId?: string | null;
+  }[];
   joinRequests?: {
     id: string;
     subjectId: string;
     userId: string;
     topicId?: string | null;
+    groupId?: string | null;
     status: string;
     createdAt: string;
     userName: string;
@@ -78,6 +91,9 @@ type Snapshot = {
     institutionId: string;
   }[];
   topicEnrollments?: { userId: string; subjectId: string; topicId: string }[];
+  groups?: SubjectGroup[];
+  groupMembers?: { groupId: string; userId: string; subjectId: string }[];
+  groupLessonReleases?: GroupLessonRelease[];
 };
 async function parseJson<T = any>(response: Response): Promise<T> {
   const text = await response.text();
@@ -149,12 +165,27 @@ export function AdminPanel({
       topicName?: string;
     } | null>(null),
     [draggedLessonId, setDraggedLessonId] = useState<string | null>(null),
-    [dragOverLessonId, setDragOverLessonId] = useState<string | null>(null);
+    [dragOverLessonId, setDragOverLessonId] = useState<string | null>(null),
+    [selectedGroupFilter, setSelectedGroupFilter] = useState(''),
+    [newGroupName, setNewGroupName] = useState(''),
+    [editingGroupId, setEditingGroupId] = useState<string | null>(null),
+    [editingGroupName, setEditingGroupName] = useState(''),
+    [schedulingGroupRelease, setSchedulingGroupRelease] = useState<{
+      groupId: string;
+      lessonId: string;
+    } | null>(null),
+    [groupScheduleDate, setGroupScheduleDate] = useState('');
   async function onCatalogChange() {
     try {
       sessionStorage.setItem(
         'aula-admin-state',
-        JSON.stringify({ tab, selectedInstitution, selectedSubject, selectedTopic })
+        JSON.stringify({
+          tab,
+          selectedInstitution,
+          selectedSubject,
+          selectedTopic,
+          selectedGroupFilter,
+        })
       );
     } catch {}
     await reloadCampus();
@@ -298,32 +329,58 @@ export function AdminPanel({
     setMessage('');
   }
 
-  async function copyInviteLink(subjectId: string, topicId?: string) {
+  async function copyInviteLink(subjectId: string, topicId?: string, groupId?: string) {
     try {
       let token = (data?.invites ?? []).find(
-        (i) => i.subjectId === subjectId && (topicId ? i.topicId === topicId : !i.topicId)
+        (i) =>
+          i.subjectId === subjectId &&
+          (groupId
+            ? i.groupId === groupId
+            : topicId
+              ? i.topicId === topicId
+              : !i.topicId && !i.groupId)
       )?.token;
       if (!token) {
         await mutate(
-          { action: 'getOrCreateInvite', subjectId, topicId },
-          topicId ? 'Enlace del grupo generado.' : 'Enlace de inscripción generado.'
+          { action: 'getOrCreateInvite', subjectId, topicId, groupId },
+          groupId
+            ? 'Enlace de la cohorte generado.'
+            : topicId
+              ? 'Enlace del tema generado.'
+              : 'Enlace de inscripción generado.'
         );
         const ref = await fetch('/api/admin', { cache: 'no-store' });
         const snap = await ref.json();
         token = snap.invites?.find(
-          (i: { subjectId: string; token: string; topicId?: string | null }) =>
-            i.subjectId === subjectId && (topicId ? i.topicId === topicId : !i.topicId)
+          (i: {
+            subjectId: string;
+            token: string;
+            topicId?: string | null;
+            groupId?: string | null;
+          }) =>
+            i.subjectId === subjectId &&
+            (groupId
+              ? i.groupId === groupId
+              : topicId
+                ? i.topicId === topicId
+                : !i.topicId && !i.groupId)
         )?.token;
       }
       if (token) {
         const url = `${window.location.origin}/join/${token}`;
         await navigator.clipboard.writeText(url);
-        const copyKey = topicId ? `${subjectId}-${topicId}` : subjectId;
+        const copyKey = groupId
+          ? `${subjectId}-g-${groupId}`
+          : topicId
+            ? `${subjectId}-${topicId}`
+            : subjectId;
         setCopiedSubject(copyKey);
         setTimeout(() => setCopiedSubject(''), 2500);
-        const msg = topicId
-          ? 'Enlace de este grupo copiado al portapapeles. Los alumnos que se unan quedarán inscritos directamente a este grupo.'
-          : 'Enlace de inscripción copiado al portapapeles. Compártelo con tus alumnos.';
+        const msg = groupId
+          ? 'Enlace de inscripción copiado. Los alumnos que se unan quedarán inscritos directamente a este grupo.'
+          : topicId
+            ? 'Enlace copiado al portapapeles.'
+            : 'Enlace de inscripción copiado al portapapeles. Compártelo con tus alumnos.';
         setMessage(msg);
         toast.success(msg);
       }
@@ -911,210 +968,386 @@ export function AdminPanel({
               </Button>
             </div>
           ) : (
-            <div className="admin-two-columns">
-              <section className="admin-card admin-established admin-topic-manager">
+            <>
+              <div className="admin-two-columns">
+                <section className="admin-card admin-established admin-topic-manager">
+                  <div className="admin-card-header">
+                    <div>
+                      <span className="eyebrow">TEMAS ESTABLECIDOS · {currentSubject.code}</span>
+                      <h2>
+                        <FolderOpen size={20} />
+                        Temas de {currentSubject.name}
+                      </h2>
+                    </div>
+                    <span className="admin-count-badge">
+                      {subjectTopics.length} {subjectTopics.length === 1 ? 'tema' : 'temas'}
+                    </span>
+                  </div>
+                  <p className="admin-help">
+                    Selecciona un tema para ver o importar únicamente las clases que pertenecen a
+                    ese tema.
+                  </p>
+                  {subjectTopics.length ? (
+                    <div className="topic-chips">
+                      {subjectTopics.map((t, i) => {
+                        const count = data.lessons.filter(
+                          (l) => l.subjectId === currentSubject.id && l.topicId === t.id
+                        ).length;
+                        return (
+                          <form
+                            key={t.id}
+                            className={`topic-edit ${selectedTopic === t.id ? 'is-active' : ''}`}
+                            onSubmit={async (e) => {
+                              const input = form(e);
+                              await mutate(
+                                {
+                                  ...input,
+                                  action: 'topic',
+                                  subjectId: currentSubject.id,
+                                  id: t.id,
+                                },
+                                'Tema actualizado.'
+                              );
+                            }}
+                          >
+                            <div className="topic-edit-main">
+                              <span className="topic-badge">{String(i + 1).padStart(2, '0')}</span>
+                              <input
+                                aria-label={`Nombre del tema ${i + 1}`}
+                                name="name"
+                                required
+                                maxLength={120}
+                                defaultValue={t.name}
+                                className="topic-name-input"
+                              />
+                              <Button size="sm" variant="outline" disabled={busy}>
+                                Guardar
+                              </Button>
+                            </div>
+                            <div className="topic-edit-actions">
+                              <div className="topic-reorder-buttons">
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="ghost"
+                                  aria-label={`Subir tema ${i + 1}`}
+                                  disabled={busy || i === 0}
+                                  onClick={() =>
+                                    mutate(
+                                      {
+                                        action: 'moveTopic',
+                                        subjectId: currentSubject.id,
+                                        topicId: t.id,
+                                        direction: 'up',
+                                      },
+                                      'Orden actualizado.'
+                                    )
+                                  }
+                                >
+                                  <ChevronUp size={14} />
+                                </Button>
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="ghost"
+                                  aria-label={`Bajar tema ${i + 1}`}
+                                  disabled={busy || i === subjectTopics.length - 1}
+                                  onClick={() =>
+                                    mutate(
+                                      {
+                                        action: 'moveTopic',
+                                        subjectId: currentSubject.id,
+                                        topicId: t.id,
+                                        direction: 'down',
+                                      },
+                                      'Orden actualizado.'
+                                    )
+                                  }
+                                >
+                                  <ChevronDown size={14} />
+                                </Button>
+                              </div>
+                              <Button
+                                type="button"
+                                size="sm"
+                                onClick={() => {
+                                  setSelectedTopic(t.id);
+                                  setReplace('');
+                                  goTab('lessons');
+                                }}
+                              >
+                                Ver clases ({count})<ArrowRight size={14} />
+                              </Button>
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="outline"
+                                title="Copiar enlace de invitación para este grupo"
+                                onClick={() => copyInviteLink(currentSubject.id, t.id)}
+                              >
+                                {copiedSubject === `${currentSubject.id}-${t.id}` ? (
+                                  <>
+                                    <Check size={14} className="text-emerald-500" />
+                                    <span>Copiado</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <LinkIcon size={14} />
+                                    <span>Link del grupo</span>
+                                  </>
+                                )}
+                              </Button>
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="outline"
+                                className="btn-danger-action"
+                                aria-label={`Eliminar tema ${t.name}`}
+                                title="Eliminar tema y sus clases asociadas"
+                                disabled={busy}
+                                onClick={async () => {
+                                  const msg =
+                                    count > 0
+                                      ? `¿Eliminar el tema "${t.name}" y sus ${count} clase(s) asociada(s)? Esta acción no se puede deshacer.`
+                                      : `¿Eliminar el tema "${t.name}"?`;
+                                  if (!window.confirm(msg)) return;
+                                  if (selectedTopic === t.id) setSelectedTopic('');
+                                  await mutate(
+                                    {
+                                      action: 'deleteTopic',
+                                      subjectId: currentSubject.id,
+                                      topicId: t.id,
+                                    },
+                                    'Tema eliminado.'
+                                  );
+                                  await onCatalogChange();
+                                }}
+                              >
+                                <Trash2 size={14} />
+                              </Button>
+                            </div>
+                          </form>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <p className="admin-help">
+                      Esta materia aún no tiene temas. Añade el primer tema desde el panel derecho.
+                    </p>
+                  )}
+                </section>
+                <section className="admin-card admin-create">
+                  <div className="admin-card-header">
+                    <div>
+                      <span className="eyebrow">AÑADIR A {currentSubject.code}</span>
+                      <h2>
+                        <Plus size={19} />
+                        Nuevo tema
+                      </h2>
+                    </div>
+                  </div>
+                  <p className="admin-help">
+                    Organiza las unidades o módulos temáticos de {currentSubject.name}.
+                  </p>
+                  <form
+                    onSubmit={async (e) => {
+                      const node = e.currentTarget,
+                        input = form(e);
+                      if (
+                        await mutate(
+                          { ...input, action: 'topic', subjectId: currentSubject.id },
+                          'Tema creado.'
+                        )
+                      )
+                        node.reset();
+                    }}
+                  >
+                    <label>
+                      Nombre del tema
+                      <input
+                        name="name"
+                        required
+                        maxLength={120}
+                        placeholder="Ej. Funciones y estructuras de datos"
+                      />
+                    </label>
+                    <Button disabled={busy}>
+                      <Plus size={15} />
+                      Añadir tema
+                    </Button>
+                  </form>
+                </section>
+              </div>
+              <section className="admin-card mt-6">
                 <div className="admin-card-header">
                   <div>
-                    <span className="eyebrow">TEMAS ESTABLECIDOS · {currentSubject.code}</span>
+                    <span className="eyebrow">COHORTES Y TURNOS · {currentSubject.code}</span>
                     <h2>
-                      <FolderOpen size={20} />
-                      Temas de {currentSubject.name}
+                      <Users size={20} />
+                      Grupos de {currentSubject.name}
                     </h2>
                   </div>
                   <span className="admin-count-badge">
-                    {subjectTopics.length} {subjectTopics.length === 1 ? 'tema' : 'temas'}
+                    {(data?.groups ?? []).filter((g) => g.subjectId === currentSubject.id).length}{' '}
+                    {(data?.groups ?? []).filter((g) => g.subjectId === currentSubject.id)
+                      .length === 1
+                      ? 'grupo'
+                      : 'grupos'}
                   </span>
                 </div>
                 <p className="admin-help">
-                  Selecciona un tema para ver o importar únicamente las clases que pertenecen a ese
-                  tema.
+                  Crea diferentes grupos o turnos para una misma materia. Podrás liberar contenidos
+                  a ritmos diferentes y compartir enlaces de inscripción directos para cada grupo
+                  sin duplicar clases.
                 </p>
-                {subjectTopics.length ? (
-                  <div className="topic-chips">
-                    {subjectTopics.map((t, i) => {
-                      const count = data.lessons.filter(
-                        (l) => l.subjectId === currentSubject.id && l.topicId === t.id
-                      ).length;
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                  {(data?.groups ?? [])
+                    .filter((g) => g.subjectId === currentSubject.id)
+                    .map((grp) => {
+                      const isEditing = editingGroupId === grp.id;
                       return (
-                        <form
-                          key={t.id}
-                          className={`topic-edit ${selectedTopic === t.id ? 'is-active' : ''}`}
-                          onSubmit={async (e) => {
-                            const input = form(e);
-                            await mutate(
-                              { ...input, action: 'topic', subjectId: currentSubject.id, id: t.id },
-                              'Tema actualizado.'
-                            );
-                          }}
+                        <div
+                          key={grp.id}
+                          className="p-3.5 rounded-lg border bg-card text-card-foreground flex flex-col justify-between gap-3 shadow-xs"
                         >
-                          <div className="topic-edit-main">
-                            <span className="topic-badge">{String(i + 1).padStart(2, '0')}</span>
-                            <input
-                              aria-label={`Nombre del tema ${i + 1}`}
-                              name="name"
-                              required
-                              maxLength={120}
-                              defaultValue={t.name}
-                              className="topic-name-input"
-                            />
-                            <Button size="sm" variant="outline" disabled={busy}>
-                              Guardar
-                            </Button>
+                          <div className="flex items-center justify-between gap-2">
+                            {isEditing ? (
+                              <form
+                                className="flex items-center gap-2 flex-1"
+                                onSubmit={async (e) => {
+                                  e.preventDefault();
+                                  if (!editingGroupName.trim()) return;
+                                  await mutate(
+                                    {
+                                      action: 'renameGroup',
+                                      groupId: grp.id,
+                                      name: editingGroupName.trim(),
+                                    },
+                                    'Grupo renombrado.'
+                                  );
+                                  setEditingGroupId(null);
+                                }}
+                              >
+                                <input
+                                  autoFocus
+                                  value={editingGroupName}
+                                  onChange={(e) => setEditingGroupName(e.target.value)}
+                                  className="text-xs p-1.5 rounded border flex-1"
+                                />
+                                <Button size="sm" type="submit" disabled={busy}>
+                                  Guardar
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  type="button"
+                                  onClick={() => setEditingGroupId(null)}
+                                >
+                                  Cancelar
+                                </Button>
+                              </form>
+                            ) : (
+                              <div className="flex items-center gap-2">
+                                <span className="font-semibold text-sm">{grp.name}</span>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground"
+                                  onClick={() => {
+                                    setEditingGroupId(grp.id);
+                                    setEditingGroupName(grp.name);
+                                  }}
+                                  title="Renombrar grupo"
+                                >
+                                  <Edit3 size={12} />
+                                </Button>
+                              </div>
+                            )}
+                            <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-primary/10 text-primary">
+                              {grp.memberCount ?? 0} {grp.memberCount === 1 ? 'alumno' : 'alumnos'}
+                            </span>
                           </div>
-                          <div className="topic-edit-actions">
-                            <div className="topic-reorder-buttons">
-                              <Button
-                                type="button"
-                                size="sm"
-                                variant="ghost"
-                                aria-label={`Subir tema ${i + 1}`}
-                                disabled={busy || i === 0}
-                                onClick={() =>
-                                  mutate(
-                                    {
-                                      action: 'moveTopic',
-                                      subjectId: currentSubject.id,
-                                      topicId: t.id,
-                                      direction: 'up',
-                                    },
-                                    'Orden actualizado.'
-                                  )
-                                }
-                              >
-                                <ChevronUp size={14} />
-                              </Button>
-                              <Button
-                                type="button"
-                                size="sm"
-                                variant="ghost"
-                                aria-label={`Bajar tema ${i + 1}`}
-                                disabled={busy || i === subjectTopics.length - 1}
-                                onClick={() =>
-                                  mutate(
-                                    {
-                                      action: 'moveTopic',
-                                      subjectId: currentSubject.id,
-                                      topicId: t.id,
-                                      direction: 'down',
-                                    },
-                                    'Orden actualizado.'
-                                  )
-                                }
-                              >
-                                <ChevronDown size={14} />
-                              </Button>
-                            </div>
-                            <Button
-                              type="button"
-                              size="sm"
-                              onClick={() => {
-                                setSelectedTopic(t.id);
-                                setReplace('');
-                                goTab('lessons');
-                              }}
-                            >
-                              Ver clases ({count})<ArrowRight size={14} />
-                            </Button>
+
+                          <div className="flex items-center justify-between pt-2 border-t text-xs gap-2">
                             <Button
                               type="button"
                               size="sm"
                               variant="outline"
-                              title="Copiar enlace de invitación para este grupo"
-                              onClick={() => copyInviteLink(currentSubject.id, t.id)}
+                              className="gap-1.5 text-xs h-7"
+                              onClick={() => copyInviteLink(currentSubject.id, undefined, grp.id)}
+                              title="Copiar enlace de inscripción directo a este grupo"
                             >
-                              {copiedSubject === `${currentSubject.id}-${t.id}` ? (
+                              {copiedSubject === `${currentSubject.id}-g-${grp.id}` ? (
                                 <>
-                                  <Check size={14} className="text-emerald-500" />
+                                  <Check size={12} className="text-emerald-500" />
                                   <span>Copiado</span>
                                 </>
                               ) : (
                                 <>
-                                  <LinkIcon size={14} />
-                                  <span>Link del grupo</span>
+                                  <LinkIcon size={12} />
+                                  <span>Link de este grupo</span>
                                 </>
                               )}
                             </Button>
                             <Button
                               type="button"
                               size="sm"
-                              variant="outline"
-                              className="btn-danger-action"
-                              aria-label={`Eliminar tema ${t.name}`}
-                              title="Eliminar tema y sus clases asociadas"
+                              variant="ghost"
+                              className="h-7 text-xs text-destructive hover:bg-destructive/10"
                               disabled={busy}
                               onClick={async () => {
-                                const msg =
-                                  count > 0
-                                    ? `¿Eliminar el tema "${t.name}" y sus ${count} clase(s) asociada(s)? Esta acción no se puede deshacer.`
-                                    : `¿Eliminar el tema "${t.name}"?`;
-                                if (!window.confirm(msg)) return;
-                                if (selectedTopic === t.id) setSelectedTopic('');
+                                if (
+                                  !window.confirm(
+                                    `¿Eliminar el grupo «${grp.name}»? Los alumnos inscritos volverán al estado general de la materia.`
+                                  )
+                                )
+                                  return;
                                 await mutate(
-                                  {
-                                    action: 'deleteTopic',
-                                    subjectId: currentSubject.id,
-                                    topicId: t.id,
-                                  },
-                                  'Tema eliminado.'
+                                  { action: 'deleteGroup', groupId: grp.id },
+                                  'Grupo eliminado.'
                                 );
-                                await onCatalogChange();
+                                if (selectedGroupFilter === grp.id) setSelectedGroupFilter('');
                               }}
+                              title="Eliminar grupo"
                             >
-                              <Trash2 size={14} />
+                              <Trash2 size={13} />
                             </Button>
                           </div>
-                        </form>
+                        </div>
                       );
                     })}
-                  </div>
-                ) : (
-                  <p className="admin-help">
-                    Esta materia aún no tiene temas. Añade el primer tema desde el panel derecho.
-                  </p>
-                )}
-              </section>
-              <section className="admin-card admin-create">
-                <div className="admin-card-header">
-                  <div>
-                    <span className="eyebrow">AÑADIR A {currentSubject.code}</span>
-                    <h2>
-                      <Plus size={19} />
-                      Nuevo tema
-                    </h2>
-                  </div>
                 </div>
-                <p className="admin-help">
-                  Organiza las unidades o módulos temáticos de {currentSubject.name}.
-                </p>
+
                 <form
+                  className="flex items-center gap-3 max-w-md"
                   onSubmit={async (e) => {
-                    const node = e.currentTarget,
-                      input = form(e);
-                    if (
-                      await mutate(
-                        { ...input, action: 'topic', subjectId: currentSubject.id },
-                        'Tema creado.'
-                      )
-                    )
-                      node.reset();
+                    e.preventDefault();
+                    if (!newGroupName.trim()) return;
+                    await mutate(
+                      {
+                        action: 'createGroup',
+                        subjectId: currentSubject.id,
+                        name: newGroupName.trim(),
+                      },
+                      'Grupo creado.'
+                    );
+                    setNewGroupName('');
                   }}
                 >
-                  <label>
-                    Nombre del tema
-                    <input
-                      name="name"
-                      required
-                      maxLength={120}
-                      placeholder="Ej. Funciones y estructuras de datos"
-                    />
-                  </label>
-                  <Button disabled={busy}>
-                    <Plus size={15} />
-                    Añadir tema
+                  <input
+                    value={newGroupName}
+                    onChange={(e) => setNewGroupName(e.target.value)}
+                    placeholder="Nuevo grupo (ej. Grupo 01 - Diurno)"
+                    className="text-xs p-2 rounded border flex-1"
+                    required
+                  />
+                  <Button size="sm" type="submit" disabled={busy || !newGroupName.trim()}>
+                    <Plus size={14} /> Crear grupo
                   </Button>
                 </form>
               </section>
-            </div>
+            </>
           )}
         </>
       )}
@@ -1161,13 +1394,78 @@ export function AdminPanel({
                 </div>
                 <p className="admin-help">
                   Revisa la vista previa, reprocesa recursos o publica las clases construidas en
-                  este tema.
+                  este tema. Puedes programar liberaciones asíncronas seleccionando una cohorte o
+                  grupo.
                 </p>
+
+                {/* Barra de selección de Cohorte / Grupo para liberación asíncrona */}
+                {(() => {
+                  const subjectGroups = (data?.groups ?? []).filter(
+                    (g) => g.subjectId === currentSubject.id
+                  );
+                  if (subjectGroups.length === 0) return null;
+                  return (
+                    <div className="flex items-center gap-2 flex-wrap mb-4 p-2 bg-muted/40 rounded-lg border">
+                      <span className="text-xs font-semibold text-muted-foreground mr-1 flex items-center gap-1.5">
+                        <Users size={14} /> Cohorte / Grupo:
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedGroupFilter('')}
+                        className={`px-3 py-1 text-xs rounded-md font-medium transition-colors cursor-pointer ${
+                          selectedGroupFilter === ''
+                            ? 'bg-primary text-primary-foreground shadow-sm'
+                            : 'hover:bg-muted text-muted-foreground'
+                        }`}
+                      >
+                        Vista General (Todos)
+                      </button>
+                      {subjectGroups.map((g) => (
+                        <button
+                          key={g.id}
+                          type="button"
+                          onClick={() => setSelectedGroupFilter(g.id)}
+                          className={`px-3 py-1 text-xs rounded-md font-medium transition-colors cursor-pointer ${
+                            selectedGroupFilter === g.id
+                              ? 'bg-primary text-primary-foreground shadow-sm'
+                              : 'hover:bg-muted text-muted-foreground'
+                          }`}
+                        >
+                          {g.name} ({g.memberCount ?? 0})
+                        </button>
+                      ))}
+                    </div>
+                  );
+                })()}
+
                 {topicLessons.length ? (
                   <div className="admin-lesson-list">
                     {topicLessons.map((l, index) => {
+                      const subjectGroups = (data?.groups ?? []).filter(
+                        (g) => g.subjectId === currentSubject.id
+                      );
+                      const activeGroup = subjectGroups.find((g) => g.id === selectedGroupFilter);
+                      const groupRelease = selectedGroupFilter
+                        ? (data?.groupLessonReleases ?? []).find(
+                            (r) => r.groupId === selectedGroupFilter && r.lessonId === l.id
+                          )
+                        : null;
+                      const isCustomGroup = Boolean(
+                        groupRelease &&
+                        (groupRelease.status !== 'inherit' || groupRelease.publishAt)
+                      );
+                      const effectiveStatus =
+                        groupRelease && groupRelease.status !== 'inherit'
+                          ? groupRelease.status
+                          : l.status;
+                      const effectivePublishAt =
+                        groupRelease?.publishAt !== undefined
+                          ? groupRelease.publishAt
+                          : l.publishAt;
                       const isScheduled =
-                        Boolean(l.publishAt) && new Date(l.publishAt!).getTime() > Date.now();
+                        Boolean(effectivePublishAt) &&
+                        new Date(effectivePublishAt!).getTime() > Date.now();
+
                       const isDragging = draggedLessonId === l.id;
                       const isDragOver = dragOverLessonId === l.id;
                       return (
@@ -1240,7 +1538,37 @@ export function AdminPanel({
                               </div>
                               <div>
                                 <div className="flex items-center gap-2 flex-wrap mb-1">
-                                  {isScheduled ? (
+                                  {selectedGroupFilter && activeGroup ? (
+                                    <>
+                                      <span
+                                        className={`status-badge ${effectiveStatus} ${
+                                          isScheduled
+                                            ? 'bg-amber-100 text-amber-900 border-amber-300'
+                                            : ''
+                                        }`}
+                                      >
+                                        <Users size={11} className="inline mr-1" />
+                                        {activeGroup.name}:{' '}
+                                        {isScheduled
+                                          ? `Programada (${new Date(
+                                              effectivePublishAt!
+                                            ).toLocaleDateString('es-ES', {
+                                              day: 'numeric',
+                                              month: 'short',
+                                              hour: '2-digit',
+                                              minute: '2-digit',
+                                            })})`
+                                          : effectiveStatus === 'published'
+                                            ? 'Publicada'
+                                            : 'Borrador'}
+                                      </span>
+                                      {!isCustomGroup && (
+                                        <span className="text-[11px] text-muted-foreground italic">
+                                          (Hereda regla general)
+                                        </span>
+                                      )}
+                                    </>
+                                  ) : isScheduled ? (
                                     <span className="status-badge draft bg-amber-100 text-amber-900 dark:bg-amber-950/40 dark:text-amber-300 border border-amber-300 dark:border-amber-800">
                                       <Clock size={12} className="inline mr-1" />
                                       Programada:{' '}
@@ -1376,92 +1704,194 @@ export function AdminPanel({
                             </details>
                           )}
                           <div className="publication-actions">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              disabled={busy}
-                              onClick={() => {
-                                if (schedulingLessonId === l.id) {
-                                  setSchedulingLessonId(null);
-                                } else {
-                                  setSchedulingLessonId(l.id);
-                                  setScheduleDate(
-                                    l.publishAt
-                                      ? new Date(l.publishAt).toISOString().slice(0, 16)
-                                      : new Date(Date.now() + 86400000).toISOString().slice(0, 16)
-                                  );
-                                }
-                              }}
-                              title="Programar fecha y hora para publicación automática"
-                            >
-                              <Calendar size={14} />
-                              {l.publishAt ? 'Cambiar fecha' : 'Programar fecha'}
-                            </Button>
-                            {l.reviewed !== l.revision ? (
+                            {selectedGroupFilter && activeGroup ? (
                               <>
-                                <label className="checkbox-label">
-                                  <input
-                                    type="checkbox"
-                                    checked={!!review[l.id]}
-                                    onChange={(e) =>
-                                      setReview((v) => ({ ...v, [l.id]: e.target.checked }))
-                                    }
-                                  />
-                                  He revisado la vista previa y los avisos
-                                </label>
                                 <Button
                                   size="sm"
                                   variant="outline"
-                                  disabled={busy || !review[l.id]}
-                                  onClick={() =>
-                                    mutate(
-                                      {
-                                        action: 'review',
+                                  disabled={busy}
+                                  onClick={() => {
+                                    if (
+                                      schedulingGroupRelease?.lessonId === l.id &&
+                                      schedulingGroupRelease?.groupId === selectedGroupFilter
+                                    ) {
+                                      setSchedulingGroupRelease(null);
+                                    } else {
+                                      setSchedulingGroupRelease({
+                                        groupId: selectedGroupFilter,
                                         lessonId: l.id,
-                                        acknowledged: review[l.id],
-                                      },
-                                      'Revisión completada. Ya puedes publicar la clase.'
-                                    )
-                                  }
+                                      });
+                                      setGroupScheduleDate(
+                                        effectivePublishAt
+                                          ? new Date(effectivePublishAt).toISOString().slice(0, 16)
+                                          : new Date(Date.now() + 86400000)
+                                              .toISOString()
+                                              .slice(0, 16)
+                                      );
+                                    }
+                                  }}
+                                  title={`Programar fecha de publicación solo para ${activeGroup.name}`}
                                 >
-                                  <CheckCircle2 size={14} />
-                                  Completar revisión
+                                  <Calendar size={14} />
+                                  {effectivePublishAt ? 'Cambiar fecha grupo' : 'Programar fecha'}
                                 </Button>
+                                {effectiveStatus === 'published' ? (
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    disabled={busy}
+                                    onClick={() =>
+                                      mutate(
+                                        {
+                                          action: 'setGroupLessonRelease',
+                                          groupId: selectedGroupFilter,
+                                          lessonId: l.id,
+                                          status: 'draft',
+                                          publishAt: null,
+                                        },
+                                        `Clase retenida en borrador para ${activeGroup.name}.`
+                                      )
+                                    }
+                                  >
+                                    Borrador para {activeGroup.name}
+                                  </Button>
+                                ) : (
+                                  <Button
+                                    size="sm"
+                                    disabled={busy}
+                                    onClick={() =>
+                                      mutate(
+                                        {
+                                          action: 'setGroupLessonRelease',
+                                          groupId: selectedGroupFilter,
+                                          lessonId: l.id,
+                                          status: 'published',
+                                          publishAt: null,
+                                        },
+                                        `Clase liberada y publicada para ${activeGroup.name}.`
+                                      )
+                                    }
+                                  >
+                                    <Globe size={14} />
+                                    Publicar para {activeGroup.name}
+                                  </Button>
+                                )}
+                                {isCustomGroup && (
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    disabled={busy}
+                                    onClick={() =>
+                                      mutate(
+                                        {
+                                          action: 'setGroupLessonRelease',
+                                          groupId: selectedGroupFilter,
+                                          lessonId: l.id,
+                                          status: 'inherit',
+                                          publishAt: null,
+                                        },
+                                        'Regla de grupo restablecida a la general.'
+                                      )
+                                    }
+                                    title="Quitar regla personalizada de este grupo y seguir la regla general de la clase"
+                                  >
+                                    <RotateCcw size={13} />
+                                    Heredar regla general
+                                  </Button>
+                                )}
                               </>
                             ) : (
-                              <span className="reviewed-label">
-                                <CheckCircle2 size={14} />
-                                Versión revisada
-                              </span>
-                            )}
-                            {l.status === 'published' ? (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                disabled={busy}
-                                onClick={() =>
-                                  mutate(
-                                    { action: 'unpublish', lessonId: l.id },
-                                    'Clase retirada de la vista del alumno.'
-                                  )
-                                }
-                              >
-                                Volver a borrador
-                              </Button>
-                            ) : (
-                              <Button
-                                size="sm"
-                                disabled={busy || l.reviewed !== l.revision}
-                                onClick={() =>
-                                  mutate(
-                                    { action: 'publish', lessonId: l.id },
-                                    'Clase publicada para los alumnos asignados a la materia.'
-                                  )
-                                }
-                              >
-                                <Globe size={14} />
-                                Publicar clase
-                              </Button>
+                              <>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  disabled={busy}
+                                  onClick={() => {
+                                    if (schedulingLessonId === l.id) {
+                                      setSchedulingLessonId(null);
+                                    } else {
+                                      setSchedulingLessonId(l.id);
+                                      setScheduleDate(
+                                        l.publishAt
+                                          ? new Date(l.publishAt).toISOString().slice(0, 16)
+                                          : new Date(Date.now() + 86400000)
+                                              .toISOString()
+                                              .slice(0, 16)
+                                      );
+                                    }
+                                  }}
+                                  title="Programar fecha y hora para publicación automática general"
+                                >
+                                  <Calendar size={14} />
+                                  {l.publishAt ? 'Cambiar fecha' : 'Programar fecha'}
+                                </Button>
+                                {l.reviewed !== l.revision ? (
+                                  <>
+                                    <label className="checkbox-label">
+                                      <input
+                                        type="checkbox"
+                                        checked={!!review[l.id]}
+                                        onChange={(e) =>
+                                          setReview((v) => ({ ...v, [l.id]: e.target.checked }))
+                                        }
+                                      />
+                                      He revisado la vista previa y los avisos
+                                    </label>
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      disabled={busy || !review[l.id]}
+                                      onClick={() =>
+                                        mutate(
+                                          {
+                                            action: 'review',
+                                            lessonId: l.id,
+                                            acknowledged: review[l.id],
+                                          },
+                                          'Revisión completada. Ya puedes publicar la clase.'
+                                        )
+                                      }
+                                    >
+                                      <CheckCircle2 size={14} />
+                                      Completar revisión
+                                    </Button>
+                                  </>
+                                ) : (
+                                  <span className="reviewed-label">
+                                    <CheckCircle2 size={14} />
+                                    Versión revisada
+                                  </span>
+                                )}
+                                {l.status === 'published' ? (
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    disabled={busy}
+                                    onClick={() =>
+                                      mutate(
+                                        { action: 'unpublish', lessonId: l.id },
+                                        'Clase retirada de la vista del alumno.'
+                                      )
+                                    }
+                                  >
+                                    Volver a borrador
+                                  </Button>
+                                ) : (
+                                  <Button
+                                    size="sm"
+                                    disabled={busy || l.reviewed !== l.revision}
+                                    onClick={() =>
+                                      mutate(
+                                        { action: 'publish', lessonId: l.id },
+                                        'Clase publicada para los alumnos asignados a la materia.'
+                                      )
+                                    }
+                                  >
+                                    <Globe size={14} />
+                                    Publicar clase
+                                  </Button>
+                                )}
+                              </>
                             )}
                             <Button
                               size="sm"
@@ -1485,6 +1915,47 @@ export function AdminPanel({
                               Eliminar clase
                             </Button>
                           </div>
+                          {selectedGroupFilter &&
+                            schedulingGroupRelease?.lessonId === l.id &&
+                            schedulingGroupRelease?.groupId === selectedGroupFilter && (
+                              <div className="schedule-panel mt-3 p-3 bg-muted/40 rounded border flex items-center gap-3 flex-wrap">
+                                <span className="text-xs font-semibold">
+                                  Fecha y hora de liberación para {activeGroup?.name}:
+                                </span>
+                                <input
+                                  type="datetime-local"
+                                  value={groupScheduleDate}
+                                  onChange={(e) => setGroupScheduleDate(e.target.value)}
+                                  className="text-xs p-1.5 rounded border bg-background"
+                                />
+                                <Button
+                                  size="sm"
+                                  disabled={busy || !groupScheduleDate}
+                                  onClick={async () => {
+                                    await mutate(
+                                      {
+                                        action: 'setGroupLessonRelease',
+                                        groupId: selectedGroupFilter,
+                                        lessonId: l.id,
+                                        status: 'published',
+                                        publishAt: new Date(groupScheduleDate).toISOString(),
+                                      },
+                                      `Clase programada para ${activeGroup?.name}.`
+                                    );
+                                    setSchedulingGroupRelease(null);
+                                  }}
+                                >
+                                  Guardar programación de grupo
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => setSchedulingGroupRelease(null)}
+                                >
+                                  Cancelar
+                                </Button>
+                              </div>
+                            )}
                           {schedulingLessonId === l.id && (
                             <div className="mt-3 p-3 rounded bg-stone-50 dark:bg-stone-900 border border-stone-200 dark:border-stone-800 text-xs flex flex-wrap items-center gap-2">
                               <span className="font-semibold flex items-center gap-1.5 text-foreground">
@@ -1984,12 +2455,21 @@ export function AdminPanel({
                                 </span>{' '}
                                 ({subj?.code})
                               </span>
+                              {req.groupId &&
+                                (() => {
+                                  const grp = (data.groups ?? []).find((g) => g.id === req.groupId);
+                                  return (
+                                    <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300">
+                                      Cohorte: {grp?.name ?? req.groupId}
+                                    </span>
+                                  );
+                                })()}
                               {req.topicId &&
                                 (() => {
                                   const topic = subj?.topics?.find((t) => t.id === req.topicId);
                                   return (
                                     <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300">
-                                      Grupo: {topic?.name ?? req.topicId}
+                                      Tema: {topic?.name ?? req.topicId}
                                     </span>
                                   );
                                 })()}
@@ -2086,41 +2566,85 @@ export function AdminPanel({
                             </small>
                           </span>
                         </label>
-                        {assigned.includes(s.id) && s.topics && s.topics.length > 0 && (
-                          <div className="ml-6 mt-1 flex flex-wrap gap-2 items-center text-xs">
-                            <span className="text-muted-foreground font-medium">
-                              Grupos / Temas asignados:
-                            </span>
-                            {s.topics.map((t) => {
-                              const isChecked = (studentTopics[s.id] ?? []).includes(t.id);
-                              return (
-                                <label
-                                  key={t.id}
-                                  className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-muted/60 hover:bg-muted cursor-pointer text-xs"
-                                >
-                                  <input
-                                    type="checkbox"
-                                    checked={isChecked}
-                                    onChange={(ev) => {
-                                      const current = studentTopics[s.id] ?? [];
-                                      const updated = ev.target.checked
-                                        ? [...current, t.id]
-                                        : current.filter((id) => id !== t.id);
-                                      setStudentTopics((prev) => ({
-                                        ...prev,
-                                        [s.id]: updated,
-                                      }));
-                                    }}
-                                    className="rounded border w-3 h-3 accent-primary cursor-pointer"
-                                  />
-                                  <span>{t.name}</span>
-                                </label>
+                        {assigned.includes(s.id) && (
+                          <div className="ml-6 mt-1 flex flex-col gap-2 text-xs">
+                            {(() => {
+                              const sGroups = (data.groups ?? []).filter(
+                                (g) => g.subjectId === s.id
                               );
-                            })}
-                            {(!studentTopics[s.id] || studentTopics[s.id].length === 0) && (
-                              <span className="text-muted-foreground text-[11px] italic">
-                                (Acceso a todos los grupos)
-                              </span>
+                              if (sGroups.length === 0) return null;
+                              const currentMembership = (data.groupMembers ?? []).find(
+                                (gm) => gm.userId === student && gm.subjectId === s.id
+                              );
+                              return (
+                                <div className="flex items-center gap-2">
+                                  <span className="text-muted-foreground font-medium">
+                                    Cohorte / Grupo:
+                                  </span>
+                                  <select
+                                    value={currentMembership?.groupId ?? ''}
+                                    onChange={(e) => {
+                                      const newGroupId = e.target.value || null;
+                                      mutate(
+                                        {
+                                          action: 'assignStudentGroup',
+                                          userId: student,
+                                          subjectId: s.id,
+                                          groupId: newGroupId,
+                                        },
+                                        'Cohorte del alumno actualizada.'
+                                      );
+                                    }}
+                                    className="h-7 text-xs rounded border border-border bg-background px-2 py-0.5 text-foreground"
+                                  >
+                                    <option value="">Sin cohorte (regla general)</option>
+                                    {sGroups.map((g) => (
+                                      <option key={g.id} value={g.id}>
+                                        {g.name}
+                                      </option>
+                                    ))}
+                                  </select>
+                                </div>
+                              );
+                            })()}
+
+                            {s.topics && s.topics.length > 0 && (
+                              <div className="flex flex-wrap gap-2 items-center">
+                                <span className="text-muted-foreground font-medium">
+                                  Temas asignados:
+                                </span>
+                                {s.topics.map((t) => {
+                                  const isChecked = (studentTopics[s.id] ?? []).includes(t.id);
+                                  return (
+                                    <label
+                                      key={t.id}
+                                      className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-muted/60 hover:bg-muted cursor-pointer text-xs"
+                                    >
+                                      <input
+                                        type="checkbox"
+                                        checked={isChecked}
+                                        onChange={(ev) => {
+                                          const current = studentTopics[s.id] ?? [];
+                                          const updated = ev.target.checked
+                                            ? [...current, t.id]
+                                            : current.filter((id) => id !== t.id);
+                                          setStudentTopics((prev) => ({
+                                            ...prev,
+                                            [s.id]: updated,
+                                          }));
+                                        }}
+                                        className="rounded border w-3 h-3 accent-primary cursor-pointer"
+                                      />
+                                      <span>{t.name}</span>
+                                    </label>
+                                  );
+                                })}
+                                {(!studentTopics[s.id] || studentTopics[s.id].length === 0) && (
+                                  <span className="text-muted-foreground text-[11px] italic">
+                                    (Acceso a todos los temas)
+                                  </span>
+                                )}
+                              </div>
                             )}
                           </div>
                         )}
@@ -2397,15 +2921,35 @@ export function AdminPanel({
                     </span>
                     <div>
                       <strong>{u.name}</strong>
-                      <p>
-                        {u.username} · {data.enrollments.filter((a) => a.userId === u.id).length}{' '}
-                        materias asignadas{' '}
+                      <div className="flex flex-wrap items-center gap-1.5 mt-0.5 text-xs text-muted-foreground">
+                        <span>
+                          {u.username} · {data.enrollments.filter((a) => a.userId === u.id).length}{' '}
+                          materias asignadas
+                        </span>
+                        {(() => {
+                          const memberships = (data.groupMembers ?? []).filter(
+                            (gm) => gm.userId === u.id
+                          );
+                          if (memberships.length === 0) return null;
+                          return memberships.map((gm) => {
+                            const grp = (data.groups ?? []).find((g) => g.id === gm.groupId);
+                            if (!grp) return null;
+                            return (
+                              <span
+                                key={gm.groupId}
+                                className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300"
+                              >
+                                {grp.name}
+                              </span>
+                            );
+                          });
+                        })()}
                         {userBans.length > 0 && (
                           <span className="text-red-500 font-semibold">
                             ({userBans.length} baneos)
                           </span>
                         )}
-                      </p>
+                      </div>
                     </div>
                     <div className="flex gap-1.5">
                       <Button

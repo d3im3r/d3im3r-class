@@ -11,10 +11,11 @@ export async function GET(request: Request, { params }: { params: Promise<{ toke
       token: string;
       subject_id: string;
       topic_id?: string | null;
+      group_id?: string | null;
       subject_data: unknown;
       inst_data: unknown;
     }>(
-      `SELECT i.token, i.subject_id, i.topic_id, s.data AS subject_data, inst.data AS inst_data 
+      `SELECT i.token, i.subject_id, i.topic_id, i.group_id, s.data AS subject_data, inst.data AS inst_data 
        FROM subject_invites i 
        JOIN subjects s ON s.id = i.subject_id 
        JOIN institutions inst ON inst.id = s.institution_id 
@@ -37,11 +38,22 @@ export async function GET(request: Request, { params }: { params: Promise<{ toke
     } catch {}
 
     const topic = (subjectObj.topics || []).find((t: any) => t.id === row.topic_id);
+    let groupName: string | null = null;
+    if (row.group_id) {
+      const gRow = await queryOne<{ name: string }>(
+        'SELECT name FROM subject_groups WHERE id = $1',
+        [row.group_id]
+      );
+      groupName = gRow?.name ?? null;
+    }
+
     const invite = {
       token: row.token,
       subject_id: row.subject_id,
       topic_id: row.topic_id ?? null,
       topic_name: topic?.name ?? null,
+      group_id: row.group_id ?? null,
+      group_name: groupName,
       subject_name: subjectObj.name ?? 'Materia',
       subject_code: subjectObj.code ?? '',
       description: subjectObj.description ?? '',
@@ -58,6 +70,8 @@ export async function GET(request: Request, { params }: { params: Promise<{ toke
           subjectId: invite.subject_id,
           topicId: invite.topic_id,
           topicName: invite.topic_name,
+          groupId: invite.group_id,
+          groupName: invite.group_name,
           subjectName: invite.subject_name,
           subjectCode: invite.subject_code,
           description: invite.description,
@@ -109,10 +123,11 @@ export async function GET(request: Request, { params }: { params: Promise<{ toke
 export async function POST(request: Request, { params }: { params: Promise<{ token: string }> }) {
   try {
     const { token } = await params;
-    const invite = await queryOne<{ subject_id: string; topic_id?: string | null }>(
-      'SELECT subject_id, topic_id FROM subject_invites WHERE token = $1',
-      [token]
-    );
+    const invite = await queryOne<{
+      subject_id: string;
+      topic_id?: string | null;
+      group_id?: string | null;
+    }>('SELECT subject_id, topic_id, group_id FROM subject_invites WHERE token = $1', [token]);
     if (!invite) throw new AppError('Invitación de inscripción no válida.', 404);
 
     const user = await currentUser();
@@ -133,6 +148,12 @@ export async function POST(request: Request, { params }: { params: Promise<{ tok
         await execute(
           'INSERT INTO topic_enrollments(user_id, subject_id, topic_id) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING',
           [user.id, invite.subject_id, invite.topic_id]
+        );
+      }
+      if (invite.group_id) {
+        await execute(
+          'INSERT INTO group_members(group_id, user_id, subject_id) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING',
+          [invite.group_id, user.id, invite.subject_id]
         );
       }
       return Response.json({
@@ -165,12 +186,21 @@ export async function POST(request: Request, { params }: { params: Promise<{ tok
     const reqId = randomUUID();
     const nowIso = new Date().toISOString();
     await execute(
-      `INSERT INTO subject_join_requests(id, subject_id, user_id, topic_id, status, created_at)
-       VALUES ($1, $2, $3, $4, $5, $6)
+      `INSERT INTO subject_join_requests(id, subject_id, user_id, topic_id, group_id, status, created_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)
        ON CONFLICT(subject_id, user_id) DO UPDATE SET 
          topic_id = EXCLUDED.topic_id, 
+         group_id = EXCLUDED.group_id,
          status = EXCLUDED.status`,
-      [reqId, invite.subject_id, user.id, invite.topic_id || null, 'pending', nowIso]
+      [
+        reqId,
+        invite.subject_id,
+        user.id,
+        invite.topic_id || null,
+        invite.group_id || null,
+        'pending',
+        nowIso,
+      ]
     );
 
     return Response.json({
