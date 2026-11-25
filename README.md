@@ -1,151 +1,201 @@
-# Aula
+<div align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="public/brand/d3im3r/horizontal-dark.svg" />
+    <img src="public/brand/d3im3r/horizontal-light.svg" alt="d3im3r owl-chip signature" width="360" />
+  </picture>
+  <h1>d3im3r Class · Aula</h1>
+  <p>Plataforma académica interactiva para clases Beamer LaTeX, diagramas vectoriales TikZ y roles RBAC docente/estudiante.</p>
+  <p>Created by <a href="https://github.com/d3im3r">d3im3r</a></p>
+  <p>
+    <a href="https://github.com/d3im3r/d3im3r-class"><img src="https://img.shields.io/badge/version-v0.1.0-facc15?style=flat" alt="Version 0.1.0" /></a>
+    <a href="https://github.com/d3im3r/d3im3r-class/actions/workflows/ci.yml"><img src="https://github.com/d3im3r/d3im3r-class/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
+    <a href="https://nodejs.org/"><img src="https://img.shields.io/badge/Node.js-22-5fa04e?style=flat&amp;logo=nodedotjs&amp;logoColor=white" alt="Node.js 22" /></a>
+  </p>
+  <p>
+    <a href="https://nextjs.org/"><img src="https://img.shields.io/badge/Next.js-16-000000?style=flat&amp;logo=nextdotjs&amp;logoColor=white" alt="Next.js 16" /></a>
+    <a href="https://react.dev/"><img src="https://img.shields.io/badge/React-19-149eca?style=flat&amp;logo=react&amp;logoColor=white" alt="React 19" /></a>
+    <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-5-3178c6?style=flat&amp;logo=typescript&amp;logoColor=white" alt="TypeScript 5" /></a>
+    <a href="https://tailwindcss.com/"><img src="https://img.shields.io/badge/Tailwind%20CSS-4-06b6d4?style=flat&amp;logo=tailwindcss&amp;logoColor=white" alt="Tailwind CSS 4" /></a>
+    <a href="https://ui.shadcn.com/"><img src="https://img.shields.io/badge/shadcn%2Fui-18181b?style=flat&amp;logo=shadcnui&amp;logoColor=white" alt="shadcn/ui" /></a>
+  </p>
+  <p>
+    <a href="https://supabase.com/"><img src="https://img.shields.io/badge/PostgreSQL-Supabase-3ecf8e?style=flat&amp;logo=supabase&amp;logoColor=white" alt="PostgreSQL Supabase" /></a>
+    <a href="https://better-auth.com/"><img src="https://img.shields.io/badge/Better%20Auth-RBAC-000000?style=flat" alt="Better Auth RBAC" /></a>
+    <a href="https://katex.org/"><img src="https://img.shields.io/badge/TikZ%20%26%20KaTeX-LaTeX-008080?style=flat&amp;logo=latex&amp;logoColor=white" alt="TikZ &amp; KaTeX" /></a>
+    <a href="https://codemirror.net/"><img src="https://img.shields.io/badge/CodeMirror-6-d35400?style=flat" alt="CodeMirror 6" /></a>
+  </p>
+</div>
 
-Plataforma académica con roles docente y alumno, lectura continua, presentación, código editable y modo claro/oscuro. Next.js App Router, React, TypeScript, Tailwind CSS, componentes basados en shadcn/Radix y SQLite local. Arquitectura features-first.
+Convierte material docente escrito en LaTeX Beamer en un entorno de aprendizaje web interactivo. Ofrece lectura continua enriquecida con fórmulas matemáticas KaTeX ultrarrápidas, diapositivas a pantalla completa para clase en vivo, editor de código editable bajo demanda, compilación híbrida de diagramas TikZ y una suite completa de gestión académica basada en roles.
 
-## Ejecutar y acceder
+![Aula · Lectura Interactiva](docs/previews/reading.jpg)
 
-Requiere Node.js 22.13 o posterior (SQLite integrado), npm y disco persistente con permiso de escritura.
+## Características Principales
 
-```sh
-npm install
+### 📖 Doble Modo de Visualización Pedagógica
+- **Modo Lectura Continua:** Maquetación fluida y responsiva para móvil, tablet y escritorio. Incluye índice navegable de secciones, cálculo dinámico de altura para tablas y bloques, y tipografía optimizada para lectura técnica prolongada.
+- **Modo Presentación en Vivo:** Experiencia tipo diapositiva Beamer para proyector o pantalla completa. Admite atajos de teclado completos (`←` / `→`, `Espacio`, `AvPág` / `RePág`, `Inicio` / `Fin`, `Escape`) y selector de salto directo a cualquier diapositiva.
+- **Bloques Docentes Semánticos:** Diferenciación visual automática con paleta cromática propia para definición, teorema, resultado, ejemplo, práctica, advertencia, pregunta, idea y algoritmos estructurados.
+
+### 📐 Motor Híbrido de Compilación TikZ
+- **Renderizado Vectorial Nativo:** Pipeline de alta fidelidad basado en XeLaTeX, dvisvgm e Inkscape con cálculo milimétrico de *viewBox* y eliminación de fondos redundantes.
+- **Fallback Autónomo a WebAssembly:** En entornos sin compilador TeX en el sistema operativo (como GitHub Actions o servidores en la nube), utiliza automáticamente `node-tikzjax` para generar los diagramas SVG sin interrumpir el flujo.
+- **Seguridad en Compilación:** Entorno aislado con lista blanca de comandos y entornos matemáticos/gráficos, prohibiendo expresamente comandos de riesgo (`\input`, `\openout`, `\write`, `^^`, etc.).
+- **Laboratorio TikZ:** Herramienta interactiva para probar diagramas aislados con diagnóstico heurístico de errores comunes (saltos de línea en opciones, delimitadores faltantes, macros ausentes).
+
+### 💻 Editor de Código Interactivo Embebido
+- Integración ligera con **CodeMirror 6** cargado bajo demanda para evitar sobrecarga en la carga inicial.
+- Resaltado de sintaxis enriquecido mediante **Shiki** para Python, JavaScript, HTML, CSS y SQL.
+- Entorno de edición temporal en memoria que permite a los alumnos alterar parámetros y experimentar con los fragmentos de código de la clase.
+
+### 🔐 Seguridad y Control de Acceso Granular (RBAC)
+- Autenticación robusta implementada con **Better Auth** sincronizada con la base de datos relacional.
+- **Principio de Mínimo Privilegio:** Los estudiantes únicamente tienen visibilidad sobre las asignaturas y grupos en los que están matriculados activamente, y sólo acceden a clases en estado publicado.
+- **Protección de Fuentes:** Los archivos fuente `.tex`, preámbulos y diagramas internos nunca son expuestos al perfil de estudiante; la descarga de materiales se valida en el servidor mediante `/api/materials/[lessonId]/[key]`.
+- Baneo, desbaneo y revocación de materias con efecto inmediato en tiempo de ejecución.
+- Rate limiting inteligente en rutas sensibles contra ataques de fuerza bruta.
+
+### 🏫 Suite de Gestión Docente y Campus
+- **Jerarquía Multinivel:** Organización estructurada por Instituciones ➔ Materias ➔ Temas / Grupos ➔ Clases.
+- **Matriculación por Enlaces (`/join/[token]`):** Generación de enlaces de invitación por materia para auto-inscripción de estudiantes, con panel de moderación y aprobación de solicitudes.
+- **Importación y Exportación Masiva en Excel (`.xlsx`):** Procesamiento de planillas de alumnos con detección inteligente de encabezados institucionales (`Aprendiz`, `Cédula`, `Documento`), preservación rigurosa de ceros iniciales en identificaciones y exportación del padrón estudiantil.
+- **Flujo Editorial Completo:** Estados de clase Borrador ➔ Revisión ➔ Publicado, reordenamiento interactivo de clases y publicación programada por fecha (`publishAt`).
+
+### 🎨 Personalización y Temas
+- Paleta de color claro y oscuro con soporte para preferencia del sistema o selección manual persistente en `localStorage`.
+- Script preventivo integrado en el encabezado HTML para garantizar renderizado sin parpadeos (*zero-flash*).
+- Identidad visual oficial de **d3im3r** respetando proporciones vectoriales y compatibilidad multi-tema.
+
+---
+
+## Galería Visual
+
+| Lectura Interactiva | Panel Docente |
+|:---:|:---:|
+| ![Lectura](docs/previews/reading.jpg) | ![Panel Docente](docs/previews/docente.jpg) |
+
+| Modo Presentación Beamer | Laboratorio de Diagramas TikZ |
+|:---:|:---:|
+| ![Presentación](docs/previews/presentation.jpg) | ![Laboratorio TikZ](docs/previews/tikz-laboratory.jpg) |
+
+| Importación Masiva Excel | Modo Oscuro |
+|:---:|:---:|
+| ![Excel Import](docs/previews/excel-import.jpg) | ![Modo Oscuro](docs/previews/dark-mode.jpg) |
+
+---
+
+## Roles y Matriz de Permisos
+
+Las acciones y descargas de recursos se validan estrictamente en el backend. Cambiar la interfaz o los encabezados del cliente no concede accesos no autorizados.
+
+| Capacidad | Administrador / Docente | Alumno Asignado | Alumno No Asignado / Público |
+|:---|:---:|:---:|:---:|
+| Ver catálogo y materias asignadas | ✅ | ✅ | ❌ |
+| Lectura de clases publicadas | ✅ | ✅ | ❌ |
+| Modo presentación y pantalla completa | ✅ | ✅ | ❌ |
+| Edición interactiva de ejemplos de código | ✅ | ✅ | ❌ |
+| Visualización de borradores y revisión previa | ✅ | ❌ | ❌ |
+| Descarga de materiales complementarios y PDF | ✅ | ✅ | ❌ |
+| Descarga de código fuente `.tex` original | ✅ | ❌ | ❌ |
+| Creación y edición de materias, temas y clases | ✅ | ❌ | ❌ |
+| Importación masiva de alumnos (Excel) | ✅ | ❌ | ❌ |
+| Generación de enlaces de invitación `/join` | ✅ | ❌ | ❌ |
+| Gestión de instituciones y logos | ✅ | ❌ | ❌ |
+
+---
+
+## Puesta en Marcha Local
+
+Requiere **Node.js 22** y **npm**.
+
+### 1. Clonar e instalar dependencias
+
+```bash
+git clone https://github.com/d3im3r/d3im3r-class.git
+cd d3im3r-class
+npm ci
+```
+
+### 2. Configurar variables de entorno
+
+Crea un archivo `.env.local` en la raíz del proyecto:
+
+```env
+# Conexión PostgreSQL / Supabase
+DATABASE_URL=postgres://usuario:password@localhost:5432/aula
+
+# Secreto para sesiones Better Auth
+BETTER_AUTH_SECRET=tu-secreto-aleatorio-de-al-menos-32-caracteres
+BETTER_AUTH_URL=http://localhost:3101
+```
+
+### 3. Iniciar el servidor de desarrollo
+
+```bash
 npm run dev
 ```
 
-Abre http://127.0.0.1:3101. La primera visita muestra **Configura tu campus**: crea tu cuenta docente con nombre, usuario y contraseña de al menos 10 caracteres. No hay contraseñas predeterminadas. Esta configuración se cierra al existir el primer docente.
+Abre en tu navegador [http://127.0.0.1:3101](http://127.0.0.1:3101).
 
-Para producción local:
+---
 
-```sh
-npm run build
-npm start
-```
+## Flujo de Compilación y Calidad (CI)
 
-## Roles y flujo docente
+El proyecto cuenta con un pipeline de integración continua en GitHub Actions configurado en `.github/workflows/ci.yml`:
 
-Las acciones se autorizan en el servidor; cambiar la interfaz o el rol enviado por el cliente no concede permisos.
+```bash
+# 1. Comprobación de formato con Prettier
+npm run format:check
 
-| Rol | Acceso |
-| --- | --- |
-| Docente | Gestión del campus, vista previa de borradores y publicados, importación, revisión, publicación, creación de alumnos y asignación de materias. |
-| Alumno | Solo materias asignadas y clases publicadas. Lectura, presentación, edición temporal de ejemplos y progreso individual. |
-
-En **Gestión docente**:
-
-1. **Instituciones:** crea o edita la institución; al editar puedes cargar su logo PNG/JPG/WebP.
-2. **Materias y temas:** crea la materia dentro de una institución, añade temas, cambia sus nombres y su orden.
-3. **Clases:** selecciona materia y tema; carga `.tex`, PDF opcional e imágenes. También puedes sustituir una clase existente.
-4. La importación produce un **borrador** y muestra avisos de imágenes faltantes o TikZ no compatible. Usa **Vista previa** para comprobar lectura y presentación.
-5. Confirma la revisión de la versión y pulsa **Completar revisión**. Solo entonces se habilita **Publicar clase**.
-6. **Alumnos y asignaciones:** crea la cuenta del alumno con su contraseña inicial, selecciona sus materias y guarda. Comunica las credenciales por tu canal habitual; la aplicación no envía mensajes.
-
-Una clase publicada puede volver a borrador. Reemplazar su contenido la devuelve a borrador, invalida su revisión y reinicia su progreso. Las asignaciones se pueden retirar; los nuevos accesos a la clase y sus archivos se rechazan inmediatamente. Una copia ya descargada por un usuario no se puede retirar de su dispositivo.
-
-El primer docente administra el campus completo. No hay registro público de alumnos ni altas adicionales de docentes desde la interfaz en esta versión. Recuperación de contraseña, autenticación institucional y grupos de alumnos no están incluidos todavía.
-
-## Almacenamiento y permisos
-
-- `.data/aula.sqlite`: usuarios, sesiones, catálogo editable, estado de publicación, asignaciones y progreso.
-- `.data/uploads/`: fuentes y materiales cargados desde el panel.
-- `.data/logos/`: logos institucionales cargados.
-- `content/materials/`: archivos originales y SVG de los ejemplos que se incorporan al crear una base de datos nueva.
-- `public/`: identidad visual y logos originales; los materiales de clase no se sirven como archivos públicos.
-
-`.data/` está excluida de Git. Conserva esta carpeta en disco persistente; para una copia simple detén el servicio antes de copiarla. `AULA_DATA_DIR` permite cambiar su ubicación. Esta implementación está pensada para una instancia Node con disco persistente; no para funciones con almacenamiento efímero.
-
-Los materiales se descargan por `/api/materials/<clase>/<recurso>`, que comprueba sesión, publicación y asignación. Los nombres de usuario son únicos. Las contraseñas se guardan mediante scrypt con sal aleatoria; las sesiones usan tokens aleatorios, digest en la base de datos y cookies HttpOnly/SameSite. Hay límite de intentos de inicio de sesión. En un despliegue HTTPS configura `AULA_SECURE_COOKIES=1`.
-
-La preferencia visual (`aula-theme`) se guarda en el navegador; el progreso se guarda en la cuenta y no se mezcla entre alumnos que usan el mismo equipo.
-
-## Importación de contenido
-
-El panel admite documentos Beamer de la plantilla docente: frames, secciones, listas, tablas sencillas, matemáticas, macros docentes, código minted y sus envoltorios, smartimage y TikZ. No interpreta todo TeX ni ejecuta el preámbulo completo o las instrucciones de los documentos.
-
-Límites de importación: `.tex` de hasta 2 MB, PDF de hasta 20 MB, hasta 30 imágenes PNG/JPG/WebP, total de 35 MB y hasta 60 diagramas. Los recursos se resuelven por su nombre de archivo; dentro de una carga los nombres deben ser diferentes. `\\input` de documentos auxiliares y archivos ZIP no están soportados.
-
-La compilación de TikZ requiere Python 3, XeLaTeX, dvisvgm, standalone, TikZ, fontspec, amsmath, amssymb y fontawesome5. El trabajador de cargas usa comandos permitidos, `-no-shell-escape`, restricciones de lectura/escritura y tiempos máximos; los comandos no admitidos se señalan para revisión. El PDF original sigue disponible como referencia. Los 49 diagramas originales ya están compilados.
-
-Los comandos anteriores de archivos siguen disponibles **para preparar el catálogo inicial**, no para sustituir la gestión de una base de datos ya creada:
-
-```sh
-npm run content:build
-```
-
-Lee `content/catalog.json`, analiza los `.tex`, compila las figuras y regenera `content/generated.json`. El catálogo inicial se importa una sola vez a SQLite; no sobreescribe los cambios del panel en posteriores arranques. Los resultados gráficos se guardan en `content/materials/assets/diagrams/`, no en `public/`.
-
-```
-content/
-  catalog.json
-  generated.json
-  templates/template-slide.tex
-  institutions/<institucion>/subjects/<materia>/topics/<tema>/classes/<clase>/sources/
-  materials/
-    resources/
-    assets/teaching/
-    assets/diagrams/
-  resources/
-    asset-manifest.json
-    diagram-manifest.json
-    diagram-diagnostics.json
-    latex/diagram-preamble.tex
-```
-
-La antigua carpeta `Template/` se retiró después de verificar sus recursos. Se conservan el inventario y las huellas SHA-256. La identidad d3im3r está en `public/brand/d3im3r/`, con su licencia y procedencia; la dirección visual toma como referencia microROS Studio.
-
-## Lectura e interacción
-
-Lectura continua por secciones, fórmulas en línea, listas y tablas. Idea, definición, resultado, práctica, advertencia, pregunta, comparación y ejemplo tienen colores propios. **Presentar clase** usa la misma estructura y permite flechas, PageUp/PageDown, espacio, Home/End y selector de diapositiva; Escape regresa a la lectura. La pantalla completa depende del navegador. El editor CodeMirror se carga bajo demanda y Shiki resalta el código. La ejecución de Python, SQL, Bash y ROS no está habilitada.
-
-## Organización del código
-
-- `auth`: inicio de sesión, configuración inicial, sesiones y roles.
-- `administration`: persistencia SQLite, panel docente, importación y publicación.
-- `learning`: filtrado de catálogo y autorización de materiales y progreso.
-- `catalog`: navegación de materias y clases.
-- `latex-import`: parser y adaptador de la plantilla.
-- `reader`: lectura, presentación y código.
-- `theme`: modos claro/oscuro y paletas Default, invincible theme y Clean Slate, tomadas de microROS Studio.
-
-## Verificación
-
-```sh
-npm test
+# 2. Comprobación de tipos con TypeScript estricto
 npm run typecheck
+
+# 3. Suite de tests unitarios y de permisos RBAC
+npm test
+
+# 4. Compilación de producción con Webpack
 npm run build
 ```
 
-Las pruebas de acceso crean su propia base SQLite temporal: alta inicial, credenciales, materias asignadas, borradores, revisión, publicación, revocación y origen de las solicitudes. La prueba integral `scripts/test-roles-api.mjs` se ejecuta exclusivamente contra una instancia aislada con base nueva (`AULA_TEST_URL`, por defecto puerto 3102). Crea cuentas ficticias y prueba una importación real con imágenes y TikZ; no se debe ejecutar contra el campus de uso diario.
+La suite de pruebas ejecuta **55 tests automatizados** cubriendo:
+- Control de acceso RBAC y principio de mínimo privilegio.
+- Creación de cuentas iniciales y sesiones criptográficas.
+- Parser sintáctico de Beamer LaTeX y resolución de bloques matemáticos.
+- Respaldo autónomo del compilador TikZ sin herramientas externas de sistema.
+- Procesamiento de planillas Excel con encabezados heterogéneos y ceros iniciales.
+- Ciclo de vida y cascadas de eliminación en instituciones, materias y clases.
 
-### Navegación y lectura adaptable
+---
 
-La barra superior permite mostrar y ocultar la navegación del campus; la preferencia de escritorio se guarda como `aula-sidebar-collapsed`. Al abrir una clase, la navegación se oculta automáticamente y el documento ocupa el ancho disponible. En tablet y móvil el menú se abre sobre el contenido y se cierra con su botón, el fondo o Escape.
+## Arquitectura Feature-First
 
-**En esta clase** abre el índice flotante en la derecha; en móvil se adapta como un panel inferior. Se cierra al seleccionar una sección, pulsar Escape, usar su botón de cierre o tocar fuera. El menú y el índice ocultos no retienen el foco de teclado. La presentación ocupa toda la ventana, sin márgenes exteriores ni barras de desplazamiento. Los bloques extensos se distribuyen en partes navegables; las fórmulas y diagramas se ajustan al espacio disponible.
+El código se organiza siguiendo el patrón modular *Feature-First*:
 
-La propuesta de persistencia en línea está en `docs/architecture/online-database.md`; no se ha conectado ni migrado ningún dato a un servicio externo. Para probar otra instancia en el mismo host usa un nombre de cookie diferente mediante `AULA_SESSION_COOKIE`, además de otra `AULA_DATA_DIR`.
+```text
+src/
+├── app/                  # Next.js App Router (páginas, layouts, endpoints /api)
+│   ├── api/              # Endpoints REST protegidos (admin, auth, catalog, progress, tools)
+│   └── join/[token]/     # Ruta de auto-inscripción de alumnos
+├── features/
+│   ├── administration/   # Panel docente, importación de clases, planillas Excel y base de datos
+│   ├── auth/             # Better Auth, RBAC, gestión de roles, sesiones y contraseñas
+│   ├── catalog/          # Modelos de instituciones, asignaturas y enlaces de invitación
+│   ├── latex-import/     # Analizador léxico y sintáctico de documentos Beamer (.tex)
+│   ├── learning/         # Seguimiento de progreso y restricciones de acceso para el estudiante
+│   ├── reader/           # Lector continuo, presentación de diapositivas, KaTeX y TikZ
+│   ├── theme/            # Proveedor de temas, selector claro/oscuro y firma d3im3r
+│   └── tools/            # Laboratorio TikZ, editor CodeMirror y ejecutores de código
+├── components/           # Componentes UI reutilizables (botones, modales, toasts)
+├── shared/               # Contextos compartidos y utilidades generales
+└── lib/                  # Utilidades auxiliares, efectos visuales y limitador de peticiones
+```
 
+---
 
-### Importar alumnos desde Excel
+## Autor
 
-En **Gestión docente → Alumnos → Importar alumnos desde Excel**, descarga la plantilla `.xlsx`, completa `nombre`, `correo` e `identificacion` y pulsa **Revisar Excel**. La identificación debe guardarse como texto para conservar ceros iniciales. Se admiten hasta 500 alumnos y archivos de 2 MB.
+**Deimer Miranda Montoya** · [@d3im3r](https://github.com/d3im3r)
 
-La vista previa identifica errores y duplicados antes de crear cuentas. Selecciona las materias y confirma la importación; puedes omitir explícitamente las filas incorrectas. Los alumnos nuevos ingresan con su correo y su identificación como contraseña inicial, almacenada mediante hash scrypt. Las cuentas existentes conservan sus credenciales y sólo reciben nuevas materias si se selecciona esa opción.
+## Marca y Licencia
 
-### Reparar diagramas y recursos
-
-La importación compila TikZ mediante el proceso restringido y reutiliza imágenes docentes compartidas cuando corresponden a los recursos de la plantilla. Los errores de compilación se muestran por diagrama. En **Gestión docente → Clases**, **Reparar recursos** recupera imágenes o diagramas faltantes sin cambiar publicación, revisión ni progreso.
-
-Las pruebas `student-roster.test.ts`, `presentation-pages.test.ts` y `theme-script.test.ts` cubren importación, paginación y preferencias. `scripts/test-excel-and-tikz.mjs` verifica el flujo integral únicamente en el campus aislado del puerto 3102; utiliza cuentas ficticias.
-
-
-### Herramientas: laboratorio TikZ
-
-El menú **Herramientas** está disponible para docentes. Permite cargar los recursos de una clase o escribir un entorno `tikzpicture`, editarlo con números de línea, probarlo y descargar el SVG. Los errores incluyen la línea que reporta LaTeX, el registro de compilación y sugerencias. Utiliza el mismo preámbulo y las mismas restricciones del importador; no acepta preámbulos ni macros arbitrarias. Las pruebas se eliminan al terminar y no modifican las clases.
-
-Los recursos del lector incluyen **Ver código y revisar recurso**, incluso si la imagen no carga. Los docentes pueden abrir ese código directamente en herramientas. Para imágenes se muestra la ruta esperada y se puede comprobar su archivo. Una corrección probada debe incorporarse al `.tex` y volver a importarse para actualizar la clase.
-
-
-### Acceso a fuentes docentes
-
-El catálogo enviado al alumno excluye el código TikZ, el archivo `.tex` y los diagnósticos internos, también en bloques anidados. Las rutas de materiales autorizan a los alumnos únicamente imágenes y PDF de sus clases publicadas y asignadas; los archivos fuente quedan restringidos a docentes. El código de programación que forma parte de las actividades didácticas sigue disponible. La revisión de recursos y el laboratorio son exclusivos del docente.
-
-El cambio claro/oscuro utiliza un botón de icono con etiqueta accesible. Los controles usan los mismos valores semánticos de microROS Studio (por ejemplo `muted` en botones de contorno y `input` en selectores), con las paletas originales. La composición y los colores semánticos de los bloques docentes son propios de Aula.
+El emblema vectorial oficial **d3im3r owl-chip** (`{o⌄o}`) se encuentra disponible en `public/brand/d3im3r/` en variantes claro y oscuro. Conserva sus proporciones y directrices de diseño descritas en [BRAND.md](public/brand/d3im3r/BRAND.md) y se distribuye bajo [su propia licencia permisiva](public/brand/d3im3r/LICENSE).
