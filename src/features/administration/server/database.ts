@@ -139,11 +139,82 @@ export function getStoragePublicUrl(bucket: string, filePath: string): string {
   return publicUrl;
 }
 
+let schemaEnsuredPromise: Promise<void> | null = null;
+
+export async function ensureDatabaseSchema(client?: PoolClient | Pool): Promise<void> {
+  if (overrideClient) return;
+
+  if (!schemaEnsuredPromise) {
+    schemaEnsuredPromise = (async () => {
+      const executor = client ?? getPgPool();
+      await executor.query(`
+        CREATE TABLE IF NOT EXISTS subject_groups (
+          id TEXT PRIMARY KEY,
+          subject_id TEXT REFERENCES subjects(id) ON DELETE CASCADE,
+          name TEXT NOT NULL,
+          created_at BIGINT NOT NULL
+        );
+
+        CREATE TABLE IF NOT EXISTS group_members (
+          group_id TEXT REFERENCES subject_groups(id) ON DELETE CASCADE,
+          user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
+          subject_id TEXT REFERENCES subjects(id) ON DELETE CASCADE,
+          PRIMARY KEY (group_id, user_id)
+        );
+
+        CREATE TABLE IF NOT EXISTS group_lesson_releases (
+          group_id TEXT REFERENCES subject_groups(id) ON DELETE CASCADE,
+          lesson_id TEXT REFERENCES lessons(id) ON DELETE CASCADE,
+          status TEXT NOT NULL DEFAULT 'inherit',
+          publish_at TEXT,
+          PRIMARY KEY (group_id, lesson_id)
+        );
+
+        ALTER TABLE subject_invites ADD COLUMN IF NOT EXISTS topic_id TEXT;
+        ALTER TABLE subject_invites ADD COLUMN IF NOT EXISTS group_id TEXT;
+
+        ALTER TABLE subject_join_requests ADD COLUMN IF NOT EXISTS topic_id TEXT;
+        ALTER TABLE subject_join_requests ADD COLUMN IF NOT EXISTS group_id TEXT;
+
+        CREATE TABLE IF NOT EXISTS topic_enrollments (
+          user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
+          subject_id TEXT REFERENCES subjects(id) ON DELETE CASCADE,
+          topic_id TEXT NOT NULL,
+          PRIMARY KEY (user_id, subject_id, topic_id)
+        );
+
+        CREATE TABLE IF NOT EXISTS institution_members (
+          user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
+          institution_id TEXT REFERENCES institutions(id) ON DELETE CASCADE,
+          PRIMARY KEY (user_id, institution_id)
+        );
+
+        CREATE TABLE IF NOT EXISTS subject_bans (
+          user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
+          subject_id TEXT REFERENCES subjects(id) ON DELETE CASCADE,
+          reason TEXT,
+          banned_at TEXT NOT NULL,
+          PRIMARY KEY (user_id, subject_id)
+        );
+      `);
+    })().catch((err) => {
+      schemaEnsuredPromise = null;
+      console.error('[ensureDatabaseSchema Error]:', err);
+      throw err;
+    });
+  }
+
+  return schemaEnsuredPromise;
+}
+
 export async function query<T = any>(
   sql: string,
   params: any[] = [],
   client?: PoolClient | Pool
 ): Promise<T[]> {
+  if (!overrideClient) {
+    await ensureDatabaseSchema(client);
+  }
   const executor = client ?? (overrideClient || getPgPool());
   const res = await executor.query(sql, params);
   return (res.rows ?? []) as T[];
@@ -163,6 +234,9 @@ export async function execute(
   params: any[] = [],
   client?: PoolClient | Pool
 ): Promise<number> {
+  if (!overrideClient) {
+    await ensureDatabaseSchema(client);
+  }
   const executor = client ?? (overrideClient || getPgPool());
   const res = await executor.query(sql, params);
   return res.rowCount ?? 0;
@@ -171,6 +245,9 @@ export async function execute(
 export async function transaction<T>(fn: (client: PoolClient) => Promise<T>): Promise<T> {
   if (overrideClient?.transaction) {
     return overrideClient.transaction(fn);
+  }
+  if (!overrideClient) {
+    await ensureDatabaseSchema();
   }
   const pool = overrideClient || getPgPool();
   if (typeof pool.connect !== 'function') {
