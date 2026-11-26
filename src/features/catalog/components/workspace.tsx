@@ -664,7 +664,7 @@ export function Workspace({
         )}
         <div className="main-shell" inert={drawerOpen} aria-hidden={drawerOpen ? true : undefined}>
           <header className="topbar">
-            <div>
+            <div className="topbar-left">
               <button
                 ref={navigationToggle}
                 className="navigation-toggle"
@@ -674,61 +674,100 @@ export function Workspace({
                 aria-expanded={sidebarShown}
                 aria-controls="campus-navigation"
               >
-                {sidebarShown ? <PanelLeftClose size={20} /> : <PanelLeftOpen size={20} />}
+                {sidebarShown ? <PanelLeftClose size={18} /> : <PanelLeftOpen size={18} />}
               </button>
-              <button
-                type="button"
-                className="breadcrumb-btn"
+              <div
+                className="topbar-badge"
+                title="Aula · Campus Virtual"
                 onClick={() => home()}
+                role="button"
+                tabIndex={0}
+              >
+                <BookOpen size={16} />
+              </div>
+              <div
+                className="topbar-brand"
+                onClick={() => home()}
+                role="button"
+                tabIndex={0}
                 title="Volver al inicio de mi campus"
               >
-                Mi campus
-              </button>
-              <ChevronRight size={13} />
-              {view === 'course' && selectedSubject && (
-                <>
-                  <span>
-                    {catalog.institutions.find((i) => i.id === selectedSubject.institutionId)
-                      ?.shortName ?? 'Materia'}
-                  </span>
-                  <ChevronRight size={13} />
-                </>
-              )}
-              <strong>
-                {lesson
-                  ? currentSubject?.name
-                  : view === 'admin'
-                    ? 'Gestión docente'
-                    : view === 'tools'
-                      ? toolLanguage === 'javascript'
-                        ? 'Entorno Web (JS / HTML / CSS)'
-                        : 'Entorno Python'
-                      : view === 'course'
-                        ? selectedSubject?.name
-                        : view === 'institutions'
-                          ? 'Instituciones'
-                          : view === 'progress'
-                            ? 'Mi progreso'
-                            : 'Mis asignaturas'}
-              </strong>
+                <span className="topbar-wordmark">
+                  aula<span>.</span>
+                </span>
+                <span className="topbar-version">v1.2</span>
+              </div>
+              <div className="topbar-signature-wrap">
+                <span className="topbar-created-label">creado por:</span>
+                <BrandSignature surface="card" className="topbar-signature" />
+              </div>
+              <div className="topbar-breadcrumb-wrap">
+                <button
+                  type="button"
+                  className="breadcrumb-btn"
+                  onClick={() => home()}
+                  title="Volver al inicio de mi campus"
+                >
+                  Mi campus
+                </button>
+                <ChevronRight size={13} className="breadcrumb-separator" />
+                {view === 'course' && selectedSubject && (
+                  <>
+                    <span className="breadcrumb-segment">
+                      {catalog.institutions.find((i) => i.id === selectedSubject.institutionId)
+                        ?.shortName ?? 'Materia'}
+                    </span>
+                    <ChevronRight size={13} className="breadcrumb-separator" />
+                  </>
+                )}
+                <strong>
+                  {lesson
+                    ? currentSubject?.name
+                    : view === 'admin'
+                      ? 'Gestión docente'
+                      : view === 'tools'
+                        ? toolLanguage === 'javascript'
+                          ? 'Entorno Web (JS / HTML / CSS)'
+                          : 'Entorno Python'
+                        : view === 'course'
+                          ? selectedSubject?.name
+                          : view === 'institutions'
+                            ? 'Instituciones'
+                            : view === 'progress'
+                              ? 'Mi progreso'
+                              : 'Mis asignaturas'}
+                </strong>
+              </div>
             </div>
-            <span className="topbar-right">
+            <div className="topbar-right">
               <ThemeControls />
               {canManageCampus && view !== 'admin' && (
                 <Button
                   size="sm"
-                  variant="ghost"
+                  variant="outline"
+                  className="topbar-admin-btn"
                   onClick={() => home('admin')}
                   title="Cambiar al panel de gestión docente"
-                  style={{ fontSize: '12px', height: '30px', padding: '0 10px', gap: '6px' }}
                 >
                   <Settings2 size={14} />
-                  Gestión docente
+                  <span>Gestión docente</span>
                 </Button>
               )}
-              <span className="live-dot" /> Tu espacio de aprendizaje{' '}
-              <span className="avatar-small">{initials}</span>
-            </span>
+              <div className="topbar-user-pill">
+                <span className="avatar-small">{initials}</span>
+                <span className="topbar-user-name" title={user.name}>
+                  {user.name}
+                </span>
+                <button
+                  className="topbar-logout-btn"
+                  onClick={logout}
+                  aria-label="Cerrar sesión"
+                  title="Cerrar sesión"
+                >
+                  <LogOut size={14} />
+                </button>
+              </div>
+            </div>
           </header>
           {saveError && (
             <div className="workspace-error" role="alert">
