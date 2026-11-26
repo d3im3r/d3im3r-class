@@ -11,6 +11,8 @@ import {
   BookOpen,
   Sparkles,
   Wrench,
+  Tv,
+  Projector,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { BrandSignature } from '@/features/theme/brand-signature';
@@ -74,6 +76,43 @@ export function SlideDeck({
 }: SlideDeckProps) {
   const [indexOpen, setIndexOpen] = useState(false);
   const [activeSlide, setActiveSlide] = useState(current);
+  const [displayMode, setDisplayMode] = useState<'tv' | 'auditorium'>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('d3im3r_presentation_scale_mode');
+      if (saved === 'tv' || saved === 'auditorium') return saved;
+    }
+    return 'tv';
+  });
+  const [hudNotice, setHudNotice] = useState<string | null>(null);
+  const hudTimeout = useRef<NodeJS.Timeout | null>(null);
+
+  const triggerHud = (message: string) => {
+    setHudNotice(message);
+    if (hudTimeout.current) clearTimeout(hudTimeout.current);
+    hudTimeout.current = setTimeout(() => {
+      setHudNotice(null);
+    }, 2200);
+  };
+
+  const setPresentationMode = useCallback((mode: 'tv' | 'auditorium') => {
+    setDisplayMode(mode);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('d3im3r_presentation_scale_mode', mode);
+    }
+    triggerHud(mode === 'auditorium' ? 'Modo Auditorio activado (Extra Grande)' : 'Modo TV activado (Grande)');
+  }, []);
+
+  const togglePresentationMode = useCallback(() => {
+    setDisplayMode((prev) => {
+      const next = prev === 'tv' ? 'auditorium' : 'tv';
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('d3im3r_presentation_scale_mode', next);
+      }
+      triggerHud(next === 'auditorium' ? 'Modo Auditorio activado (Extra Grande)' : 'Modo TV activado (Grande)');
+      return next;
+    });
+  }, []);
+
   const stageRef = useRef<HTMLDivElement>(null);
   const isProgrammaticScroll = useRef(false);
   const scrollTimeout = useRef<NodeJS.Timeout | null>(null);
@@ -201,6 +240,9 @@ export function SlideDeck({
       } else if (e.key.toLowerCase() === 'f') {
         e.preventDefault();
         onToggleFullscreen();
+      } else if (e.key.toLowerCase() === 'a') {
+        e.preventDefault();
+        togglePresentationMode();
       } else if (e.key.toLowerCase() === 'i') {
         e.preventDefault();
         setIndexOpen((open) => !open);
@@ -224,13 +266,53 @@ export function SlideDeck({
     scrollToSlide,
     lesson.frames.length,
     onToggleFullscreen,
+    togglePresentationMode,
     fullscreen,
     onClose,
     indexOpen,
   ]);
 
   return (
-    <div className={`slide-deck-container ${fullscreen ? 'is-fullscreen' : ''}`}>
+    <div
+      className={`slide-deck-container ${fullscreen ? 'is-fullscreen' : ''}`}
+      data-presentation-mode={displayMode}
+    >
+      {/* Controles flotantes discretos en modo pantalla completa */}
+      {fullscreen && (
+        <div className="presentation-fullscreen-controls">
+          <button
+            type="button"
+            className="presentation-scale-mini-btn"
+            onClick={togglePresentationMode}
+            title={
+              displayMode === 'auditorium'
+                ? 'Cambiar a Modo TV (Atajo: A)'
+                : 'Cambiar a Modo Auditorio (Atajo: A)'
+            }
+          >
+            {displayMode === 'auditorium' ? <Projector size={13} /> : <Tv size={13} />}
+            <span>{displayMode === 'auditorium' ? 'Auditorio (XL)' : 'TV (L)'}</span>
+          </button>
+          <button
+            type="button"
+            className="presentation-fullscreen-exit"
+            onClick={onToggleFullscreen}
+            title="Salir de pantalla completa (F / Esc)"
+          >
+            <Minimize size={13} />
+            <span>Salir</span>
+          </button>
+        </div>
+      )}
+
+      {/* Notificación HUD emergente al cambiar de modo */}
+      {hudNotice && (
+        <div className="presentation-hud-badge" role="status" aria-live="polite">
+          {displayMode === 'auditorium' ? <Projector size={18} /> : <Tv size={18} />}
+          <span>{hudNotice}</span>
+        </div>
+      )}
+
       {/* Barra superior de presentación */}
       <header className="presentation-toolbar">
         <div>
@@ -238,6 +320,29 @@ export function SlideDeck({
           <span>{subject.name}</span>
         </div>
         <div className="presentation-actions-right">
+          {/* Selector de escala: TV (Grande) vs Auditorio (Extra Grande) */}
+          <div className="presentation-scale-toggle" role="group" aria-label="Escala de visualización">
+            <button
+              type="button"
+              className={`scale-btn ${displayMode === 'tv' ? 'is-active' : ''}`}
+              onClick={() => setPresentationMode('tv')}
+              title="Modo TV: Tamaño Grande para monitores y pantallas de 50-75 pulgadas (Atajo: A)"
+              aria-pressed={displayMode === 'tv'}
+            >
+              <Tv size={15} />
+              <span>TV</span>
+            </button>
+            <button
+              type="button"
+              className={`scale-btn ${displayMode === 'auditorium' ? 'is-active' : ''}`}
+              onClick={() => setPresentationMode('auditorium')}
+              title="Modo Auditorio: Tamaño Extra Grande para proyectores y auditorios (Atajo: A)"
+              aria-pressed={displayMode === 'auditorium'}
+            >
+              <Projector size={15} />
+              <span>Auditorio</span>
+            </button>
+          </div>
           {onToggleTools && (
             <Button
               variant="ghost"
@@ -373,7 +478,7 @@ export function SlideDeck({
       {/* Barra de controles inferiores de navegación */}
       <footer className="presentation-controls">
         <div className="slide-shortcuts">
-          ← → / Espacio Navegar <span>·</span> I Índice <span>·</span> F Pantalla completa{' '}
+          ← → / Espacio Navegar <span>·</span> I Índice <span>·</span> A Escala ({displayMode === 'auditorium' ? 'Auditorio' : 'TV'}) <span>·</span> F Pantalla completa{' '}
           <span>·</span> Esc Volver
         </div>
         <div className="presentation-nav-group">
