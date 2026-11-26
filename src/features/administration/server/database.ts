@@ -196,6 +196,14 @@ export async function ensureDatabaseSchema(client?: PoolClient | Pool): Promise<
           banned_at TEXT NOT NULL,
           PRIMARY KEY (user_id, subject_id)
         );
+
+        CREATE INDEX IF NOT EXISTS idx_lessons_subject_id ON lessons(subject_id);
+        CREATE INDEX IF NOT EXISTS idx_enrollments_subject_id ON enrollments(subject_id);
+        CREATE INDEX IF NOT EXISTS idx_group_members_user_id ON group_members(user_id);
+        CREATE INDEX IF NOT EXISTS idx_progress_user_lesson ON progress(user_id, lesson_id);
+        CREATE INDEX IF NOT EXISTS idx_subjects_institution_id ON subjects(institution_id);
+        CREATE INDEX IF NOT EXISTS idx_group_lesson_releases_group_id ON group_lesson_releases(group_id);
+        CREATE INDEX IF NOT EXISTS idx_topic_enrollments_user_id ON topic_enrollments(user_id);
       `);
     })().catch((err) => {
       schemaEnsuredPromise = null;
