@@ -615,6 +615,112 @@ def split_table(body:str)->list[list[str]]:
     return rows
 
 
+def parse_algorithmic_items(raw: str) -> list[str]:
+    """Parse algorithmic pseudocode statements into formatted strings for blocks."""
+    def sub_comment(m):
+        text = m.group(1).strip()
+        return r" \quad\textit{// " + text + r"}"
+    s = re.sub(r"\\(?:Comment|COMMENT)\s*\{([^{}]*)\}", sub_comment, raw)
+
+    cmd_pat = re.compile(
+        r"\\(Require|Ensure|State|While|EndWhile|If|Else|ElsIf|EndIf|For|EndFor|ForAll|EndForAll|Repeat|Until|Loop|EndLoop|Function|EndFunction|Procedure|EndProcedure|Return|Print)\b",
+        re.IGNORECASE
+    )
+    matches = list(cmd_pat.finditer(s))
+    if not matches:
+        return [line.strip() for line in s.splitlines() if line.strip()]
+
+    items = []
+    prefix = s[:matches[0].start()].strip()
+    if prefix:
+        items.append(prefix)
+
+    def get_arg(text):
+        t = text.strip()
+        if t.startswith("{"):
+            depth = 1
+            for i in range(1, len(t)):
+                if t[i] == "{": depth += 1
+                elif t[i] == "}":
+                    depth -= 1
+                    if depth == 0:
+                        return t[1:i].strip(), t[i+1:].strip()
+        return "", t
+
+    for idx, m in enumerate(matches):
+        cmd = m.group(1).lower()
+        start = m.end()
+        end = matches[idx + 1].start() if idx + 1 < len(matches) else len(s)
+        content = s[start:end].strip()
+
+        if cmd == "require":
+            items.append(r"\textbf{Requiere:} " + content)
+        elif cmd == "ensure":
+            items.append(r"\textbf{Asegura:} " + content)
+        elif cmd == "state":
+            if content:
+                items.append(content)
+        elif cmd == "while":
+            arg, rest = get_arg(content)
+            cond = arg if arg else content
+            items.append(r"\textbf{mientras} " + cond + r" \textbf{hacer}" + (f" {rest}" if rest and not arg else ""))
+        elif cmd == "endwhile":
+            items.append(r"\textbf{fin mientras}")
+        elif cmd == "if":
+            arg, rest = get_arg(content)
+            cond = arg if arg else content
+            items.append(r"\textbf{si} " + cond + r" \textbf{entonces}" + (f" {rest}" if rest and not arg else ""))
+        elif cmd == "else":
+            items.append(r"\textbf{si no}" + (f" {content}" if content else ""))
+        elif cmd == "elsif":
+            arg, rest = get_arg(content)
+            cond = arg if arg else content
+            items.append(r"\textbf{si no, si} " + cond + r" \textbf{entonces}" + (f" {rest}" if rest and not arg else ""))
+        elif cmd == "endif":
+            items.append(r"\textbf{fin si}")
+        elif cmd == "for":
+            arg, rest = get_arg(content)
+            cond = arg if arg else content
+            items.append(r"\textbf{para} " + cond + r" \textbf{hacer}" + (f" {rest}" if rest and not arg else ""))
+        elif cmd == "endfor":
+            items.append(r"\textbf{fin para}")
+        elif cmd == "forall":
+            arg, rest = get_arg(content)
+            cond = arg if arg else content
+            items.append(r"\textbf{para todo} " + cond + r" \textbf{hacer}" + (f" {rest}" if rest and not arg else ""))
+        elif cmd == "endforall":
+            items.append(r"\textbf{fin para todo}")
+        elif cmd == "repeat":
+            items.append(r"\textbf{repetir}" + (f" {content}" if content else ""))
+        elif cmd == "until":
+            arg, rest = get_arg(content)
+            cond = arg if arg else content
+            items.append(r"\textbf{hasta que} " + cond)
+        elif cmd == "loop":
+            items.append(r"\textbf{bucle}" + (f" {content}" if content else ""))
+        elif cmd == "endloop":
+            items.append(r"\textbf{fin bucle}")
+        elif cmd in ("function", "procedure"):
+            name, rest = get_arg(content)
+            params, rest2 = get_arg(rest)
+            kind = "función" if cmd == "function" else "procedimiento"
+            call_sig = f"{name}({params})" if name else content
+            items.append(rf"\textbf{{{kind}}} \textsc{{{call_sig}}}")
+        elif cmd in ("endfunction", "endprocedure"):
+            kind = "función" if cmd == "endfunction" else "procedimiento"
+            items.append(rf"\textbf{{fin {kind}}}")
+        elif cmd == "return":
+            items.append(r"\textbf{retornar} " + content)
+        elif cmd == "print":
+            items.append(r"\textbf{imprimir} " + content)
+        else:
+            if content:
+                items.append(content)
+
+    return items
+
+
+
 def detect_code_language(code: str) -> str:
     s = code.strip()
     if not s:
@@ -847,6 +953,37 @@ class LessonParser:
                                     'title':latex_plain(title) if title else None,
                                     'children':self.parse_blocks(body[k:])})
                         self.counts['callouts']+=1
+                    elif env in ('algorithm', 'algorithm*'):
+                        _, k = maybe_group(body, 0, '[', ']')
+                        body = body[k:]
+                        title = None
+                        cap_match = re.search(r'\\caption\b', body)
+                        if cap_match:
+                            _, cpos = maybe_group(body, cap_match.end(), '[', ']')
+                            cap_val, end_cap = maybe_group(body, cpos)
+                            if cap_val is not None:
+                                title = latex_plain(cap_val)
+                                body = body[:cap_match.start()] + body[end_cap:]
+                        body = re.sub(r'\\label\{[^{}]*\}', '', body)
+                        out.append({
+                            'type': 'academic_block',
+                            'variant': 'algorithm',
+                            'title': title or 'Algoritmo',
+                            'children': self.parse_blocks(body)
+                        })
+                        self.counts['callouts'] += 1
+                    elif env in ('algorithmic', 'algorithmicx', 'algorithm2e', 'pseudocode'):
+                        _, k = maybe_group(body, 0, '[', ']')
+                        body = body[k:]
+                        raw_items = parse_algorithmic_items(body)
+                        items = []
+                        for it_raw in raw_items:
+                            it_blocks = self.parse_blocks(it_raw)
+                            if it_blocks:
+                                items.append({'blocks': it_blocks})
+                        if items:
+                            out.append({'type': 'list', 'variant': 'enumerate', 'items': items})
+                            self.counts['lists'] += 1
                     elif env in LAYOUT_ENVS:
                         if env=='columns':
                             _,k=maybe_group(body,0,'[',']')

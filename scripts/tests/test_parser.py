@@ -111,3 +111,30 @@ def test_minted_and_lstlisting_extraction():
     assert len(code_blocks3) == 1
     assert code_blocks3[0]['language'] == 'python'
 
+
+def test_algorithm_and_algorithmic_support():
+    parser = module.LessonParser(pathlib.Path('test.tex'), None, {})
+    tex = (
+        r"\begin{algorithm}[H]" "\n"
+        r"  \caption{Test Algorithm}" "\n"
+        r"  \begin{algorithmic}[1]" "\n"
+        r"    \Require Meta $(x, y)$" "\n"
+        r"    \While{active}" "\n"
+        r"      \State $x \gets x + 1$" "\n"
+        r"    \EndWhile" "\n"
+        r"  \end{algorithmic}" "\n"
+        r"\end{algorithm}"
+    )
+    blocks = parser.parse_blocks(tex)
+    assert len(blocks) == 1
+    alg = blocks[0]
+    assert alg['type'] == 'academic_block'
+    assert alg['variant'] == 'algorithm'
+    assert alg['title'] == 'Test Algorithm'
+    assert len(alg['children']) == 1
+    lst = alg['children'][0]
+    assert lst['type'] == 'list'
+    assert lst['variant'] == 'enumerate'
+    assert len(lst['items']) == 4
+
+

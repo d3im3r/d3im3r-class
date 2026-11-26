@@ -356,7 +356,7 @@ def main():
         if warnings:
             print(f"\n\033[93m⚠️  Diagnósticos / Advertencias ({len(warnings)}):\033[0m")
             for w in warnings[:5]:
-                msg = w.get('message') if isinstance(w, dict) else str(w)
+                msg = (w.get('message') or f"{w.get('code')}: {w.get('env') or w.get('source') or ''}") if isinstance(w, dict) else str(w)
                 print(f"   - {msg}")
             if len(warnings) > 5:
                 print(f"   ... y {len(warnings) - 5} más (ver build-report.json)")

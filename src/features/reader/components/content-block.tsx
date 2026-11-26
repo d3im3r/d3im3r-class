@@ -36,10 +36,13 @@ const styles: Record<string, { kind: string; title: string; icon: typeof Lightbu
   ExampleBlock: { kind: 'example', title: 'Ejemplo', icon: Puzzle },
   alertblock: { kind: 'warning', title: 'Atención', icon: TriangleAlert },
   exampleblock: { kind: 'example', title: 'Ejemplo', icon: Puzzle },
+  Algorithm: { kind: 'practice', title: 'Algoritmo', icon: Workflow },
+  algorithm: { kind: 'practice', title: 'Algoritmo', icon: Workflow },
 };
 export function calloutStyle(block: Block) {
   if (block.variant && styles[block.variant]) return styles[block.variant];
   const title = (block.title ?? '').toLowerCase();
+  if (/algoritmo|procedimiento|pseudocódigo/.test(title)) return styles.Algorithm;
   if (/pregunta|reflexión/.test(title)) return styles.Question;
   if (/idea|clave|regla/.test(title)) return styles.Idea;
   if (/práctica|actividad|ejercicio/.test(title)) return styles.Practice;
