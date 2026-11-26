@@ -165,6 +165,30 @@ export async function userCatalog(user: User): Promise<Catalog> {
   const ids = new Set(subjects.map((s) => s.id));
   const allowedTopicIdSet = new Set(subjects.flatMap((s) => s.topics.map((t) => t.id)));
 
+  const institutionIds = new Set(subjects.map((s) => s.institutionId));
+
+  if (!canReadAll) {
+    const memberInsts = await query<{ institution_id: string }>(
+      'SELECT institution_id FROM institution_members WHERE user_id = $1',
+      [user.id]
+    );
+    for (const im of memberInsts) {
+      institutionIds.add(im.institution_id);
+    }
+  }
+
+  // Si el usuario no tiene materias accesibles y no es admin, evitamos consultas innecesarias
+  if (ids.size === 0 && !canReadAll) {
+    const rawInstitutions = await query<{ id: string; data: unknown }>(
+      'SELECT id, data FROM institutions'
+    );
+    const institutions = rawInstitutions
+      .map((row) => parseData<Institution>(row.data))
+      .filter((i) => institutionIds.has(i.id));
+
+    return { institutions, subjects, lessons: [] };
+  }
+
   const userGroups = !canReadDraft
     ? await query<{ subject_id: string; group_id: string }>(
         'SELECT subject_id, group_id FROM group_members WHERE user_id = $1',
@@ -197,18 +221,33 @@ export async function userCatalog(user: User): Promise<Catalog> {
     });
   }
 
-  const allLessons = await query<{ id: string; subject_id: string; data: unknown; status: string }>(
-    'SELECT id, subject_id, data, status FROM lessons'
-  );
-  const rawLessons = allLessons.filter((row) => ids.has(row.subject_id));
-
-  const lessons: Lesson[] = [];
-  for (const row of rawLessons) {
-    const isBanned = await queryOne(
-      'SELECT 1 FROM subject_bans WHERE user_id = $1 AND subject_id = $2',
-      [user.id, row.subject_id]
+  // Pre-cargar bloqueos de materias para evitar consultas N+1 en el bucle
+  const bannedSubjectSet = new Set<string>();
+  if (!canReadAll) {
+    const bannedRows = await query<{ subject_id: string }>(
+      'SELECT subject_id FROM subject_bans WHERE user_id = $1',
+      [user.id]
     );
-    if (isBanned) continue;
+    for (const b of bannedRows) {
+      bannedSubjectSet.add(b.subject_id);
+    }
+  }
+
+  // Consulta optimizada a lecciones: filtrado en PostgreSQL mediante ANY($1) si no es admin
+  const rawLessons = canReadAll
+    ? await query<{ id: string; subject_id: string; data: unknown; status: string }>(
+        'SELECT id, subject_id, data, status FROM lessons'
+      )
+    : await query<{ id: string; subject_id: string; data: unknown; status: string }>(
+        'SELECT id, subject_id, data, status FROM lessons WHERE subject_id = ANY($1)',
+        [Array.from(ids)]
+      );
+
+  const canReadPublished = hasPermission(user, { lesson: ['readPublished'] });
+  const lessons: Lesson[] = [];
+
+  for (const row of rawLessons) {
+    if (bannedSubjectSet.has(row.subject_id)) continue;
 
     const data = parseData<Lesson>(row.data);
     if (!canReadDraft && !allowedTopicIdSet.has(data.topicId)) {
@@ -247,10 +286,10 @@ export async function userCatalog(user: User): Promise<Catalog> {
           diagnostics: [],
           frames: [],
         });
-      } else if (await canReadLesson(user, row.id)) {
+      } else if (canReadDraft || canReadPublished) {
         lessons.push({ ...data, status: effectiveStatus, publishAt: effectivePublishAt });
       }
-    } else if (canReadDraft && (await canReadLesson(user, row.id))) {
+    } else if (canReadDraft) {
       lessons.push({ ...data, status: effectiveStatus, publishAt: effectivePublishAt });
     }
   }
@@ -264,17 +303,6 @@ export async function userCatalog(user: User): Promise<Catalog> {
   }
 
   lessons.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
-  const institutionIds = new Set(subjects.map((s) => s.institutionId));
-
-  if (!canReadAll) {
-    const memberInsts = await query<{ institution_id: string }>(
-      'SELECT institution_id FROM institution_members WHERE user_id = $1',
-      [user.id]
-    );
-    for (const im of memberInsts) {
-      institutionIds.add(im.institution_id);
-    }
-  }
 
   const rawInstitutions = await query<{ id: string; data: unknown }>(
     'SELECT id, data FROM institutions'
@@ -295,8 +323,20 @@ export async function userProgress(user: User): Promise<Progress> {
     [user.id]
   );
 
+  if (!rows.length) return result;
+
+  // Evaluar permisos deduplicando por lección para evitar consultas N+1
+  const distinctLessonIds = Array.from(new Set(rows.map((r) => r.lesson_id)));
+  const readableMap = new Map<string, boolean>();
+
+  await Promise.all(
+    distinctLessonIds.map(async (lessonId) => {
+      readableMap.set(lessonId, await canReadLesson(user, lessonId));
+    })
+  );
+
   for (const row of rows) {
-    if (await canReadLesson(user, row.lesson_id)) {
+    if (readableMap.get(row.lesson_id)) {
       (result[row.lesson_id] ??= []).push(row.frame_id);
     }
   }

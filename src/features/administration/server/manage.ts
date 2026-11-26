@@ -55,14 +55,37 @@ export async function snapshot(actor?: User) {
 
   const subjectIdSet = new Set(subjects.map((s) => s.id));
 
-  const rawLessons = await query<{
+  let rawLessons: {
     id: string;
     subject_id: string;
     status: string;
     revision: number;
     reviewed: number;
     data: unknown;
-  }>('SELECT id, subject_id, status, revision, reviewed, data FROM lessons');
+  }[] = [];
+
+  if (isUnrestricted) {
+    rawLessons = await query<{
+      id: string;
+      subject_id: string;
+      status: string;
+      revision: number;
+      reviewed: number;
+      data: unknown;
+    }>('SELECT id, subject_id, status, revision, reviewed, data FROM lessons');
+  } else if (subjectIdSet.size > 0) {
+    rawLessons = await query<{
+      id: string;
+      subject_id: string;
+      status: string;
+      revision: number;
+      reviewed: number;
+      data: unknown;
+    }>(
+      'SELECT id, subject_id, status, revision, reviewed, data FROM lessons WHERE subject_id = ANY($1)',
+      [Array.from(subjectIdSet)]
+    );
+  }
 
   let lessons = rawLessons.map((r) => {
     const l = object(r) as Lesson;
