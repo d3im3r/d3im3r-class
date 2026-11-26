@@ -441,7 +441,10 @@ export function ContentBlock({ block }: { block: Block }) {
     if (!hasContent && !hasChildren) return null;
     const style = calloutStyle(block),
       Icon = style.icon;
-    const title = block.title === block.variant ? style.title : (block.title ?? style.title);
+    const title =
+      block.title && block.title.trim() && block.title !== block.variant
+        ? block.title
+        : style.title;
     return (
       <aside className={`teaching-block teaching-${style.kind}`}>
         <div className="teaching-title">

@@ -1092,42 +1092,55 @@
   background: color-mix(in srgb, var(--muted) 25%, transparent);
 }
 
-.presentation-frame-content .teaching-block {
-  margin: 28px 0;
-  border-radius: 14px;
-  border-width: 2px;
-  border-left-width: 6px;
-  box-shadow: var(--shadow-sm);
+.presentation-frame-content .teaching-block,
+.presentation-reading-frame .teaching-block,
+.presentation-slide .teaching-block {
+  margin: clamp(26px, 2.5vw, 40px) 0 !important;
+  border-radius: 14px !important;
+  border-width: 2px !important;
+  border-left-width: 8px !important;
+  box-shadow: var(--shadow-sm) !important;
 }
 
-.presentation-frame-content .teaching-title {
-  padding: 14px 22px;
-  gap: 14px;
+.presentation-frame-content .teaching-title,
+.presentation-reading-frame .teaching-title,
+.presentation-slide .teaching-title {
+  padding: clamp(14px, 1.4vw, 20px) clamp(20px, 2vw, 30px) !important;
+  gap: 14px !important;
 }
 
-.presentation-frame-content .teaching-title svg {
-  width: clamp(22px, 2vw, 28px);
-  height: clamp(22px, 2vw, 28px);
-  flex-shrink: 0;
+.presentation-frame-content .teaching-title svg,
+.presentation-reading-frame .teaching-title svg,
+.presentation-slide .teaching-title svg {
+  width: clamp(24px, 2.2vw, 32px) !important;
+  height: clamp(24px, 2.2vw, 32px) !important;
+  min-width: clamp(24px, 2.2vw, 32px) !important;
+  min-height: clamp(24px, 2.2vw, 32px) !important;
+  flex-shrink: 0 !important;
 }
 
-.presentation-frame-content .teaching-title strong {
-  font-size: clamp(20px, 1.9vw, 28px);
-  font-weight: 700;
+.presentation-frame-content .teaching-title strong,
+.presentation-reading-frame .teaching-title strong,
+.presentation-slide .teaching-title strong {
+  font-size: clamp(21px, 2vw, 30px) !important;
+  font-weight: 700 !important;
+  line-height: 1.3 !important;
 }
 
-.presentation-frame-content .teaching-body {
-  padding: 16px 24px 20px;
+.presentation-frame-content .teaching-body,
+.presentation-reading-frame .teaching-body,
+.presentation-slide .teaching-body {
+  padding: clamp(18px, 1.8vw, 26px) clamp(22px, 2.2vw, 32px) !important;
 }
 
-.presentation-frame-content .teaching-body .lesson-text {
-  font-size: clamp(21px, 2.1vw, 30px);
-  line-height: 1.75;
-}
-
-.presentation-frame-content .teaching-body .lesson-list li {
-  font-size: clamp(21px, 2.1vw, 30px);
-  line-height: 1.75;
+.presentation-frame-content .teaching-body .lesson-text,
+.presentation-reading-frame .teaching-body .lesson-text,
+.presentation-slide .teaching-body .lesson-text,
+.presentation-frame-content .teaching-body .lesson-list li,
+.presentation-reading-frame .teaching-body .lesson-list li,
+.presentation-slide .teaching-body .lesson-list li {
+  font-size: clamp(22px, 2.2vw, 34px) !important;
+  line-height: 1.75 !important;
 }
 
 .presentation-frame-content .code-block {
@@ -1461,35 +1474,53 @@
   font-size: clamp(23px, 2.3vw, 35px);
 }
 
-.slide-deck-container[data-presentation-mode="auditorium"] .presentation-frame-content .teaching-block {
-  margin: 36px 0;
-  border-radius: 16px;
-  border-width: 2px;
-  border-left-width: 8px;
+.slide-deck-container[data-presentation-mode="auditorium"] .presentation-frame-content .teaching-block,
+.slide-deck-container[data-presentation-mode="auditorium"] .presentation-reading-frame .teaching-block,
+.slide-deck-container[data-presentation-mode="auditorium"] .presentation-slide .teaching-block {
+  margin: clamp(34px, 3.2vw, 52px) 0 !important;
+  border-radius: 18px !important;
+  border-width: 3px !important;
+  border-left-width: 10px !important;
 }
 
-.slide-deck-container[data-presentation-mode="auditorium"] .presentation-frame-content .teaching-title {
-  padding: 18px 28px;
-  gap: 16px;
+.slide-deck-container[data-presentation-mode="auditorium"] .presentation-frame-content .teaching-title,
+.slide-deck-container[data-presentation-mode="auditorium"] .presentation-reading-frame .teaching-title,
+.slide-deck-container[data-presentation-mode="auditorium"] .presentation-slide .teaching-title {
+  padding: clamp(18px, 1.8vw, 26px) clamp(26px, 2.6vw, 38px) !important;
+  gap: 18px !important;
 }
 
-.slide-deck-container[data-presentation-mode="auditorium"] .presentation-frame-content .teaching-title svg {
-  width: clamp(28px, 2.5vw, 36px);
-  height: clamp(28px, 2.5vw, 36px);
+.slide-deck-container[data-presentation-mode="auditorium"] .presentation-frame-content .teaching-title svg,
+.slide-deck-container[data-presentation-mode="auditorium"] .presentation-reading-frame .teaching-title svg,
+.slide-deck-container[data-presentation-mode="auditorium"] .presentation-slide .teaching-title svg {
+  width: clamp(32px, 3vw, 44px) !important;
+  height: clamp(32px, 3vw, 44px) !important;
+  min-width: clamp(32px, 3vw, 44px) !important;
+  min-height: clamp(32px, 3vw, 44px) !important;
+  flex-shrink: 0 !important;
 }
 
-.slide-deck-container[data-presentation-mode="auditorium"] .presentation-frame-content .teaching-title strong {
-  font-size: clamp(24px, 2.4vw, 36px);
+.slide-deck-container[data-presentation-mode="auditorium"] .presentation-frame-content .teaching-title strong,
+.slide-deck-container[data-presentation-mode="auditorium"] .presentation-reading-frame .teaching-title strong,
+.slide-deck-container[data-presentation-mode="auditorium"] .presentation-slide .teaching-title strong {
+  font-size: clamp(26px, 2.6vw, 38px) !important;
+  line-height: 1.3 !important;
 }
 
-.slide-deck-container[data-presentation-mode="auditorium"] .presentation-frame-content .teaching-body {
-  padding: 20px 30px 26px;
+.slide-deck-container[data-presentation-mode="auditorium"] .presentation-frame-content .teaching-body,
+.slide-deck-container[data-presentation-mode="auditorium"] .presentation-reading-frame .teaching-body,
+.slide-deck-container[data-presentation-mode="auditorium"] .presentation-slide .teaching-body {
+  padding: clamp(22px, 2.2vw, 34px) clamp(28px, 2.8vw, 40px) !important;
 }
 
 .slide-deck-container[data-presentation-mode="auditorium"] .presentation-frame-content .teaching-body .lesson-text,
-.slide-deck-container[data-presentation-mode="auditorium"] .presentation-frame-content .teaching-body .lesson-list li {
-  font-size: clamp(26px, 2.6vw, 38px);
-  line-height: 1.8;
+.slide-deck-container[data-presentation-mode="auditorium"] .presentation-reading-frame .teaching-body .lesson-text,
+.slide-deck-container[data-presentation-mode="auditorium"] .presentation-slide .teaching-body .lesson-text,
+.slide-deck-container[data-presentation-mode="auditorium"] .presentation-frame-content .teaching-body .lesson-list li,
+.slide-deck-container[data-presentation-mode="auditorium"] .presentation-reading-frame .teaching-body .lesson-list li,
+.slide-deck-container[data-presentation-mode="auditorium"] .presentation-slide .teaching-body .lesson-list li {
+  font-size: clamp(28px, 2.8vw, 44px) !important;
+  line-height: 1.8 !important;
 }
 
 .slide-deck-container[data-presentation-mode="auditorium"] .presentation-frame-content .code-block pre {
@@ -1911,6 +1942,102 @@
   border-color: #3b82f6;
   box-shadow: inset 3px 0 0 #3b82f6;
 }
+.presentation-index-card.is-furthest {
+  border-color: rgba(245, 202, 54, 0.45);
+  box-shadow: inset 3px 0 0 #f5ca36;
+}
+
+.presentation-index-resume-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 18px;
+  background: color-mix(in srgb, var(--primary, #3b82f6) 18%, var(--card, #131b28));
+  border-bottom: 1px solid color-mix(in srgb, var(--primary, #3b82f6) 40%, var(--border));
+  flex-shrink: 0;
+}
+
+.resume-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.resume-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  color: var(--brand-yellow, #f5ca36);
+  text-transform: uppercase;
+}
+
+.resume-info strong {
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 280px;
+}
+
+.resume-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 12px;
+  font-size: 12px;
+  font-weight: 600;
+  background: var(--primary, #3b82f6) !important;
+  color: #fff !important;
+  border-radius: 6px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  border: none;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+
+.resume-action-btn:hover {
+  opacity: 0.9;
+}
+
+.index-card-meta-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.index-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+}
+
+.index-status-pill.current {
+  background: rgba(59, 130, 246, 0.25);
+  color: #60a5fa;
+  border: 1px solid rgba(59, 130, 246, 0.4);
+}
+
+.index-status-pill.furthest {
+  background: rgba(245, 202, 54, 0.2);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 202, 54, 0.4);
+}
+
+.index-status-pill.visited {
+  background: rgba(16, 185, 129, 0.15);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.25);
+}
 
 .index-card-header {
   display: flex;
@@ -2283,16 +2410,22 @@ pre {
   color: #10b981 !important;
 }
 
-/* Bloques docentes con texto legible (18px predeterminado) */
-.teaching-block .lesson-text,
-.teaching-body .lesson-text,
-.teaching-block .lesson-list li,
-.teaching-block .lesson-list .lesson-text {
+/* Bloques docentes con texto legible (18px predeterminado) en modo lectura */
+.continuous-reader .teaching-block .lesson-text,
+.continuous-reader .teaching-body .lesson-text,
+.continuous-reader .teaching-block .lesson-list li,
+.continuous-reader .teaching-block .lesson-list .lesson-text,
+.reading-frame .teaching-block .lesson-text,
+.reading-frame .teaching-body .lesson-text,
+.lesson-paper .teaching-block .lesson-text,
+.lesson-paper .teaching-body .lesson-text {
   font-size: 18px !important;
   line-height: 1.75 !important;
 }
 
-.teaching-title strong {
+.continuous-reader .teaching-title strong,
+.reading-frame .teaching-title strong,
+.lesson-paper .teaching-title strong {
   font-size: 16px !important;
   font-weight: 700 !important;
 }

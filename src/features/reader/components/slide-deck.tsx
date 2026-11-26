@@ -13,6 +13,8 @@ import {
   Wrench,
   Tv,
   Projector,
+  RotateCcw,
+  Check,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { BrandSignature } from '@/features/theme/brand-signature';
@@ -74,8 +76,26 @@ export function SlideDeck({
   toolsEnabled = true,
   onToggleTools,
 }: SlideDeckProps) {
+  const progressKey = `d3im3r_presentation_progress_${lesson.id}`;
+
+  const [savedProgress] = useState<{ currentSlide: number; maxSlide: number } | null>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const raw = localStorage.getItem(progressKey);
+        if (raw) return JSON.parse(raw);
+      } catch {}
+    }
+    return null;
+  });
+
+  const initialSlide = current > 0 ? current : (savedProgress?.currentSlide ?? current);
   const [indexOpen, setIndexOpen] = useState(false);
-  const [activeSlide, setActiveSlide] = useState(current);
+  const [activeSlide, setActiveSlide] = useState(initialSlide);
+  const [maxSlide, setMaxSlide] = useState(() =>
+    Math.max(initialSlide, savedProgress?.maxSlide ?? 0)
+  );
+
+  const indexScrollRef = useRef<HTMLDivElement>(null);
   const [displayMode, setDisplayMode] = useState<'tv' | 'auditorium'>(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('d3im3r_presentation_scale_mode');
@@ -124,6 +144,30 @@ export function SlideDeck({
   const scrollTimeout = useRef<NodeJS.Timeout | null>(null);
   const preloaded = useRef(new Set<string>());
 
+  const recordProgress = useCallback(
+    (slideIdx: number) => {
+      setActiveSlide(slideIdx);
+      onFrameChange(slideIdx);
+      setMaxSlide((prev) => {
+        const nextMax = Math.max(prev, slideIdx);
+        if (typeof window !== 'undefined') {
+          try {
+            localStorage.setItem(
+              progressKey,
+              JSON.stringify({
+                currentSlide: slideIdx,
+                maxSlide: nextMax,
+                updatedAt: Date.now(),
+              })
+            );
+          } catch {}
+        }
+        return nextMax;
+      });
+    },
+    [onFrameChange, progressKey]
+  );
+
   // Desplazamiento suave y sin cortes hacia cualquier tema de la clase
   const scrollToSlide = useCallback(
     (index: number, smooth: boolean = true) => {
@@ -132,8 +176,7 @@ export function SlideDeck({
       if (el) {
         isProgrammaticScroll.current = true;
         el.scrollIntoView({ behavior: smooth ? 'smooth' : 'auto', block: 'start' });
-        setActiveSlide(safeIndex);
-        onFrameChange(safeIndex);
+        recordProgress(safeIndex);
 
         if (scrollTimeout.current) clearTimeout(scrollTimeout.current);
         scrollTimeout.current = setTimeout(() => {
@@ -141,12 +184,12 @@ export function SlideDeck({
         }, 700);
       }
     },
-    [lesson.frames.length, onFrameChange]
+    [lesson.frames.length, recordProgress]
   );
 
   // Posicionar en la diapositiva inicial al montar
   useEffect(() => {
-    scrollToSlide(current, false);
+    scrollToSlide(initialSlide, false);
   }, []);
 
   // Detectar la diapositiva visible durante el scroll continuo manual
@@ -170,8 +213,7 @@ export function SlideDeck({
         if (mostVisible) {
           const idx = Number(mostVisible.target.getAttribute('data-frame-index'));
           if (!Number.isNaN(idx) && idx !== activeSlide) {
-            setActiveSlide(idx);
-            onFrameChange(idx);
+            recordProgress(idx);
           }
         }
       },
@@ -187,7 +229,19 @@ export function SlideDeck({
     return () => {
       observer.disconnect();
     };
-  }, [activeSlide, onFrameChange, lesson.frames.length]);
+  }, [activeSlide, recordProgress, lesson.frames.length]);
+
+  // Centrar el elemento activo al abrir el índice
+  useEffect(() => {
+    if (indexOpen) {
+      requestAnimationFrame(() => {
+        const activeItem = indexScrollRef.current?.querySelector(
+          '.presentation-index-card.is-current, .presentation-index-card.is-furthest'
+        );
+        activeItem?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      });
+    }
+  }, [indexOpen]);
 
   // Precargar imágenes de la lección
   useEffect(() => {
@@ -564,7 +618,10 @@ export function SlideDeck({
               <div>
                 <span>ÍNDICE DE CONTENIDOS</span>
                 <h3>{lesson.title}</h3>
-                <small>{lesson.frames.length} temas en total</small>
+                <small>
+                  {lesson.frames.length} temas · Avance: Tema {maxSlide + 1} de{' '}
+                  {lesson.frames.length}
+                </small>
               </div>
               <button
                 type="button"
@@ -577,10 +634,36 @@ export function SlideDeck({
               </button>
             </header>
 
-            <div className="presentation-index-scroll">
+            {/* Acceso directo para regresar al punto de avance alcanzado */}
+            {maxSlide > activeSlide && (
+              <div className="presentation-index-resume-banner">
+                <div className="resume-info">
+                  <span className="resume-label">Último avance alcanzado</span>
+                  <strong>
+                    Tema {maxSlide + 1}:{' '}
+                    {lesson.frames[maxSlide]?.title?.replace(/\$([^\$]+)\$/g, '$1')}
+                  </strong>
+                </div>
+                <Button
+                  size="sm"
+                  className="resume-action-btn"
+                  onClick={() => {
+                    scrollToSlide(maxSlide);
+                    setIndexOpen(false);
+                  }}
+                >
+                  <RotateCcw size={14} />
+                  <span>Regresar aquí</span>
+                </Button>
+              </div>
+            )}
+
+            <div className="presentation-index-scroll" ref={indexScrollRef}>
               <div className="presentation-index-grid">
                 {lesson.frames.map((f, i) => {
                   const isCurrent = i === activeSlide;
+                  const isFurthest = i === maxSlide && maxSlide !== activeSlide;
+                  const isVisited = i <= maxSlide;
                   const hasCode = f.blocks.some((b) => b.type === 'code');
                   const hasDiagram = f.blocks.some(
                     (b) => b.type === 'diagram' || b.type === 'image'
@@ -589,14 +672,29 @@ export function SlideDeck({
                     <button
                       key={f.id || i}
                       type="button"
-                      className={`presentation-index-card ${isCurrent ? 'is-current' : ''}`}
+                      className={`presentation-index-card ${isCurrent ? 'is-current' : ''} ${
+                        isFurthest ? 'is-furthest' : ''
+                      } ${isVisited ? 'is-visited' : ''}`}
                       onClick={() => {
                         scrollToSlide(i);
                         setIndexOpen(false);
                       }}
                     >
                       <div className="index-card-header">
-                        <span className="index-card-num">{i + 1}</span>
+                        <div className="index-card-meta-left">
+                          <span className="index-card-num">{i + 1}</span>
+                          {isCurrent && (
+                            <span className="index-status-pill current">Viendo ahora</span>
+                          )}
+                          {isFurthest && (
+                            <span className="index-status-pill furthest">Último avance</span>
+                          )}
+                          {isVisited && !isCurrent && !isFurthest && (
+                            <span className="index-status-pill visited">
+                              <Check size={11} /> Visto
+                            </span>
+                          )}
+                        </div>
                         <div className="index-card-badges">
                           {hasDiagram && <span className="index-badge diagram">SVG</span>}
                           {hasCode && <span className="index-badge code">Python</span>}

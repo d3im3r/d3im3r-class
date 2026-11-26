@@ -45,6 +45,7 @@
 :root[data-palette][data-theme] .teaching-block{background:color-mix(in srgb,var(--callout) 10%,var(--card));border-color:color-mix(in srgb,var(--callout) 28%,var(--border))}
 :root[data-palette][data-theme] .teaching-title{background:color-mix(in srgb,var(--callout) 15%,var(--card));color:var(--callout);border-color:color-mix(in srgb,var(--callout) 28%,var(--border))}
 :root[data-palette][data-theme] .teaching-body .lesson-text{color:var(--card-foreground);font-size:18px}
+:root[data-palette][data-theme] :is(.presentation-frame-content,.presentation-reading-frame,.presentation-slide) .teaching-body .lesson-text{font-size:inherit}
 :root[data-palette][data-theme] .presentation-frame-badge{background:var(--muted);color:var(--muted-foreground);border:1px solid var(--border)}
 :root[data-palette][data-theme] .read-marker{
   display: inline-flex;
