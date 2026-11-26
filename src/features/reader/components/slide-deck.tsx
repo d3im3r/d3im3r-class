@@ -99,7 +99,9 @@ export function SlideDeck({
     if (typeof window !== 'undefined') {
       localStorage.setItem('d3im3r_presentation_scale_mode', mode);
     }
-    triggerHud(mode === 'auditorium' ? 'Modo Auditorio activado (Extra Grande)' : 'Modo TV activado (Grande)');
+    triggerHud(
+      mode === 'auditorium' ? 'Modo Auditorio activado (Extra Grande)' : 'Modo TV activado (Grande)'
+    );
   }, []);
 
   const togglePresentationMode = useCallback(() => {
@@ -108,7 +110,11 @@ export function SlideDeck({
       if (typeof window !== 'undefined') {
         localStorage.setItem('d3im3r_presentation_scale_mode', next);
       }
-      triggerHud(next === 'auditorium' ? 'Modo Auditorio activado (Extra Grande)' : 'Modo TV activado (Grande)');
+      triggerHud(
+        next === 'auditorium'
+          ? 'Modo Auditorio activado (Extra Grande)'
+          : 'Modo TV activado (Grande)'
+      );
       return next;
     });
   }, []);
@@ -321,7 +327,11 @@ export function SlideDeck({
         </div>
         <div className="presentation-actions-right">
           {/* Selector de escala: TV (Grande) vs Auditorio (Extra Grande) */}
-          <div className="presentation-scale-toggle" role="group" aria-label="Escala de visualización">
+          <div
+            className="presentation-scale-toggle"
+            role="group"
+            aria-label="Escala de visualización"
+          >
             <button
               type="button"
               className={`scale-btn ${displayMode === 'tv' ? 'is-active' : ''}`}
@@ -478,7 +488,8 @@ export function SlideDeck({
       {/* Barra de controles inferiores de navegación */}
       <footer className="presentation-controls">
         <div className="slide-shortcuts">
-          ← → / Espacio Navegar <span>·</span> I Índice <span>·</span> A Escala ({displayMode === 'auditorium' ? 'Auditorio' : 'TV'}) <span>·</span> F Pantalla completa{' '}
+          ← → / Espacio Navegar <span>·</span> I Índice <span>·</span> A Escala (
+          {displayMode === 'auditorium' ? 'Auditorio' : 'TV'}) <span>·</span> F Pantalla completa{' '}
           <span>·</span> Esc Volver
         </div>
         <div className="presentation-nav-group">
